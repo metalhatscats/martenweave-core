@@ -426,6 +426,200 @@ def _validate_ownership(objects: list[ParsedObject]) -> list[ValidationResult]:
     return results
 
 
+def _validate_methodology(
+    objects: list[ParsedObject], registry: dict[str, dict[str, Any]]
+) -> list[ValidationResult]:
+    """Warn about weak model structure and missing enrichment.
+
+    These are methodology-level quality checks, not hard errors.
+    Simple table mode is intentionally not punished.
+    """
+    results: list[ValidationResult] = []
+
+    # Categorise objects for quick lookups
+    field_endpoints: list[ParsedObject] = []
+    attributes: list[ParsedObject] = []
+    entity_contexts: list[ParsedObject] = []
+    value_lists: list[ParsedObject] = []
+    mappings: list[ParsedObject] = []
+    validation_rules: list[ParsedObject] = []
+    business_entities: list[ParsedObject] = []
+    attribute_usages: list[ParsedObject] = []
+
+    for obj in objects:
+        if obj.parser_error is not None or obj.frontmatter is None:
+            continue
+        ot = obj.frontmatter.get("type")
+        if ot == "FieldEndpoint":
+            field_endpoints.append(obj)
+        elif ot == "Attribute":
+            attributes.append(obj)
+        elif ot == "EntityContext":
+            entity_contexts.append(obj)
+        elif ot == "ValueList":
+            value_lists.append(obj)
+        elif ot == "Mapping":
+            mappings.append(obj)
+        elif ot == "ValidationRule":
+            validation_rules.append(obj)
+        elif ot == "BusinessEntity":
+            business_entities.append(obj)
+        elif ot == "AttributeUsage":
+            attribute_usages.append(obj)
+
+    has_contexts = len(entity_contexts) > 0
+    has_value_lists = len(value_lists) > 0
+    has_mappings = len(mappings) > 0
+    has_validation_rules = len(validation_rules) > 0
+
+    # Which fields are referenced by mappings?
+    mapped_fep_ids: set[str] = set()
+    for m in mappings:
+        fm = m.frontmatter or {}
+        for key in ("source_endpoint", "target_endpoint"):
+            val = fm.get(key)
+            if isinstance(val, str):
+                mapped_fep_ids.add(val)
+
+    # Which attributes are referenced by validation rules?
+    validated_attr_ids: set[str] = set()
+    for vr in validation_rules:
+        fm = vr.frontmatter or {}
+        val = fm.get("attribute")
+        if isinstance(val, str):
+            validated_attr_ids.add(val)
+
+    # Which field endpoints are referenced by attribute usages?
+    fep_ids_with_usage: set[str] = set()
+    for au in attribute_usages:
+        fm = au.frontmatter or {}
+        val = fm.get("field_endpoint")
+        if isinstance(val, str):
+            fep_ids_with_usage.add(val)
+
+    # Rule 1: Active FieldEndpoints without Attribute or AttributeUsage
+    for obj in field_endpoints:
+        fm = obj.frontmatter
+        status = str(fm.get("status", "")).lower()
+        if status not in ("active", "draft"):
+            continue
+        obj_id = fm.get("id")
+        has_attr = bool(fm.get("attribute") or fm.get("business_attribute"))
+        has_usage = obj_id in fep_ids_with_usage
+        if not has_attr and not has_usage:
+            results.append(
+                ValidationResult(
+                    severity=ValidationSeverity.WARNING,
+                    code="FIELD_ENDPOINT_MISSING_ATTRIBUTE",
+                    message=(
+                        f"FieldEndpoint '{obj_id}' has no linked Attribute, "
+                        f"business_attribute, or AttributeUsage."
+                    ),
+                    object_id=obj_id,
+                    source_file=obj.source_path,
+                    suggested_fix=(
+                        "Add 'attribute' or 'business_attribute' to link this "
+                        "field to business meaning, or create an AttributeUsage."
+                    ),
+                )
+            )
+
+    # Rule 2: Flat model structure (many fields, no contexts)
+    active_feps = [
+        obj
+        for obj in field_endpoints
+        if str(obj.frontmatter.get("status", "")).lower() in ("active", "draft")
+    ]
+    if len(active_feps) >= 10 and not has_contexts and business_entities:
+        results.append(
+            ValidationResult(
+                severity=ValidationSeverity.WARNING,
+                code="FLAT_MODEL_STRUCTURE",
+                message=(
+                    f"Model has {len(active_feps)} FieldEndpoints but no "
+                    f"EntityContext objects. Large objects may be flattened."
+                ),
+                object_id=None,
+                source_file=None,
+                suggested_fix=(
+                    "Add EntityContext objects to group fields by system/"
+                    "business grain. Use simple table mode intentionally for "
+                    "small models."
+                ),
+            )
+        )
+
+    # Rule 3: Attributes without context in enterprise models
+    if has_contexts:
+        for obj in attributes:
+            fm = obj.frontmatter
+            status = str(fm.get("status", "")).lower()
+            if status not in ("active", "draft"):
+                continue
+            if not fm.get("entity_context"):
+                obj_id = fm.get("id")
+                results.append(
+                    ValidationResult(
+                        severity=ValidationSeverity.WARNING,
+                        code="ATTRIBUTE_MISSING_CONTEXT",
+                        message=(
+                            f"Attribute '{obj_id}' has no entity_context. "
+                            f"In enterprise models, attributes should be "
+                            f"contextualized."
+                        ),
+                        object_id=obj_id,
+                        source_file=obj.source_path,
+                        suggested_fix=(
+                            "Add 'entity_context' to link this attribute to a "
+                            "system/business grain."
+                        ),
+                    )
+                )
+
+    # Rule 4: FieldEndpoints lacking enrichment in mature models
+    # Only when the model already has ValueLists, Mappings, or ValidationRules
+    if has_value_lists or has_mappings or has_validation_rules:
+        for obj in field_endpoints:
+            fm = obj.frontmatter
+            status = str(fm.get("status", "")).lower()
+            if status not in ("active", "draft"):
+                continue
+            obj_id = fm.get("id")
+            attr_id = fm.get("attribute") or fm.get("business_attribute")
+
+            has_lov = bool(fm.get("value_list"))
+            is_mapped = obj_id in mapped_fep_ids
+            attr_has_rule = attr_id in validated_attr_ids
+
+            missing: list[str] = []
+            if has_value_lists and not has_lov:
+                missing.append("value_list")
+            if has_mappings and not is_mapped:
+                missing.append("mapping")
+            if has_validation_rules and not attr_has_rule:
+                missing.append("validation_rule")
+
+            if missing:
+                results.append(
+                    ValidationResult(
+                        severity=ValidationSeverity.WARNING,
+                        code="FIELD_ENDPOINT_MISSING_ENRICHMENT",
+                        message=(
+                            f"FieldEndpoint '{obj_id}' lacks enrichment: "
+                            f"no {', '.join(missing)}."
+                        ),
+                        object_id=obj_id,
+                        source_file=obj.source_path,
+                        suggested_fix=(
+                            "Add value_list, mapping, or validation rule "
+                            "coverage where relevant."
+                        ),
+                    )
+                )
+
+    return results
+
+
 def _run_domain_pack_validation(
     objects: list[ParsedObject],
     registry: dict[str, dict[str, Any]],
@@ -475,6 +669,7 @@ def validate_objects(
     all_results.extend(_validate_references(objects, registry))
     all_results.extend(_validate_lov_governance(objects, registry))
     all_results.extend(_validate_ownership(objects))
+    all_results.extend(_validate_methodology(objects, registry))
     all_results.extend(_run_domain_pack_validation(objects, registry, enabled_domain_packs))
 
     return ValidationSummary(results=all_results)
