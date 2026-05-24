@@ -1,5 +1,5 @@
 [project]
-name = "modelops-mdm-core"
+name = "martenweave-core"
 version = "0.1.0"
 description = "Backend-first model registry core for ModelOps for MDM."
 requires-python = ">=3.11"

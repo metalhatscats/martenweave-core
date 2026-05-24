@@ -1,6 +1,6 @@
-# ModelOps MDM Core
+# martenweave-core
 
-Backend-first model registry core for ModelOps for MDM.
+Backend-first model registry core.
 
 Turns SAP migration data models into a structured, traceable, validated, AI-ready model knowledge layer. This repository contains the canonical model registry, deterministic validation, generated SQLite index, safe AI patch proposals, and Git-friendly model files.
 
