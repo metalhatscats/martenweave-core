@@ -39,7 +39,12 @@ from modelops_core.imports.model_sheet_import_service import (
     import_model_sheet_xlsx,
 )
 from modelops_core.index import build_index as _build_index
-from modelops_core.notifications import preview_notifications
+from modelops_core.notifications import (
+    emit_notification_event,
+    filter_notification_events,
+    preview_notifications,
+    read_notification_events,
+)
 from modelops_core.patching.apply_service import (
     apply_patch_proposal,
     dry_run_patch_proposal,
@@ -885,6 +890,28 @@ def cr_create(
         console.print(f"  Status: {status}")
         console.print(f"  Title:  {title}")
 
+    # Emit notification events for affected object owners/watchers
+    try:
+        preview_entries = preview_notifications(
+            model_path=model_path,
+            cr_id=cr_id,
+        )
+        for entry in preview_entries:
+            emit_notification_event(
+                repo_root=repo_root,
+                event_type="change_request_requested",
+                source_type="ChangeRequest",
+                source_id=cr_id,
+                recipient_id=entry.recipient_id,
+                recipient_role=entry.recipient_role,
+                reason=entry.reason,
+                affected_objects=list(affected_object) if affected_object else [],
+                message_summary=f"ChangeRequest {cr_id} created: {title}",
+                status="pending",
+            )
+    except Exception:
+        pass  # Preview failures should not block CR creation
+
 
 @cr_app.command("list")
 def cr_list(
@@ -970,6 +997,35 @@ def cr_update_status(
     else:
         console.print(f"[green]ChangeRequest {cr_id} updated to '{status}'[/green]")
 
+    # Emit notification events for status transition
+    event_type_map = {
+        "approved": "change_request_approved",
+        "rejected": "change_request_rejected",
+        "implemented": "change_request_applied",
+    }
+    event_type = event_type_map.get(status)
+    if event_type:
+        try:
+            preview_entries = preview_notifications(
+                model_path=model_path,
+                cr_id=cr_id,
+            )
+            for entry in preview_entries:
+                emit_notification_event(
+                    repo_root=repo_root,
+                    event_type=event_type,
+                    source_type="ChangeRequest",
+                    source_id=cr_id,
+                    recipient_id=entry.recipient_id,
+                    recipient_role=entry.recipient_role,
+                    reason=entry.reason,
+                    affected_objects=cr.get("affected_objects") or [],
+                    message_summary=f"ChangeRequest {cr_id} {status}",
+                    status=status,
+                )
+        except Exception:
+            pass
+
 
 # ---------------------------------------------------------------------------
 # Notification subcommands
@@ -1031,6 +1087,54 @@ def notifications_preview(
             e.recipient_role,
             e.reason,
             f"{e.source_object_id or '—'} ({e.source_object_type or '—'})",
+        )
+    console.print(table)
+
+
+@notifications_app.command("list")
+def notifications_list(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    recipient: str | None = typer.Option(None, "--recipient", help="Filter by recipient ID."),
+    source_id: str | None = typer.Option(None, "--source-id", help="Filter by source object ID."),
+    event_type: str | None = typer.Option(None, "--event-type", help="Filter by event type."),
+    status: str | None = typer.Option(None, "--status", help="Filter by status."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """List notification events from the append-only log."""
+    repo_root = _resolve_repo(repo)
+    events = read_notification_events(repo_root)
+
+    if not events:
+        console.print("[yellow]No notification events found.[/yellow]")
+        raise typer.Exit()
+
+    filtered = filter_notification_events(
+        events,
+        recipient=recipient,
+        source_id=source_id,
+        event_type=event_type,
+        status=status,
+    )
+
+    if json_output:
+        print(json.dumps([e.to_dict() for e in filtered], indent=2, default=str))
+        raise typer.Exit()
+
+    console.print(f"[bold]Notification Events ({len(filtered)})[/bold]")
+    if not filtered:
+        console.print("  No events match the filters.")
+        raise typer.Exit()
+
+    table = Table("Event ID", "Type", "Timestamp", "Source", "Recipient", "Role", "Status")
+    for e in filtered:
+        table.add_row(
+            e.event_id,
+            e.event_type,
+            e.timestamp,
+            f"{e.source_id} ({e.source_type})",
+            e.recipient_id,
+            e.recipient_role,
+            e.status,
         )
     console.print(table)
 
@@ -1164,6 +1268,28 @@ def proposal_validate(
             },
         )
     )
+
+    # Emit notification events for proposal validation
+    try:
+        preview_entries = preview_notifications(
+            model_path=model_path,
+            proposal_id=proposal_id,
+        )
+        for entry in preview_entries:
+            emit_notification_event(
+                repo_root=repo_root,
+                event_type="patch_proposal_validated",
+                source_type="PatchProposal",
+                source_id=proposal_id,
+                recipient_id=entry.recipient_id,
+                recipient_role=entry.recipient_role,
+                reason=entry.reason,
+                affected_objects=fm.get("affected_objects") or [],
+                message_summary=f"PatchProposal {proposal_id} validated",
+                status="valid" if error_count == 0 else "invalid",
+            )
+    except Exception:
+        pass
 
     if error_count > 0:
         raise typer.Exit(code=1)
@@ -1327,6 +1453,28 @@ def proposal_apply(
         console.print("  Audit event written")
     if result.index_rebuilt:
         console.print("  Index rebuilt")
+
+    # Emit notification events for proposal application
+    try:
+        preview_entries = preview_notifications(
+            model_path=model_path,
+            proposal_id=proposal_id,
+        )
+        for entry in preview_entries:
+            emit_notification_event(
+                repo_root=repo_root,
+                event_type="patch_proposal_applied",
+                source_type="PatchProposal",
+                source_id=proposal_id,
+                recipient_id=entry.recipient_id,
+                recipient_role=entry.recipient_role,
+                reason=entry.reason,
+                affected_objects=[op.get("object_id", "") for op in fm.get("operations", [])],
+                message_summary=f"PatchProposal {proposal_id} applied",
+                status="applied",
+            )
+    except Exception:
+        pass
 
 
 @app.command("serve")
