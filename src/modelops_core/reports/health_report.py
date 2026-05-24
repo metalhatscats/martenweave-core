@@ -18,6 +18,14 @@ class CoverageGaps:
 
 
 @dataclass
+class OwnershipCoverage:
+    total_eligible: int = 0
+    with_owner: int = 0
+    without_owner: int = 0
+    percentage: float = 0.0
+
+
+@dataclass
 class RepositoryHealthReport:
     """Aggregated repository health."""
 
@@ -25,6 +33,7 @@ class RepositoryHealthReport:
     type_counts: dict[str, int] = field(default_factory=dict)
     validation_summary: ValidationSummary | None = None
     coverage_gaps: CoverageGaps | None = None
+    ownership_coverage: OwnershipCoverage | None = None
     index_fresh: bool = False
 
 
@@ -55,6 +64,50 @@ def generate_repository_health(
             objects_without_description=desc_missing,
         )
 
+        # Ownership coverage
+        import json
+
+        _OWNERSHIP_TYPES = {
+            "Attribute",
+            "FieldEndpoint",
+            "Dataset",
+            "Mapping",
+            "ValidationRule",
+            "Issue",
+            "Decision",
+            "BusinessEntity",
+        }
+        _OWNERSHIP_FIELDS = {
+            "business_owner",
+            "technical_owner",
+            "data_steward",
+            "accountable_team",
+            "approver",
+        }
+        rows = conn.execute(
+            "SELECT type, frontmatter_json FROM objects"
+        ).fetchall()
+        total_eligible = 0
+        with_owner = 0
+        for obj_type, fm_json in rows:
+            if obj_type not in _OWNERSHIP_TYPES:
+                continue
+            total_eligible += 1
+            try:
+                fm = json.loads(fm_json or "{}")
+                if any(fm.get(field) for field in _OWNERSHIP_FIELDS):
+                    with_owner += 1
+            except Exception:
+                continue
+        ownership = OwnershipCoverage(
+            total_eligible=total_eligible,
+            with_owner=with_owner,
+            without_owner=total_eligible - with_owner,
+            percentage=round(with_owner / total_eligible * 100, 1)
+            if total_eligible
+            else 0.0,
+        )
+
         index_fresh = manifest.get("validation_status") == "valid"
 
         return RepositoryHealthReport(
@@ -62,6 +115,7 @@ def generate_repository_health(
             type_counts=type_counts,
             validation_summary=validation_summary,
             coverage_gaps=coverage,
+            ownership_coverage=ownership,
             index_fresh=index_fresh,
         )
     finally:

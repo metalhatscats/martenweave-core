@@ -271,6 +271,61 @@ def _validate_references(
     return results
 
 
+_OWNERSHIP_TYPES = frozenset(
+    {
+        "Attribute",
+        "FieldEndpoint",
+        "Dataset",
+        "Mapping",
+        "ValidationRule",
+        "Issue",
+        "Decision",
+        "BusinessEntity",
+    }
+)
+_OWNERSHIP_FIELDS = (
+    "business_owner",
+    "technical_owner",
+    "data_steward",
+    "accountable_team",
+    "approver",
+)
+
+
+def _validate_ownership(objects: list[ParsedObject]) -> list[ValidationResult]:
+    """Warn when active important objects lack ownership."""
+    results: list[ValidationResult] = []
+    for obj in objects:
+        if obj.parser_error is not None or obj.frontmatter is None:
+            continue
+        fm = obj.frontmatter
+        obj_type = str(fm.get("type", ""))
+        if obj_type not in _OWNERSHIP_TYPES:
+            continue
+        status = str(fm.get("status", "")).lower()
+        if status not in ("active", "draft"):
+            continue
+        has_owner = any(fm.get(field) for field in _OWNERSHIP_FIELDS)
+        if not has_owner:
+            obj_id = fm.get("id")
+            results.append(
+                ValidationResult(
+                    severity=ValidationSeverity.WARNING,
+                    code="OWNERSHIP_MISSING",
+                    message=(
+                        f"{obj_type} '{obj_id}' has no owner or steward. "
+                        f"Consider adding business_owner, technical_owner, "
+                        f"data_steward, accountable_team, or approver."
+                    ),
+                    object_id=obj_id,
+                    source_file=obj.source_path,
+                    field_path=None,
+                    suggested_fix="Add an ownership field to this object.",
+                )
+            )
+    return results
+
+
 def _run_domain_pack_validation(
     objects: list[ParsedObject],
     registry: dict[str, dict[str, Any]],
@@ -318,6 +373,7 @@ def validate_objects(
 
     registry = _build_registry(objects)
     all_results.extend(_validate_references(objects, registry))
+    all_results.extend(_validate_ownership(objects))
     all_results.extend(_run_domain_pack_validation(objects, registry, enabled_domain_packs))
 
     return ValidationSummary(results=all_results)

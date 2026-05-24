@@ -349,6 +349,12 @@ def health(
     if report.coverage_gaps:
         console.print(f"  Missing name:        {report.coverage_gaps.objects_without_name}")
         console.print(f"  Missing description: {report.coverage_gaps.objects_without_description}")
+    if report.ownership_coverage:
+        oc = report.ownership_coverage
+        console.print(
+            f"  Ownership coverage:  {oc.with_owner}/{oc.total_eligible} "
+            f"({oc.percentage}%)"
+        )
     if report.type_counts:
         table = Table("Type", "Count")
         for t, c in sorted(report.type_counts.items()):

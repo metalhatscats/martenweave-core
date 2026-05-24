@@ -64,6 +64,11 @@ _SOURCE_PATCH_PROPOSALS_REF = ReferenceField(
 )
 _AFFECTED_OBJECTS_REF = ReferenceField("affected_objects", "affected_objects", None)
 _RELATED_OBJECTS_REF = ReferenceField("related_objects", "related_objects", None)
+_BUSINESS_OWNER_REF = ReferenceField("business_owner", "business_owner", "Person")
+_TECHNICAL_OWNER_REF = ReferenceField("technical_owner", "technical_owner", "Person")
+_DATA_STEWARD_REF = ReferenceField("data_steward", "data_steward", "Person")
+_APPROVER_REF = ReferenceField("approver", "approver", "Person")
+_ACCOUNTABLE_TEAM_REF = ReferenceField("accountable_team", "accountable_team", "Team")
 
 # Common search-relevant frontmatter fields.
 _COMMON_SEARCH_FIELDS: tuple[str, ...] = (
@@ -114,6 +119,10 @@ _REGISTRY: dict[str, ObjectTypeEntry] = {
         reference_fields=(
             _DOMAIN_REF,
             _ENTITY_REF,
+            _BUSINESS_OWNER_REF,
+            _TECHNICAL_OWNER_REF,
+            _DATA_STEWARD_REF,
+            _ACCOUNTABLE_TEAM_REF,
             _ENTITY_CONTEXT_REF,
             _VALIDATION_RULES_REF,
             _RELATED_ISSUES_REF,
@@ -157,6 +166,10 @@ _REGISTRY: dict[str, ObjectTypeEntry] = {
         reference_fields=(
             _DOMAIN_REF,
             _ENTITY_REF,
+            _BUSINESS_OWNER_REF,
+            _TECHNICAL_OWNER_REF,
+            _DATA_STEWARD_REF,
+            _ACCOUNTABLE_TEAM_REF,
             _ENTITY_CONTEXT_REF,
             _SYSTEM_REF,
             _ATTRIBUTE_REF,
@@ -175,7 +188,14 @@ _REGISTRY: dict[str, ObjectTypeEntry] = {
         type_id="Dataset",
         ui_label_singular="Dataset",
         ui_label_plural="Datasets",
-        reference_fields=(_DOMAIN_REF, _SYSTEM_REF),
+        reference_fields=(
+            _DOMAIN_REF,
+            _SYSTEM_REF,
+            _BUSINESS_OWNER_REF,
+            _TECHNICAL_OWNER_REF,
+            _DATA_STEWARD_REF,
+            _ACCOUNTABLE_TEAM_REF,
+        ),
         search_fields=_COMMON_SEARCH_FIELDS,
     ),
     "MappingSet": ObjectTypeEntry(
@@ -193,6 +213,8 @@ _REGISTRY: dict[str, ObjectTypeEntry] = {
             _DOMAIN_REF,
             _SOURCE_ENDPOINT_REF,
             _TARGET_ENDPOINT_REF,
+            _BUSINESS_OWNER_REF,
+            _TECHNICAL_OWNER_REF,
             _SOURCE_VALUE_LIST_REF,
             _TARGET_VALUE_LIST_REF,
             _VALUE_MAPPING_REF,
@@ -231,7 +253,12 @@ _REGISTRY: dict[str, ObjectTypeEntry] = {
         type_id="ValidationRule",
         ui_label_singular="Validation Rule",
         ui_label_plural="Validation Rules",
-        reference_fields=(_DOMAIN_REF, _ATTRIBUTE_REF),
+        reference_fields=(
+            _DOMAIN_REF,
+            _ATTRIBUTE_REF,
+            _BUSINESS_OWNER_REF,
+            _APPROVER_REF,
+        ),
         search_fields=_COMMON_SEARCH_FIELDS,
     ),
     "DataQualityCheck": ObjectTypeEntry(
@@ -266,7 +293,12 @@ _REGISTRY: dict[str, ObjectTypeEntry] = {
         type_id="Issue",
         ui_label_singular="Issue",
         ui_label_plural="Issues",
-        reference_fields=(_DOMAIN_REF, _ATTRIBUTE_REF, _RELATED_OBJECTS_REF),
+        reference_fields=(
+            _DOMAIN_REF,
+            _ATTRIBUTE_REF,
+            _RELATED_OBJECTS_REF,
+            _BUSINESS_OWNER_REF,
+        ),
         search_fields=_COMMON_SEARCH_FIELDS,
     ),
     "Risk": ObjectTypeEntry(
@@ -280,7 +312,13 @@ _REGISTRY: dict[str, ObjectTypeEntry] = {
         type_id="Decision",
         ui_label_singular="Decision",
         ui_label_plural="Decisions",
-        reference_fields=(_DOMAIN_REF, _ATTRIBUTE_REF, _EVIDENCE_REF),
+        reference_fields=(
+            _DOMAIN_REF,
+            _ATTRIBUTE_REF,
+            _EVIDENCE_REF,
+            _BUSINESS_OWNER_REF,
+            _APPROVER_REF,
+        ),
         search_fields=_COMMON_SEARCH_FIELDS,
     ),
     "ChangeRequest": ObjectTypeEntry(
