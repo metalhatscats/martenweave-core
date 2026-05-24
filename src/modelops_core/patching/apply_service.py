@@ -31,6 +31,16 @@ class ApplyResult:
     error: str | None = None
 
 
+@dataclass
+class DryRunResult:
+    """Result of a dry-run apply."""
+
+    proposal_id: str
+    would_change: bool
+    operations_preview: list[dict[str, Any]] = field(default_factory=list)
+    error: str | None = None
+
+
 _OBJECT_TYPE_SUBFOLDER: dict[str, str] = {
     "Attribute": "attributes",
     "FieldEndpoint": "field-endpoints",
@@ -265,6 +275,105 @@ def _rollback(backup_state: dict[Path, str | None]) -> None:
                 path.unlink()
         else:
             path.write_text(original, encoding="utf-8")
+
+
+def dry_run_patch_proposal(
+    repo_model_path: Path, proposal_id: str
+) -> DryRunResult:
+    """Preview what apply_patch_proposal would do without writing any files."""
+    proposal_path = repo_model_path / "patch-proposals" / f"{proposal_id}.md"
+    if not proposal_path.exists():
+        return DryRunResult(
+            proposal_id=proposal_id,
+            would_change=False,
+            error=f"PatchProposal not found: {proposal_path}",
+        )
+
+    parsed_proposal = parse_file(proposal_path)
+    fm = parsed_proposal.frontmatter or {}
+
+    if fm.get("status") != "accepted":
+        return DryRunResult(
+            proposal_id=proposal_id,
+            would_change=False,
+            error=(
+                f"PatchProposal '{proposal_id}' has status '{fm.get('status')}'. "
+                "Only 'accepted' proposals can be applied."
+            ),
+        )
+
+    operations_raw = fm.get("operations", [])
+    if not isinstance(operations_raw, list):
+        return DryRunResult(
+            proposal_id=proposal_id,
+            would_change=False,
+            error="PatchProposal operations must be a list",
+        )
+
+    class _Op:
+        def __init__(self, data: dict[str, Any]) -> None:
+            self.op: str = data.get("op", "")
+            self.object_id: str | None = data.get("object_id")
+            self.object_type: str | None = data.get("object_type")
+            self.target_path: str | None = data.get("target_path")
+            self.after: Any = data.get("after")
+            self.before: Any = data.get("before")
+            self.reason: str | None = data.get("reason")
+
+    operations = [_Op(op) for op in operations_raw if isinstance(op, dict)]
+    preview: list[dict[str, Any]] = []
+
+    for op in operations:
+        if op.op not in _SUPPORTED_OPERATIONS:
+            preview.append(
+                {
+                    "op": op.op,
+                    "status": "skipped",
+                    "reason": f"Operation '{op.op}' is not supported.",
+                }
+            )
+            continue
+
+        if op.op == "update_object":
+            target_path = _find_object_file(repo_model_path, op.object_id or "")
+            if target_path is None:
+                preview.append(
+                    {
+                        "op": "update_object",
+                        "object_id": op.object_id,
+                        "status": "error",
+                        "reason": f"Object '{op.object_id}' not found",
+                    }
+                )
+            else:
+                preview.append(
+                    {
+                        "op": "update_object",
+                        "object_id": op.object_id,
+                        "status": "would_update",
+                        "file": str(target_path),
+                        "field": op.target_path,
+                        "after": op.after,
+                    }
+                )
+        elif op.op == "create_object":
+            target_dir = _resolve_subfolder(repo_model_path, op.object_type)
+            target_path = target_dir / f"{op.object_id}.md"
+            preview.append(
+                {
+                    "op": "create_object",
+                    "object_id": op.object_id,
+                    "object_type": op.object_type,
+                    "status": "would_create",
+                    "file": str(target_path),
+                }
+            )
+
+    return DryRunResult(
+        proposal_id=proposal_id,
+        would_change=any(p["status"] in {"would_update", "would_create"} for p in preview),
+        operations_preview=preview,
+    )
 
 
 def apply_patch_proposal(repo_model_path: Path, proposal_id: str) -> ApplyResult:

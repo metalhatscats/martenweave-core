@@ -25,6 +25,10 @@ from modelops_core.imports import (
     profile_xlsx,
 )
 from modelops_core.index import build_index as _build_index
+from modelops_core.patching.apply_service import (
+    apply_patch_proposal,
+    dry_run_patch_proposal,
+)
 from modelops_core.patching.patch_proposal_service import (
     write_patch_proposal,
 )
@@ -437,6 +441,173 @@ def propose_patch(
         console.print("[bold]Human checks:[/bold]")
         for h in human_checks:
             console.print(f"  • {h}")
+
+
+# ---------------------------------------------------------------------------
+# Proposal subcommands
+# ---------------------------------------------------------------------------
+proposal_app = typer.Typer(
+    name="proposal",
+    help="Review and apply PatchProposals.",
+)
+app.add_typer(proposal_app, name="proposal")
+
+
+@proposal_app.command("list")
+def proposal_list(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+) -> None:
+    """List all PatchProposals in the repository."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    proposals_dir = model_path / "patch-proposals"
+
+    if not proposals_dir.exists():
+        console.print("[yellow]No patch-proposals directory found.[/yellow]")
+        raise typer.Exit()
+
+    files = sorted(proposals_dir.glob("PP-*.md"))
+    if not files:
+        console.print("[yellow]No PatchProposals found.[/yellow]")
+        raise typer.Exit()
+
+    table = Table("ID", "Status", "Applied")
+    for f in files:
+        parsed = parse_file(f)
+        fm = parsed.frontmatter or {}
+        status = fm.get("status", "—")
+        applied = "yes" if fm.get("applied_at") else "no"
+        table.add_row(fm.get("id", f.stem), status, applied)
+    console.print(table)
+
+
+@proposal_app.command("show")
+def proposal_show(
+    proposal_id: str = typer.Argument(..., help="PatchProposal ID (e.g. PP-001)."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+) -> None:
+    """Show details of a PatchProposal."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
+
+    if not proposal_path.exists():
+        console.print(f"[red]PatchProposal not found: {proposal_id}[/red]")
+        raise typer.Exit(code=1)
+
+    parsed = parse_file(proposal_path)
+    fm = parsed.frontmatter or {}
+
+    console.print(f"[bold]PatchProposal: {proposal_id}[/bold]")
+    console.print(f"  Status: {fm.get('status', '—')}")
+    console.print(f"  Validation: {fm.get('validation_status', '—')}")
+    console.print(f"  Operations: {len(fm.get('operations', []))}")
+    if fm.get("applied_at"):
+        console.print(f"  Applied at: {fm['applied_at']}")
+        console.print(f"  Changed files: {fm.get('applied_changed_files', [])}")
+
+    operations = fm.get("operations", [])
+    if operations:
+        table = Table("Op", "Object ID", "Type", "Target")
+        for op in operations:
+            table.add_row(
+                op.get("op", "—"),
+                op.get("object_id", "—"),
+                op.get("object_type", "—"),
+                op.get("target_path", "—"),
+            )
+        console.print(table)
+
+
+@proposal_app.command("validate")
+def proposal_validate(
+    proposal_id: str = typer.Argument(..., help="PatchProposal ID (e.g. PP-001)."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+) -> None:
+    """Run deterministic validation on a PatchProposal."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
+
+    if not proposal_path.exists():
+        console.print(f"[red]PatchProposal not found: {proposal_id}[/red]")
+        raise typer.Exit(code=1)
+
+    parsed = parse_file(proposal_path)
+    fm = parsed.frontmatter or {}
+
+    from modelops_core.patching.patch_validator import validate_patch_proposal
+
+    results = validate_patch_proposal(fm)
+    error_count = sum(1 for r in results if r.severity == "ERROR")
+    warning_count = sum(1 for r in results if r.severity == "WARNING")
+
+    console.print(f"[bold]Validation for {proposal_id}[/bold]")
+    console.print(f"  Errors: {error_count}")
+    console.print(f"  Warnings: {warning_count}")
+
+    if results:
+        table = Table("Severity", "Code", "Message", "Fix")
+        for r in results:
+            table.add_row(
+                str(r.severity),
+                r.code,
+                r.message,
+                r.suggested_fix or "—",
+            )
+        console.print(table)
+
+    if error_count > 0:
+        raise typer.Exit(code=1)
+
+
+@proposal_app.command("apply")
+def proposal_apply(
+    proposal_id: str = typer.Argument(..., help="PatchProposal ID (e.g. PP-001)."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Preview changes without applying."
+    ),
+) -> None:
+    """Apply an accepted PatchProposal to canonical files."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+
+    if dry_run:
+        result = dry_run_patch_proposal(model_path, proposal_id)
+        if result.error:
+            console.print(f"[red]{result.error}[/red]")
+            raise typer.Exit(code=1)
+
+        console.print(f"[bold]Dry-run for {proposal_id}[/bold]")
+        console.print(f"  Would change: {result.would_change}")
+        if result.operations_preview:
+            table = Table("Op", "Object", "Status", "Details")
+            for p in result.operations_preview:
+                details = p.get("file", "") or p.get("reason", "")
+                table.add_row(
+                    p.get("op", "—"),
+                    p.get("object_id", "—"),
+                    p.get("status", "—"),
+                    details,
+                )
+            console.print(table)
+        raise typer.Exit()
+
+    try:
+        result = apply_patch_proposal(model_path, proposal_id)
+    except (ValueError, FileNotFoundError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    console.print(f"[green]Applied {proposal_id}[/green]")
+    console.print(f"  Changed files: {len(result.changed_files)}")
+    for f in result.changed_files:
+        console.print(f"    {f}")
+    if result.audit_event_written:
+        console.print("  Audit event written")
+    if result.index_rebuilt:
+        console.print("  Index rebuilt")
 
 
 if __name__ == "__main__":
