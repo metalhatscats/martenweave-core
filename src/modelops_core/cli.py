@@ -18,7 +18,12 @@ from modelops_core.config import (
     resolve_model_path,
 )
 from modelops_core.impact.impact_service import generate_impact_report
-from modelops_core.imports import dataset_profile_to_dict, profile_csv, profile_xlsx
+from modelops_core.imports import (
+    dataset_profile_to_dict,
+    infer_model_from_profile,
+    profile_csv,
+    profile_xlsx,
+)
 from modelops_core.index import build_index as _build_index
 from modelops_core.patching.patch_proposal_service import (
     write_patch_proposal,
@@ -175,6 +180,65 @@ def profile_dataset(
             console.print(f"  Rows: {profile.row_count}")
             console.print(f"  Columns: {profile.column_count}")
             console.print(f"  Status: {'OK' if profile.status.success else 'TRUNCATED'}")
+
+
+@app.command()
+def infer_model(
+    profile: Path = typer.Argument(  # noqa: B008
+        ..., help="Path to dataset profile JSON (e.g. generated/dataset_profiles/xxx.json)."
+    ),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Infer draft model objects from a dataset profile and create a PatchProposal."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+
+    if not profile.exists():
+        console.print(f"[red]Profile not found: {profile}[/red]")
+        raise typer.Exit(code=1)
+
+    profile_text = profile.read_text(encoding="utf-8")
+    try:
+        profile_dict = json.loads(profile_text)
+    except json.JSONDecodeError as exc:
+        console.print(f"[red]Invalid JSON in profile: {exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    dataset_id = profile.stem
+    proposal = infer_model_from_profile(profile_dict, dataset_id=dataset_id)
+
+    from modelops_core.patching.patch_validator import validate_patch_proposal
+
+    validation_results = validate_patch_proposal(proposal)
+    proposal["validation_status"] = (
+        "valid" if not any(v.severity == "ERROR" for v in validation_results) else "invalid"
+    )
+    proposal["validation_results"] = [
+        {k: (str(v) if not isinstance(v, (str, int, float, bool, type(None))) else v)
+         for k, v in r.model_dump().items()}
+        for r in validation_results
+    ]
+
+    from modelops_core.patching.patch_proposal_service import write_patch_proposal
+
+    proposal_path = write_patch_proposal(proposal, model_path)
+
+    if json_output:
+        console.print(json.dumps(proposal, indent=2, default=str, sort_keys=True))
+    else:
+        console.print(f"[green]PatchProposal written to {proposal_path}[/green]")
+        console.print(f"  ID: {proposal['id']}")
+        console.print(f"  Operations: {len(proposal['operations'])}")
+        console.print(f"  Validation: {proposal['validation_status']}")
+        if proposal.get("assumptions"):
+            console.print("[bold]Assumptions:[/bold]")
+            for a in proposal["assumptions"]:
+                console.print(f"  • {a}")
+        if proposal.get("human_checks"):
+            console.print("[bold]Human checks:[/bold]")
+            for h in proposal["human_checks"]:
+                console.print(f"  • {h}")
 
 
 @app.command()

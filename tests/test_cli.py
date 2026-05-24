@@ -87,3 +87,21 @@ def test_cli_profile_dataset_json_output(sample_repo: Path) -> None:
     assert result.exit_code == 0
     assert '"dataset_id"' in result.output
     assert '"row_count"' in result.output
+
+
+def test_cli_infer_model(sample_repo: Path) -> None:
+    # First profile a dataset
+    csv_file = FIXTURES_DIR / "customer_sample.csv"
+    runner.invoke(app, ["profile-dataset", str(csv_file), "--repo", str(sample_repo)])
+
+    # Then infer model from the profile
+    profile_path = sample_repo / "generated" / "dataset_profiles" / "customer_sample.json"
+    result = runner.invoke(
+        app, ["infer-model", str(profile_path), "--repo", str(sample_repo)]
+    )
+    assert result.exit_code == 0
+    assert "PatchProposal written" in result.output
+    assert "PP-INFER-CUSTOMER-SAMPLE" in result.output
+
+    proposal_path = sample_repo / "model" / "patch-proposals" / "PP-INFER-CUSTOMER-SAMPLE.md"
+    assert proposal_path.exists()

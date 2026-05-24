@@ -7,6 +7,7 @@ from modelops_core.imports.dataset_profiler import (
     profile_xlsx,
 )
 from modelops_core.imports.import_session import ImportSession, create_import_session
+from modelops_core.imports.model_inference_service import infer_model_from_profile
 from modelops_core.imports.privacy import DatasetPrivacyPolicy, apply_privacy_to_profile
 
 __all__ = [
@@ -15,6 +16,7 @@ __all__ = [
     "dataset_profile_to_dict",
     "DatasetPrivacyPolicy",
     "ImportSession",
+    "infer_model_from_profile",
     "profile_csv",
     "profile_xlsx",
     "WorkbookProfile",
