@@ -43,6 +43,12 @@ from modelops_core.imports.model_sheet_import_service import (
     import_model_sheet_xlsx,
 )
 from modelops_core.index import build_index as _build_index
+from modelops_core.issue_draft import (
+    create_draft_from_change_request,
+    create_draft_from_proposal,
+    create_draft_from_validation,
+    write_draft,
+)
 from modelops_core.notifications import (
     emit_notification_event,
     filter_notification_events,
@@ -807,6 +813,86 @@ def propose_patch(
             },
         )
     )
+
+
+# ---------------------------------------------------------------------------
+# Issue-draft subcommands
+# ---------------------------------------------------------------------------
+draft_app = typer.Typer(
+    name="issue-draft",
+    help="Generate GitHub-ready issue drafts from model artifacts.",
+)
+app.add_typer(draft_app, name="issue-draft")
+
+
+@draft_app.command("create")
+def draft_create(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    change_request: str | None = typer.Option(
+        None, "--change-request", help="ChangeRequest ID to draft from."
+    ),
+    proposal: str | None = typer.Option(
+        None, "--proposal", help="PatchProposal ID to draft from."
+    ),
+    from_validation: bool = typer.Option(
+        False, "--from-validation", help="Draft from current validation results."
+    ),
+    output: Path | None = typer.Option(  # noqa: B008
+        None, "--output", help="Output file path (default: generated/issues/<id>.md)."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Generate a GitHub issue draft Markdown file."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    generated_path = resolve_generated_path(repo_root)
+
+    sources_selected = sum(
+        bool(x) for x in (change_request, proposal, from_validation)
+    )
+    if sources_selected == 0:
+        console.print(
+            "[red]Specify one source: --change-request, --proposal, or --from-validation[/red]"
+        )
+        raise typer.Exit(code=1)
+    if sources_selected > 1:
+        console.print("[red]Specify only one source at a time.[/red]")
+        raise typer.Exit(code=1)
+
+    try:
+        if change_request:
+            draft = create_draft_from_change_request(model_path, change_request)
+        elif proposal:
+            draft = create_draft_from_proposal(model_path, generated_path, proposal)
+        elif from_validation:
+            draft = create_draft_from_validation(repo_root)
+        else:
+            # unreachable
+            raise typer.Exit(code=1)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    path = write_draft(repo_root, draft, output_path=output)
+
+    if json_output:
+        result = {
+            "title": draft.title,
+            "body": draft.body,
+            "source_type": draft.source_type,
+            "source_id": draft.source_id,
+            "labels": draft.labels,
+            "suggested_assignees": draft.suggested_assignees,
+            "path": str(path),
+        }
+        print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print(f"[green]Draft written to {path}[/green]")
+    console.print(f"  Title: {draft.title}")
+    console.print(f"  Labels: {', '.join(draft.labels)}")
+    if draft.suggested_assignees:
+        console.print(f"  Suggested assignees: {', '.join(draft.suggested_assignees)}")
 
 
 # ---------------------------------------------------------------------------
