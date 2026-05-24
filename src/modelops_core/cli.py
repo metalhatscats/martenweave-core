@@ -13,6 +13,12 @@ from rich.console import Console
 from rich.table import Table
 
 from modelops_core import __version__
+from modelops_core.change_request import (
+    create_change_request,
+    list_change_requests,
+    load_change_request,
+    update_change_request_status,
+)
 from modelops_core.config import (
     RepoConfig,
     load_repo_config,
@@ -791,6 +797,177 @@ def propose_patch(
             },
         )
     )
+
+
+# ---------------------------------------------------------------------------
+# Change-request subcommands
+# ---------------------------------------------------------------------------
+cr_app = typer.Typer(
+    name="change-request",
+    help="Create and manage ChangeRequests.",
+)
+app.add_typer(cr_app, name="change-request")
+
+
+@cr_app.command("create")
+def cr_create(
+    title: str = typer.Option(..., "--title", help="ChangeRequest title."),
+    cr_id: str = typer.Option(..., "--id", help="ChangeRequest ID (e.g. CR-001)."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    status: str = typer.Option("pending", "--status", help="Initial status."),
+    requester: str | None = typer.Option(None, "--requester", help="Who requested the change."),
+    reason: str | None = typer.Option(None, "--reason", help="Why the change is needed."),
+    requested_change: str | None = typer.Option(
+        None, "--requested-change", help="Summary of what should change."
+    ),
+    expected_impact: str | None = typer.Option(
+        None, "--expected-impact", help="Expected impact on model."
+    ),
+    affected_object: list[str] = typer.Option(  # noqa: B008
+        [], "--affected-object", help="Object ID affected by this change."
+    ),
+    linked_proposal: list[str] = typer.Option(  # noqa: B008
+        [], "--linked-proposal", help="Linked PatchProposal ID."
+    ),
+    related_issue: list[str] = typer.Option(  # noqa: B008
+        [], "--related-issue", help="Linked Issue ID."
+    ),
+    related_decision: list[str] = typer.Option(  # noqa: B008
+        [], "--related-decision", help="Linked Decision ID."
+    ),
+    approver: list[str] = typer.Option(  # noqa: B008
+        [], "--approver", help="Required approver ID."
+    ),
+    priority: str | None = typer.Option(None, "--priority", help="Priority level."),
+    source_evidence: str | None = typer.Option(
+        None, "--source-evidence", help="Source evidence reference."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Create a new ChangeRequest canonical file."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+
+    try:
+        path = create_change_request(
+            model_path=model_path,
+            cr_id=cr_id,
+            title=title,
+            status=status,
+            requester=requester,
+            reason=reason,
+            requested_change=requested_change,
+            expected_impact=expected_impact,
+            affected_objects=list(affected_object) if affected_object else None,
+            linked_proposals=list(linked_proposal) if linked_proposal else None,
+            related_issues=list(related_issue) if related_issue else None,
+            related_decisions=list(related_decision) if related_decision else None,
+            approvers=list(approver) if approver else None,
+            priority=priority,
+            source_evidence=source_evidence,
+        )
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        result = {
+            "id": cr_id,
+            "status": status,
+            "title": title,
+            "path": str(path),
+        }
+        print(json.dumps(result, indent=2, default=str))
+    else:
+        console.print(f"[green]ChangeRequest created: {path}[/green]")
+        console.print(f"  ID:     {cr_id}")
+        console.print(f"  Status: {status}")
+        console.print(f"  Title:  {title}")
+
+
+@cr_app.command("list")
+def cr_list(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """List all ChangeRequests in the repository."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    crs = list_change_requests(model_path)
+
+    if json_output:
+        print(json.dumps(crs, indent=2, default=str))
+        raise typer.Exit()
+
+    if not crs:
+        console.print("[yellow]No ChangeRequests found.[/yellow]")
+        raise typer.Exit()
+
+    table = Table("ID", "Status", "Title", "Requester")
+    for cr in crs:
+        table.add_row(
+            cr["id"],
+            cr["status"],
+            cr["title"],
+            cr["requester"],
+        )
+    console.print(table)
+
+
+@cr_app.command("show")
+def cr_show(
+    cr_id: str = typer.Argument(..., help="ChangeRequest ID (e.g. CR-001)."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Show details of a ChangeRequest."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    cr = load_change_request(model_path, cr_id)
+
+    if cr is None:
+        console.print(f"[red]ChangeRequest not found: {cr_id}[/red]")
+        raise typer.Exit(code=1)
+
+    if json_output:
+        print(json.dumps(cr, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print(f"[bold]ChangeRequest: {cr_id}[/bold]")
+    console.print(f"  Status: {cr.get('status', '—')}")
+    console.print(f"  Title:  {cr.get('title') or cr.get('name') or '—'}")
+    console.print(f"  Requester: {cr.get('requester', '—')}")
+    if cr.get("priority"):
+        console.print(f"  Priority: {cr['priority']}")
+    if cr.get("affected_objects"):
+        console.print(f"  Affected objects: {', '.join(cr['affected_objects'])}")
+    if cr.get("linked_proposals"):
+        console.print(f"  Linked proposals: {', '.join(cr['linked_proposals'])}")
+    if cr.get("approvers"):
+        console.print(f"  Approvers: {', '.join(cr['approvers'])}")
+
+
+@cr_app.command("update-status")
+def cr_update_status(
+    cr_id: str = typer.Argument(..., help="ChangeRequest ID (e.g. CR-001)."),
+    status: str = typer.Argument(..., help="New status."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Update the status of a ChangeRequest."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+
+    try:
+        cr = update_change_request_status(model_path, cr_id, status)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        print(json.dumps(cr, indent=2, default=str))
+    else:
+        console.print(f"[green]ChangeRequest {cr_id} updated to '{status}'[/green]")
 
 
 # ---------------------------------------------------------------------------
