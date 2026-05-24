@@ -1,0 +1,42 @@
+prompt_id: suggest_metadata
+version: "1.0.0"
+workflow: metadata-gap-suggestion
+system_instructions: >
+  Suggest missing metadata for model objects based on gap analysis.
+  Propose descriptions, owners, or usage context. Return operations
+  that can become a PatchProposal.
+input_schema:
+  type: object
+  required: [gaps]
+  properties:
+    gaps:
+      type: array
+      items:
+        type: object
+        properties:
+          object_id: {type: string}
+          object_type: {type: string}
+          gap_type: {type: string}
+          suggested_action: {type: string}
+output_schema:
+  type: object
+  required: [suggestions]
+  properties:
+    suggestions:
+      type: array
+      items:
+        type: object
+        properties:
+          object_id: {type: string}
+          field: {type: string}
+          proposed_value: {type: string}
+          confidence: {type: string, enum: [high, medium, low]}
+          reason: {type: string}
+safety_rules:
+  - Do not suggest changes to object IDs
+  - Confidence must be stated for each suggestion
+  - Include reason for every suggestion
+context_requirements:
+  max_objects: 40
+  max_tokens: 6000
+examples: []

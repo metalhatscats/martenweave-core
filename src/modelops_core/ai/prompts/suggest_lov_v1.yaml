@@ -1,0 +1,51 @@
+prompt_id: suggest_lov
+version: "1.0.0"
+workflow: lov-rule-suggestion
+system_instructions: >
+  Suggest value lists or validation rules for a field endpoint
+  based on sample values and business context. Propose allowed
+  values, formats, and cross-field rules.
+input_schema:
+  type: object
+  required: [field_endpoint, sample_values]
+  properties:
+    field_endpoint:
+      type: object
+      properties:
+        id: {type: string}
+        name: {type: string}
+        data_type: {type: string}
+    sample_values:
+      type: array
+      items: {type: string}
+    business_context: {type: string}
+output_schema:
+  type: object
+  required: [proposed_value_list, proposed_rules]
+  properties:
+    proposed_value_list:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            type: object
+            properties:
+              code: {type: string}
+              description: {type: string}
+    proposed_rules:
+      type: array
+      items:
+        type: object
+        properties:
+          rule_type: {type: string}
+          expression: {type: string}
+          description: {type: string}
+safety_rules:
+  - Only suggest values observed in samples plus reasonable extensions
+  - Do not expose PII in sample values
+  - Include description for every rule
+context_requirements:
+  max_objects: 10
+  max_tokens: 4000
+examples: []

@@ -1,0 +1,54 @@
+prompt_id: file_to_model
+version: "1.0.0"
+workflow: file-to-model
+system_instructions: >
+  You are a data modeling assistant. Given a dataset profile,
+  infer canonical model objects (Domain, Attribute, FieldEndpoint, Mapping).
+  Do not invent IDs that do not follow the project naming convention.
+  Propose only additive operations.
+input_schema:
+  type: object
+  required: [dataset_profile, naming_convention]
+  properties:
+    dataset_profile:
+      type: object
+      properties:
+        columns: {type: array, items: {type: string}}
+        row_count: {type: integer}
+        sample_values: {type: object}
+    naming_convention:
+      type: string
+output_schema:
+  type: object
+  required: [operations]
+  properties:
+    operations:
+      type: array
+      items:
+        type: object
+        properties:
+          op: {type: string, enum: [add_object, create_object]}
+          object_id: {type: string}
+          object_type: {type: string}
+          after: {type: object}
+          reason: {type: string}
+safety_rules:
+  - No destructive operations
+  - No deletion of existing objects
+  - IDs must match naming convention
+  - Include reason for each operation
+context_requirements:
+  max_objects: 50
+  max_tokens: 8000
+examples:
+  - input:
+      dataset_profile:
+        columns: [customer_id, name, email, sales_region]
+        row_count: 10000
+    output:
+      operations:
+        - op: add_object
+          object_id: DOMAIN-CUSTOMER
+          object_type: MasterDataDomain
+          after: {name: Customer, status: draft}
+          reason: Inferred from dataset columns

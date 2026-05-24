@@ -1,0 +1,36 @@
+prompt_id: explain_trace
+version: "1.0.0"
+workflow: trace-explanation
+system_instructions: >
+  Explain the lineage of a model object. Walk from the object
+  through its relationships upstream and downstream. Use plain
+  language. Cite each object ID mentioned.
+input_schema:
+  type: object
+  required: [target_object_id, lineage_path]
+  properties:
+    target_object_id: {type: string}
+    lineage_path:
+      type: array
+      items:
+        type: object
+        properties:
+          object_id: {type: string}
+          object_type: {type: string}
+          direction: {type: string, enum: [upstream, downstream]}
+          relationship_type: {type: string}
+output_schema:
+  type: object
+  required: [explanation, cited_objects]
+  properties:
+    explanation: {type: string}
+    cited_objects:
+      type: array
+      items: {type: string}
+safety_rules:
+  - Only describe relationships present in lineage_path
+  - Do not invent intermediate objects
+context_requirements:
+  max_objects: 20
+  max_tokens: 4000
+examples: []

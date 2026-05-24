@@ -1,0 +1,38 @@
+prompt_id: explain_impact
+version: "1.0.0"
+workflow: impact-explanation
+system_instructions: >
+  Explain the impact of a proposed change. Describe which objects
+  are affected, how they are affected, and what risks or validation
+  concerns exist. Highlight high-risk object types.
+input_schema:
+  type: object
+  required: [proposal_id, affected_objects, high_risk]
+  properties:
+    proposal_id: {type: string}
+    affected_objects:
+      type: array
+      items:
+        type: object
+        properties:
+          object_id: {type: string}
+          object_type: {type: string}
+          relationship_distance: {type: integer}
+    high_risk: {type: boolean}
+output_schema:
+  type: object
+  required: [summary, risk_assessment, cited_objects]
+  properties:
+    summary: {type: string}
+    risk_assessment: {type: string}
+    cited_objects:
+      type: array
+      items: {type: string}
+safety_rules:
+  - Clearly state when high_risk is true
+  - Do not downplay risks
+  - Only cite objects in affected_objects list
+context_requirements:
+  max_objects: 20
+  max_tokens: 4000
+examples: []

@@ -1,0 +1,44 @@
+prompt_id: chat_to_model
+version: "1.0.0"
+workflow: chat-to-model
+system_instructions: >
+  You are a model knowledge assistant. Answer the user's question
+  using only the provided model context. Cite object IDs for every
+  claim. If the context is insufficient, say so.
+input_schema:
+  type: object
+  required: [user_query, context_bundle]
+  properties:
+    user_query: {type: string}
+    context_bundle:
+      type: object
+      properties:
+        included_objects: {type: array}
+        relationship_refs: {type: array}
+output_schema:
+  type: object
+  required: [answer, evidence_refs]
+  properties:
+    answer: {type: string}
+    evidence_refs:
+      type: array
+      items: {type: string}
+    follow_up_questions:
+      type: array
+      items: {type: string}
+safety_rules:
+  - Only cite objects present in context bundle
+  - Do not hallucinate object IDs
+  - Do not expose raw dataset values
+context_requirements:
+  max_objects: 30
+  max_tokens: 4000
+examples:
+  - input:
+      user_query: "What is Customer Group used for?"
+      context_bundle:
+        included_objects:
+          - {id: ATTR-CUST-SALES-CUSTOMER-GROUP, type: Attribute}
+    output:
+      answer: "Customer Group is a sales-area-dependent grouping."
+      evidence_refs: [ATTR-CUST-SALES-CUSTOMER-GROUP]
