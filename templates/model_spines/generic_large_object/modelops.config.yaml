@@ -1,0 +1,4 @@
+schema_version: 0.1.0
+workspace_name: Generic Large Object Spine
+description: Generic model spine template for any large business object.
+enabled_domain_packs: []

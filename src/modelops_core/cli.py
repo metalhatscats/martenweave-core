@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -102,12 +103,20 @@ def callback(
     pass
 
 
+_TEMPLATES_DIR = Path(__file__).parent.parent.parent / "templates" / "model_spines"
+
+
 @app.command()
 def init(
     path: Path = typer.Argument(  # noqa: B008
         ..., help="Directory to scaffold the model repository."
     ),
     name: str = typer.Option("My Model Repository", help="Repository name."),
+    template: str | None = typer.Option(
+        None,
+        "--template",
+        help="Model spine template to copy (business_partner, generic_large_object).",
+    ),
 ) -> None:
     """Scaffold a new model repository."""
     target = path.resolve()
@@ -129,21 +138,45 @@ def init(
         encoding="utf-8",
     )
 
-    # Create a minimal example domain object
-    example_md = model_dir / "DOMAIN-EXAMPLE.md"
-    example_md.write_text(
-        "---\n"
-        "id: DOMAIN-EXAMPLE\n"
-        "type: MasterDataDomain\n"
-        "status: draft\n"
-        "name: Example Domain\n"
-        "---\n\n"
-        "# Example Domain\n\n"
-        "This is a placeholder domain object.\n",
-        encoding="utf-8",
-    )
+    if template:
+        template_path = _TEMPLATES_DIR / template
+        if not template_path.exists():
+            console.print(f"[red]Template not found: {template}[/red]")
+            available = ", ".join(t.name for t in _TEMPLATES_DIR.iterdir() if t.is_dir())
+            console.print(f"  Available: {available}")
+            raise typer.Exit(code=1)
 
-    console.print(f"[green]Initialized model repository at {target}[/green]")
+        template_model = template_path / "model"
+        if template_model.exists():
+            for src_file in template_model.iterdir():
+                if src_file.is_file():
+                    shutil.copy2(src_file, model_dir / src_file.name)
+
+        template_config = template_path / "modelops.config.yaml"
+        if template_config.exists():
+            shutil.copy2(template_config, config_path)
+
+        console.print(
+            f"[green]Initialized model repository at {target} "
+            f"from template '{template}'[/green]"
+        )
+    else:
+        # Create a minimal example domain object
+        example_md = model_dir / "DOMAIN-EXAMPLE.md"
+        example_md.write_text(
+            "---\n"
+            "id: DOMAIN-EXAMPLE\n"
+            "type: MasterDataDomain\n"
+            "status: draft\n"
+            "name: Example Domain\n"
+            "---\n\n"
+            "# Example Domain\n\n"
+            "This is a placeholder domain object.\n",
+            encoding="utf-8",
+        )
+
+        console.print(f"[green]Initialized model repository at {target}[/green]")
+
     console.print(f"  Config:   {config_path}")
     console.print(f"  Model:    {model_dir}")
     console.print(f"  Generated: {generated_dir}")
