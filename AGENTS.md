@@ -6,7 +6,7 @@
 
 ## Project Overview
 
-**martenweave-core** (Python package `modelops_core`) is a backend-first model registry core for **ModelOps for MDM** (Master Data Management). It turns SAP migration data models into a structured, traceable, validated, AI-ready model knowledge layer.
+**martenweave-core** (Python package `modelops_core`) is a backend-first **agentic data model registry**. It turns data models into a structured, traceable, validated, AI-ready model knowledge layer. SAP migration and Master Data Management are the first domain pack and proof case, not the product boundary.
 
 **No UI is included.** This is a CLI-driven, backend/core library designed to be embedded in pipelines, IDEs, and agent workflows.
 

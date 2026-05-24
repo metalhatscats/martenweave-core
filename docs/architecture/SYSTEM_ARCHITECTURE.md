@@ -1,18 +1,18 @@
-# ModelOps for MDM — System Architecture
+# Martenweave — System Architecture
 
 Version: `0.2-draft`  
 Document type: Product/system architecture  
-Initial product focus: SAP Business Partner migration model, Customer role slice first  
-Architecture style: Local-first, file-based, AI-ready, SAP-aware model workspace  
+Initial product focus: General agentic data model registry, with SAP Business Partner migration as the first domain pack  
+Architecture style: Local-first, file-based, AI-ready, domain-aware model workspace  
 Status: Draft for product development
 
 ---
 
 ## 1. Purpose
 
-This document defines the technical system architecture for **ModelOps for MDM**.
+This document defines the technical system architecture for **Martenweave**.
 
-ModelOps for MDM is a lightweight operational model layer for SAP migration, master data management, data governance, and AMS teams. It turns scattered model knowledge into a structured, traceable, validated, and AI-ready workspace.
+Martenweave is a lightweight operational model layer for data modeling, migration, governance, and agent-assisted delivery. It turns scattered model knowledge into a structured, traceable, validated, and AI-ready workspace. SAP migration and Master Data Management are the first domain pack and proof case, not the product boundary.
 
 The product is not a replacement for:
 
@@ -97,7 +97,8 @@ automatic ABAP/CPI reverse engineering
 Recommended MVP product boundary:
 
 ```text
-Business Partner parent domain
+General agentic data model registry
+Business Partner parent domain (first domain pack)
 Customer role-dependent slice
 Customer Sales Area context
 Customer Group / KNVV-KDGRP demo path

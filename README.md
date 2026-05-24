@@ -1,8 +1,10 @@
 # martenweave-core
 
-Backend-first model registry core.
+Backend-first agentic data model registry.
 
-Turns SAP migration data models into a structured, traceable, validated, AI-ready model knowledge layer. This repository contains the canonical model registry, deterministic validation, generated SQLite index, safe AI patch proposals, and Git-friendly model files.
+Turns data models into a structured, traceable, validated, AI-ready model knowledge layer. This repository contains the canonical model registry, deterministic validation, generated SQLite index, safe AI patch proposals, and Git-friendly model files.
+
+SAP migration and Master Data Management are the **first domain pack** and proof case, not the product boundary. The core works for generic data models: domains, entities, attributes, relationships, datasets, mappings, rules, evidence, decisions, and change proposals.
 
 **No UI is included.** This is a CLI-driven, backend/core library designed to be embedded in pipelines, IDEs, and agent workflows.
 
@@ -10,9 +12,19 @@ Turns SAP migration data models into a structured, traceable, validated, AI-read
 
 - **Canonical files are the source of truth.** Markdown + YAML frontmatter objects live in `model/`.
 - **Generated index is disposable.** SQLite and JSONL outputs are rebuildable from canonical files.
-- **Deterministic validation first.** Every object is validated for IDs, types, references, and SAP context rules before indexing.
+- **Deterministic validation first.** Every object is validated for IDs, types, references, and domain context rules before indexing.
 - **AI must not silently mutate.** AI creates `PatchProposal` objects for human review. Approved changes become `ChangeRequest`s.
 - **Local-first.** No cloud dependencies, no SaaS lock-in.
+
+## What Martenweave is / is not
+
+| Is | Is not |
+|---|---|
+| A backend-first model registry for data modeling, migration, and governance | A SAP-only tool |
+| A canonical file store with generated indexes | A database-first MDM platform |
+| A validator-gated, proposal-first editing workflow | A workflow engine |
+| A local-first CLI and embeddable library | A SaaS platform |
+| AI-assisted, with human approval required for changes | An autonomous AI agent that mutates models |
 
 ## Quickstart
 
@@ -41,7 +53,7 @@ modelops propose-patch --from ./note.md --repo ./my-model
 
 ## Example Model
 
-The `examples/customer_bp_model/` directory contains a full canonical model slice:
+The `examples/customer_bp_model/` directory contains the first domain pack: a full canonical model slice for SAP Business Partner → Customer:
 
 ```
 Business Partner -> Customer -> Customer Sales Area -> Customer Group -> KNVV-KDGRP
@@ -72,16 +84,20 @@ generated/                  # Disposable artifacts
 data/samples/               # Sample datasets for profiling
 ```
 
-## Domain Rules
+## Domain Rules (SAP example)
+
+The first domain pack includes SAP-specific context rules:
 
 - `Attribute` is business meaning.
 - `FieldEndpoint` is physical representation.
-- `AttributeUsage` links an `Attribute` to a specific SAP/business context.
+- `AttributeUsage` links an `Attribute` to a specific business context.
 - `Mapping` links source and target `FieldEndpoint`s.
 - `KNVV` fields must be in `customer_sales_area` context.
 - `KNB1` fields must be in `customer_company_code` context.
 - `KNVP` fields must be in `customer_partner_function` context.
 - `BUT000` fields must be in `bp_central` context.
+
+Future domain packs can add their own validation rules without changing core concepts.
 
 ## Development
 

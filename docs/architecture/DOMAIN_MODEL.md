@@ -1,9 +1,9 @@
-# ModelOps for MDM — Domain Model
+# Martenweave — Domain Model
 
 Version: `0.2-draft`  
 Document type: Product domain model / conceptual object model  
-Scope: SAP migration, MDM, data governance, and AMS model knowledge  
-Initial focus: SAP Business Partner migration model, Customer role slice first  
+Scope: General data model registry for migration, governance, and agent-assisted delivery  
+Initial focus: SAP Business Partner migration model as the first domain pack (Customer role slice first)  
 Audience: product architects, data analysts, SAP consultants, coding agents, AI workflow designers
 
 ---

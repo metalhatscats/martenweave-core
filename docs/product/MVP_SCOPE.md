@@ -1,19 +1,19 @@
 # MVP_SCOPE.md
 
-# ModelOps for MDM — MVP Scope
+# Martenweave — MVP Scope
 
 Version: 0.1  
 Status: Working MVP scope  
-Product: ModelOps for MDM  
-Category: MDM ModelOps Workspace  
-Initial domain: SAP Business Partner migration  
-Primary goal: prove that a lightweight model repository can reduce SAP migration model drift, validation gaps, and manual impact analysis.
+Product: Martenweave (general agentic data model registry)  
+Category: Data ModelOps Workspace  
+Initial domain pack: SAP Business Partner migration  
+Primary goal: prove that a lightweight model repository can reduce model drift, validation gaps, and manual impact analysis.
 
 ---
 
 ## 1. MVP Summary
 
-The MVP is a local-first workspace for managing a structured SAP Business Partner migration model.
+The MVP is a local-first workspace for managing a structured data model. The first proof point is a SAP Business Partner migration model.
 
 Canonical MVP scope decision:
 
@@ -32,7 +32,7 @@ The MVP is not an enterprise MDM platform, not an SAP MDG replacement, not a wor
 
 Core MVP sentence:
 
-> The MVP proves that SAP migration data model knowledge can be versioned, validated, traced, and prepared for safe AI-assisted delivery.
+> The MVP proves that data model knowledge can be versioned, validated, traced, and prepared for safe AI-assisted delivery. SAP Business Partner migration is the first domain pack used to prove this.
 
 ---
 
@@ -40,7 +40,7 @@ Core MVP sentence:
 
 The MVP must answer one practical question:
 
-> When a field, mapping, rule, or dataset changes, can the team quickly see what is affected and what must be updated?
+> When a model object, mapping, rule, or dataset changes, can the team quickly see what is affected and what must be updated?
 
 Success means the product can show:
 
