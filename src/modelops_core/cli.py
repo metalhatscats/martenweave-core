@@ -339,6 +339,7 @@ def build_index(
 @app.command()
 def health(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Show repository health report."""
     repo_root = _resolve_repo(repo)
@@ -349,6 +350,40 @@ def health(
         raise typer.Exit(code=1)
 
     report = generate_repository_health(db_path)
+
+    if json_output:
+        result = {
+            "object_count": report.object_count,
+            "index_fresh": report.index_fresh,
+            "coverage_gaps": {
+                "objects_without_name": report.coverage_gaps.objects_without_name
+                if report.coverage_gaps
+                else 0,
+                "objects_without_description": report.coverage_gaps.objects_without_description
+                if report.coverage_gaps
+                else 0,
+            },
+            "ownership_coverage": report.ownership_coverage.__dict__
+            if report.ownership_coverage
+            else {},
+            "data_quality_coverage": report.data_quality_coverage.__dict__
+            if report.data_quality_coverage
+            else {},
+            "coverage_gaps_list": [
+                {
+                    "object_id": g.object_id,
+                    "object_type": g.object_type,
+                    "object_name": g.object_name,
+                    "gap_type": g.gap_type,
+                    "suggested_action": g.suggested_action,
+                }
+                for g in report.coverage_gaps_list
+            ],
+            "type_counts": report.type_counts,
+        }
+        console.print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
     console.print("[bold]Repository Health[/bold]")
     console.print(f"  Total objects: {report.object_count}")
     console.print(f"  Index fresh:   {report.index_fresh}")
@@ -361,6 +396,46 @@ def health(
             f"  Ownership coverage:  {oc.with_owner}/{oc.total_eligible} "
             f"({oc.percentage}%)"
         )
+    if report.data_quality_coverage:
+        dq = report.data_quality_coverage
+        console.print("\n[bold]Data Quality Coverage[/bold]")
+        console.print(
+            f"  Attributes with rules:    "
+            f"{dq.attributes_with_rules}/{dq.active_attributes} "
+            f"({dq.attribute_rule_coverage_percent}%)"
+        )
+        console.print(
+            f"  Endpoints with LoV:       "
+            f"{dq.endpoints_with_lov}/{dq.active_field_endpoints} "
+            f"({dq.endpoint_lov_coverage_percent}%)"
+        )
+        console.print(
+            f"  Mappings with value map:  "
+            f"{dq.mappings_with_value_mapping}/{dq.active_mappings} "
+            f"({dq.mapping_logic_coverage_percent}%)"
+        )
+        console.print(
+            f"  Datasets with profile:    "
+            f"{dq.datasets_with_profile}/{dq.active_datasets} "
+            f"({dq.dataset_profile_coverage_percent}%)"
+        )
+        console.print(
+            f"  Active objects with owner: "
+            f"{dq.objects_with_owner}/{dq.active_objects} ({dq.ownership_coverage_percent}%)"
+        )
+    if report.coverage_gaps_list:
+        console.print(f"\n[bold]Coverage Gaps ({len(report.coverage_gaps_list)})[/bold]")
+        table = Table("Object ID", "Type", "Gap", "Suggested Action")
+        for g in report.coverage_gaps_list[:20]:
+            table.add_row(
+                g.object_id,
+                g.object_type,
+                g.gap_type,
+                g.suggested_action,
+            )
+        console.print(table)
+        if len(report.coverage_gaps_list) > 20:
+            console.print(f"  ... and {len(report.coverage_gaps_list) - 20} more gaps")
     if report.type_counts:
         table = Table("Type", "Count")
         for t, c in sorted(report.type_counts.items()):
