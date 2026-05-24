@@ -57,6 +57,25 @@ def _infer_objects_from_sheet(
     stem = _sanitize_id(dataset_id)
     sheet_stem = _sanitize_id(sheet_name)
 
+    # Domain object
+    domain_obj_id = f"DOMAIN-{stem}"
+    if sheet_index == 0:
+        operations.append(
+            {
+                "op": "add_object",
+                "object_id": domain_obj_id,
+                "object_type": "MasterDataDomain",
+                "after": {
+                    "id": domain_obj_id,
+                    "type": "MasterDataDomain",
+                    "status": "draft",
+                    "name": f"{sheet_name} Domain",
+                    "description": f"Inferred domain from profile {dataset_id}.",
+                },
+                "reason": "Domain inferred from profiled file.",
+            }
+        )
+
     # Dataset object
     dataset_obj_id = f"DATASET-{stem}"
     if sheet_index == 0:
@@ -70,6 +89,7 @@ def _infer_objects_from_sheet(
                     "type": "Dataset",
                     "status": "draft",
                     "name": file_name,
+                    "domain": domain_obj_id,
                     "description": f"Inferred dataset from profile {dataset_id}.",
                 },
                 "reason": "Dataset inferred from profiled file.",
@@ -88,6 +108,7 @@ def _infer_objects_from_sheet(
                 "type": "BusinessEntity",
                 "status": "draft",
                 "name": sheet_name,
+                "domain": domain_obj_id,
                 "description": f"Inferred entity for sheet {sheet_name}.",
             },
             "reason": "BusinessEntity inferred from sheet/file name.",
@@ -121,6 +142,7 @@ def _infer_objects_from_sheet(
                     "type": "Attribute",
                     "status": "draft",
                     "name": col_name,
+                    "domain": domain_obj_id,
                     "semantic_category": _semantic_category(inferred_type, col_name),
                     "description": f"Inferred attribute for column {col_name}.",
                 },
@@ -138,6 +160,7 @@ def _infer_objects_from_sheet(
                     "type": "FieldEndpoint",
                     "status": "draft",
                     "name": col_name,
+                    "domain": domain_obj_id,
                     "endpoint_type": "file_column",
                     "business_attribute": attr_obj_id,
                     "description": f"Inferred field endpoint for column {col_name}.",

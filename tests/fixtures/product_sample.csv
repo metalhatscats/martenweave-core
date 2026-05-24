@@ -1,0 +1,6 @@
+product_id,name,category,unit_price,active
+P001,Widget A,Electronics,29.99,true
+P002,Gadget B,Electronics,49.99,true
+P003,Tool C,Hardware,15.50,false
+P004,Device D,Electronics,99.99,true
+P005,Part E,Hardware,5.00,true
