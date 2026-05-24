@@ -40,6 +40,7 @@ from modelops_core.patching.patch_proposal_service import (
 )
 from modelops_core.reports.health_report import generate_repository_health
 from modelops_core.repository import parse_file, scan_repository
+from modelops_core.trace import trace_object
 from modelops_core.validation import validate_objects
 
 app = typer.Typer(
@@ -353,6 +354,79 @@ def health(
         for t, c in sorted(report.type_counts.items()):
             table.add_row(t, str(c))
         console.print(table)
+
+
+@app.command("trace")
+def trace(
+    object_id: str = typer.Argument(..., help="Object ID to trace from."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    direction: str = typer.Option("both", "--direction", help="upstream, downstream, or both."),
+    max_depth: int = typer.Option(5, "--max-depth", help="Maximum traversal depth."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Trace upstream and downstream relationships for an object."""
+    repo_root = _resolve_repo(repo)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+
+    if not db_path.exists():
+        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        raise typer.Exit(code=1)
+
+    result = trace_object(db_path, object_id, max_depth=max_depth, direction=direction)
+
+    if json_output:
+        import json
+
+        data = {
+            "root_object_id": result.root_object_id,
+            "root_object_type": result.root_object_type,
+            "root_object_name": result.root_object_name,
+            "nodes": [
+                {
+                    "object_id": n.object_id,
+                    "object_type": n.object_type,
+                    "object_name": n.object_name,
+                    "source_file": n.source_file,
+                    "depth": n.depth,
+                }
+                for n in result.nodes
+            ],
+            "edges": [
+                {
+                    "from_object_id": e.from_object_id,
+                    "to_object_id": e.to_object_id,
+                    "relationship_type": e.relationship_type,
+                    "direction": e.direction,
+                }
+                for e in result.edges
+            ],
+        }
+        console.print(json.dumps(data, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print(f"[bold]Trace: {object_id}[/bold]")
+    if result.root_object_name:
+        console.print(f"  Name: {result.root_object_name}")
+    console.print(f"  Direction: {direction}")
+    console.print(f"  Max depth: {max_depth}")
+
+    if result.nodes:
+        table = Table("ID", "Type", "Name", "Depth", "Direction")
+        for n in result.nodes:
+            dir_label = "upstream" if any(
+                e.direction == "upstream" and e.to_object_id == n.object_id
+                for e in result.edges
+            ) else "downstream"
+            table.add_row(
+                n.object_id,
+                n.object_type,
+                n.object_name or "—",
+                str(n.depth),
+                dir_label,
+            )
+        console.print(table)
+    else:
+        console.print("  No related objects found.")
 
 
 @app.command()

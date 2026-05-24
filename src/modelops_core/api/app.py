@@ -13,6 +13,7 @@ from modelops_core.impact.impact_service import generate_impact_report
 from modelops_core.patching.apply_service import apply_patch_proposal, dry_run_patch_proposal
 from modelops_core.patching.patch_validator import validate_patch_proposal
 from modelops_core.repository import parse_file, scan_repository
+from modelops_core.trace import trace_object
 from modelops_core.validation import validate_objects
 
 app = FastAPI(
@@ -118,6 +119,46 @@ def validate(
                 "suggested_fix": r.suggested_fix,
             }
             for r in summary.results
+        ],
+    }
+
+
+@app.get("/trace/{obj_id}")
+def trace(
+    obj_id: str,
+    repo: str | None = Query(None, description="Path to model repository"),
+    direction: str = Query("both", description="upstream, downstream, or both"),
+    max_depth: int = Query(5, description="Maximum traversal depth"),
+) -> dict[str, Any]:
+    """Trace upstream and downstream relationships for an object."""
+    repo_root = _resolve_repo(repo)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+    if not db_path.exists():
+        raise HTTPException(status_code=400, detail="Index not found. Run build-index first.")
+
+    result = trace_object(db_path, obj_id, max_depth=max_depth, direction=direction)
+    return {
+        "root_object_id": result.root_object_id,
+        "root_object_type": result.root_object_type,
+        "root_object_name": result.root_object_name,
+        "nodes": [
+            {
+                "object_id": n.object_id,
+                "object_type": n.object_type,
+                "object_name": n.object_name,
+                "source_file": n.source_file,
+                "depth": n.depth,
+            }
+            for n in result.nodes
+        ],
+        "edges": [
+            {
+                "from_object_id": e.from_object_id,
+                "to_object_id": e.to_object_id,
+                "relationship_type": e.relationship_type,
+                "direction": e.direction,
+            }
+            for e in result.edges
         ],
     }
 
