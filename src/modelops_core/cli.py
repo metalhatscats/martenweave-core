@@ -17,6 +17,7 @@ from modelops_core.config import (
     resolve_generated_path,
     resolve_model_path,
 )
+from modelops_core.exports import export_model_csv, export_model_xlsx
 from modelops_core.impact.impact_service import generate_impact_report
 from modelops_core.imports import (
     dataset_profile_to_dict,
@@ -608,6 +609,29 @@ def proposal_apply(
         console.print("  Audit event written")
     if result.index_rebuilt:
         console.print("  Index rebuilt")
+
+
+@app.command("export-model")
+def export_model(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    fmt: str = typer.Option("csv", "--format", help="Export format: csv or xlsx."),
+) -> None:
+    """Export canonical model objects to CSV or XLSX."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+
+    if fmt.lower() == "csv":
+        written = export_model_csv(model_path)
+        console.print(f"[green]Exported {len(written)} CSV files[/green]")
+        for f in written:
+            console.print(f"  {f}")
+    elif fmt.lower() == "xlsx":
+        path = export_model_xlsx(model_path)
+        console.print("[green]Exported XLSX workbook[/green]")
+        console.print(f"  {path}")
+    else:
+        console.print(f"[red]Unknown format: {fmt}. Use 'csv' or 'xlsx'.[/red]")
+        raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":
