@@ -1,0 +1,6 @@
+customer_id,customer_group,sales_org
+C10001,01,CH01
+C10002,02,CH01
+C10003,01,DE01
+C10004,,CH01
+C10005,03,DE01

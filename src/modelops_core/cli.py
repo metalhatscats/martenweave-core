@@ -18,6 +18,7 @@ from modelops_core.config import (
     resolve_model_path,
 )
 from modelops_core.impact.impact_service import generate_impact_report
+from modelops_core.imports import dataset_profile_to_dict, profile_csv, profile_xlsx
 from modelops_core.index import build_index as _build_index
 from modelops_core.patching.patch_proposal_service import (
     write_patch_proposal,
@@ -123,6 +124,57 @@ def init(
     console.print(f"  Config:   {config_path}")
     console.print(f"  Model:    {model_dir}")
     console.print(f"  Generated: {generated_dir}")
+
+
+@app.command()
+def profile_dataset(
+    file: Path = typer.Argument(..., help="Path to CSV or XLSX file."),  # noqa: B008
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Profile a dataset file (CSV or XLSX) and save the profile."""
+    repo_root = _resolve_repo(repo)
+    generated_path = resolve_generated_path(repo_root)
+    profile_dir = generated_path / "dataset_profiles"
+    profile_dir.mkdir(parents=True, exist_ok=True)
+
+    if not file.exists():
+        console.print(f"[red]File not found: {file}[/red]")
+        raise typer.Exit(code=1)
+
+    dataset_id = file.stem
+    suffix = file.suffix.lower()
+
+    if suffix == ".csv":
+        profile = profile_csv(file, dataset_id=dataset_id)
+    elif suffix in {".xlsx", ".xls"}:
+        profile = profile_xlsx(file, dataset_id=dataset_id)
+    else:
+        console.print(f"[red]Unsupported file format: {suffix}[/red]")
+        raise typer.Exit(code=1)
+
+    profile_dict = dataset_profile_to_dict(profile)
+    output_path = profile_dir / f"{dataset_id}.json"
+    output_path.write_text(
+        json.dumps(profile_dict, indent=2, default=str, sort_keys=True),
+        encoding="utf-8",
+    )
+
+    if json_output:
+        console.print(json.dumps(profile_dict, indent=2, default=str, sort_keys=True))
+    else:
+        console.print(f"[green]Profile saved to {output_path}[/green]")
+        if hasattr(profile, "sheet_names"):
+            console.print(f"  Sheets: {len(profile.sheets)}")
+            for sheet in profile.sheets:
+                console.print(
+                    f"    {sheet.sheet_name}: {sheet.row_count} rows, "
+                    f"{sheet.column_count} cols"
+                )
+        else:
+            console.print(f"  Rows: {profile.row_count}")
+            console.print(f"  Columns: {profile.column_count}")
+            console.print(f"  Status: {'OK' if profile.status.success else 'TRUNCATED'}")
 
 
 @app.command()

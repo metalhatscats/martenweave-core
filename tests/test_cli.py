@@ -10,6 +10,8 @@ from modelops_core.cli import app
 
 runner = CliRunner()
 
+FIXTURES_DIR = Path(__file__).parent / "fixtures"
+
 
 def test_cli_version() -> None:
     result = runner.invoke(app, ["--version"])
@@ -48,3 +50,40 @@ def test_cli_impact(sample_repo: Path) -> None:
     result = runner.invoke(app, ["impact", "FEP-S4-KNVV-KDGRP", "--repo", str(sample_repo)])
     assert result.exit_code == 0
     assert "Impact Report" in result.output
+
+
+def test_cli_profile_dataset_csv(sample_repo: Path) -> None:
+    csv_file = FIXTURES_DIR / "customer_sample.csv"
+    result = runner.invoke(
+        app, ["profile-dataset", str(csv_file), "--repo", str(sample_repo)]
+    )
+    assert result.exit_code == 0
+    assert "Profile saved" in result.output
+    assert "Rows: 5" in result.output
+    assert "Columns: 3" in result.output
+
+    profile_path = sample_repo / "generated" / "dataset_profiles" / "customer_sample.json"
+    assert profile_path.exists()
+
+
+def test_cli_profile_dataset_xlsx(sample_repo: Path) -> None:
+    xlsx_file = FIXTURES_DIR / "customer_sample.xlsx"
+    result = runner.invoke(
+        app, ["profile-dataset", str(xlsx_file), "--repo", str(sample_repo)]
+    )
+    assert result.exit_code == 0
+    assert "Profile saved" in result.output
+    assert "Sheets: 1" in result.output
+
+    profile_path = sample_repo / "generated" / "dataset_profiles" / "customer_sample.json"
+    assert profile_path.exists()
+
+
+def test_cli_profile_dataset_json_output(sample_repo: Path) -> None:
+    csv_file = FIXTURES_DIR / "customer_sample.csv"
+    result = runner.invoke(
+        app, ["profile-dataset", str(csv_file), "--repo", str(sample_repo), "--json"]
+    )
+    assert result.exit_code == 0
+    assert '"dataset_id"' in result.output
+    assert '"row_count"' in result.output
