@@ -74,3 +74,40 @@ def test_cli_export_model_unknown_format(temp_model_dir: Path) -> None:
     result = runner.invoke(app, ["export-model", "--repo", repo, "--format", "pdf"])
     assert result.exit_code == 1
     assert "Unknown format" in result.output
+
+
+def test_export_model_csv_includes_valuelist(sample_repo: Path) -> None:
+    model_path = sample_repo / "model"
+    export_model_csv(model_path)
+    csv_dir = sample_repo / "generated" / "exports" / "csv"
+    vl_csv = csv_dir / "valuelist.csv"
+    assert vl_csv.exists()
+    content = vl_csv.read_text()
+    assert "VLIST-LEGACY-CUST-GROUP" in content
+    assert "VLIST-S4-CUST-GROUP" in content
+    assert "entries" in content
+
+
+def test_export_model_csv_includes_valuemapping(sample_repo: Path) -> None:
+    model_path = sample_repo / "model"
+    export_model_csv(model_path)
+    csv_dir = sample_repo / "generated" / "exports" / "csv"
+    vm_csv = csv_dir / "valuemapping.csv"
+    assert vm_csv.exists()
+    content = vm_csv.read_text()
+    assert "VMAP-CUST-GROUP-LEGACY-TO-S4" in content
+    assert "source_value_list" in content
+    assert "target_value_list" in content
+
+
+def test_export_model_xlsx_includes_lov_sheets(sample_repo: Path) -> None:
+    pytest.importorskip("openpyxl")
+    from openpyxl import load_workbook
+
+    model_path = sample_repo / "model"
+    path = export_model_xlsx(model_path)
+    wb = load_workbook(path)
+    sheet_names = [s.lower() for s in wb.sheetnames]
+    assert "valuelist" in sheet_names
+    assert "valuemapping" in sheet_names
+    wb.close()
