@@ -39,6 +39,7 @@ from modelops_core.imports.model_sheet_import_service import (
     import_model_sheet_xlsx,
 )
 from modelops_core.index import build_index as _build_index
+from modelops_core.notifications import preview_notifications
 from modelops_core.patching.apply_service import (
     apply_patch_proposal,
     dry_run_patch_proposal,
@@ -968,6 +969,70 @@ def cr_update_status(
         print(json.dumps(cr, indent=2, default=str))
     else:
         console.print(f"[green]ChangeRequest {cr_id} updated to '{status}'[/green]")
+
+
+# ---------------------------------------------------------------------------
+# Notification subcommands
+# ---------------------------------------------------------------------------
+notifications_app = typer.Typer(
+    name="notifications",
+    help="Preview notification recipients for workflow actions.",
+)
+app.add_typer(notifications_app, name="notifications")
+
+
+@notifications_app.command("preview")
+def notifications_preview(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    change_request: str | None = typer.Option(
+        None, "--change-request", help="ChangeRequest ID to preview."
+    ),
+    proposal: str | None = typer.Option(
+        None, "--proposal", help="PatchProposal ID to preview."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Preview who would be notified for a ChangeRequest or PatchProposal."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+
+    try:
+        entries = preview_notifications(
+            model_path=model_path,
+            cr_id=change_request,
+            proposal_id=proposal,
+        )
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        result = [
+            {
+                "recipient_id": e.recipient_id,
+                "recipient_role": e.recipient_role,
+                "reason": e.reason,
+                "source_object_id": e.source_object_id,
+                "source_object_type": e.source_object_type,
+            }
+            for e in entries
+        ]
+        print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
+    if not entries:
+        console.print("[yellow]No notification recipients found.[/yellow]")
+        raise typer.Exit()
+
+    table = Table("Recipient", "Role", "Reason", "Source Object")
+    for e in entries:
+        table.add_row(
+            e.recipient_id,
+            e.recipient_role,
+            e.reason,
+            f"{e.source_object_id or '—'} ({e.source_object_type or '—'})",
+        )
+    console.print(table)
 
 
 # ---------------------------------------------------------------------------

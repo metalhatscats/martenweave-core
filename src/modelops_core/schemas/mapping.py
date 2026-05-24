@@ -10,7 +10,7 @@ from modelops_core.schemas.common import BaseObject
 class ValueList(BaseObject):
     """A list of allowed values."""
 
-    pass
+    watchers: list[str] | None = Field(default=None)
 
 
 class ValueMapping(BaseObject):
@@ -27,6 +27,7 @@ class Mapping(BaseObject):
     source_value_list: str | None = Field(default=None)
     target_value_list: str | None = Field(default=None)
     value_mapping: str | None = Field(default=None)
+    watchers: list[str] | None = Field(default=None)
 
 
 class MappingSet(BaseObject):

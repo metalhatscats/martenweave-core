@@ -12,6 +12,7 @@ class ValidationRule(BaseObject):
 
     rule_type: str | None = Field(default=None)
     attribute: str | None = Field(default=None)
+    watchers: list[str] | None = Field(default=None)
 
 
 class BusinessRule(BaseObject):

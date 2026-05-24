@@ -18,3 +18,4 @@ class ChangeRequest(BaseObject):
     approval_status: str | None = Field(default=None)
     implementation_status: str | None = Field(default=None)
     summary: str | None = Field(default=None)
+    watchers: list[str] | None = Field(default=None)

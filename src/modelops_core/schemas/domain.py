@@ -13,6 +13,7 @@ class Attribute(BaseObject):
     semantic_category: str | None = Field(default=None)
     data_classification: str | None = Field(default=None)
     default_context: str | None = Field(default=None)
+    watchers: list[str] | None = Field(default=None)
 
 
 class FieldEndpoint(BaseObject):
@@ -26,6 +27,7 @@ class FieldEndpoint(BaseObject):
     entity_context: str | None = Field(default=None)
     business_attribute: str | None = Field(default=None)
     value_list: str | None = Field(default=None)
+    watchers: list[str] | None = Field(default=None)
 
 
 class EntityContext(BaseObject):
@@ -151,6 +153,7 @@ class BusinessEntity(BaseObject):
     domain: str | None = Field(default=None)
     entity_context: str | None = Field(default=None)
     parent_entity: str | None = Field(default=None)
+    watchers: list[str] | None = Field(default=None)
 
 
 class SystemEnvironment(BaseObject):
@@ -175,6 +178,7 @@ class Dataset(BaseObject):
     """Dataset."""
 
     system: str | None = Field(default=None)
+    watchers: list[str] | None = Field(default=None)
 
 
 class Person(BaseObject):
