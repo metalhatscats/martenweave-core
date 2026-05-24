@@ -146,10 +146,11 @@ class MigrationObject(BaseObject):
 
 
 class BusinessEntity(BaseObject):
-    """Business entity."""
+    """Business entity — may represent a BusinessObject, Perspective, or sub-Entity."""
 
     domain: str | None = Field(default=None)
     entity_context: str | None = Field(default=None)
+    parent_entity: str | None = Field(default=None)
 
 
 class SystemEnvironment(BaseObject):

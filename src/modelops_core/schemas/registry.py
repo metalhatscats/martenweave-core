@@ -40,6 +40,7 @@ _DOMAIN_REF = ReferenceField("domain", "domain", "MasterDataDomain")
 _MIGRATION_OBJECT_REF = ReferenceField("migration_object", "migration_object", "MigrationObject")
 _ENTITY_REF = ReferenceField("entity", "entity", "BusinessEntity")
 _ENTITY_CONTEXT_REF = ReferenceField("entity_context", "entity_context", "EntityContext")
+_PARENT_ENTITY_REF = ReferenceField("parent_entity", "parent_entity", "BusinessEntity")
 _SYSTEM_REF = ReferenceField("system", "system", "System")
 _BUSINESS_ATTRIBUTE_REF = ReferenceField("business_attribute", "business_attribute", "Attribute")
 _ATTRIBUTE_REF = ReferenceField("attribute", "attribute", "Attribute")
@@ -103,7 +104,7 @@ _REGISTRY: dict[str, ObjectTypeEntry] = {
         type_id="BusinessEntity",
         ui_label_singular="Business Entity",
         ui_label_plural="Business Entities",
-        reference_fields=(_DOMAIN_REF, _ENTITY_CONTEXT_REF),
+        reference_fields=(_DOMAIN_REF, _ENTITY_CONTEXT_REF, _PARENT_ENTITY_REF),
         search_fields=_COMMON_SEARCH_FIELDS,
     ),
     "EntityContext": ObjectTypeEntry(
