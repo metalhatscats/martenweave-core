@@ -39,6 +39,7 @@ from modelops_core.patching.apply_service import (
 from modelops_core.patching.patch_proposal_service import (
     write_patch_proposal,
 )
+from modelops_core.reports.analysis_service import generate_analysis_report
 from modelops_core.reports.audit_service import (
     AuditEventService,
     create_audit_event,
@@ -440,6 +441,132 @@ def health(
         table = Table("Type", "Count")
         for t, c in sorted(report.type_counts.items()):
             table.add_row(t, str(c))
+        console.print(table)
+
+
+@app.command()
+def analyze(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Analyze model completeness, risk, and readiness."""
+    repo_root = _resolve_repo(repo)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+
+    if not db_path.exists():
+        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        raise typer.Exit(code=1)
+
+    report = generate_analysis_report(db_path, repo_root)
+
+    if json_output:
+        result = {
+            "object_count": report.object_count,
+            "type_counts": report.type_counts,
+            "orphan_fields": {
+                "field_endpoints_without_attribute": (
+                    report.orphan_fields.field_endpoints_without_attribute
+                    if report.orphan_fields
+                    else []
+                ),
+            },
+            "attribute_coverage": {
+                "attributes_without_fields": (
+                    report.attribute_coverage.attributes_without_fields
+                    if report.attribute_coverage
+                    else []
+                ),
+            },
+            "ownership_gaps": report.ownership_gaps,
+            "validation_coverage": report.validation_coverage,
+            "lov_coverage": report.lov_coverage,
+            "mapping_coverage": report.mapping_coverage,
+            "risk_report": {
+                "issue_count": report.risk_report.issue_count
+                if report.risk_report
+                else 0,
+                "risk_count": report.risk_report.risk_count
+                if report.risk_report
+                else 0,
+                "open_issues": report.risk_report.open_issues
+                if report.risk_report
+                else [],
+            },
+            "change_activity": {
+                "event_count": report.change_activity.event_count
+                if report.change_activity
+                else 0,
+                "recent_events": report.change_activity.recent_events
+                if report.change_activity
+                else [],
+            },
+        }
+        console.print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print("[bold]Model Analysis[/bold]")
+    console.print(f"  Objects: {report.object_count}")
+
+    if report.orphan_fields and report.orphan_fields.field_endpoints_without_attribute:
+        console.print(
+            f"\n[bold]Orphan Fields[/bold] "
+            f"({len(report.orphan_fields.field_endpoints_without_attribute)})"
+        )
+        table = Table("Field Endpoint", "Name", "Reason")
+        for item in report.orphan_fields.field_endpoints_without_attribute[:10]:
+            table.add_row(
+                item["object_id"],
+                item.get("object_name") or "—",
+                item["reason"],
+            )
+        console.print(table)
+
+    if report.attribute_coverage and report.attribute_coverage.attributes_without_fields:
+        console.print(
+            f"\n[bold]Attributes without Fields[/bold] "
+            f"({len(report.attribute_coverage.attributes_without_fields)})"
+        )
+        table = Table("Attribute", "Name", "Reason")
+        for item in report.attribute_coverage.attributes_without_fields[:10]:
+            table.add_row(
+                item["object_id"],
+                item.get("object_name") or "—",
+                item["reason"],
+            )
+        console.print(table)
+
+    if report.ownership_gaps:
+        console.print(f"\n[bold]Ownership Gaps[/bold] ({len(report.ownership_gaps)})")
+        table = Table("Object ID", "Type", "Name")
+        for item in report.ownership_gaps[:10]:
+            table.add_row(
+                item["object_id"],
+                item["object_type"],
+                item.get("object_name") or "—",
+            )
+        console.print(table)
+
+    if report.risk_report and (report.risk_report.issue_count or report.risk_report.risk_count):
+        console.print(
+            f"\n[bold]Risk Report[/bold]"
+            f" — Issues: {report.risk_report.issue_count}"
+            f", Risks: {report.risk_report.risk_count}"
+        )
+
+    if report.change_activity and report.change_activity.recent_events:
+        console.print(
+            f"\n[bold]Recent Activity[/bold] "
+            f"({len(report.change_activity.recent_events)} of "
+            f"{report.change_activity.event_count} events)"
+        )
+        table = Table("Event Type", "Timestamp", "Status", "Proposal")
+        for item in report.change_activity.recent_events[:10]:
+            table.add_row(
+                item["event_type"],
+                item["timestamp"],
+                item["status"],
+                item.get("proposal_id") or "—",
+            )
         console.print(table)
 
 
