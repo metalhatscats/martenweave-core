@@ -25,6 +25,10 @@ from modelops_core.imports import (
     profile_csv,
     profile_xlsx,
 )
+from modelops_core.imports.model_sheet_import_service import (
+    import_model_sheet_csv,
+    import_model_sheet_xlsx,
+)
 from modelops_core.index import build_index as _build_index
 from modelops_core.patching.apply_service import (
     apply_patch_proposal,
@@ -609,6 +613,54 @@ def proposal_apply(
         console.print("  Audit event written")
     if result.index_rebuilt:
         console.print("  Index rebuilt")
+
+
+@app.command("import-model-sheet")
+def import_model_sheet(
+    input_path: Path = typer.Argument(  # noqa: B008
+        ..., help="Path to CSV folder or XLSX workbook."
+    ),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Import spreadsheet edits and generate a PatchProposal."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+
+    if not input_path.exists():
+        console.print(f"[red]Input not found: {input_path}[/red]")
+        raise typer.Exit(code=1)
+
+    if input_path.is_dir():
+        proposal = import_model_sheet_csv(input_path, model_path)
+    elif input_path.suffix.lower() == ".xlsx":
+        proposal = import_model_sheet_xlsx(input_path, model_path)
+    else:
+        console.print(
+            "[red]Input must be a CSV directory or an .xlsx workbook.[/red]"
+        )
+        raise typer.Exit(code=1)
+
+    if json_output:
+        console.print(json.dumps(proposal, indent=2, default=str))
+    else:
+        console.print(f"[bold]PatchProposal: {proposal['id']}[/bold]")
+        console.print(f"  Operations: {len(proposal['operations'])}")
+        console.print(f"  Warnings: {len(proposal.get('warnings', []))}")
+        for w in proposal.get("warnings", []):
+            console.print(f"    [yellow]{w}[/yellow]")
+        if proposal["operations"]:
+            table = Table("Op", "Object", "Type", "Target")
+            for op in proposal["operations"][:20]:
+                table.add_row(
+                    op.get("op", "—"),
+                    op.get("object_id", "—"),
+                    op.get("object_type", "—"),
+                    op.get("target_path", "—"),
+                )
+            console.print(table)
+            if len(proposal["operations"]) > 20:
+                console.print(f"  ... and {len(proposal['operations']) - 20} more")
 
 
 @app.command("export-model")
