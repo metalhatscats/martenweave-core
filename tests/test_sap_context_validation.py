@@ -33,7 +33,7 @@ def test_knvv_requires_sales_area() -> None:
         body=None,
         parser_error=None,
     )
-    summary = validate_objects([ctx, fep])
+    summary = validate_objects([ctx, fep], enabled_domain_packs=["sap"])
     assert summary.is_valid
 
 
@@ -64,7 +64,7 @@ def test_knvv_wrong_context_category() -> None:
         body=None,
         parser_error=None,
     )
-    summary = validate_objects([ctx, fep])
+    summary = validate_objects([ctx, fep], enabled_domain_packs=["sap"])
     assert not summary.is_valid
     assert any(r.code == "SAP_CONTEXT_KNVV_REQUIRES_SALES_AREA" for r in summary.results)
 
@@ -96,5 +96,5 @@ def test_knb1_requires_company_code() -> None:
         body=None,
         parser_error=None,
     )
-    summary = validate_objects([ctx, fep])
+    summary = validate_objects([ctx, fep], enabled_domain_packs=["sap"])
     assert summary.is_valid

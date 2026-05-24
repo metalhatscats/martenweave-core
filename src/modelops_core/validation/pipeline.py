@@ -6,8 +6,9 @@ import re
 from collections import defaultdict
 from typing import Any
 
+from modelops_core.domain_packs import get_domain_packs
 from modelops_core.repository import ParsedObject
-from modelops_core.schemas import ObjectType, get_expected_target_types, get_sap_context_rules
+from modelops_core.schemas import ObjectType, get_expected_target_types
 from modelops_core.validation.result import ValidationResult, ValidationSeverity, ValidationSummary
 
 _ID_PATTERN = re.compile(r"^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$")
@@ -270,110 +271,44 @@ def _validate_references(
     return results
 
 
-def _validate_sap_context(
-    objects: list[ParsedObject], registry: dict[str, dict[str, Any]]
+def _run_domain_pack_validation(
+    objects: list[ParsedObject],
+    registry: dict[str, dict[str, Any]],
+    enabled_packs: list[str] | None,
 ) -> list[ValidationResult]:
+    """Run domain-pack validators for enabled packs."""
     results: list[ValidationResult] = []
-
-    for obj in objects:
-        if obj.parser_error is not None or obj.frontmatter is None:
-            continue
-
-        frontmatter = obj.frontmatter
-        if frontmatter.get("type") != "FieldEndpoint":
-            continue
-
-        endpoint_type = frontmatter.get("endpoint_type")
-        sap_table = frontmatter.get("sap_table")
-        if endpoint_type != "sap_table_field" or not sap_table:
-            continue
-
-        obj_id = frontmatter.get("id")
-        obj_id_str = str(obj_id) if isinstance(obj_id, str) else None
-
-        entity_context_id = frontmatter.get("entity_context")
-        if not entity_context_id:
+    packs = get_domain_packs(enabled_packs)
+    for pack in packs:
+        for r in pack.validate(objects, registry):
             results.append(
                 ValidationResult(
-                    severity=ValidationSeverity.ERROR,
-                    code="SAP_CONTEXT_MISSING",
-                    message=(
-                        f"SAP FieldEndpoint '{obj_id_str}' missing "
-                        f"required 'entity_context'."
-                    ),
-                    object_id=obj_id_str,
-                    source_file=obj.source_path,
-                    field_path="entity_context",
-                    suggested_fix="Add the correct EntityContext ID for this SAP table.",
+                    severity=ValidationSeverity(r.get("severity", "ERROR")),
+                    code=r["code"],
+                    message=r["message"],
+                    object_id=r.get("object_id"),
+                    source_file=None,
+                    field_path=None,
+                    suggested_fix=r.get("suggested_fix"),
                 )
             )
-            continue
-
-        if entity_context_id not in registry:
-            continue
-
-        context_fm = None
-        for candidate in objects:
-            if candidate.frontmatter and candidate.frontmatter.get("id") == entity_context_id:
-                context_fm = candidate.frontmatter
-                break
-
-        if context_fm is None:
-            continue
-
-        context_category = context_fm.get("context_category")
-        if not context_category:
-            results.append(
-                ValidationResult(
-                    severity=ValidationSeverity.ERROR,
-                    code="SAP_CONTEXT_CATEGORY_MISSING",
-                    message=(
-                        f"EntityContext '{entity_context_id}' has no "
-                        f"'context_category'."
-                    ),
-                    object_id=obj_id_str,
-                    source_file=obj.source_path,
-                    field_path="entity_context.context_category",
-                    suggested_fix="Add a context_category to the EntityContext.",
-                )
-            )
-            continue
-
-        rules = {r.sap_table: r for r in get_sap_context_rules("FieldEndpoint")}
-        rule = rules.get(sap_table)
-        if rule is not None:
-            required_category = rule.required_context_category
-            error_code = rule.error_code
-        else:
-            required_category = None
-            error_code = None
-
-        if required_category is not None and context_category != required_category:
-            results.append(
-                ValidationResult(
-                    severity=ValidationSeverity.ERROR,
-                    code=error_code,
-                    message=(
-                        f"SAP table '{sap_table}' requires EntityContext "
-                        f"with context_category '{required_category}', "
-                        f"but '{entity_context_id}' has "
-                        f"'{context_category}'."
-                    ),
-                    object_id=obj_id_str,
-                    source_file=obj.source_path,
-                    field_path="entity_context.context_category",
-                    suggested_fix=(
-                        f"Link this FieldEndpoint to an EntityContext with "
-                        f"context_category '{required_category}'."
-                    ),
-                )
-            )
-
     return results
 
 
-def validate_objects(objects: list[ParsedObject]) -> ValidationSummary:
-    """Run Layer 1–3 deterministic validation on a batch of parsed objects."""
+def validate_objects(
+    objects: list[ParsedObject],
+    enabled_domain_packs: list[str] | None = None,
+) -> ValidationSummary:
+    """Run Layer 1–3 deterministic validation on a batch of parsed objects.
+
+    Args:
+        objects: Parsed canonical objects to validate.
+        enabled_domain_packs: List of domain pack identifiers to enable
+            (e.g. ``["sap"]``). If None or empty, only generic validation runs.
+
+    Returns:
+        ValidationSummary with all results.
+    """
     all_results: list[ValidationResult] = []
 
     for obj in objects:
@@ -383,6 +318,6 @@ def validate_objects(objects: list[ParsedObject]) -> ValidationSummary:
 
     registry = _build_registry(objects)
     all_results.extend(_validate_references(objects, registry))
-    all_results.extend(_validate_sap_context(objects, registry))
+    all_results.extend(_run_domain_pack_validation(objects, registry, enabled_domain_packs))
 
     return ValidationSummary(results=all_results)

@@ -5,3 +5,6 @@ version: "1.0.0"
 model_path: "model"
 generated_path: "generated"
 data_path: "data"
+# Optional domain packs for additional validation rules.
+# enabled_domain_packs:
+#   - sap

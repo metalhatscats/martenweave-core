@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from modelops_core.config import resolve_generated_path, resolve_model_path
+from modelops_core.config import load_repo_config, resolve_generated_path, resolve_model_path
 from modelops_core.repository import parse_file, scan_repository
 from modelops_core.schemas.registry import get_relationship_fields
 from modelops_core.validation import ValidationSummary, validate_objects
@@ -208,7 +208,9 @@ def build_index(
     model_path = resolve_model_path(repo_root)
     files = scan_repository(model_path)
     parsed_objects = [parse_file(f) for f in files]
-    summary = validate_objects(parsed_objects)
+    config = load_repo_config(repo_root)
+    enabled_packs = config.enabled_domain_packs if config else None
+    summary = validate_objects(parsed_objects, enabled_packs)
 
     if not summary.is_valid and not allow_invalid:
         raise ValueError(

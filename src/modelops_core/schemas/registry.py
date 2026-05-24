@@ -23,15 +23,6 @@ class ReferenceField:
 
 
 @dataclass(frozen=True)
-class SAPContextRule:
-    """SAP table → required EntityContext context_category."""
-
-    sap_table: str
-    required_context_category: str
-    error_code: str
-
-
-@dataclass(frozen=True)
 class ObjectTypeEntry:
     """Metadata for a single canonical object type."""
 
@@ -40,7 +31,6 @@ class ObjectTypeEntry:
     ui_label_plural: str
     reference_fields: tuple[ReferenceField, ...] = field(default_factory=tuple)
     search_fields: tuple[str, ...] = field(default_factory=tuple)
-    sap_context_rules: tuple[SAPContextRule, ...] = field(default_factory=tuple)
 
 
 # ---------------------------------------------------------------------------
@@ -77,8 +67,6 @@ _RELATED_OBJECTS_REF = ReferenceField("related_objects", "related_objects", None
 
 # Common search-relevant frontmatter fields.
 _COMMON_SEARCH_FIELDS: tuple[str, ...] = (
-    "sap_table",
-    "sap_field",
     "column_name",
     "field_name",
     "technical_name",
@@ -86,16 +74,6 @@ _COMMON_SEARCH_FIELDS: tuple[str, ...] = (
     "rule_type",
     "context_category",
     "grain",
-)
-
-# SAP table → required EntityContext context_category rules.
-_SAP_CONTEXT_RULES: tuple[SAPContextRule, ...] = (
-    SAPContextRule("KNVV", "customer_sales_area", "SAP_CONTEXT_KNVV_REQUIRES_SALES_AREA"),
-    SAPContextRule("KNB1", "customer_company_code", "SAP_CONTEXT_KNB1_REQUIRES_COMPANY_CODE"),
-    SAPContextRule(
-        "KNVP", "customer_partner_function", "SAP_CONTEXT_KNVP_REQUIRES_PARTNER_FUNCTION"
-    ),
-    SAPContextRule("BUT000", "bp_central", "SAP_CONTEXT_BUT000_REQUIRES_BP_CENTRAL"),
 )
 
 # ---------------------------------------------------------------------------
@@ -185,7 +163,6 @@ _REGISTRY: dict[str, ObjectTypeEntry] = {
             _BUSINESS_ATTRIBUTE_REF,
         ),
         search_fields=_COMMON_SEARCH_FIELDS,
-        sap_context_rules=_SAP_CONTEXT_RULES,
     ),
     "Interface": ObjectTypeEntry(
         type_id="Interface",
@@ -390,12 +367,6 @@ def get_search_fields(type_id: str | None = None) -> tuple[str, ...]:
     return entry.search_fields
 
 
-def get_sap_context_rules(type_id: str) -> tuple[SAPContextRule, ...]:
-    """Return SAP context rules for an object type (e.g. FieldEndpoint)."""
-    entry = _REGISTRY.get(type_id)
-    if entry is None:
-        return ()
-    return entry.sap_context_rules
 
 
 def register_type(entry: ObjectTypeEntry) -> None:

@@ -9,7 +9,7 @@ from typing import Any
 
 import yaml
 
-from modelops_core.config import resolve_generated_path
+from modelops_core.config import load_repo_config, resolve_generated_path
 from modelops_core.index import build_index
 from modelops_core.repository import parse_file, scan_repository
 from modelops_core.validation import validate_objects
@@ -436,7 +436,9 @@ def apply_patch_proposal(repo_model_path: Path, proposal_id: str) -> ApplyResult
 
         files = scan_repository(repo_model_path)
         parsed_objects = [parse_file(f) for f in files]
-        validation_summary = validate_objects(parsed_objects)
+        config = load_repo_config(repo_model_path.parent)
+        enabled_packs = config.enabled_domain_packs if config else None
+        validation_summary = validate_objects(parsed_objects, enabled_packs)
 
         if not validation_summary.is_valid:
             _rollback(backup_state)

@@ -18,6 +18,7 @@ class RepoConfig(BaseModel):
     model_path: str = "model"
     generated_path: str = "generated"
     data_path: str = "data"
+    enabled_domain_packs: list[str] = []
 
 
 class Settings(BaseModel):

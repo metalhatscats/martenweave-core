@@ -7,7 +7,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
 
-from modelops_core.config import resolve_generated_path, resolve_model_path
+from modelops_core.config import load_repo_config, resolve_generated_path, resolve_model_path
 from modelops_core.exports import export_model_csv, export_model_xlsx
 from modelops_core.impact.impact_service import generate_impact_report
 from modelops_core.patching.apply_service import apply_patch_proposal, dry_run_patch_proposal
@@ -102,7 +102,9 @@ def validate(
     model_path = resolve_model_path(repo_root)
     files = scan_repository(model_path)
     parsed_objects = [parse_file(f) for f in files]
-    summary = validate_objects(parsed_objects)
+    config = load_repo_config(repo_root)
+    enabled_packs = config.enabled_domain_packs if config else None
+    summary = validate_objects(parsed_objects, enabled_packs)
     return {
         "is_valid": summary.is_valid,
         "error_count": summary.error_count,

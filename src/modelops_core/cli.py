@@ -14,6 +14,7 @@ from rich.table import Table
 from modelops_core import __version__
 from modelops_core.config import (
     RepoConfig,
+    load_repo_config,
     resolve_generated_path,
     resolve_model_path,
 )
@@ -265,7 +266,9 @@ def validate(
 
     files = scan_repository(model_path)
     parsed_objects = [parse_file(f) for f in files]
-    summary = validate_objects(parsed_objects)
+    config = load_repo_config(repo_root)
+    enabled_packs = config.enabled_domain_packs if config else None
+    summary = validate_objects(parsed_objects, enabled_packs)
 
     if json_output:
         result = {
