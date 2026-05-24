@@ -13,10 +13,14 @@ from rich.console import Console
 from rich.table import Table
 
 from modelops_core import __version__
+from modelops_core.approval import compute_proposal_risk
 from modelops_core.change_request import (
+    approve_change_request,
     create_change_request,
+    find_approved_cr_for_proposal,
     list_change_requests,
     load_change_request,
+    reject_change_request,
     update_change_request_status,
 )
 from modelops_core.config import (
@@ -1027,6 +1031,124 @@ def cr_update_status(
             pass
 
 
+@cr_app.command("approve")
+def cr_approve(
+    cr_id: str = typer.Argument(..., help="ChangeRequest ID (e.g. CR-001)."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    approver: str = typer.Option(..., "--approver", help="Approver ID."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Approve a ChangeRequest."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+
+    try:
+        cr = approve_change_request(model_path, cr_id, approver)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        print(json.dumps(cr, indent=2, default=str))
+    else:
+        console.print(f"[green]ChangeRequest {cr_id} approved by {approver}[/green]")
+        if cr.get("approvals"):
+            console.print(f"  Approvals: {len(cr['approvals'])}")
+
+    service = AuditEventService(repo_root)
+    service.emit(
+        create_audit_event(
+            event_type="change_request_approved",
+            actor=approver,
+            status="success",
+            command="change-request approve",
+            proposal_id=cr_id,
+            changed_object_ids=cr.get("affected_objects") or [],
+            outputs={"approver": approver, "approvals": cr.get("approvals", [])},
+        )
+    )
+
+    # Emit notification events
+    try:
+        preview_entries = preview_notifications(
+            model_path=model_path,
+            cr_id=cr_id,
+        )
+        for entry in preview_entries:
+            emit_notification_event(
+                repo_root=repo_root,
+                event_type="change_request_approved",
+                source_type="ChangeRequest",
+                source_id=cr_id,
+                recipient_id=entry.recipient_id,
+                recipient_role=entry.recipient_role,
+                reason=entry.reason,
+                affected_objects=cr.get("affected_objects") or [],
+                message_summary=f"ChangeRequest {cr_id} approved by {approver}",
+                status="approved",
+            )
+    except Exception:
+        pass
+
+
+@cr_app.command("reject")
+def cr_reject(
+    cr_id: str = typer.Argument(..., help="ChangeRequest ID (e.g. CR-001)."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    approver: str = typer.Option(..., "--approver", help="Approver ID."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Reject a ChangeRequest."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+
+    try:
+        cr = reject_change_request(model_path, cr_id, approver)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        print(json.dumps(cr, indent=2, default=str))
+    else:
+        console.print(f"[yellow]ChangeRequest {cr_id} rejected by {approver}[/yellow]")
+
+    service = AuditEventService(repo_root)
+    service.emit(
+        create_audit_event(
+            event_type="change_request_rejected",
+            actor=approver,
+            status="success",
+            command="change-request reject",
+            proposal_id=cr_id,
+            changed_object_ids=cr.get("affected_objects") or [],
+            outputs={"approver": approver, "approvals": cr.get("approvals", [])},
+        )
+    )
+
+    # Emit notification events
+    try:
+        preview_entries = preview_notifications(
+            model_path=model_path,
+            cr_id=cr_id,
+        )
+        for entry in preview_entries:
+            emit_notification_event(
+                repo_root=repo_root,
+                event_type="change_request_rejected",
+                source_type="ChangeRequest",
+                source_id=cr_id,
+                recipient_id=entry.recipient_id,
+                recipient_role=entry.recipient_role,
+                reason=entry.reason,
+                affected_objects=cr.get("affected_objects") or [],
+                message_summary=f"ChangeRequest {cr_id} rejected by {approver}",
+                status="rejected",
+            )
+    except Exception:
+        pass
+
+
 # ---------------------------------------------------------------------------
 # Notification subcommands
 # ---------------------------------------------------------------------------
@@ -1324,10 +1446,21 @@ def proposal_impact(
         db_path, proposal_id, operations, max_depth=max_depth
     )
 
+    # Risk assessment
+    risk = compute_proposal_risk(operations, model_path, impact_report=report)
+
     if json_output:
         result = {
             "proposal_id": report.proposal_id,
             "high_risk": report.high_risk,
+            "risk_assessment": {
+                "requires_approval": risk.requires_approval,
+                "risk_level": risk.risk_level,
+                "risk_reasons": risk.risk_reasons,
+                "triggering_rules": risk.triggering_rules,
+                "affected_object_count": risk.affected_object_count,
+                "max_impact_depth": risk.max_impact_depth,
+            },
             "affected_objects": [
                 {
                     "object_id": obj.object_id,
@@ -1356,6 +1489,11 @@ def proposal_impact(
     console.print(f"[bold]Impact Report for {proposal_id}[/bold]")
     if report.high_risk:
         console.print("[red]  ⚠ High-risk proposal[/red]")
+    console.print(f"  Risk level: {risk.risk_level}")
+    if risk.requires_approval:
+        console.print("[yellow]  ⚠ Approval required[/yellow]")
+        for reason in risk.risk_reasons:
+            console.print(f"    • {reason}")
     console.print(f"  Operations analyzed: {len(report.operation_reports)}")
 
     for op_report in report.operation_reports:
@@ -1386,10 +1524,28 @@ def proposal_apply(
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Preview changes without applying."
     ),
+    force: bool = typer.Option(
+        False, "--force", help="Skip approval gate (not recommended)."
+    ),
 ) -> None:
     """Apply an accepted PatchProposal to canonical files."""
     repo_root = _resolve_repo(repo)
     model_path = resolve_model_path(repo_root)
+
+    # Load proposal for risk assessment and notifications
+    proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
+    parsed_proposal = parse_file(proposal_path)
+    fm = parsed_proposal.frontmatter or {}
+    operations = fm.get("operations", [])
+
+    # Risk assessment
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+    impact_report = None
+    if db_path.exists():
+        impact_report = generate_proposal_impact_report(
+            db_path, proposal_id, operations, max_depth=2
+        )
+    risk = compute_proposal_risk(operations, model_path, impact_report=impact_report)
 
     if dry_run:
         result = dry_run_patch_proposal(model_path, proposal_id)
@@ -1399,6 +1555,11 @@ def proposal_apply(
 
         console.print(f"[bold]Dry-run for {proposal_id}[/bold]")
         console.print(f"  Would change: {result.would_change}")
+        console.print(f"  Risk level: {risk.risk_level}")
+        if risk.requires_approval:
+            console.print("[yellow]  ⚠ Approval required[/yellow]")
+            for reason in risk.risk_reasons:
+                console.print(f"    • {reason}")
         if result.operations_preview:
             table = Table("Op", "Object", "Status", "Details")
             for p in result.operations_preview:
@@ -1412,14 +1573,7 @@ def proposal_apply(
             console.print(table)
 
         # Show impact summary
-        db_path = resolve_generated_path(repo_root) / "modelops.db"
-        if db_path.exists():
-            parsed = parse_file(model_path / "patch-proposals" / f"{proposal_id}.md")
-            fm = parsed.frontmatter or {}
-            operations = fm.get("operations", [])
-            impact_report = generate_proposal_impact_report(
-                db_path, proposal_id, operations, max_depth=2
-            )
+        if impact_report:
             console.print("\n[bold]Impact Summary[/bold]")
             if impact_report.high_risk:
                 console.print("[red]  ⚠ High-risk proposal[/red]")
@@ -1438,6 +1592,25 @@ def proposal_apply(
                 if len(affected) > 10:
                     console.print(f"  ... and {len(affected) - 10} more")
         raise typer.Exit()
+
+    # Approval gate
+    if risk.requires_approval and not force:
+        approved_cr = find_approved_cr_for_proposal(model_path, proposal_id)
+        if approved_cr is None:
+            console.print(
+                f"[red]Approval required for {proposal_id}. "
+                f"Risk level: {risk.risk_level}[/red]"
+            )
+            for reason in risk.risk_reasons:
+                console.print(f"  • {reason}")
+            console.print(
+                "[yellow]Create an approved ChangeRequest linking to this proposal, "
+                "or use --force to override.[/yellow]"
+            )
+            raise typer.Exit(code=1)
+        console.print(
+            f"[green]Approved via ChangeRequest {approved_cr.get('id')}[/green]"
+        )
 
     try:
         result = apply_patch_proposal(model_path, proposal_id)
@@ -1469,7 +1642,7 @@ def proposal_apply(
                 recipient_id=entry.recipient_id,
                 recipient_role=entry.recipient_role,
                 reason=entry.reason,
-                affected_objects=[op.get("object_id", "") for op in fm.get("operations", [])],
+                affected_objects=[op.get("object_id", "") for op in operations],
                 message_summary=f"PatchProposal {proposal_id} applied",
                 status="applied",
             )

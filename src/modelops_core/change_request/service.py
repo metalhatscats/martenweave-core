@@ -21,6 +21,23 @@ _VALID_TRANSITIONS: dict[str, set[str]] = {
 }
 
 
+def _record_approval(
+    frontmatter: dict[str, Any], approver: str, decision: str
+) -> None:
+    """Append an approval record to the ChangeRequest frontmatter."""
+    if "approvals" not in frontmatter:
+        frontmatter["approvals"] = []
+    if not isinstance(frontmatter["approvals"], list):
+        frontmatter["approvals"] = []
+    frontmatter["approvals"].append(
+        {
+            "approver": approver,
+            "decision": decision,
+            "approved_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        }
+    )
+
+
 def _render_change_request_markdown(data: dict[str, Any]) -> str:
     """Render a ChangeRequest dict as canonical Markdown with YAML frontmatter."""
     frontmatter = dict(data)
@@ -188,5 +205,79 @@ def update_change_request_status(
     if new_status == "implemented":
         frontmatter["implemented_at"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
+    path.write_text(_render_change_request_markdown(frontmatter), encoding="utf-8")
+    return frontmatter
+
+
+def approve_change_request(
+    model_path: Path, cr_id: str, approver: str
+) -> dict[str, Any]:
+    """Approve a ChangeRequest and record the approver."""
+    cr_dir = model_path / "change-requests"
+    path = cr_dir / f"{cr_id}.md"
+    if not path.exists():
+        raise ValueError(f"ChangeRequest not found: {cr_id}")
+
+    parsed = parse_file(path)
+    if parsed.frontmatter is None:
+        raise ValueError("ChangeRequest file has no frontmatter")
+
+    frontmatter = dict(parsed.frontmatter)
+    current_status = str(frontmatter.get("status", ""))
+
+    allowed = _VALID_TRANSITIONS.get(current_status, set())
+    if "approved" not in allowed:
+        raise ValueError(
+            f"Invalid transition: '{current_status}' -> 'approved'. "
+            f"Allowed: {', '.join(allowed) or 'none'}"
+        )
+
+    frontmatter["status"] = "approved"
+    _record_approval(frontmatter, approver, "approved")
+    path.write_text(_render_change_request_markdown(frontmatter), encoding="utf-8")
+    return frontmatter
+
+
+def find_approved_cr_for_proposal(model_path: Path, proposal_id: str) -> dict[str, Any] | None:
+    """Find an approved ChangeRequest that links to a given PatchProposal."""
+    cr_dir = model_path / "change-requests"
+    if not cr_dir.exists():
+        return None
+    for f in sorted(cr_dir.glob("CR-*.md")):
+        parsed = parse_file(f)
+        fm = parsed.frontmatter or {}
+        if fm.get("status") != "approved":
+            continue
+        linked = fm.get("linked_proposals") or []
+        if proposal_id in linked:
+            return fm
+    return None
+
+
+def reject_change_request(
+    model_path: Path, cr_id: str, approver: str
+) -> dict[str, Any]:
+    """Reject a ChangeRequest and record the approver."""
+    cr_dir = model_path / "change-requests"
+    path = cr_dir / f"{cr_id}.md"
+    if not path.exists():
+        raise ValueError(f"ChangeRequest not found: {cr_id}")
+
+    parsed = parse_file(path)
+    if parsed.frontmatter is None:
+        raise ValueError("ChangeRequest file has no frontmatter")
+
+    frontmatter = dict(parsed.frontmatter)
+    current_status = str(frontmatter.get("status", ""))
+
+    allowed = _VALID_TRANSITIONS.get(current_status, set())
+    if "rejected" not in allowed:
+        raise ValueError(
+            f"Invalid transition: '{current_status}' -> 'rejected'. "
+            f"Allowed: {', '.join(allowed) or 'none'}"
+        )
+
+    frontmatter["status"] = "rejected"
+    _record_approval(frontmatter, approver, "rejected")
     path.write_text(_render_change_request_markdown(frontmatter), encoding="utf-8")
     return frontmatter
