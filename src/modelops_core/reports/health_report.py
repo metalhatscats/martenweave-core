@@ -76,6 +76,8 @@ def generate_repository_health(
             "Issue",
             "Decision",
             "BusinessEntity",
+            "ValueList",
+            "ValueMapping",
         }
         _OWNERSHIP_FIELDS = {
             "business_owner",

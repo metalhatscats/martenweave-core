@@ -55,6 +55,7 @@ _VALUE_LIST_REF = ReferenceField("value_list", "value_list", "ValueList")
 _SOURCE_VALUE_LIST_REF = ReferenceField("source_value_list", "source_value_list", "ValueList")
 _TARGET_VALUE_LIST_REF = ReferenceField("target_value_list", "target_value_list", "ValueList")
 _VALUE_MAPPING_REF = ReferenceField("value_mapping", "value_mapping", "ValueMapping")
+_PARENT_VALUE_LIST_REF = ReferenceField("parent_value_list", "parent_value_list", "ValueList")
 _MAPPING_REF = ReferenceField("mapping", "mapping", "Mapping")
 _MAPPING_SET_REF = ReferenceField("mapping_set", "mapping_set", "MappingSet")
 _VALIDATION_RULES_REF = ReferenceField("validation_rules", "validation_rules", "ValidationRule")
@@ -174,6 +175,7 @@ _REGISTRY: dict[str, ObjectTypeEntry] = {
             _SYSTEM_REF,
             _ATTRIBUTE_REF,
             _BUSINESS_ATTRIBUTE_REF,
+            _VALUE_LIST_REF,
         ),
         search_fields=_COMMON_SEARCH_FIELDS,
     ),
@@ -225,14 +227,27 @@ _REGISTRY: dict[str, ObjectTypeEntry] = {
         type_id="ValueList",
         ui_label_singular="Value List",
         ui_label_plural="Value Lists",
-        reference_fields=(_DOMAIN_REF,),
+        reference_fields=(
+            _DOMAIN_REF,
+            _PARENT_VALUE_LIST_REF,
+            _BUSINESS_OWNER_REF,
+            _TECHNICAL_OWNER_REF,
+            _DATA_STEWARD_REF,
+        ),
         search_fields=_COMMON_SEARCH_FIELDS,
     ),
     "ValueMapping": ObjectTypeEntry(
         type_id="ValueMapping",
         ui_label_singular="Value Mapping",
         ui_label_plural="Value Mappings",
-        reference_fields=(_DOMAIN_REF, _VALUE_LIST_REF),
+        reference_fields=(
+            _DOMAIN_REF,
+            _VALUE_LIST_REF,
+            _SOURCE_VALUE_LIST_REF,
+            _TARGET_VALUE_LIST_REF,
+            _BUSINESS_OWNER_REF,
+            _TECHNICAL_OWNER_REF,
+        ),
         search_fields=_COMMON_SEARCH_FIELDS,
     ),
     "BusinessRule": ObjectTypeEntry(
@@ -256,6 +271,7 @@ _REGISTRY: dict[str, ObjectTypeEntry] = {
         reference_fields=(
             _DOMAIN_REF,
             _ATTRIBUTE_REF,
+            _VALUE_LIST_REF,
             _BUSINESS_OWNER_REF,
             _APPROVER_REF,
         ),

@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from modelops_core.index import build_index
-from modelops_core.repository import ParsedObject
 from modelops_core.reports.health_report import generate_repository_health
+from modelops_core.repository import ParsedObject
 from modelops_core.validation import validate_objects
 
 

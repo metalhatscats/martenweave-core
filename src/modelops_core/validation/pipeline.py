@@ -281,6 +281,8 @@ _OWNERSHIP_TYPES = frozenset(
         "Issue",
         "Decision",
         "BusinessEntity",
+        "ValueList",
+        "ValueMapping",
     }
 )
 _OWNERSHIP_FIELDS = (
@@ -290,6 +292,104 @@ _OWNERSHIP_FIELDS = (
     "accountable_team",
     "approver",
 )
+
+
+def _validate_lov_governance(
+    objects: list[ParsedObject], registry: dict[str, dict[str, Any]]
+) -> list[ValidationResult]:
+    """Validate ValueList and ValueMapping governance rules."""
+    results: list[ValidationResult] = []
+    value_list_codes: dict[str, set[str]] = {}
+
+    for obj in objects:
+        fm = obj.frontmatter or {}
+        if fm.get("type") != "ValueList":
+            continue
+        obj_id = fm.get("id")
+        entries = fm.get("entries") or []
+        codes = set()
+        for entry in entries:
+            if isinstance(entry, dict):
+                code = entry.get("code")
+                if code is not None:
+                    codes.add(str(code))
+        value_list_codes[obj_id] = codes
+        status = str(fm.get("status", "")).lower()
+        if status in ("active", "draft") and not codes:
+            results.append(
+                ValidationResult(
+                    severity=ValidationSeverity.WARNING,
+                    code="LOV_EMPTY",
+                    message=f"ValueList '{obj_id}' has no entries.",
+                    object_id=obj_id,
+                    source_file=obj.source_path,
+                    field_path="entries",
+                    suggested_fix="Add at least one entry to the value list.",
+                )
+            )
+
+    for obj in objects:
+        fm = obj.frontmatter or {}
+        if fm.get("type") != "ValueMapping":
+            continue
+        obj_id = fm.get("id")
+        status = str(fm.get("status", "")).lower()
+        entries = fm.get("entries") or []
+        if status in ("active", "draft") and not entries:
+            results.append(
+                ValidationResult(
+                    severity=ValidationSeverity.WARNING,
+                    code="VALUE_MAPPING_EMPTY",
+                    message=f"ValueMapping '{obj_id}' has no entries.",
+                    object_id=obj_id,
+                    source_file=obj.source_path,
+                    field_path="entries",
+                    suggested_fix="Add at least one mapping entry.",
+                )
+            )
+        source_vl = fm.get("source_value_list")
+        target_vl = fm.get("target_value_list")
+        source_codes = value_list_codes.get(source_vl, set())
+        target_codes = value_list_codes.get(target_vl, set())
+        for idx, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                continue
+            src_code = entry.get("source_code")
+            tgt_code = entry.get("target_code")
+            if src_code is not None and source_vl and src_code not in source_codes:
+                results.append(
+                    ValidationResult(
+                        severity=ValidationSeverity.ERROR,
+                        code="VALUE_MAPPING_SOURCE_CODE_INVALID",
+                        message=(
+                            f"ValueMapping '{obj_id}' entry {idx} references "
+                            f"source_code '{src_code}' not found in "
+                            f"ValueList '{source_vl}'."
+                        ),
+                        object_id=obj_id,
+                        source_file=obj.source_path,
+                        field_path=f"entries[{idx}].source_code",
+                        suggested_fix="Use a code that exists in the source ValueList.",
+                    )
+                )
+            if tgt_code is not None and target_vl and tgt_code not in target_codes:
+                results.append(
+                    ValidationResult(
+                        severity=ValidationSeverity.ERROR,
+                        code="VALUE_MAPPING_TARGET_CODE_INVALID",
+                        message=(
+                            f"ValueMapping '{obj_id}' entry {idx} references "
+                            f"target_code '{tgt_code}' not found in "
+                            f"ValueList '{target_vl}'."
+                        ),
+                        object_id=obj_id,
+                        source_file=obj.source_path,
+                        field_path=f"entries[{idx}].target_code",
+                        suggested_fix="Use a code that exists in the target ValueList.",
+                    )
+                )
+
+    return results
 
 
 def _validate_ownership(objects: list[ParsedObject]) -> list[ValidationResult]:
@@ -373,6 +473,7 @@ def validate_objects(
 
     registry = _build_registry(objects)
     all_results.extend(_validate_references(objects, registry))
+    all_results.extend(_validate_lov_governance(objects, registry))
     all_results.extend(_validate_ownership(objects))
     all_results.extend(_run_domain_pack_validation(objects, registry, enabled_domain_packs))
 

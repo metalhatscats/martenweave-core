@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from modelops_core.schemas.common import BaseObject
 
@@ -25,6 +25,7 @@ class FieldEndpoint(BaseObject):
     technical_name: str | None = Field(default=None)
     entity_context: str | None = Field(default=None)
     business_attribute: str | None = Field(default=None)
+    value_list: str | None = Field(default=None)
 
 
 class EntityContext(BaseObject):
@@ -64,16 +65,41 @@ class Mapping(BaseObject):
     value_mapping: str | None = Field(default=None)
 
 
+class ValueListEntry(BaseModel):
+    """A single entry inside a ValueList."""
+
+    code: str | None = Field(default=None, description="Machine-readable code.")
+    label: str | None = Field(default=None, description="Human-readable label.")
+    description: str | None = Field(default=None)
+    sort_order: int | None = Field(default=None)
+    is_default: bool | None = Field(default=None)
+    is_active: bool | None = Field(default=None)
+
+
 class ValueList(BaseObject):
     """A list of allowed values."""
 
-    pass
+    value_list_type: str | None = Field(default=None, description="e.g. domain, fixed, custom.")
+    parent_value_list: str | None = Field(default=None)
+    entries: list[ValueListEntry] | None = Field(default=None)
+
+
+class ValueMappingEntry(BaseModel):
+    """A single mapping between two value codes."""
+
+    source_code: str | None = Field(default=None)
+    target_code: str | None = Field(default=None)
+    fallback: bool | None = Field(default=None)
+    description: str | None = Field(default=None)
 
 
 class ValueMapping(BaseObject):
     """Maps values between two ValueLists."""
 
     value_list: str | None = Field(default=None)
+    source_value_list: str | None = Field(default=None)
+    target_value_list: str | None = Field(default=None)
+    entries: list[ValueMappingEntry] | None = Field(default=None)
 
 
 class ValidationRule(BaseObject):
