@@ -12,7 +12,7 @@ from typing import Any
 
 from modelops_core.config import load_repo_config, resolve_generated_path, resolve_model_path
 from modelops_core.repository import parse_file, scan_repository
-from modelops_core.schemas.registry import get_relationship_fields
+from modelops_core.schemas.registry import get_relationship_classes, get_relationship_fields
 from modelops_core.validation import ValidationSummary, validate_objects
 
 _INIT_SCHEMA = """
@@ -56,6 +56,7 @@ CREATE TABLE object_relationships (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     from_object_id TEXT NOT NULL,
     relationship_type TEXT NOT NULL,
+    relationship_class TEXT NOT NULL DEFAULT 'reference',
     to_object_id TEXT NOT NULL,
     source_file TEXT NOT NULL,
     confidence TEXT NOT NULL DEFAULT 'explicit'
@@ -126,6 +127,7 @@ def _insert_relationships(conn: sqlite3.Connection, objects: list[Any]) -> None:
             continue
 
         relationship_fields = get_relationship_fields()
+        relationship_classes = get_relationship_classes()
         for field, rel_type in relationship_fields.items():
             value = obj.frontmatter.get(field)
             if value is None:
@@ -139,15 +141,16 @@ def _insert_relationships(conn: sqlite3.Connection, objects: list[Any]) -> None:
             else:
                 continue
 
+            rel_class = relationship_classes.get(field, "reference")
             for ref_id in refs:
                 conn.execute(
                     """
                     INSERT INTO object_relationships (
-                        from_object_id, relationship_type, to_object_id,
-                        source_file, confidence
-                    ) VALUES (?, ?, ?, ?, ?)
+                        from_object_id, relationship_type, relationship_class,
+                        to_object_id, source_file, confidence
+                    ) VALUES (?, ?, ?, ?, ?, ?)
                     """,
-                    (obj_id, rel_type, ref_id, obj.source_path, "explicit"),
+                    (obj_id, rel_type, rel_class, ref_id, obj.source_path, "explicit"),
                 )
 
 

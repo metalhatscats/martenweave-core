@@ -20,6 +20,9 @@ class ReferenceField:
     relationship_type: str
     expected_target_type: str | None = None
     """Expected target object type. None means 'any type'."""
+    relationship_class: str = "reference"
+    """Traversal class: core_dependency, context, mapping, validation,
+    governance, evidence, or reference."""
 
 
 @dataclass(frozen=True)
@@ -36,41 +39,81 @@ class ObjectTypeEntry:
 # ---------------------------------------------------------------------------
 # Shared reference field definitions.
 # ---------------------------------------------------------------------------
-_DOMAIN_REF = ReferenceField("domain", "domain", "MasterDataDomain")
-_MIGRATION_OBJECT_REF = ReferenceField("migration_object", "migration_object", "MigrationObject")
-_ENTITY_REF = ReferenceField("entity", "entity", "BusinessEntity")
-_ENTITY_CONTEXT_REF = ReferenceField("entity_context", "entity_context", "EntityContext")
-_PARENT_ENTITY_REF = ReferenceField("parent_entity", "parent_entity", "BusinessEntity")
-_SYSTEM_REF = ReferenceField("system", "system", "System")
-_BUSINESS_ATTRIBUTE_REF = ReferenceField("business_attribute", "business_attribute", "Attribute")
-_ATTRIBUTE_REF = ReferenceField("attribute", "attribute", "Attribute")
-_FIELD_ENDPOINT_REF = ReferenceField("field_endpoint", "field_endpoint", "FieldEndpoint")
-_SOURCE_ENDPOINT_REF = ReferenceField("source_endpoint", "source_endpoint", "FieldEndpoint")
-_TARGET_ENDPOINT_REF = ReferenceField("target_endpoint", "target_endpoint", "FieldEndpoint")
-_SOURCE_ENDPOINTS_REF = ReferenceField("source_endpoints", "source_endpoints", "FieldEndpoint")
-_TARGET_ENDPOINTS_REF = ReferenceField("target_endpoints", "target_endpoints", "FieldEndpoint")
-_RELATED_ISSUE_REF = ReferenceField("related_issue", "related_issue", "Issue")
-_RELATED_ISSUES_REF = ReferenceField("related_issues", "related_issues", "Issue")
-_RELATED_DECISIONS_REF = ReferenceField("related_decisions", "related_decisions", "Decision")
-_VALUE_LIST_REF = ReferenceField("value_list", "value_list", "ValueList")
-_SOURCE_VALUE_LIST_REF = ReferenceField("source_value_list", "source_value_list", "ValueList")
-_TARGET_VALUE_LIST_REF = ReferenceField("target_value_list", "target_value_list", "ValueList")
-_VALUE_MAPPING_REF = ReferenceField("value_mapping", "value_mapping", "ValueMapping")
-_PARENT_VALUE_LIST_REF = ReferenceField("parent_value_list", "parent_value_list", "ValueList")
-_MAPPING_REF = ReferenceField("mapping", "mapping", "Mapping")
-_MAPPING_SET_REF = ReferenceField("mapping_set", "mapping_set", "MappingSet")
-_VALIDATION_RULES_REF = ReferenceField("validation_rules", "validation_rules", "ValidationRule")
-_EVIDENCE_REF = ReferenceField("evidence", "evidence", "Evidence")
-_SOURCE_PATCH_PROPOSALS_REF = ReferenceField(
-    "source_patch_proposals", "source_patch_proposals", "PatchProposal"
+_DOMAIN_REF = ReferenceField("domain", "belongs_to_domain", "MasterDataDomain", "core_dependency")
+_MIGRATION_OBJECT_REF = ReferenceField(
+    "migration_object", "part_of_migration", "MigrationObject", "core_dependency"
 )
-_AFFECTED_OBJECTS_REF = ReferenceField("affected_objects", "affected_objects", None)
-_RELATED_OBJECTS_REF = ReferenceField("related_objects", "related_objects", None)
-_BUSINESS_OWNER_REF = ReferenceField("business_owner", "business_owner", "Person")
-_TECHNICAL_OWNER_REF = ReferenceField("technical_owner", "technical_owner", "Person")
-_DATA_STEWARD_REF = ReferenceField("data_steward", "data_steward", "Person")
-_APPROVER_REF = ReferenceField("approver", "approver", "Person")
-_ACCOUNTABLE_TEAM_REF = ReferenceField("accountable_team", "accountable_team", "Team")
+_ENTITY_REF = ReferenceField("entity", "belongs_to_entity", "BusinessEntity", "core_dependency")
+_ENTITY_CONTEXT_REF = ReferenceField(
+    "entity_context", "used_in_context", "EntityContext", "context"
+)
+_PARENT_ENTITY_REF = ReferenceField(
+    "parent_entity", "part_of_entity", "BusinessEntity", "core_dependency"
+)
+_SYSTEM_REF = ReferenceField("system", "located_in_system", "System", "context")
+_BUSINESS_ATTRIBUTE_REF = ReferenceField(
+    "business_attribute", "represents_attribute", "Attribute", "core_dependency"
+)
+_ATTRIBUTE_REF = ReferenceField("attribute", "has_attribute", "Attribute", "core_dependency")
+_FIELD_ENDPOINT_REF = ReferenceField(
+    "field_endpoint", "implemented_by_field", "FieldEndpoint", "core_dependency"
+)
+_SOURCE_ENDPOINT_REF = ReferenceField(
+    "source_endpoint", "mapped_from", "FieldEndpoint", "mapping"
+)
+_TARGET_ENDPOINT_REF = ReferenceField(
+    "target_endpoint", "mapped_to", "FieldEndpoint", "mapping"
+)
+_SOURCE_ENDPOINTS_REF = ReferenceField(
+    "source_endpoints", "mapped_from", "FieldEndpoint", "mapping"
+)
+_TARGET_ENDPOINTS_REF = ReferenceField(
+    "target_endpoints", "mapped_to", "FieldEndpoint", "mapping"
+)
+_RELATED_ISSUE_REF = ReferenceField("related_issue", "affected_by_issue", "Issue", "governance")
+_RELATED_ISSUES_REF = ReferenceField(
+    "related_issues", "affected_by_issue", "Issue", "governance"
+)
+_RELATED_DECISIONS_REF = ReferenceField(
+    "related_decisions", "explained_by_decision", "Decision", "governance"
+)
+_VALUE_LIST_REF = ReferenceField(
+    "value_list", "has_allowed_values", "ValueList", "validation"
+)
+_SOURCE_VALUE_LIST_REF = ReferenceField(
+    "source_value_list", "maps_from_values", "ValueList", "mapping"
+)
+_TARGET_VALUE_LIST_REF = ReferenceField(
+    "target_value_list", "maps_to_values", "ValueList", "mapping"
+)
+_VALUE_MAPPING_REF = ReferenceField(
+    "value_mapping", "uses_value_mapping", "ValueMapping", "mapping"
+)
+_PARENT_VALUE_LIST_REF = ReferenceField(
+    "parent_value_list", "part_of_value_list", "ValueList", "reference"
+)
+_MAPPING_REF = ReferenceField("mapping", "uses_mapping", "Mapping", "mapping")
+_MAPPING_SET_REF = ReferenceField(
+    "mapping_set", "part_of_mapping_set", "MappingSet", "mapping"
+)
+_VALIDATION_RULES_REF = ReferenceField(
+    "validation_rules", "validated_by", "ValidationRule", "validation"
+)
+_EVIDENCE_REF = ReferenceField("evidence", "supported_by_evidence", "Evidence", "evidence")
+_SOURCE_PATCH_PROPOSALS_REF = ReferenceField(
+    "source_patch_proposals", "proposed_by", "PatchProposal", "governance"
+)
+_AFFECTED_OBJECTS_REF = ReferenceField("affected_objects", "affects", None, "governance")
+_RELATED_OBJECTS_REF = ReferenceField("related_objects", "related_to", None, "reference")
+_BUSINESS_OWNER_REF = ReferenceField("business_owner", "owned_by_business", "Person", "governance")
+_TECHNICAL_OWNER_REF = ReferenceField(
+    "technical_owner", "owned_by_technical", "Person", "governance"
+)
+_DATA_STEWARD_REF = ReferenceField("data_steward", "stewarded_by", "Person", "governance")
+_APPROVER_REF = ReferenceField("approver", "approved_by", "Person", "governance")
+_ACCOUNTABLE_TEAM_REF = ReferenceField(
+    "accountable_team", "accountable_to", "Team", "governance"
+)
 
 # Common search-relevant frontmatter fields.
 _COMMON_SEARCH_FIELDS: tuple[str, ...] = (
@@ -404,6 +447,12 @@ def get_relationship_fields(type_id: str | None = None) -> dict[str, str]:
     """Return a mapping from frontmatter field name to relationship type."""
     refs = get_reference_fields(type_id)
     return {name: ref.relationship_type for name, ref in refs.items()}
+
+
+def get_relationship_classes(type_id: str | None = None) -> dict[str, str]:
+    """Return a mapping from frontmatter field name to relationship class."""
+    refs = get_reference_fields(type_id)
+    return {name: ref.relationship_class for name, ref in refs.items()}
 
 
 def get_expected_target_types(type_id: str | None = None) -> dict[str, str | None]:

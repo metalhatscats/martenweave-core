@@ -13,8 +13,8 @@ def export_lineage_jsonl(db_path: Path, output_path: Path) -> None:
     conn = sqlite3.connect(str(db_path))
     try:
         rows = conn.execute(
-            "SELECT from_object_id, relationship_type, to_object_id, "
-            "source_file, confidence FROM object_relationships"
+            "SELECT from_object_id, relationship_type, relationship_class, "
+            "to_object_id, source_file, confidence FROM object_relationships"
         ).fetchall()
     finally:
         conn.close()
@@ -25,8 +25,9 @@ def export_lineage_jsonl(db_path: Path, output_path: Path) -> None:
             edge: dict[str, Any] = {
                 "from_object_id": row[0],
                 "relationship_type": row[1],
-                "to_object_id": row[2],
-                "source_file": row[3],
-                "confidence": row[4],
+                "relationship_class": row[2],
+                "to_object_id": row[3],
+                "source_file": row[4],
+                "confidence": row[5],
             }
             fh.write(json.dumps(edge, default=str) + "\n")
