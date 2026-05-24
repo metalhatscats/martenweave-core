@@ -20,6 +20,7 @@ from modelops_core.config import (
 )
 from modelops_core.exports import export_model_csv, export_model_xlsx
 from modelops_core.impact.impact_service import generate_impact_report
+from modelops_core.impact.proposal_impact_service import generate_proposal_impact_report
 from modelops_core.imports import (
     dataset_profile_to_dict,
     infer_model_from_profile,
@@ -691,6 +692,90 @@ def proposal_validate(
         raise typer.Exit(code=1)
 
 
+@proposal_app.command("impact")
+def proposal_impact(
+    proposal_id: str = typer.Argument(..., help="PatchProposal ID (e.g. PP-001)."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    max_depth: int = typer.Option(2, "--max-depth", help="Maximum impact traversal depth."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Show impact analysis for a PatchProposal's operations."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+
+    if not db_path.exists():
+        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        raise typer.Exit(code=1)
+
+    proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
+    if not proposal_path.exists():
+        console.print(f"[red]PatchProposal not found: {proposal_id}[/red]")
+        raise typer.Exit(code=1)
+
+    parsed = parse_file(proposal_path)
+    fm = parsed.frontmatter or {}
+    operations = fm.get("operations", [])
+
+    report = generate_proposal_impact_report(
+        db_path, proposal_id, operations, max_depth=max_depth
+    )
+
+    if json_output:
+        result = {
+            "proposal_id": report.proposal_id,
+            "high_risk": report.high_risk,
+            "affected_objects": [
+                {
+                    "object_id": obj.object_id,
+                    "object_type": obj.object_type,
+                    "object_name": obj.object_name,
+                    "relationship_type": obj.relationship_type,
+                    "direction": obj.direction,
+                    "depth": obj.depth,
+                }
+                for obj in report.all_affected_objects
+            ],
+            "operations": [
+                {
+                    "op": op_report.op,
+                    "object_id": op_report.object_id,
+                    "object_type": op_report.object_type,
+                    "affected_count": len(op_report.impact_report.affected_objects)
+                    + len(op_report.synthetic_affected),
+                }
+                for op_report in report.operation_reports
+            ],
+        }
+        console.print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print(f"[bold]Impact Report for {proposal_id}[/bold]")
+    if report.high_risk:
+        console.print("[red]  ⚠ High-risk proposal[/red]")
+    console.print(f"  Operations analyzed: {len(report.operation_reports)}")
+
+    for op_report in report.operation_reports:
+        console.print(
+            f"\n  [bold]{op_report.op}[/bold] → {op_report.object_id}"
+            f" ({op_report.object_type or 'Unknown'})"
+        )
+        all_affected = op_report.impact_report.affected_objects + op_report.synthetic_affected
+        if all_affected:
+            table = Table("Object ID", "Type", "Direction", "Depth", "Relationship")
+            for obj in all_affected:
+                table.add_row(
+                    obj.object_id,
+                    obj.object_type or "—",
+                    obj.direction or "—",
+                    str(obj.depth),
+                    obj.relationship_type or "—",
+                )
+            console.print(table)
+        else:
+            console.print("    No affected objects found.")
+
+
 @proposal_app.command("apply")
 def proposal_apply(
     proposal_id: str = typer.Argument(..., help="PatchProposal ID (e.g. PP-001)."),
@@ -722,6 +807,33 @@ def proposal_apply(
                     details,
                 )
             console.print(table)
+
+        # Show impact summary
+        db_path = resolve_generated_path(repo_root) / "modelops.db"
+        if db_path.exists():
+            parsed = parse_file(model_path / "patch-proposals" / f"{proposal_id}.md")
+            fm = parsed.frontmatter or {}
+            operations = fm.get("operations", [])
+            impact_report = generate_proposal_impact_report(
+                db_path, proposal_id, operations, max_depth=2
+            )
+            console.print("\n[bold]Impact Summary[/bold]")
+            if impact_report.high_risk:
+                console.print("[red]  ⚠ High-risk proposal[/red]")
+            affected = impact_report.all_affected_objects
+            console.print(f"  Affected objects: {len(affected)}")
+            if affected:
+                table = Table("Object ID", "Type", "Direction", "Depth")
+                for obj in affected[:10]:
+                    table.add_row(
+                        obj.object_id,
+                        obj.object_type or "—",
+                        obj.direction or "—",
+                        str(obj.depth),
+                    )
+                console.print(table)
+                if len(affected) > 10:
+                    console.print(f"  ... and {len(affected) - 10} more")
         raise typer.Exit()
 
     try:
