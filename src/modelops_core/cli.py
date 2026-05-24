@@ -38,6 +38,11 @@ from modelops_core.patching.apply_service import (
 from modelops_core.patching.patch_proposal_service import (
     write_patch_proposal,
 )
+from modelops_core.reports.audit_service import (
+    AuditEventService,
+    create_audit_event,
+    filter_audit_events,
+)
 from modelops_core.reports.health_report import generate_repository_health
 from modelops_core.repository import parse_file, scan_repository
 from modelops_core.trace import trace_object
@@ -530,6 +535,27 @@ def propose_patch(
         for h in human_checks:
             console.print(f"  • {h}")
 
+    service = AuditEventService(repo_root)
+    changed_object_ids = [
+        op.get("object_id", "") for op in proposal.get("operations", [])
+    ]
+    service.emit(
+        create_audit_event(
+            event_type="proposal_created",
+            actor="system",
+            status="success",
+            command="propose-patch",
+            proposal_id=proposal.get("id"),
+            changed_object_ids=changed_object_ids,
+            validation_status="valid" if result.get("is_safe") else "invalid",
+            outputs={
+                "proposal_id": proposal.get("id"),
+                "operations_count": len(proposal.get("operations", [])),
+                "is_safe": result.get("is_safe"),
+            },
+        )
+    )
+
 
 # ---------------------------------------------------------------------------
 # Proposal subcommands
@@ -645,6 +671,22 @@ def proposal_validate(
             )
         console.print(table)
 
+    service = AuditEventService(repo_root)
+    service.emit(
+        create_audit_event(
+            event_type="proposal_validated",
+            actor="system",
+            status="success" if error_count == 0 else "failed",
+            command="proposal validate",
+            proposal_id=proposal_id,
+            validation_status="valid" if error_count == 0 else "invalid",
+            outputs={
+                "error_count": error_count,
+                "warning_count": warning_count,
+            },
+        )
+    )
+
     if error_count > 0:
         raise typer.Exit(code=1)
 
@@ -749,6 +791,24 @@ def import_model_sheet(
         )
         raise typer.Exit(code=1)
 
+    service = AuditEventService(repo_root)
+    changed_object_ids = [op.get("object_id", "") for op in proposal.get("operations", [])]
+    service.emit(
+        create_audit_event(
+            event_type="model_import",
+            actor="system",
+            status="success",
+            command="import-model-sheet",
+            changed_object_ids=changed_object_ids,
+            proposal_id=proposal.get("id"),
+            outputs={
+                "proposal_id": proposal.get("id"),
+                "operations_count": len(proposal.get("operations", [])),
+                "warnings_count": len(proposal.get("warnings", [])),
+            },
+        )
+    )
+
     if json_output:
         console.print(json.dumps(proposal, indent=2, default=str))
     else:
@@ -792,6 +852,68 @@ def export_model(
     else:
         console.print(f"[red]Unknown format: {fmt}. Use 'csv' or 'xlsx'.[/red]")
         raise typer.Exit(code=1)
+
+    service = AuditEventService(repo_root)
+    service.emit(
+        create_audit_event(
+            event_type="model_export",
+            actor="system",
+            status="success",
+            command=f"export-model --format {fmt}",
+            changed_files=[str(f) for f in (written if fmt.lower() == "csv" else [path])],
+            outputs={"format": fmt, "file_count": len(written) if fmt.lower() == "csv" else 1},
+        )
+    )
+
+
+@app.command("audit-log")
+def audit_log(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    object_id: str | None = typer.Option(None, "--object-id", help="Filter by changed object ID."),
+    proposal_id: str | None = typer.Option(None, "--proposal-id", help="Filter by proposal ID."),
+    event_type: str | None = typer.Option(None, "--event-type", help="Filter by event type."),
+    date_from: str | None = typer.Option(None, "--date-from", help="Filter from date (ISO)."),
+    date_to: str | None = typer.Option(None, "--date-to", help="Filter to date (ISO)."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Query the append-only audit log."""
+    repo_root = _resolve_repo(repo)
+    service = AuditEventService(repo_root)
+    events = service.read_events()
+
+    if not events:
+        console.print("[yellow]No audit events found.[/yellow]")
+        raise typer.Exit()
+
+    filtered = filter_audit_events(
+        events,
+        object_id=object_id,
+        proposal_id=proposal_id,
+        event_type=event_type,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+    if json_output:
+        console.print(json.dumps([e.to_dict() for e in filtered], indent=2, default=str))
+        raise typer.Exit()
+
+    console.print(f"[bold]Audit Log ({len(filtered)} events)[/bold]")
+    if not filtered:
+        console.print("  No events match the filters.")
+        raise typer.Exit()
+
+    table = Table("Event ID", "Type", "Timestamp", "Status", "Command", "Proposal")
+    for e in filtered:
+        table.add_row(
+            e.event_id,
+            e.event_type,
+            e.timestamp,
+            e.status,
+            e.command or "—",
+            e.proposal_id or "—",
+        )
+    console.print(table)
 
 
 if __name__ == "__main__":

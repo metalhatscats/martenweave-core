@@ -225,18 +225,21 @@ def _write_audit_event(
     proposal_id: str,
     changed_files: list[str],
     validation_summary: ValidationSummary,
+    event_type: str = "patch_apply",
+    status: str | None = None,
 ) -> str:
-    from modelops_core.reports.audit_service import AuditEventService
+    from modelops_core.reports.audit_service import AuditEventService, create_audit_event
 
     service = AuditEventService(repo_root)
-    event = {
-        "event_id": f"audit-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}",
-        "event_type": "patch_apply",
-        "timestamp": _now_iso(),
-        "actor": "system",
-        "status": "success" if validation_summary.is_valid else "failed",
-        "inputs": {"proposal_id": proposal_id},
-        "outputs": {
+    event = create_audit_event(
+        event_type=event_type,
+        actor="system",
+        status=status or ("success" if validation_summary.is_valid else "failed"),
+        command=f"proposal {event_type.replace('patch_', '')}",
+        proposal_id=proposal_id,
+        changed_files=changed_files,
+        validation_status="valid" if validation_summary.is_valid else "invalid",
+        outputs={
             "changed_files": changed_files,
             "validation": {
                 "is_valid": validation_summary.is_valid,
@@ -245,8 +248,7 @@ def _write_audit_event(
                 "info_count": validation_summary.info_count,
             },
         },
-        "metadata": {},
-    }
+    )
     return service.emit(event)
 
 
@@ -275,6 +277,35 @@ def _rollback(backup_state: dict[Path, str | None]) -> None:
                 path.unlink()
         else:
             path.write_text(original, encoding="utf-8")
+
+
+def _write_dry_run_audit_event(
+    repo_root: Path,
+    proposal_id: str,
+    result: DryRunResult,
+) -> None:
+    from modelops_core.reports.audit_service import AuditEventService, create_audit_event
+
+    service = AuditEventService(repo_root)
+    changed_object_ids = [
+        p.get("object_id", "")
+        for p in result.operations_preview
+        if p.get("object_id")
+    ]
+    event = create_audit_event(
+        event_type="patch_dry_run",
+        actor="system",
+        status="success" if not result.error else "failed",
+        command="proposal apply --dry-run",
+        proposal_id=proposal_id,
+        changed_object_ids=changed_object_ids,
+        outputs={
+            "would_change": result.would_change,
+            "operations_count": len(result.operations_preview),
+            "error": result.error,
+        },
+    )
+    service.emit(event)
 
 
 def dry_run_patch_proposal(
@@ -369,11 +400,14 @@ def dry_run_patch_proposal(
                 }
             )
 
-    return DryRunResult(
+    result = DryRunResult(
         proposal_id=proposal_id,
         would_change=any(p["status"] in {"would_update", "would_create"} for p in preview),
         operations_preview=preview,
     )
+
+    _write_dry_run_audit_event(repo_model_path.parent, proposal_id, result)
+    return result
 
 
 def apply_patch_proposal(repo_model_path: Path, proposal_id: str) -> ApplyResult:
