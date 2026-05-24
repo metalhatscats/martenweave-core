@@ -1,0 +1,50 @@
+"""Tests for SQLite index builder."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from modelops_core.config import resolve_generated_path
+from modelops_core.index import build_index
+from modelops_core.index.queries import get_object_by_id
+
+
+def test_build_index_creates_db(temp_model_dir: Path) -> None:
+    repo_root = temp_model_dir.parent
+    db_path = repo_root / "generated" / "modelops.db"
+    summary = build_index(repo_root=repo_root, db_path=db_path)
+    assert db_path.exists()
+    assert summary.is_valid
+
+
+def test_build_index_populates_objects(temp_model_dir: Path) -> None:
+    repo_root = temp_model_dir.parent
+    db_path = repo_root / "generated" / "modelops.db"
+    build_index(repo_root=repo_root, db_path=db_path)
+
+    obj = get_object_by_id(db_path, "DOMAIN-TEST")
+    assert obj is not None
+    assert obj["type"] == "MasterDataDomain"
+
+
+def test_build_index_export_jsonl(temp_model_dir: Path) -> None:
+    repo_root = temp_model_dir.parent
+    db_path = repo_root / "generated" / "modelops.db"
+    build_index(repo_root=repo_root, db_path=db_path, export_jsonl=True)
+
+    gen = resolve_generated_path(repo_root)
+    assert (gen / "search_documents.jsonl").exists()
+    assert (gen / "lineage_edges.jsonl").exists()
+
+
+def test_build_index_rejects_invalid(temp_model_dir: Path) -> None:
+    repo_root = temp_model_dir.parent
+    # Add an invalid object
+    (temp_model_dir / "invalid.md").write_text(
+        "---\nid: bad\ntype: BadType\nstatus: draft\n---\n", encoding="utf-8"
+    )
+    db_path = repo_root / "generated" / "modelops.db"
+    with pytest.raises(ValueError, match="Validation failed"):
+        build_index(repo_root=repo_root, db_path=db_path, allow_invalid=False)

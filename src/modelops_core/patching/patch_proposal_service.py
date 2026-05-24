@@ -1,0 +1,92 @@
+"""PatchProposal build, render, write, and transition services."""
+
+from __future__ import annotations
+
+import re
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+from modelops_core.patching.patch_model import PatchOperation
+
+_ID_PATTERN = re.compile(r"^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$")
+
+
+def build_patch_proposal(
+    proposal_id: str,
+    operations: list[PatchOperation],
+    affected_objects: list[str] | None = None,
+    source_evidence: str | None = None,
+    created_by: str = "system",
+) -> dict[str, Any]:
+    """Build an in-memory PatchProposal dict."""
+    return {
+        "id": proposal_id,
+        "type": "PatchProposal",
+        "status": "pending_review",
+        "name": proposal_id,
+        "title": f"Patch Proposal: {proposal_id}",
+        "created_by": created_by,
+        "created_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "source_evidence": source_evidence,
+        "affected_objects": affected_objects or [],
+        "operations": [op.model_dump() for op in operations],
+        "validation_status": "pending",
+        "validation_results": [],
+    }
+
+
+def render_patch_proposal_markdown(proposal: dict[str, Any]) -> str:
+    """Render a PatchProposal dict as canonical Markdown with YAML frontmatter."""
+    frontmatter = dict(proposal)
+    # Remove body-like fields from frontmatter if they exist
+    yaml_text = yaml.safe_dump(
+        frontmatter,
+        default_flow_style=False,
+        sort_keys=False,
+        allow_unicode=True,
+    )
+    lines = ["---", yaml_text.rstrip(), "---", ""]
+    lines.append(f"# Patch Proposal: {proposal.get('id', '')}")
+    lines.append("")
+    if proposal.get("source_evidence"):
+        lines.append("## Source Evidence")
+        lines.append(proposal["source_evidence"])
+        lines.append("")
+    return "\n".join(lines) + "\n"
+
+
+def write_patch_proposal(proposal: dict[str, Any], repo_model_path: Path) -> Path:
+    """Write a PatchProposal to ``model/patch-proposals/{id}.md``."""
+    proposals_dir = repo_model_path / "patch-proposals"
+    proposals_dir.mkdir(parents=True, exist_ok=True)
+    path = proposals_dir / f"{proposal['id']}.md"
+    path.write_text(render_patch_proposal_markdown(proposal), encoding="utf-8")
+    return path
+
+
+def transition_patch_proposal_status(
+    proposal_path: Path, new_status: str
+) -> None:
+    """Transition a PatchProposal's status in its canonical file."""
+    from modelops_core.repository import parse_file
+
+    parsed = parse_file(proposal_path)
+    if parsed.frontmatter is None:
+        raise ValueError("PatchProposal file has no frontmatter")
+
+    frontmatter = dict(parsed.frontmatter)
+    frontmatter["status"] = new_status
+    yaml_text = yaml.safe_dump(
+        frontmatter,
+        default_flow_style=False,
+        sort_keys=False,
+        allow_unicode=True,
+    )
+    lines = ["---", yaml_text.rstrip(), "---"]
+    if parsed.body:
+        lines.append("")
+        lines.append(parsed.body.strip())
+    proposal_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
