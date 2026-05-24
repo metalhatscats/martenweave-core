@@ -615,6 +615,31 @@ def proposal_apply(
         console.print("  Index rebuilt")
 
 
+@app.command("serve")
+def serve(
+    host: str = typer.Option("127.0.0.1", "--host", help="Bind host."),
+    port: int = typer.Option(8000, "--port", help="Bind port."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+) -> None:
+    """Start the local API server."""
+    try:
+        import uvicorn
+    except ImportError as exc:
+        console.print(
+            "[red]uvicorn is required for the API server. "
+            "Install it with: pip install uvicorn[/red]"
+        )
+        raise typer.Exit(code=1) from exc
+
+    repo_root = _resolve_repo(repo)
+    console.print(f"[green]Starting API server at http://{host}:{port}[/green]")
+    console.print(f"  Repository: {repo_root}")
+
+    from modelops_core.api.app import app as api_app
+
+    uvicorn.run(api_app, host=host, port=port)
+
+
 @app.command("import-model-sheet")
 def import_model_sheet(
     input_path: Path = typer.Argument(  # noqa: B008
