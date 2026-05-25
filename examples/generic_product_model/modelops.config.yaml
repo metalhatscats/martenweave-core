@@ -1,0 +1,7 @@
+schema_version: "1.0"
+name: Generic Product Model
+description: Domain-neutral product catalog example for core validation.
+model_path: model
+generated_path: generated
+data_path: data
+enabled_domain_packs: []

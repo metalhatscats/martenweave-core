@@ -1,0 +1,77 @@
+name: Architecture decision
+description: Explicit decision for architecture, boundaries, dependencies, or product scope.
+title: "[ADR] "
+labels: ["architecture", "needs-decision"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What decision is needed?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Current state and why a decision is needed.
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options considered
+      description: List practical options and tradeoffs.
+    validations:
+      required: true
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Recommended decision
+      description: Preferred option and rationale.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - Decision recorded in docs.
+        - Follow-up implementation issues created if needed.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation command
+      render: bash
+      value: |
+        .venv/bin/python scripts/validate_skills.py
+        .venv/bin/python -m ruff check .
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety notes
+      description: Source-of-truth, generated files, secrets, external writes, and approval impact.
+    validations:
+      required: true
+  - type: dropdown
+    id: core_domain_impact
+    attributes:
+      label: Core/domain-pack impact
+      options:
+        - Core architecture
+        - Domain-pack boundary
+        - Integration boundary
+        - AI/approval boundary
+        - Generated-index boundary
+    validations:
+      required: true

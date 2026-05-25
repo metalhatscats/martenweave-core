@@ -1,0 +1,73 @@
+name: Agent task
+description: Small implementation task ready for an AI coding agent.
+title: "[Agent] "
+labels: ["agent-ready"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: One sentence describing the desired outcome.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Files, modules, docs, examples, or behavior that may change.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Testable criteria the agent must satisfy.
+      value: |
+        - 
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation command
+      description: Exact command(s) to run before closeout.
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+      description: Explicit exclusions.
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety notes
+      description: Secrets, raw data, generated artifacts, external writes, and approval constraints.
+    validations:
+      required: true
+  - type: dropdown
+    id: core_domain_impact
+    attributes:
+      label: Core/domain-pack impact
+      options:
+        - Core behavior
+        - Domain pack only
+        - Examples/templates only
+        - Docs/skills only
+        - Tests/CI only
+    validations:
+      required: true
+  - type: dropdown
+    id: generated_boundary
+    attributes:
+      label: Generated/canonical boundary impact
+      options:
+        - No generated artifacts expected
+        - Generated artifacts may be rebuilt but not committed
+        - Generated artifacts intentionally committed
+        - Canonical model files intentionally changed
+    validations:
+      required: true

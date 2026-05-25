@@ -1,0 +1,82 @@
+name: Bug report
+description: Reproducible defect with expected and actual behavior.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should be fixed?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      value: |
+        1. 
+        2. 
+        3. 
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Suspected modules, commands, examples, or docs.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - Reproduction is covered by a test or documented command.
+        - Fix passes validation command.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation command
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety notes
+      description: Secrets, raw data, generated artifacts, external writes, and approval constraints.
+    validations:
+      required: true
+  - type: dropdown
+    id: core_domain_impact
+    attributes:
+      label: Core/domain-pack impact
+      options:
+        - Core behavior
+        - Domain pack only
+        - Examples/templates only
+        - Docs/skills only
+        - Tests/CI only
+    validations:
+      required: true

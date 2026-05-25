@@ -1,0 +1,19 @@
+# AI Development Docs
+
+This directory defines how AI coding agents work in Martenweave Core.
+
+Start here:
+
+1. `AI_DEVELOPMENT_OPERATING_SYSTEM.md` for the overall repo operating model.
+2. `AGENT_CONTEXT_LOADING.md` for what to read before changing files.
+3. `VALIDATION_LADDER.md` for exact commands.
+4. `KIMI_GITHUB_ISSUE_LOOP.md` for issue-by-issue implementation.
+5. `AGENT_SAFETY_RULES.md` before touching canonical model files, generated files, data, or credentials.
+
+Agent roles:
+
+- Kimi is the primary long-loop implementation agent for GitHub issues.
+- Codex is used for architecture audit, planning, validation hardening, refactoring, and repository preparation.
+- Skills and docs are tool-neutral. They must be executable by either agent.
+
+Lower-level AI runtime references remain in this directory under `ai-*.md`.
