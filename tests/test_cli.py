@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -29,6 +30,18 @@ def test_cli_validate(sample_repo: Path) -> None:
     result = runner.invoke(app, ["validate", "--repo", str(sample_repo)])
     assert result.exit_code == 0
     assert "Validation Results" in result.output
+
+
+def test_cli_validate_json_output(sample_repo: Path) -> None:
+    result = runner.invoke(app, ["validate", "--repo", str(sample_repo), "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert "is_valid" in data
+    assert "error_count" in data
+    assert "warning_count" in data
+    assert "info_count" in data
+    assert "results" in data
+    assert isinstance(data["results"], list)
 
 
 def test_cli_build_index(sample_repo: Path) -> None:

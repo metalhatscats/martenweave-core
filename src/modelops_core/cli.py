@@ -376,7 +376,7 @@ def validate(
             "info_count": summary.info_count,
             "results": [r.model_dump() for r in summary.results],
         }
-        console.print(json.dumps(result, indent=2, default=str))
+        print(json.dumps(result, indent=2, default=str))
     else:
         _print_validation_summary(summary)
 
