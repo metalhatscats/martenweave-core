@@ -255,4 +255,332 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
         }
         return json.dumps(output, indent=2, default=str)
 
+    # ------------------------------------------------------------------
+    # Resources
+    # ------------------------------------------------------------------
+
+    @mcp.resource(
+        "modelops://repo/manifest",
+        name="repo_manifest",
+        description="Repository configuration and object counts.",
+        mime_type="application/json",
+    )
+    def repo_manifest() -> str:
+        """Return repository manifest with config and object counts."""
+        model_path = resolve_model_path(repo_root)
+        config = load_repo_config(repo_root)
+        files = scan_repository(model_path) if model_path.exists() else []
+        type_counts: dict[str, int] = {}
+        for f in files:
+            try:
+                obj = parse_file(f)
+                t = obj.frontmatter.get("type", "Unknown")
+                type_counts[t] = type_counts.get(t, 0) + 1
+            except Exception:
+                continue
+        manifest = {
+            "repo_name": config.name if config else None,
+            "schema_version": config.schema_version if config else None,
+            "object_count": len(files),
+            "type_counts": type_counts,
+            "model_path": str(model_path),
+        }
+        return json.dumps(manifest, indent=2, default=str)
+
+    @mcp.resource(
+        "modelops://repo/validation",
+        name="repo_validation",
+        description="Latest validation summary.",
+        mime_type="application/json",
+    )
+    def repo_validation() -> str:
+        """Return the latest validation summary."""
+        model_path = resolve_model_path(repo_root)
+        if not model_path.exists():
+            return json.dumps({"error": "Model path does not exist"})
+        files = scan_repository(model_path)
+        parsed_objects = [parse_file(f) for f in files]
+        config = load_repo_config(repo_root)
+        enabled_packs = config.enabled_domain_packs if config else None
+        summary = validate_objects(parsed_objects, enabled_packs)
+        return json.dumps(
+            {
+                "is_valid": summary.is_valid,
+                "error_count": summary.error_count,
+                "warning_count": summary.warning_count,
+                "info_count": summary.info_count,
+            },
+            indent=2,
+            default=str,
+        )
+
+    @mcp.resource(
+        "modelops://repo/health",
+        name="repo_health",
+        description="Repository health report.",
+        mime_type="application/json",
+    )
+    def repo_health() -> str:
+        """Return repository health metrics."""
+        from modelops_core.reports.health_report import generate_repository_health
+
+        db_path = resolve_generated_path(repo_root) / "modelops.db"
+        if not db_path.exists():
+            return json.dumps(
+                {"error": "No index found. Run validate_model or build_index first."}
+            )
+        report = generate_repository_health(db_path)
+        return json.dumps(
+            {
+                "object_count": report.object_count,
+                "index_fresh": report.index_fresh,
+                "coverage_gaps": {
+                    "objects_without_name": report.coverage_gaps.objects_without_name
+                    if report.coverage_gaps
+                    else 0,
+                    "objects_without_description": report.coverage_gaps.objects_without_description
+                    if report.coverage_gaps
+                    else 0,
+                }
+                if report.coverage_gaps
+                else {},
+                "type_counts": report.type_counts,
+            },
+            indent=2,
+            default=str,
+        )
+
+    @mcp.resource(
+        "modelops://repo/scorecard",
+        name="repo_scorecard",
+        description="Governance readiness scorecard.",
+        mime_type="application/json",
+    )
+    def repo_scorecard() -> str:
+        """Return governance scorecard."""
+        from modelops_core.reports.scorecard_service import generate_scorecard
+
+        db_path = resolve_generated_path(repo_root) / "modelops.db"
+        if not db_path.exists():
+            return json.dumps(
+                {"error": "No index found. Run validate_model or build_index first."}
+            )
+        report = generate_scorecard(db_path, repo_root)
+        return json.dumps(
+            {
+                "repo_name": report.repo_name,
+                "readiness_level": report.readiness_level,
+                "object_count": report.object_count,
+                "metrics": [
+                    {
+                        "name": m.name,
+                        "value": m.value,
+                        "target": m.target,
+                        "status": m.status,
+                    }
+                    for m in report.metrics
+                ],
+            },
+            indent=2,
+            default=str,
+        )
+
+    @mcp.resource(
+        "modelops://repo/audit",
+        name="repo_audit",
+        description="Recent audit events (last 50).",
+        mime_type="application/json",
+    )
+    def repo_audit() -> str:
+        """Return recent audit events."""
+        from modelops_core.reports.audit_service import AuditEventService
+
+        service = AuditEventService(repo_root)
+        events = service.read_events()
+        return json.dumps(
+            [e.to_dict() for e in events[-50:]],
+            indent=2,
+            default=str,
+        )
+
+    @mcp.resource(
+        "modelops://repo/proposals",
+        name="repo_proposals",
+        description="List of PatchProposals in the repository.",
+        mime_type="application/json",
+    )
+    def repo_proposals() -> str:
+        """Return a list of PatchProposals."""
+        model_path = resolve_model_path(repo_root)
+        proposals_dir = model_path / "patch-proposals"
+        if not proposals_dir.exists():
+            return json.dumps({"proposals": []})
+        proposals = []
+        for f in sorted(proposals_dir.glob("PP-*.md")):
+            try:
+                parsed = parse_file(f)
+                fm = parsed.frontmatter or {}
+                proposals.append(
+                    {
+                        "id": fm.get("id", f.stem),
+                        "status": fm.get("status"),
+                        "validation_status": fm.get("validation_status"),
+                        "operations_count": len(fm.get("operations", [])),
+                        "applied_at": fm.get("applied_at"),
+                    }
+                )
+            except Exception:
+                continue
+        return json.dumps({"proposals": proposals}, indent=2, default=str)
+
+    @mcp.resource(
+        "modelops://repo/sources",
+        name="repo_sources",
+        description="Registered import source summary.",
+        mime_type="application/json",
+    )
+    def repo_sources() -> str:
+        """Return registered import sources."""
+        from modelops_core.reports.source_registry_service import SourceRegistryService
+
+        service = SourceRegistryService(repo_root)
+        entries = service.list_sources()
+        return json.dumps(
+            {"sources": entries},
+            indent=2,
+            default=str,
+        )
+
+    @mcp.resource(
+        "modelops://object/{object_id}",
+        name="object_by_id",
+        description="Full frontmatter for a single object.",
+        mime_type="application/json",
+    )
+    def object_by_id(object_id: str) -> str:
+        """Return full frontmatter for a single object."""
+        db_path = _ensure_index(repo_root)
+        obj = get_object_by_id(db_path, object_id)
+        if obj is None:
+            return json.dumps({"error": f"Object not found: {object_id}"})
+        return json.dumps(obj, indent=2, default=str)
+
+    # ------------------------------------------------------------------
+    # Prompts
+    # ------------------------------------------------------------------
+
+    @mcp.prompt()
+    def review_proposal(proposal_id: str) -> list[dict[str, str]]:
+        """Guide an agent through reviewing a PatchProposal."""
+        return [
+            {
+                "role": "user",
+                "content": (
+                    f"Review PatchProposal {proposal_id} for safety and correctness.\n\n"
+                    "1. Use get_object to read the proposal if it exists as a canonical object.\n"
+                    "2. Use trace_object_tool to assess impact of affected objects.\n"
+                    "3. Use validate_model to check if the repository is currently valid.\n"
+                    "4. Look for risks: breaking changes, missing references, ownership gaps.\n"
+                    "5. Recommend approve, reject, or request changes with reasoning.\n\n"
+                    "Do not apply the proposal without human approval."
+                ),
+            }
+        ]
+
+    @mcp.prompt()
+    def explain_trace(object_id: str) -> list[dict[str, str]]:
+        """Guide an agent to explain the lineage of an object."""
+        return [
+            {
+                "role": "user",
+                "content": (
+                    f"Explain the data lineage for object {object_id}.\n\n"
+                    "1. Use get_object to understand what this object represents.\n"
+                    "2. Use trace_object_tool with direction='upstream' to find sources.\n"
+                    "3. Use trace_object_tool with direction='downstream' to find consumers.\n"
+                    "4. Summarize the trace in business terms: what flows in, what flows out, "
+                    "and what transformations happen along the way.\n\n"
+                    "Keep the explanation concise and focused on business meaning."
+                ),
+            }
+        ]
+
+    @mcp.prompt()
+    def find_governance_gaps() -> list[dict[str, str]]:
+        """Guide an agent to find coverage and governance gaps."""
+        return [
+            {
+                "role": "user",
+                "content": (
+                    "Find governance gaps in this Martenweave repository.\n\n"
+                    "1. Use health_report to get coverage metrics.\n"
+                    "2. Use validate_model to find validation issues.\n"
+                    "3. Use query_model with object_type='Attribute' to list attributes "
+                    "and check for missing entity_context.\n"
+                    "4. Use query_model with object_type='FieldEndpoint' to check for "
+                    "missing value_list or mapping coverage.\n"
+                    "5. Summarize the top 5 gaps with severity and suggested fixes.\n\n"
+                    "Focus on actionable gaps that a data steward could address."
+                ),
+            }
+        ]
+
+    @mcp.prompt()
+    def build_model_from_file(dataset_path: str) -> list[dict[str, str]]:
+        """Guide an agent to build a draft model from a dataset."""
+        return [
+            {
+                "role": "user",
+                "content": (
+                    f"Build a draft model from dataset at {dataset_path}.\n\n"
+                    "1. Use validate_model to understand the current model state.\n"
+                    "2. Suggest Domain, Entity, Attribute, and FieldEndpoint candidates "
+                    "based on the dataset structure.\n"
+                    "3. Propose a PatchProposal with add operations for new objects.\n"
+                    "4. Ensure every Attribute has an entity_context where possible.\n"
+                    "5. Ensure every FieldEndpoint has a corresponding Attribute.\n\n"
+                    "Do not apply the proposal directly. Return it for human review."
+                ),
+            }
+        ]
+
+    @mcp.prompt()
+    def prepare_excel_review() -> list[dict[str, str]]:
+        """Guide an agent to prepare an Excel export for business review."""
+        return [
+            {
+                "role": "user",
+                "content": (
+                    "Prepare an Excel workbook for business review of this model.\n\n"
+                    "1. Use query_model to list active objects by type.\n"
+                    "2. Use health_report to identify objects missing names or descriptions.\n"
+                    "3. Recommend which objects need business owner or steward assignment.\n"
+                    "4. Suggest export-model --format xlsx --business-review as the final step.\n\n"
+                    "Focus on making the review package actionable for non-technical stakeholders."
+                ),
+            }
+        ]
+
+    @mcp.prompt()
+    def create_change_request(description: str) -> list[dict[str, str]]:
+        """Guide an agent to create a well-formed ChangeRequest."""
+        return [
+            {
+                "role": "user",
+                "content": (
+                    f"Create a ChangeRequest for: {description}\n\n"
+                    "1. Use validate_model to confirm the current model state.\n"
+                    "2. Identify affected objects using query_model or search_model.\n"
+                    "3. Use trace_object_tool to assess downstream impact.\n"
+                    "4. Draft a ChangeRequest with:\n"
+                    "   - Clear title and reason\n"
+                    "   - List of affected_object IDs\n"
+                    "   - Expected impact summary\n"
+                    "   - Required approvers based on object ownership\n\n"
+                    "Do not modify canonical files directly. "
+                    "Output a ChangeRequest for human review."
+                ),
+            }
+        ]
+
     return mcp
