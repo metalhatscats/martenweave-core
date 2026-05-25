@@ -1,4 +1,5 @@
 ---
+schema_version: "1.0"
 id: ATTR-PRODUCT-ACTIVE
 type: Attribute
 status: active

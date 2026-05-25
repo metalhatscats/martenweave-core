@@ -1,4 +1,5 @@
 ---
+schema_version: "1.0"
 id: ENTITY-PRODUCT
 type: BusinessEntity
 status: active

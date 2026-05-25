@@ -1,4 +1,5 @@
 ---
+schema_version: "1.0"
 id: VLIST-PRODUCT-COLOR-LEGACY
 type: ValueList
 status: active

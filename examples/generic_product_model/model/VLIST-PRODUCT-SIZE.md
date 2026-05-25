@@ -1,4 +1,5 @@
 ---
+schema_version: "1.0"
 id: VLIST-PRODUCT-SIZE
 type: ValueList
 status: active

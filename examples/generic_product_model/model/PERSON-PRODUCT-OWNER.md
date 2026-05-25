@@ -1,4 +1,5 @@
 ---
+schema_version: "1.0"
 id: PERSON-PRODUCT-OWNER
 type: Person
 status: active
