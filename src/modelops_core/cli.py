@@ -48,6 +48,10 @@ from modelops_core.imports.model_sheet_import_service import (
     import_model_sheet_xlsx,
 )
 from modelops_core.index import build_index as _build_index
+from modelops_core.index.query_service import (
+    query_objects,
+    search_objects,
+)
 from modelops_core.issue_draft import (
     create_draft_from_change_request,
     create_draft_from_proposal,
@@ -2098,6 +2102,143 @@ def diff(
                 new_str = str(fc.new_value) if fc.new_value is not None else "—"
                 table.add_row(fc.field, old_str, new_str)
             console.print(table)
+
+
+@app.command("search")
+def search(
+    query: str = typer.Argument(..., help="Search query (keywords)."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    object_type: str | None = typer.Option(
+        None, "--type", help="Filter by object type."
+    ),
+    status: str | None = typer.Option(
+        None, "--status", help="Filter by status."
+    ),
+    domain: str | None = typer.Option(
+        None, "--domain", help="Filter by domain ID."
+    ),
+    limit: int = typer.Option(50, "--limit", help="Maximum results."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Search indexed objects by keyword."""
+    repo_root = _resolve_repo(repo)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+
+    if not db_path.exists():
+        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        raise typer.Exit(code=1)
+
+    results = search_objects(
+        db_path=db_path,
+        query=query,
+        object_type=object_type,
+        status=status,
+        domain=domain,
+        limit=limit,
+    )
+
+    if json_output:
+        output = [
+            {
+                "object_id": r.object_id,
+                "object_type": r.object_type,
+                "status": r.status,
+                "name": r.name,
+                "title": r.title,
+                "domain": r.domain,
+                "source_file": r.source_file,
+                "score": r.score,
+                "matched_fields": r.matched_fields,
+            }
+            for r in results
+        ]
+        console.print(json.dumps(output, indent=2, default=str))
+        raise typer.Exit()
+
+    if not results:
+        console.print("[yellow]No results found.[/yellow]")
+        raise typer.Exit()
+
+    console.print(f"[bold]Search Results ({len(results)})[/bold]")
+    table = Table("ID", "Type", "Name", "Status", "Score", "Matched")
+    for r in results:
+        table.add_row(
+            r.object_id,
+            r.object_type,
+            r.name or r.title or "—",
+            r.status,
+            str(r.score),
+            ", ".join(r.matched_fields) or "—",
+        )
+    console.print(table)
+
+
+@app.command("query")
+def query(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    object_type: str | None = typer.Option(
+        None, "--type", help="Filter by object type."
+    ),
+    status: str | None = typer.Option(
+        None, "--status", help="Filter by status."
+    ),
+    domain: str | None = typer.Option(
+        None, "--domain", help="Filter by domain ID."
+    ),
+    name_like: str | None = typer.Option(
+        None, "--name-like", help="Substring match on name."
+    ),
+    limit: int = typer.Option(50, "--limit", help="Maximum results."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Run a structured query over the generated index."""
+    repo_root = _resolve_repo(repo)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+
+    if not db_path.exists():
+        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        raise typer.Exit(code=1)
+
+    results = query_objects(
+        db_path=db_path,
+        object_type=object_type,
+        status=status,
+        domain=domain,
+        name_like=name_like,
+        limit=limit,
+    )
+
+    if json_output:
+        output = [
+            {
+                "object_id": r.object_id,
+                "object_type": r.object_type,
+                "status": r.status,
+                "name": r.name,
+                "title": r.title,
+                "domain": r.domain,
+                "source_file": r.source_file,
+            }
+            for r in results
+        ]
+        console.print(json.dumps(output, indent=2, default=str))
+        raise typer.Exit()
+
+    if not results:
+        console.print("[yellow]No results found.[/yellow]")
+        raise typer.Exit()
+
+    console.print(f"[bold]Query Results ({len(results)})[/bold]")
+    table = Table("ID", "Type", "Name", "Status", "Domain")
+    for r in results:
+        table.add_row(
+            r.object_id,
+            r.object_type,
+            r.name or r.title or "—",
+            r.status,
+            r.domain or "—",
+        )
+    console.print(table)
 
 
 @app.command("migrate")
