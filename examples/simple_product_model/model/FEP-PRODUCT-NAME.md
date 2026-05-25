@@ -1,4 +1,5 @@
 ---
+schema_version: "1.0"
 id: FEP-PRODUCT-NAME
 type: FieldEndpoint
 status: active

@@ -1,4 +1,5 @@
 ---
+schema_version: "1.0"
 id: VMAP-COLOR-TO-LEGACY
 type: ValueMapping
 status: active

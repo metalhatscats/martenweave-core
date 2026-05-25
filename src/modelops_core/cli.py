@@ -43,9 +43,16 @@ from modelops_core.imports import (
     profile_csv,
     profile_xlsx,
 )
+from modelops_core.imports.dataset_profiler import WorkbookProfile
 from modelops_core.imports.model_sheet_import_service import (
     import_model_sheet_csv,
     import_model_sheet_xlsx,
+)
+from modelops_core.imports.privacy import (
+    DatasetPrivacyPolicy,
+    apply_privacy_to_profile,
+    apply_privacy_to_workbook,
+    detect_high_risk_columns,
 )
 from modelops_core.index import build_index as _build_index
 from modelops_core.index.query_service import (
@@ -226,6 +233,11 @@ def profile_dataset(
     file: Path = typer.Argument(..., help="Path to CSV or XLSX file."),  # noqa: B008
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+    include_raw_samples: bool = typer.Option(
+        False,
+        "--include-raw-samples",
+        help="Include raw sample values in the saved profile (default: redacted).",
+    ),
 ) -> None:
     """Profile a dataset file (CSV or XLSX) and save the profile."""
     repo_root = _resolve_repo(repo)
@@ -241,12 +253,23 @@ def profile_dataset(
     suffix = file.suffix.lower()
 
     if suffix == ".csv":
-        profile = profile_csv(file, dataset_id=dataset_id)
+        raw_profile = profile_csv(file, dataset_id=dataset_id)
     elif suffix in {".xlsx", ".xls"}:
-        profile = profile_xlsx(file, dataset_id=dataset_id)
+        raw_profile = profile_xlsx(file, dataset_id=dataset_id)
     else:
         console.print(f"[red]Unsupported file format: {suffix}[/red]")
         raise typer.Exit(code=1)
+
+    # Apply privacy controls
+    policy = DatasetPrivacyPolicy(include_raw_samples=include_raw_samples)
+    if isinstance(raw_profile, WorkbookProfile):
+        profile = apply_privacy_to_workbook(raw_profile, policy)
+        high_risk_cols: list[str] = []
+        for sheet in profile.sheets:
+            high_risk_cols.extend(detect_high_risk_columns(sheet))
+    else:
+        profile = apply_privacy_to_profile(raw_profile, policy)
+        high_risk_cols = detect_high_risk_columns(profile)
 
     profile_dict = dataset_profile_to_dict(profile)
     output_path = profile_dir / f"{dataset_id}.json"
@@ -256,7 +279,7 @@ def profile_dataset(
     )
 
     if json_output:
-        console.print(json.dumps(profile_dict, indent=2, default=str, sort_keys=True))
+        print(json.dumps(profile_dict, indent=2, default=str, sort_keys=True))
     else:
         console.print(f"[green]Profile saved to {output_path}[/green]")
         if hasattr(profile, "sheet_names"):
@@ -270,6 +293,13 @@ def profile_dataset(
             console.print(f"  Rows: {profile.row_count}")
             console.print(f"  Columns: {profile.column_count}")
             console.print(f"  Status: {'OK' if profile.status.success else 'TRUNCATED'}")
+
+    if high_risk_cols:
+        console.print(
+            f"[yellow]Privacy warning: detected high-risk columns: "
+            f"{', '.join(sorted(set(high_risk_cols)))}. "
+            f"Sample values redacted.[/yellow]"
+        )
 
 
 @app.command()
@@ -315,7 +345,7 @@ def infer_model(
     proposal_path = write_patch_proposal(proposal, model_path)
 
     if json_output:
-        console.print(json.dumps(proposal, indent=2, default=str, sort_keys=True))
+        print(json.dumps(proposal, indent=2, default=str, sort_keys=True))
     else:
         console.print(f"[green]PatchProposal written to {proposal_path}[/green]")
         console.print(f"  ID: {proposal['id']}")
@@ -376,7 +406,7 @@ def validate(
             "info_count": summary.info_count,
             "results": [r.model_dump() for r in summary.results],
         }
-        console.print(json.dumps(result, indent=2, default=str))
+        print(json.dumps(result, indent=2, default=str))
     else:
         _print_validation_summary(summary)
 
@@ -472,7 +502,7 @@ def health(
             ],
             "type_counts": report.type_counts,
         }
-        console.print(json.dumps(result, indent=2, default=str))
+        print(json.dumps(result, indent=2, default=str))
         raise typer.Exit()
 
     console.print("[bold]Repository Health[/bold]")
@@ -591,7 +621,7 @@ def analyze(
                 else [],
             },
         }
-        console.print(json.dumps(result, indent=2, default=str))
+        print(json.dumps(result, indent=2, default=str))
         raise typer.Exit()
 
     console.print("[bold]Model Analysis[/bold]")
@@ -705,7 +735,7 @@ def trace(
                 for e in result.edges
             ],
         }
-        console.print(json.dumps(data, indent=2, default=str))
+        print(json.dumps(data, indent=2, default=str))
         raise typer.Exit()
 
     console.print(f"[bold]Trace: {object_id}[/bold]")
@@ -764,7 +794,7 @@ def impact(
                 for o in report.affected_objects
             ],
         }
-        console.print(json.dumps(result, indent=2, default=str))
+        print(json.dumps(result, indent=2, default=str))
     else:
         console.print(f"[bold]Impact Report for {object_id}[/bold]")
         console.print(f"  Type: {report.root_object_type or 'Unknown'}")
@@ -798,19 +828,23 @@ def propose_patch(
 
     result = build_patch_proposal_from_note(note)
 
+    proposal = result.get("proposal")
+    if proposal is None:
+        if json_output:
+            print(json.dumps(result, indent=2, default=str))
+        else:
+            console.print("[red]No proposal generated.[/red]")
+        raise typer.Exit(code=1)
+
+    path = write_patch_proposal(proposal, model_path)
+
     if json_output:
-        console.print(json.dumps(result, indent=2, default=str))
+        print(json.dumps(result, indent=2, default=str))
         return
 
     if not result.get("is_safe"):
         console.print("[yellow]Proposal generated but failed validation.[/yellow]")
 
-    proposal = result.get("proposal")
-    if proposal is None:
-        console.print("[red]No proposal generated.[/red]")
-        raise typer.Exit(code=1)
-
-    path = write_patch_proposal(proposal, model_path)
     console.print(f"[green]Patch proposal written to {path}[/green]")
     console.print(f"  ID:    {proposal['id']}")
     console.print(f"  Ops:   {len(proposal.get('operations', []))}")
@@ -1347,10 +1381,6 @@ def notifications_list(
     repo_root = _resolve_repo(repo)
     events = read_notification_events(repo_root)
 
-    if not events:
-        console.print("[yellow]No notification events found.[/yellow]")
-        raise typer.Exit()
-
     filtered = filter_notification_events(
         events,
         recipient=recipient,
@@ -1361,6 +1391,10 @@ def notifications_list(
 
     if json_output:
         print(json.dumps([e.to_dict() for e in filtered], indent=2, default=str))
+        raise typer.Exit()
+
+    if not events:
+        console.print("[yellow]No notification events found.[/yellow]")
         raise typer.Exit()
 
     console.print(f"[bold]Notification Events ({len(filtered)})[/bold]")
@@ -1604,7 +1638,7 @@ def proposal_impact(
                 for op_report in report.operation_reports
             ],
         }
-        console.print(json.dumps(result, indent=2, default=str))
+        print(json.dumps(result, indent=2, default=str))
         raise typer.Exit()
 
     console.print(f"[bold]Impact Report for {proposal_id}[/bold]")
@@ -1841,7 +1875,7 @@ def import_model_sheet(
     )
 
     if json_output:
-        console.print(json.dumps(proposal, indent=2, default=str))
+        print(json.dumps(proposal, indent=2, default=str))
     else:
         console.print(f"[bold]PatchProposal: {proposal['id']}[/bold]")
         console.print(f"  Operations: {len(proposal['operations'])}")
@@ -1926,7 +1960,7 @@ def audit_log(
     )
 
     if json_output:
-        console.print(json.dumps([e.to_dict() for e in filtered], indent=2, default=str))
+        print(json.dumps([e.to_dict() for e in filtered], indent=2, default=str))
         raise typer.Exit()
 
     console.print(f"[bold]Audit Log ({len(filtered)} events)[/bold]")
@@ -1970,7 +2004,7 @@ def config_guard(
                 }
                 for i in issues
             ]
-        console.print(json.dumps(output, indent=2, default=str))
+        print(json.dumps(output, indent=2, default=str))
         if has_blocking_issues(results):
             raise typer.Exit(code=1)
         raise typer.Exit()
@@ -2057,7 +2091,7 @@ def diff(
                 for c in result.changed
             ],
         }
-        console.print(json.dumps(output, indent=2, default=str))
+        print(json.dumps(output, indent=2, default=str))
         raise typer.Exit()
 
     console.print("[bold]Model Diff[/bold]")
@@ -2152,7 +2186,7 @@ def search(
             }
             for r in results
         ]
-        console.print(json.dumps(output, indent=2, default=str))
+        print(json.dumps(output, indent=2, default=str))
         raise typer.Exit()
 
     if not results:
@@ -2221,7 +2255,7 @@ def query(
             }
             for r in results
         ]
-        console.print(json.dumps(output, indent=2, default=str))
+        print(json.dumps(output, indent=2, default=str))
         raise typer.Exit()
 
     if not results:

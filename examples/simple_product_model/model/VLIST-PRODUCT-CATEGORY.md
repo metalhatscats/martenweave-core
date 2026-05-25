@@ -1,4 +1,5 @@
 ---
+schema_version: "1.0"
 id: VLIST-PRODUCT-CATEGORY
 type: ValueList
 status: active

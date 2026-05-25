@@ -28,27 +28,29 @@ SAP migration and Master Data Management are the **first domain pack** and proof
 
 ## Quickstart
 
+Martenweave Core requires Python 3.11+. The examples below use the project venv directly; activate it first with `source .venv/bin/activate` if you prefer bare commands.
+
 ```bash
 # Install
-pip install -e .
+.venv/bin/python -m pip install -e .
 
 # Scaffold a new repository
-modelops init ./my-model
+.venv/bin/modelops init ./my-model
 
 # Validate canonical files
-modelops validate --repo ./my-model
+.venv/bin/modelops validate --repo ./my-model
 
 # Build SQLite index + JSONL exports
-modelops build-index --repo ./my-model --jsonl
+.venv/bin/modelops build-index --repo ./my-model --jsonl
 
 # Health report
-modelops health --repo ./my-model
+.venv/bin/modelops health --repo ./my-model
 
 # Impact analysis
-modelops impact FEP-S4-KNVV-KDGRP --repo ./my-model
+.venv/bin/modelops impact FEP-S4-KNVV-KDGRP --repo ./my-model
 
 # Propose a patch from a note
-modelops propose-patch --from ./note.md --repo ./my-model
+.venv/bin/modelops propose-patch --from ./note.md --repo ./my-model
 ```
 
 ## Example Model
@@ -62,7 +64,7 @@ Business Partner -> Customer -> Customer Sales Area -> Customer Group -> KNVV-KD
 Run validation against it:
 
 ```bash
-modelops validate --repo examples/customer_bp_model
+.venv/bin/modelops validate --repo examples/customer_bp_model
 ```
 
 ## Architecture
@@ -103,10 +105,10 @@ Future domain packs can add their own validation rules without changing core con
 
 ```bash
 # Run tests
-pytest
+.venv/bin/python -m pytest
 
 # Lint
-ruff check .
+.venv/bin/python -m ruff check .
 ```
 
 ## License
