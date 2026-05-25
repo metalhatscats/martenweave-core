@@ -36,6 +36,10 @@ from modelops_core.diff import diff_repositories
 from modelops_core.docs.static_doc_generator import generate_static_docs
 from modelops_core.errors import ResourceLimitExceeded
 from modelops_core.exports import export_model_csv, export_model_xlsx
+from modelops_core.exports.github_publish_service import (
+    publish_issue_from_draft,
+    publish_pr_from_bundle,
+)
 from modelops_core.exports.google_sheets_export import export_to_google_sheets
 from modelops_core.guardrails.config_guard import (
     has_blocking_issues,
@@ -2463,6 +2467,99 @@ def git_bundle(
         console.print(f"  README: {result.readme_path}")
         console.print(f"  PR body: {result.pr_body_path}")
         console.print(f"  Commit message: {result.pr_body_path.parent / 'COMMIT_MESSAGE.txt'}")
+
+
+@app.command("publish-issue")
+def publish_issue(
+    draft: Path = typer.Argument(  # noqa: B008
+        ..., help="Path to issue draft Markdown file."
+    ),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    github_repo: str = typer.Option(  # noqa: B008
+        ..., "--github-repo", help="Target GitHub repo (owner/name)."
+    ),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Preview without creating."),
+    label: list[str] | None = typer.Option(  # noqa: B008
+        None, "--label", help="GitHub labels."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Publish an issue draft to GitHub.
+
+    Requires requests. Install with: pip install modelops_core[github]
+    """
+    repo_root = _resolve_repo(repo)
+
+    try:
+        result = publish_issue_from_draft(
+            repo_root=repo_root,
+            github_repo=github_repo,
+            draft_path=draft,
+            labels=label if label else None,
+            dry_run=dry_run,
+        )
+    except Exception as exc:
+        console.print(f"[red]Failed to publish issue: {exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        print(json.dumps(result, indent=2, default=str))
+    else:
+        if dry_run:
+            console.print("[yellow]Dry-run preview:[/yellow]")
+            console.print(f"  Title: {result['title']}")
+            console.print(f"  Repo: {result['repo']}")
+            console.print(f"  Labels: {', '.join(result['labels'])}")
+            console.print(f"  Body preview: {result['body']}")
+        else:
+            console.print("[green]Issue published[/green]")
+            console.print(f"  URL: {result['issue_url']}")
+            console.print(f"  Number: {result['issue_number']}")
+
+
+@app.command("publish-pr")
+def publish_pr(
+    proposal_id: str = typer.Argument(..., help="PatchProposal ID to publish."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    github_repo: str = typer.Option(..., "--github-repo", help="Target GitHub repo (owner/name)."),
+    head: str = typer.Option(..., "--head", help="Branch with changes."),
+    base: str = typer.Option("main", "--base", help="Branch to merge into."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Preview without creating."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Publish a git bundle as a GitHub pull request.
+
+    Requires requests. Install with: pip install modelops_core[github]
+    """
+    repo_root = _resolve_repo(repo)
+
+    try:
+        result = publish_pr_from_bundle(
+            repo_root=repo_root,
+            github_repo=github_repo,
+            proposal_id=proposal_id,
+            head_branch=head,
+            base_branch=base,
+            dry_run=dry_run,
+        )
+    except Exception as exc:
+        console.print(f"[red]Failed to publish PR: {exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        print(json.dumps(result, indent=2, default=str))
+    else:
+        if dry_run:
+            console.print("[yellow]Dry-run preview:[/yellow]")
+            console.print(f"  Title: {result['title']}")
+            console.print(f"  Repo: {result['repo']}")
+            console.print(f"  Head: {result['head']} -> Base: {result['base']}")
+            console.print(f"  Affected objects: {len(result['affected_objects'])}")
+            console.print(f"  Body preview: {result['body']}")
+        else:
+            console.print("[green]Pull request published[/green]")
+            console.print(f"  URL: {result['pr_url']}")
+            console.print(f"  Number: {result['pr_number']}")
 
 
 @app.command("audit-log")
