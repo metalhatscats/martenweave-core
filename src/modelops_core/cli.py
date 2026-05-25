@@ -30,6 +30,10 @@ from modelops_core.config import (
     resolve_model_path,
 )
 from modelops_core.exports import export_model_csv, export_model_xlsx
+from modelops_core.guardrails.config_guard import (
+    has_blocking_issues,
+    run_all_checks,
+)
 from modelops_core.impact.impact_service import generate_impact_report
 from modelops_core.impact.proposal_impact_service import generate_proposal_impact_report
 from modelops_core.imports import (
@@ -1910,6 +1914,69 @@ def audit_log(
             e.proposal_id or "—",
         )
     console.print(table)
+
+
+@app.command("config-guard")
+def config_guard(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Scan repository for secrets and configuration guardrail issues."""
+    repo_root = _resolve_repo(repo)
+
+    results = run_all_checks(repo_root)
+
+    if json_output:
+        output: dict[str, Any] = {}
+        for check_name, issues in results.items():
+            output[check_name] = [
+                {
+                    "code": i.code,
+                    "message": i.message,
+                    "file_path": i.file_path,
+                    "line_number": i.line_number,
+                    "severity": i.severity,
+                }
+                for i in issues
+            ]
+        console.print(json.dumps(output, indent=2, default=str))
+        if has_blocking_issues(results):
+            raise typer.Exit(code=1)
+        raise typer.Exit()
+
+    total_issues = sum(len(v) for v in results.values())
+    error_count = sum(
+        1 for issues in results.values() for i in issues if i.severity == "ERROR"
+    )
+    warning_count = sum(
+        1 for issues in results.values() for i in issues if i.severity == "WARNING"
+    )
+
+    console.print("[bold]Configuration Guardrails[/bold]")
+    console.print(f"  Checks: {len(results)}")
+    console.print(f"  Issues: {total_issues} ({error_count} errors, {warning_count} warnings)")
+
+    for check_name, issues in results.items():
+        if not issues:
+            continue
+        console.print(f"\n[bold]{check_name}[/bold] ({len(issues)} issues)")
+        table = Table("Severity", "Code", "File", "Line", "Message")
+        for i in issues:
+            table.add_row(
+                i.severity,
+                i.code,
+                i.file_path or "—",
+                str(i.line_number) if i.line_number else "—",
+                i.message,
+            )
+        console.print(table)
+
+    if has_blocking_issues(results):
+        console.print("[red]Blocking issues found.[/red]")
+        raise typer.Exit(code=1)
+
+    if total_issues == 0:
+        console.print("[green]All guardrail checks passed.[/green]")
 
 
 if __name__ == "__main__":
