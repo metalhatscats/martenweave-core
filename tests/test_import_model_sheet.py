@@ -16,6 +16,8 @@ from modelops_core.imports.model_sheet_import_service import (
 
 runner = CliRunner()
 
+FIXTURES_DIR = Path(__file__).parent / "fixtures"
+
 
 def test_import_csv_no_changes(temp_model_dir: Path) -> None:
     export_model_csv(temp_model_dir)
@@ -128,3 +130,67 @@ def test_cli_import_model_sheet_invalid_input(temp_model_dir: Path) -> None:
     )
     assert result.exit_code == 1
     assert "must be a CSV directory or an .xlsx workbook" in result.output
+
+
+# ---------------------------------------------------------------------------
+# Hardened Excel import tests (#47)
+# ---------------------------------------------------------------------------
+
+
+def test_import_xlsx_structured_workbook(sample_repo: Path) -> None:
+    pytest.importorskip("openpyxl")
+    xlsx_path = FIXTURES_DIR / "product_model.xlsx"
+    proposal = import_model_sheet_xlsx(xlsx_path, sample_repo / "model")
+    assert proposal["id"].startswith("PP-IMPORT-")
+    create_ops = [op for op in proposal["operations"] if op["op"] == "create_object"]
+    assert len(create_ops) >= 4  # domain, entity, attributes, field endpoints, value list
+    assert any(op["object_id"] == "DOMAIN-PRODUCT" for op in create_ops)
+    assert any(op["object_id"] == "ATTR-PRODUCT-ID" for op in create_ops)
+
+
+def test_import_xlsx_broken_reference_warning(sample_repo: Path) -> None:
+    pytest.importorskip("openpyxl")
+    xlsx_path = FIXTURES_DIR / "product_model_broken_refs.xlsx"
+    proposal = import_model_sheet_xlsx(xlsx_path, sample_repo / "model")
+    assert any(
+        "Broken reference" in w and "DOMAIN-NONEXISTENT" in w
+        for w in proposal.get("warnings", [])
+    )
+    assert any(
+        "Broken reference" in w and "ENTITY-NONEXISTENT" in w
+        for w in proposal.get("warnings", [])
+    )
+
+
+def test_import_xlsx_duplicate_id_warning(sample_repo: Path) -> None:
+    pytest.importorskip("openpyxl")
+    xlsx_path = FIXTURES_DIR / "product_model_duplicate_ids.xlsx"
+    proposal = import_model_sheet_xlsx(xlsx_path, sample_repo / "model")
+    assert any("Duplicate ID" in w for w in proposal.get("warnings", []))
+
+
+def test_import_xlsx_formula_warning(sample_repo: Path) -> None:
+    pytest.importorskip("openpyxl")
+    xlsx_path = FIXTURES_DIR / "product_model_with_formulas.xlsx"
+    proposal = import_model_sheet_xlsx(xlsx_path, sample_repo / "model")
+    assert any("Formula detected" in w for w in proposal.get("warnings", []))
+
+
+def test_import_xlsx_unknown_sheet_type_warning(sample_repo: Path) -> None:
+    pytest.importorskip("openpyxl")
+    from openpyxl import Workbook
+
+    wb = Workbook()
+    wb.remove(wb.active)
+    ws = wb.create_sheet("UnknownTypeSheet")
+    ws.append(["id", "type", "status", "name"])
+    ws.append(["OBJ-001", "UnknownType", "draft", "Test"])
+    xlsx_path = sample_repo.parent / "unknown_type.xlsx"
+    wb.save(xlsx_path)
+    wb.close()
+
+    proposal = import_model_sheet_xlsx(xlsx_path, sample_repo / "model")
+    assert any(
+        "does not match a known object type" in w
+        for w in proposal.get("warnings", [])
+    )
