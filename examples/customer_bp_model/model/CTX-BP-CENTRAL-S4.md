@@ -2,6 +2,7 @@
 id: CTX-BP-CENTRAL-S4
 type: EntityContext
 status: active
+schema_version: "1.0"
 name: BP Central S/4 Context
 domain: DOMAIN-CUSTOMER-BP
 entity: ENTITY-BP-CENTRAL

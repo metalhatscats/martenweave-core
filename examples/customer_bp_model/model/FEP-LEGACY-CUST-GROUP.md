@@ -2,6 +2,7 @@
 id: FEP-LEGACY-CUST-GROUP
 type: FieldEndpoint
 status: active
+schema_version: "1.0"
 name: Legacy Customer Group
 system: SYS-LEGACY-CRM
 endpoint_type: legacy_table_field

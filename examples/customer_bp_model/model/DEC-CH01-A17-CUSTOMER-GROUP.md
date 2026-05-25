@@ -2,6 +2,7 @@
 id: DEC-CH01-A17-CUSTOMER-GROUP
 type: Decision
 status: proposed
+schema_version: "1.0"
 title: Customer Group CH01 / A17 handling decision
 domain: DOMAIN-CUSTOMER-BP
 related_issue: ISS-CH01-A17-CONFIG-GAP

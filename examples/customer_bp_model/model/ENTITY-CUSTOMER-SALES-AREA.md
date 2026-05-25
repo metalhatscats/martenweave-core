@@ -2,6 +2,7 @@
 id: ENTITY-CUSTOMER-SALES-AREA
 type: BusinessEntity
 status: active
+schema_version: "1.0"
 name: Customer Sales Area
 domain: DOMAIN-CUSTOMER-BP
 description: >

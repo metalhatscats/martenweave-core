@@ -2,6 +2,7 @@
 id: VAL-CUST-GROUP-ALLOWED-VALUES
 type: ValidationRule
 status: active
+schema_version: "1.0"
 name: Customer Group Allowed Values
 domain: DOMAIN-CUSTOMER-BP
 attribute: ATTR-CUST-SALES-CUSTOMER-GROUP

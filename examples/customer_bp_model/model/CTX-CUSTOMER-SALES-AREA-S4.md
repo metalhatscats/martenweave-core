@@ -2,6 +2,7 @@
 id: CTX-CUSTOMER-SALES-AREA-S4
 type: EntityContext
 status: active
+schema_version: "1.0"
 name: S/4HANA Customer Sales Area
 system: SYS-S4HANA
 business_entity: ENTITY-CUSTOMER-SALES-AREA

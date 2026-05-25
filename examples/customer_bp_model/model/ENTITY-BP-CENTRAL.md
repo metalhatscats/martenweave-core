@@ -2,6 +2,7 @@
 id: ENTITY-BP-CENTRAL
 type: BusinessEntity
 status: active
+schema_version: "1.0"
 name: Business Partner Central
 domain: DOMAIN-CUSTOMER-BP
 parent_entity: ENTITY-BUSINESS-PARTNER

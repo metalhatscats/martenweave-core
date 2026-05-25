@@ -2,6 +2,7 @@
 id: USE-CUST-SALES-CUSTOMER-GROUP-S4
 type: AttributeUsage
 status: active
+schema_version: "1.0"
 name: Customer Group in S/4 Customer Sales Area
 domain: DOMAIN-CUSTOMER-BP
 attribute: ATTR-CUST-SALES-CUSTOMER-GROUP

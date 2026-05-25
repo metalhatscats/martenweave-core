@@ -2,6 +2,7 @@
 id: CTX-BP-COMPANY-CODE-S4
 type: EntityContext
 status: active
+schema_version: "1.0"
 name: Customer Company Code S/4 Context
 domain: DOMAIN-CUSTOMER-BP
 entity: ENTITY-BP-CUSTOMER

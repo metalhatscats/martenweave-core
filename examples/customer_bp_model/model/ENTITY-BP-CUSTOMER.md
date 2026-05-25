@@ -2,6 +2,7 @@
 id: ENTITY-BP-CUSTOMER
 type: BusinessEntity
 status: active
+schema_version: "1.0"
 name: Customer
 domain: DOMAIN-CUSTOMER-BP
 parent_entity: ENTITY-BUSINESS-PARTNER

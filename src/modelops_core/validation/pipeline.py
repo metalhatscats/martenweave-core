@@ -9,6 +9,7 @@ from typing import Any
 from modelops_core.domain_packs import get_domain_packs
 from modelops_core.repository import ParsedObject
 from modelops_core.schemas import ObjectType, get_expected_target_types
+from modelops_core.schemas.versioning import validate_object_schema_version
 from modelops_core.validation.result import ValidationResult, ValidationSeverity, ValidationSummary
 
 _ID_PATTERN = re.compile(r"^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$")
@@ -120,6 +121,25 @@ def _check_display_name(
     return results
 
 
+def _check_schema_version(
+    frontmatter: dict[str, Any] | None, source_file: str
+) -> list[ValidationResult]:
+    """Check schema_version on a single canonical object."""
+    results: list[ValidationResult] = []
+    for issue in validate_object_schema_version(frontmatter, source_file):
+        results.append(
+            ValidationResult(
+                severity=ValidationSeverity(issue.severity),
+                code=issue.code,
+                message=issue.message,
+                object_id=issue.object_id,
+                source_file=issue.source_file,
+                suggested_fix=issue.suggested_fix,
+            )
+        )
+    return results
+
+
 def _validate_individual(obj: ParsedObject) -> list[ValidationResult]:
     results: list[ValidationResult] = []
 
@@ -154,6 +174,7 @@ def _validate_individual(obj: ParsedObject) -> list[ValidationResult]:
     results.extend(_check_type(obj.frontmatter, obj.source_path))
     results.extend(_check_status(obj.frontmatter, obj.source_path))
     results.extend(_check_display_name(obj.frontmatter, obj.source_path))
+    results.extend(_check_schema_version(obj.frontmatter, obj.source_path))
     return results
 
 

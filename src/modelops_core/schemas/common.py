@@ -82,6 +82,9 @@ class BaseObject(BaseModel):
     id: str = Field(..., description="Canonical object ID.")
     type: ObjectType = Field(..., description="Canonical object type.")
     status: str = Field(..., description="Lifecycle status.")
+    schema_version: str | None = Field(
+        default=None, description="Schema version of this object."
+    )
     name: str | None = Field(default=None, description="Short name.")
     title: str | None = Field(default=None, description="Human-readable title.")
     domain: str | None = Field(default=None, description="Owning domain ID.")

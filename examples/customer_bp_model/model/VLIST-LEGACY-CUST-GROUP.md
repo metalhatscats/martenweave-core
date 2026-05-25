@@ -2,6 +2,7 @@
 id: VLIST-LEGACY-CUST-GROUP
 type: ValueList
 status: active
+schema_version: "1.0"
 name: Legacy Customer Group Values
 value_list_type: custom
 domain: DOMAIN-CUSTOMER-BP

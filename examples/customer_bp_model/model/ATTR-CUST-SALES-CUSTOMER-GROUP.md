@@ -2,6 +2,7 @@
 id: ATTR-CUST-SALES-CUSTOMER-GROUP
 type: Attribute
 status: active
+schema_version: "1.0"
 name: Customer Group
 domain: DOMAIN-CUSTOMER-BP
 semantic_category: sales

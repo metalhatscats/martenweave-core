@@ -2,6 +2,7 @@
 id: ENTITY-BUSINESS-PARTNER
 type: BusinessEntity
 status: active
+schema_version: "1.0"
 name: Business Partner
 domain: DOMAIN-CUSTOMER-BP
 ---

@@ -2,6 +2,7 @@
 id: MAP-CUST-GROUP-LEGACY-TO-KNVV-KDGRP
 type: Mapping
 status: draft
+schema_version: "1.0"
 name: Legacy Customer Group to KNVV-KDGRP
 domain: DOMAIN-CUSTOMER-BP
 source_endpoint: FEP-LEGACY-CUST-GROUP

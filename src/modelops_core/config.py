@@ -15,6 +15,7 @@ class RepoConfig(BaseModel):
     name: str = "Untitled Repository"
     description: str = ""
     version: str = "1.0.0"
+    schema_version: str = "1.0"
     model_path: str = "model"
     generated_path: str = "generated"
     data_path: str = "data"

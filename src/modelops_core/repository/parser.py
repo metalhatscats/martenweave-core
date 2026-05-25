@@ -140,3 +140,25 @@ def _parse_yaml(path: Path) -> ParsedObject:
         body=None,
         parser_error=None,
     )
+
+
+def rewrite_frontmatter(path: str | Path, frontmatter: dict[str, Any]) -> None:
+    """Rewrite a canonical file with new frontmatter, preserving body.
+
+    For Markdown files, replaces the YAML frontmatter block.
+    For YAML-only files, overwrites the entire file.
+    """
+    file_path = Path(path)
+    parsed = parse_file(file_path)
+
+    fm_text = yaml.safe_dump(
+        frontmatter, default_flow_style=False, sort_keys=False, allow_unicode=True
+    )
+
+    if file_path.suffix.lower() == ".md":
+        body = parsed.body or ""
+        new_text = f"---\n{fm_text}---\n\n{body}\n"
+    else:
+        new_text = fm_text
+
+    file_path.write_text(new_text, encoding="utf-8")

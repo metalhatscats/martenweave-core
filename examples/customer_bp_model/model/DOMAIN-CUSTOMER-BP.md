@@ -2,6 +2,7 @@
 id: DOMAIN-CUSTOMER-BP
 type: MasterDataDomain
 status: active
+schema_version: "1.0"
 name: Business Partner / Customer
 description: >
   Master data domain for Business Partner and its Customer role-dependent slice.

@@ -2,6 +2,7 @@
 id: SYS-MIGRATION-FILE
 type: System
 status: active
+schema_version: "1.0"
 name: Migration File Feed
 system_type: file
 description: Flat-file extracts used for the migration load.

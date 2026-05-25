@@ -2,6 +2,7 @@
 id: FEP-S4-BUT000-NAME-ORG1
 type: FieldEndpoint
 status: active
+schema_version: "1.0"
 name: NAME_ORG1
 domain: DOMAIN-CUSTOMER-BP
 entity: ENTITY-BP-CENTRAL

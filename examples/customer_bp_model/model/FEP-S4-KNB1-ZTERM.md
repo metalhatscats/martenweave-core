@@ -2,6 +2,7 @@
 id: FEP-S4-KNB1-ZTERM
 type: FieldEndpoint
 status: active
+schema_version: "1.0"
 name: ZTERM
 domain: DOMAIN-CUSTOMER-BP
 entity: ENTITY-BP-CUSTOMER

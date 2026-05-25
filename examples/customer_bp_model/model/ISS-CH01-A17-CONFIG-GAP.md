@@ -2,6 +2,7 @@
 id: ISS-CH01-A17-CONFIG-GAP
 type: Issue
 status: open
+schema_version: "1.0"
 title: CH01 / A17 Customer Group configuration gap
 domain: DOMAIN-CUSTOMER-BP
 priority: high

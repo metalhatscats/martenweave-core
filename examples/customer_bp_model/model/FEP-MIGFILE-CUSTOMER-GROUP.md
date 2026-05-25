@@ -2,6 +2,7 @@
 id: FEP-MIGFILE-CUSTOMER-GROUP
 type: FieldEndpoint
 status: active
+schema_version: "1.0"
 name: Migration file Customer Group column
 domain: DOMAIN-CUSTOMER-BP
 system: SYS-MIGRATION-FILE

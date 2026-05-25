@@ -2,6 +2,7 @@
 id: FEP-S4-KNVV-KDGRP
 type: FieldEndpoint
 status: active
+schema_version: "1.0"
 name: KNVV Customer Group
 domain: DOMAIN-CUSTOMER-BP
 system: SYS-S4HANA

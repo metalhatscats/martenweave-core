@@ -2,6 +2,7 @@
 name: "Example Model Repository"
 description: "Canonical model files for Customer/BP migration."
 version: "1.0.0"
+schema_version: "1.0"
 model_path: "model"
 generated_path: "generated"
 data_path: "data"

@@ -2,6 +2,7 @@
 id: VLIST-S4-CUST-GROUP
 type: ValueList
 status: active
+schema_version: "1.0"
 name: S/4 Customer Group Values
 value_list_type: domain
 domain: DOMAIN-CUSTOMER-BP

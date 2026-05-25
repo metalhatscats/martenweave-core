@@ -1,4 +1,4 @@
-schema_version: 0.1.0
+schema_version: "1.0"
 workspace_name: Customer BP Example
 description: TODO placeholder for TASK-0010 example repository.
 enabled_domain_packs:

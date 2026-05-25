@@ -74,6 +74,11 @@ from modelops_core.reports.audit_service import (
 )
 from modelops_core.reports.health_report import generate_repository_health
 from modelops_core.repository import parse_file, scan_repository
+from modelops_core.schemas.migration import migrate_object, needs_migration
+from modelops_core.schemas.versioning import (
+    CURRENT_SCHEMA_VERSION,
+    validate_repo_schema_version,
+)
 from modelops_core.trace import trace_object
 from modelops_core.validation import validate_objects
 
@@ -160,7 +165,9 @@ def init(
     config = RepoConfig(name=name)
     config_path = target / "modelops.config.yaml"
     config_path.write_text(
-        yaml.safe_dump(config.model_dump(), default_flow_style=False, sort_keys=False),
+        yaml.safe_dump(
+            config.model_dump(), default_flow_style=False, sort_keys=False
+        ),
         encoding="utf-8",
     )
 
@@ -194,6 +201,7 @@ def init(
             "id: DOMAIN-EXAMPLE\n"
             "type: MasterDataDomain\n"
             "status: draft\n"
+            "schema_version: \"1.0\"\n"
             "name: Example Domain\n"
             "---\n\n"
             "# Example Domain\n\n"
@@ -336,6 +344,24 @@ def validate(
     config = load_repo_config(repo_root)
     enabled_packs = config.enabled_domain_packs if config else None
     summary = validate_objects(parsed_objects, enabled_packs)
+
+    # Validate repo config schema version
+    repo_config_issues = validate_repo_schema_version(
+        config.model_dump() if config else None,
+        source_file=str(repo_root / "modelops.config.yaml"),
+    )
+    for issue in repo_config_issues:
+        from modelops_core.validation.result import ValidationResult, ValidationSeverity
+
+        summary.results.append(
+            ValidationResult(
+                severity=ValidationSeverity(issue.severity),
+                code=issue.code,
+                message=issue.message,
+                source_file=issue.source_file,
+                suggested_fix=issue.suggested_fix,
+            )
+        )
 
     if json_output:
         result = {
@@ -1977,6 +2003,89 @@ def config_guard(
 
     if total_issues == 0:
         console.print("[green]All guardrail checks passed.[/green]")
+
+
+@app.command("migrate")
+def migrate(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Preview changes without writing files."
+    ),
+) -> None:
+    """Migrate canonical objects to the current schema version."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+
+    if not model_path.exists():
+        console.print(f"[red]Model path does not exist: {model_path}[/red]")
+        raise typer.Exit(code=1)
+
+    files = scan_repository(model_path)
+    migrated_count = 0
+    skipped_count = 0
+
+    for file_path in files:
+        parsed = parse_file(file_path)
+        fm = parsed.frontmatter
+        if fm is None:
+            skipped_count += 1
+            continue
+        if not needs_migration(fm):
+            skipped_count += 1
+            continue
+
+        new_fm = migrate_object(fm)
+        if new_fm is None:
+            skipped_count += 1
+            continue
+
+        migrated_count += 1
+        if dry_run:
+            console.print(
+                f"[yellow]Would migrate[/yellow] {file_path.name} "
+                f"({fm.get('schema_version', 'none')} → {CURRENT_SCHEMA_VERSION})"
+            )
+            continue
+
+        # Rewrite file with new frontmatter
+        from modelops_core.repository import rewrite_frontmatter
+
+        rewrite_frontmatter(file_path, new_fm)
+        console.print(
+            f"[green]Migrated[/green] {file_path.name} "
+            f"({fm.get('schema_version', 'none')} → {CURRENT_SCHEMA_VERSION})"
+        )
+
+    # Update repo config schema_version
+    config_path = repo_root / "modelops.config.yaml"
+    if not config_path.exists():
+        config_path = repo_root / "modelops.config.yml"
+    if config_path.exists():
+        config = load_repo_config(repo_root)
+        if config and config.schema_version != CURRENT_SCHEMA_VERSION:
+            if dry_run:
+                console.print(
+                    f"[yellow]Would update[/yellow] {config_path.name} "
+                    f"({config.schema_version} → {CURRENT_SCHEMA_VERSION})"
+                )
+            else:
+                import yaml
+
+                raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+                raw["schema_version"] = CURRENT_SCHEMA_VERSION
+                config_path.write_text(
+                    yaml.safe_dump(raw, default_flow_style=False, sort_keys=False),
+                    encoding="utf-8",
+                )
+                console.print(
+                    f"[green]Updated[/green] {config_path.name} "
+                    f"({config.schema_version} → {CURRENT_SCHEMA_VERSION})"
+                )
+
+    console.print(
+        f"\n[bold]Migration complete[/bold] — "
+        f"{migrated_count} migrated, {skipped_count} skipped"
+    )
 
 
 if __name__ == "__main__":

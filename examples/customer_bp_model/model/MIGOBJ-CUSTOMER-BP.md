@@ -2,6 +2,7 @@
 id: MIGOBJ-CUSTOMER-BP
 type: MigrationObject
 status: active
+schema_version: "1.0"
 name: Customer BP Migration
 domain: DOMAIN-CUSTOMER-BP
 description: >
