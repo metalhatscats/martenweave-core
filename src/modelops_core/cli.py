@@ -29,6 +29,7 @@ from modelops_core.config import (
     resolve_generated_path,
     resolve_model_path,
 )
+from modelops_core.diff import diff_repositories
 from modelops_core.exports import export_model_csv, export_model_xlsx
 from modelops_core.guardrails.config_guard import (
     has_blocking_issues,
@@ -2003,6 +2004,100 @@ def config_guard(
 
     if total_issues == 0:
         console.print("[green]All guardrail checks passed.[/green]")
+
+
+@app.command("diff")
+def diff(
+    base: Path = typer.Argument(  # noqa: B008
+        ..., help="Path to base model repository."
+    ),
+    head: Path = typer.Argument(  # noqa: B008
+        ..., help="Path to head model repository."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Compare two model repositories and show differences."""
+    base_model = resolve_model_path(base.resolve())
+    head_model = resolve_model_path(head.resolve())
+
+    if not base_model.exists():
+        console.print(f"[red]Base model path does not exist: {base_model}[/red]")
+        raise typer.Exit(code=1)
+    if not head_model.exists():
+        console.print(f"[red]Head model path does not exist: {head_model}[/red]")
+        raise typer.Exit(code=1)
+
+    result = diff_repositories(base_model, head_model)
+
+    if json_output:
+        output = {
+            "has_changes": result.has_changes,
+            "base_count": result.base_count,
+            "head_count": result.head_count,
+            "added": result.added,
+            "removed": result.removed,
+            "changed": [
+                {
+                    "object_id": c.object_id,
+                    "object_type": c.object_type,
+                    "object_name": c.object_name,
+                    "field_changes": [
+                        {
+                            "field": fc.field,
+                            "old_value": fc.old_value,
+                            "new_value": fc.new_value,
+                        }
+                        for fc in c.field_changes
+                    ],
+                }
+                for c in result.changed
+            ],
+        }
+        console.print(json.dumps(output, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print("[bold]Model Diff[/bold]")
+    console.print(f"  Base objects: {result.base_count}")
+    console.print(f"  Head objects: {result.head_count}")
+
+    if not result.has_changes:
+        console.print("[green]No differences found.[/green]")
+        raise typer.Exit()
+
+    if result.added:
+        console.print(f"\n[bold green]Added ({len(result.added)})[/bold green]")
+        table = Table("Object ID", "Type", "Name")
+        for obj in result.added:
+            table.add_row(
+                obj["object_id"],
+                obj.get("object_type") or "—",
+                obj.get("object_name") or "—",
+            )
+        console.print(table)
+
+    if result.removed:
+        console.print(f"\n[bold red]Removed ({len(result.removed)})[/bold red]")
+        table = Table("Object ID", "Type", "Name")
+        for obj in result.removed:
+            table.add_row(
+                obj["object_id"],
+                obj.get("object_type") or "—",
+                obj.get("object_name") or "—",
+            )
+        console.print(table)
+
+    if result.changed:
+        console.print(f"\n[bold yellow]Changed ({len(result.changed)})[/bold yellow]")
+        for obj in result.changed:
+            console.print(
+                f"  {obj.object_id} ({obj.object_type})"
+            )
+            table = Table("Field", "Old Value", "New Value")
+            for fc in obj.field_changes:
+                old_str = str(fc.old_value) if fc.old_value is not None else "—"
+                new_str = str(fc.new_value) if fc.new_value is not None else "—"
+                table.add_row(fc.field, old_str, new_str)
+            console.print(table)
 
 
 @app.command("migrate")
