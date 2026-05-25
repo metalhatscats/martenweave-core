@@ -31,6 +31,7 @@ from modelops_core.config import (
     resolve_model_path,
 )
 from modelops_core.diff import diff_repositories
+from modelops_core.docs.static_doc_generator import generate_static_docs
 from modelops_core.errors import ResourceLimitExceeded
 from modelops_core.exports import export_model_csv, export_model_xlsx
 from modelops_core.guardrails.config_guard import (
@@ -2217,6 +2218,32 @@ def usage_report(
         console.print(
             "\n[yellow]No audit events found. Run workflows to generate usage data.[/yellow]"
         )
+
+
+@app.command("docs-build")
+def docs_build(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    output: str = typer.Option(
+        "generated/docs_site",
+        "--output",
+        help="Output directory for generated docs.",
+    ),
+) -> None:
+    """Generate static Markdown documentation from the model index."""
+    repo_root = _resolve_repo(repo)
+    output_path = repo_root / output
+
+    try:
+        result = generate_static_docs(repo_root, output_path)
+    except FileNotFoundError as exc:
+        console.print(f"[yellow]{exc}[/yellow]")
+        raise typer.Exit(code=1) from None
+
+    console.print(f"[bold]Documentation generated[/bold] at {result}")
+    files = sorted(f.name for f in result.iterdir() if f.suffix == ".md")
+    console.print(f"  {len(files)} Markdown file(s):")
+    for name in files:
+        console.print(f"    - {name}")
 
 
 @app.command("config-guard")
