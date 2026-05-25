@@ -17,6 +17,7 @@ dependencies = [
 dev = [
   "pytest>=8.0",
   "ruff>=0.4",
+  "build>=1.0",
 ]
 google_adk = [
   "google-adk>=0.1.0",
@@ -29,6 +30,9 @@ modelops = "modelops_core.cli:app"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+  "slow: marks tests as slow (deselect with '-m not slow')",
+]
 
 [tool.ruff]
 line-length = 100
