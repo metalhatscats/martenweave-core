@@ -35,6 +35,7 @@ from modelops_core.diff import diff_repositories
 from modelops_core.docs.static_doc_generator import generate_static_docs
 from modelops_core.errors import ResourceLimitExceeded
 from modelops_core.exports import export_model_csv, export_model_xlsx
+from modelops_core.exports.google_sheets_export import export_to_google_sheets
 from modelops_core.guardrails.config_guard import (
     has_blocking_issues,
     run_all_checks,
@@ -2200,6 +2201,38 @@ def export_model(
             outputs={"format": fmt, "file_count": len(written) if fmt.lower() == "csv" else 1},
         )
     )
+
+
+@app.command("export-sheets")
+def export_sheets(
+    spreadsheet_id: str = typer.Argument(..., help="Google Sheets spreadsheet ID."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+) -> None:
+    """Export canonical model objects to Google Sheets.
+
+    Requires google-api-python-client. Install with:
+    pip install modelops_core[google]
+    """
+    repo_root = _resolve_repo(repo)
+
+    limits = load_resource_limits(repo_root)
+    try:
+        result = export_to_google_sheets(
+            repo_root,
+            spreadsheet_id,
+            max_objects=limits.max_export_objects,
+        )
+    except RuntimeError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+    except Exception as exc:
+        console.print(f"[red]Export failed: {exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    console.print("[green]Exported to Google Sheets[/green]")
+    console.print(f"  URL: {result.spreadsheet_url}")
+    console.print(f"  Sheets: {', '.join(result.sheet_names)}")
+    console.print(f"  Total objects: {sum(result.object_counts.values())}")
 
 
 @app.command("git-bundle")
