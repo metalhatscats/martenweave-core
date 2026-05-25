@@ -6,6 +6,7 @@ import csv
 from pathlib import Path
 from typing import Any
 
+from modelops_core.errors import ResourceLimitExceeded
 from modelops_core.repository import parse_file, scan_repository
 
 _COMMON_COLUMNS = ("id", "type", "status", "name", "title", "domain", "description")
@@ -53,6 +54,7 @@ def _build_columns(objects: list[dict[str, Any]]) -> list[str]:
 def export_model_csv(
     repo_model_path: Path,
     output_dir: Path | None = None,
+    max_objects: int | None = None,
 ) -> list[Path]:
     """Export canonical objects to one CSV file per type.
 
@@ -60,15 +62,31 @@ def export_model_csv(
         repo_model_path: Path to the model directory.
         output_dir: Directory to write CSV files. Defaults to
             ``repo_model_path.parent / "generated" / "exports" / "csv"``.
+        max_objects: Maximum objects per type. If exceeded, raises
+            ``ResourceLimitExceeded``.
 
     Returns:
         List of written file paths.
+
+    Raises:
+        ResourceLimitExceeded: If any object type exceeds the limit.
     """
     if output_dir is None:
         output_dir = repo_model_path.parent / "generated" / "exports" / "csv"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     objects_by_type = _collect_objects(repo_model_path)
+    if max_objects is not None:
+        for obj_type, objects in objects_by_type.items():
+            if len(objects) > max_objects:
+                raise ResourceLimitExceeded(
+                    resource="max_export_objects",
+                    message=(
+                        f"Type '{obj_type}' has {len(objects)} objects, "
+                        f"exceeding max_export_objects limit of {max_objects}. "
+                        f"Increase the limit or filter by type."
+                    ),
+                )
     written: list[Path] = []
 
     for obj_type, objects in objects_by_type.items():
@@ -91,6 +109,7 @@ def export_model_csv(
 def export_model_xlsx(
     repo_model_path: Path,
     output_path: Path | None = None,
+    max_objects: int | None = None,
 ) -> Path:
     """Export canonical objects to one XLSX workbook with a sheet per type.
 
@@ -98,9 +117,14 @@ def export_model_xlsx(
         repo_model_path: Path to the model directory.
         output_path: Path for the workbook. Defaults to
             ``repo_model_path.parent / "generated" / "exports" / "model.xlsx"``.
+        max_objects: Maximum objects per sheet. If exceeded, raises
+            ``ResourceLimitExceeded``.
 
     Returns:
         Path to the written workbook.
+
+    Raises:
+        ResourceLimitExceeded: If any object type exceeds the limit.
     """
     try:
         from openpyxl import Workbook
@@ -115,6 +139,17 @@ def export_model_xlsx(
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     objects_by_type = _collect_objects(repo_model_path)
+    if max_objects is not None:
+        for obj_type, objects in objects_by_type.items():
+            if len(objects) > max_objects:
+                raise ResourceLimitExceeded(
+                    resource="max_export_objects",
+                    message=(
+                        f"Type '{obj_type}' has {len(objects)} objects, "
+                        f"exceeding max_export_objects limit of {max_objects}. "
+                        f"Increase the limit or filter by type."
+                    ),
+                )
     wb = Workbook()
     # Remove default sheet; we'll add one per type
     wb.remove(wb.active)

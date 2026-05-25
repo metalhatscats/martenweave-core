@@ -6,6 +6,19 @@ schema_version: "1.0"
 model_path: "model"
 generated_path: "generated"
 data_path: "data"
+# Optional runtime resource limits. All keys are optional and use sensible defaults.
+# resource_limits:
+#   max_file_size_bytes: 52428800          # 50 MB
+#   max_profile_rows: 500000
+#   max_profile_columns: 1000
+#   max_trace_depth: 5
+#   max_index_objects: 10000
+#   max_export_objects: 10000
+#   max_import_rows: 100000
+#   max_context_objects: 50
+#   max_context_relationships: 100
+#   max_response_size_bytes: 10485760      # 10 MB
+
 # Optional domain packs for additional validation rules.
 # enabled_domain_packs:
 #   - sap

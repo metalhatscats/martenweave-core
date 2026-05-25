@@ -9,6 +9,45 @@ import yaml
 from pydantic import BaseModel, Field
 
 
+class ResourceLimits(BaseModel):
+    """Configurable runtime resource limits for local-first operation.
+
+    Defaults are chosen for a normal developer laptop (8–16 GB RAM).
+    All limits can be overridden in ``modelops.config.yaml``.
+    """
+
+    max_file_size_bytes: int = Field(
+        default=50 * 1024 * 1024, description="Maximum dataset file size (50 MB)"
+    )
+    max_profile_rows: int = Field(
+        default=500_000, description="Maximum rows to profile per file"
+    )
+    max_profile_columns: int = Field(
+        default=1_000, description="Maximum columns to profile per file"
+    )
+    max_trace_depth: int = Field(
+        default=5, description="Maximum graph traversal depth"
+    )
+    max_index_objects: int = Field(
+        default=10_000, description="Maximum canonical objects in a single index build"
+    )
+    max_export_objects: int = Field(
+        default=10_000, description="Maximum objects per export type"
+    )
+    max_import_rows: int = Field(
+        default=100_000, description="Maximum rows to import per spreadsheet sheet"
+    )
+    max_context_objects: int = Field(
+        default=50, description="Maximum objects in an AI context bundle"
+    )
+    max_context_relationships: int = Field(
+        default=100, description="Maximum relationships in an AI context bundle"
+    )
+    max_response_size_bytes: int = Field(
+        default=10 * 1024 * 1024, description="Maximum CLI/API response payload (10 MB)"
+    )
+
+
 class RepoConfig(BaseModel):
     """Repository-level configuration from modelops.config.yaml."""
 
@@ -20,6 +59,7 @@ class RepoConfig(BaseModel):
     generated_path: str = "generated"
     data_path: str = "data"
     enabled_domain_packs: list[str] = []
+    resource_limits: ResourceLimits = Field(default_factory=ResourceLimits)
 
 
 class Settings(BaseModel):
@@ -74,3 +114,11 @@ def resolve_generated_path(repo_root: Path) -> Path:
     if config is not None:
         return repo_root / config.generated_path
     return repo_root / "generated"
+
+
+def load_resource_limits(repo_root: Path) -> ResourceLimits:
+    """Return the resource limits for a repository, falling back to defaults."""
+    config = load_repo_config(repo_root)
+    if config is not None:
+        return config.resource_limits
+    return ResourceLimits()

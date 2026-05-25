@@ -26,10 +26,12 @@ from modelops_core.change_request import (
 from modelops_core.config import (
     RepoConfig,
     load_repo_config,
+    load_resource_limits,
     resolve_generated_path,
     resolve_model_path,
 )
 from modelops_core.diff import diff_repositories
+from modelops_core.errors import ResourceLimitExceeded
 from modelops_core.exports import export_model_csv, export_model_xlsx
 from modelops_core.guardrails.config_guard import (
     has_blocking_issues,
@@ -249,13 +251,26 @@ def profile_dataset(
         console.print(f"[red]File not found: {file}[/red]")
         raise typer.Exit(code=1)
 
+    limits = load_resource_limits(repo_root)
     dataset_id = file.stem
     suffix = file.suffix.lower()
 
     if suffix == ".csv":
-        raw_profile = profile_csv(file, dataset_id=dataset_id)
+        raw_profile = profile_csv(
+            file,
+            dataset_id=dataset_id,
+            max_file_size=limits.max_file_size_bytes,
+            max_rows=limits.max_profile_rows,
+            max_columns=limits.max_profile_columns,
+        )
     elif suffix in {".xlsx", ".xls"}:
-        raw_profile = profile_xlsx(file, dataset_id=dataset_id)
+        raw_profile = profile_xlsx(
+            file,
+            dataset_id=dataset_id,
+            max_file_size=limits.max_file_size_bytes,
+            max_rows=limits.max_profile_rows,
+            max_columns=limits.max_profile_columns,
+        )
     else:
         console.print(f"[red]Unsupported file format: {suffix}[/red]")
         raise typer.Exit(code=1)
@@ -433,14 +448,18 @@ def build_index(
     repo_root = _resolve_repo(repo)
     db_path = Path(db).resolve() if db else None
 
+    config = load_repo_config(repo_root)
+    max_objects = config.resource_limits.max_index_objects if config else None
+
     try:
         summary = _build_index(
             repo_root=repo_root,
             db_path=db_path,
             allow_invalid=allow_invalid,
             export_jsonl=jsonl,
+            max_objects=max_objects,
         )
-    except ValueError as exc:
+    except (ValueError, ResourceLimitExceeded) as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
@@ -1846,10 +1865,13 @@ def import_model_sheet(
         console.print(f"[red]Input not found: {input_path}[/red]")
         raise typer.Exit(code=1)
 
+    limits = load_resource_limits(repo_root)
     if input_path.is_dir():
         proposal = import_model_sheet_csv(input_path, model_path)
     elif input_path.suffix.lower() == ".xlsx":
-        proposal = import_model_sheet_xlsx(input_path, model_path)
+        proposal = import_model_sheet_xlsx(
+            input_path, model_path, max_rows=limits.max_import_rows
+        )
     else:
         console.print(
             "[red]Input must be a CSV directory or an .xlsx workbook.[/red]"
@@ -1905,19 +1927,26 @@ def export_model(
     repo_root = _resolve_repo(repo)
     model_path = resolve_model_path(repo_root)
 
-    if fmt.lower() == "csv":
-        written = export_model_csv(model_path)
-        console.print(f"[green]Exported {len(written)} CSV files[/green]")
-        for f in written:
-            console.print(f"  {f}")
-    elif fmt.lower() == "xlsx":
-        path = export_model_xlsx(model_path)
-        console.print("[green]Exported XLSX workbook[/green]")
-        console.print(f"  {path}")
-    else:
-        console.print(f"[red]Unknown format: {fmt}. Use 'csv' or 'xlsx'.[/red]")
-        raise typer.Exit(code=1)
+    limits = load_resource_limits(repo_root)
+    try:
+        if fmt.lower() == "csv":
+            written = export_model_csv(model_path, max_objects=limits.max_export_objects)
+            console.print(f"[green]Exported {len(written)} CSV files[/green]")
+            for f in written:
+                console.print(f"  {f}")
+            path = written[0] if written else None
+        elif fmt.lower() == "xlsx":
+            path = export_model_xlsx(model_path, max_objects=limits.max_export_objects)
+            console.print("[green]Exported XLSX workbook[/green]")
+            console.print(f"  {path}")
+        else:
+            console.print(f"[red]Unknown format: {fmt}. Use 'csv' or 'xlsx'.[/red]")
+            raise typer.Exit(code=1)
+    except ResourceLimitExceeded as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
 
+    changed_files = [str(f) for f in (written if fmt.lower() == "csv" else [path])]
     service = AuditEventService(repo_root)
     service.emit(
         create_audit_event(
@@ -1925,7 +1954,7 @@ def export_model(
             actor="system",
             status="success",
             command=f"export-model --format {fmt}",
-            changed_files=[str(f) for f in (written if fmt.lower() == "csv" else [path])],
+            changed_files=changed_files,
             outputs={"format": fmt, "file_count": len(written) if fmt.lower() == "csv" else 1},
         )
     )

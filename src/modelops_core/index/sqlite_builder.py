@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from modelops_core.config import load_repo_config, resolve_generated_path, resolve_model_path
+from modelops_core.errors import ResourceLimitExceeded
 from modelops_core.repository import parse_file, scan_repository
 from modelops_core.schemas.registry import get_relationship_classes, get_relationship_fields
 from modelops_core.validation import ValidationSummary, validate_objects
@@ -188,6 +189,7 @@ def build_index(
     *,
     allow_invalid: bool = False,
     export_jsonl: bool = False,
+    max_objects: int | None = None,
 ) -> ValidationSummary:
     """Build a SQLite index from canonical repository objects.
 
@@ -201,18 +203,36 @@ def build_index(
         allow_invalid: If False (default), raises when validation errors exist.
         export_jsonl: If True, also writes ``search_documents.jsonl`` and
             ``lineage_edges.jsonl`` to the generated directory.
+        max_objects: Maximum number of canonical objects to index. If None,
+            reads from repository config defaults.
 
     Returns:
         The validation summary from the pipeline.
 
     Raises:
         ValueError: If validation has errors and *allow_invalid* is False.
+        ResourceLimitExceeded: If the repository exceeds the object count limit.
     """
     model_path = resolve_model_path(repo_root)
     files = scan_repository(model_path)
-    parsed_objects = [parse_file(f) for f in files]
+
     config = load_repo_config(repo_root)
     enabled_packs = config.enabled_domain_packs if config else None
+    if max_objects is None:
+        max_objects = config.resource_limits.max_index_objects if config else 10_000
+
+    if len(files) > max_objects:
+        raise ResourceLimitExceeded(
+            resource="max_index_objects",
+            message=(
+                f"Repository contains {len(files)} canonical files, "
+                f"exceeding max_index_objects limit of {max_objects}. "
+                f"Increase the limit in modelops.config.yaml or split "
+                f"the model into multiple repositories."
+            ),
+        )
+
+    parsed_objects = [parse_file(f) for f in files]
     summary = validate_objects(parsed_objects, enabled_packs)
 
     if not summary.is_valid and not allow_invalid:
