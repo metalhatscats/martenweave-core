@@ -14,6 +14,7 @@ from rich.table import Table
 
 from modelops_core import __version__
 from modelops_core.approval import compute_proposal_risk
+from modelops_core.bundle import create_git_bundle
 from modelops_core.change_request import (
     approve_change_request,
     create_change_request,
@@ -2114,6 +2115,44 @@ def export_model(
             outputs={"format": fmt, "file_count": len(written) if fmt.lower() == "csv" else 1},
         )
     )
+
+
+@app.command("git-bundle")
+def git_bundle(
+    proposal_id: str = typer.Argument(..., help="PatchProposal ID to bundle."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Generate a GitHub-ready change bundle from a PatchProposal."""
+    repo_root = _resolve_repo(repo)
+
+    try:
+        result = create_git_bundle(repo_root, proposal_id)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        output = {
+            "bundle_dir": str(result.bundle_dir),
+            "proposal_id": result.proposal_id,
+            "affected_objects": result.affected_objects,
+            "commit_message": result.commit_message,
+            "files": {
+                "bundle_json": str(result.bundle_json_path),
+                "readme": str(result.readme_path),
+                "pr_body": str(result.pr_body_path),
+                "changed_files_dir": str(result.changed_files_dir),
+            },
+        }
+        print(json.dumps(output, indent=2, default=str))
+    else:
+        console.print(f"[green]Bundle created for {proposal_id}[/green]")
+        console.print(f"  Directory: {result.bundle_dir}")
+        console.print(f"  Affected objects: {len(result.affected_objects)}")
+        console.print(f"  README: {result.readme_path}")
+        console.print(f"  PR body: {result.pr_body_path}")
+        console.print(f"  Commit message: {result.pr_body_path.parent / 'COMMIT_MESSAGE.txt'}")
 
 
 @app.command("audit-log")
