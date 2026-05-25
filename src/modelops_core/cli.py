@@ -736,12 +736,61 @@ def analyze(
                 if report.change_activity
                 else [],
             },
+            "lifecycle_summary": (
+                {
+                    "proposed": report.lifecycle_summary.proposed,
+                    "draft": report.lifecycle_summary.draft,
+                    "active": report.lifecycle_summary.active,
+                    "under_review": report.lifecycle_summary.under_review,
+                    "deprecated": report.lifecycle_summary.deprecated,
+                    "retired": report.lifecycle_summary.retired,
+                    "blocked": report.lifecycle_summary.blocked,
+                    "planned": report.lifecycle_summary.planned,
+                    "implemented": report.lifecycle_summary.implemented,
+                    "other": report.lifecycle_summary.other,
+                    "with_target_release": report.lifecycle_summary.with_target_release,
+                    "with_roadmap_priority": report.lifecycle_summary.with_roadmap_priority,
+                }
+                if report.lifecycle_summary
+                else {}
+            ),
         }
         print(json.dumps(result, indent=2, default=str))
         raise typer.Exit()
 
     console.print("[bold]Model Analysis[/bold]")
     console.print(f"  Objects: {report.object_count}")
+
+    if report.lifecycle_summary:
+        ls = report.lifecycle_summary
+        console.print("\n[bold]Lifecycle Summary[/bold]")
+        counts = []
+        if ls.proposed:
+            counts.append(f"proposed: {ls.proposed}")
+        if ls.draft:
+            counts.append(f"draft: {ls.draft}")
+        if ls.active:
+            counts.append(f"active: {ls.active}")
+        if ls.under_review:
+            counts.append(f"under_review: {ls.under_review}")
+        if ls.deprecated:
+            counts.append(f"deprecated: {ls.deprecated}")
+        if ls.retired:
+            counts.append(f"retired: {ls.retired}")
+        if ls.blocked:
+            counts.append(f"blocked: {ls.blocked}")
+        if ls.planned:
+            counts.append(f"planned: {ls.planned}")
+        if ls.implemented:
+            counts.append(f"implemented: {ls.implemented}")
+        if ls.other:
+            counts.append(f"other: {ls.other}")
+        if counts:
+            console.print("  " + ", ".join(counts))
+        if ls.with_target_release:
+            console.print(f"  with_target_release: {ls.with_target_release}")
+        if ls.with_roadmap_priority:
+            console.print(f"  with_roadmap_priority: {ls.with_roadmap_priority}")
 
     if report.orphan_fields and report.orphan_fields.field_endpoints_without_attribute:
         console.print(

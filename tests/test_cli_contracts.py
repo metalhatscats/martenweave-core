@@ -10,7 +10,7 @@ Stable public contract fields by command:
   data_quality_coverage, coverage_gaps_list, type_counts
 - analyze --json: object_count, type_counts, orphan_fields, attribute_coverage,
   ownership_gaps, validation_coverage, lov_coverage, mapping_coverage,
-  risk_report, change_activity
+  risk_report, change_activity, lifecycle_summary
 - trace --json: root_object_id, root_object_type, root_object_name, nodes, edges
 - impact --json: root_object_id, root_object_type, affected_objects
 - search --json: object_id, object_type, status, name, title, domain,
@@ -206,6 +206,7 @@ class TestIndexQueryContract:
         assert "mapping_coverage" in data
         assert "risk_report" in data
         assert "change_activity" in data
+        assert "lifecycle_summary" in data
 
     def test_trace_json_schema(self, indexed_repo: Path) -> None:
         result = runner.invoke(

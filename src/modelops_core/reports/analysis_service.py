@@ -44,6 +44,24 @@ class ChangeActivityReport:
 
 
 @dataclass
+class LifecycleSummary:
+    """Counts of objects by lifecycle status category."""
+
+    proposed: int = 0
+    draft: int = 0
+    active: int = 0
+    under_review: int = 0
+    deprecated: int = 0
+    retired: int = 0
+    blocked: int = 0
+    planned: int = 0
+    implemented: int = 0
+    other: int = 0
+    with_target_release: int = 0
+    with_roadmap_priority: int = 0
+
+
+@dataclass
 class AnalysisReport:
     """Combined model analysis report."""
 
@@ -57,6 +75,7 @@ class AnalysisReport:
     mapping_coverage: list[dict[str, Any]] = field(default_factory=list)
     risk_report: RiskReport | None = None
     change_activity: ChangeActivityReport | None = None
+    lifecycle_summary: LifecycleSummary | None = None
 
 
 def _load_objects(conn: sqlite3.Connection) -> list[dict[str, Any]]:
@@ -241,6 +260,37 @@ def generate_analysis_report(
             )
         change_activity.event_count = len(events)
 
+        # Lifecycle summary
+        lifecycle_summary = LifecycleSummary()
+        for obj in objects:
+            status = str(obj["status"] or "").lower()
+            if status == "proposed":
+                lifecycle_summary.proposed += 1
+            elif status == "draft":
+                lifecycle_summary.draft += 1
+            elif status == "active":
+                lifecycle_summary.active += 1
+            elif status == "under_review":
+                lifecycle_summary.under_review += 1
+            elif status == "deprecated":
+                lifecycle_summary.deprecated += 1
+            elif status == "retired":
+                lifecycle_summary.retired += 1
+            elif status == "blocked":
+                lifecycle_summary.blocked += 1
+            elif status == "planned":
+                lifecycle_summary.planned += 1
+            elif status == "implemented":
+                lifecycle_summary.implemented += 1
+            else:
+                lifecycle_summary.other += 1
+
+            fm = obj["frontmatter"]
+            if fm.get("target_release"):
+                lifecycle_summary.with_target_release += 1
+            if fm.get("roadmap_priority"):
+                lifecycle_summary.with_roadmap_priority += 1
+
         return AnalysisReport(
             object_count=len(objects),
             type_counts=type_counts,
@@ -252,6 +302,7 @@ def generate_analysis_report(
             mapping_coverage=mapping_coverage,
             risk_report=risk_report,
             change_activity=change_activity,
+            lifecycle_summary=lifecycle_summary,
         )
     finally:
         conn.close()
