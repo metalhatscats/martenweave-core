@@ -102,6 +102,49 @@ def test_cli_profile_dataset_json_output(sample_repo: Path) -> None:
     assert '"row_count"' in result.output
 
 
+def test_cli_profile_dataset_privacy_warning(sample_repo: Path, tmp_path: Path) -> None:
+    csv_file = tmp_path / "sensitive.csv"
+    csv_file.write_text(
+        "email,phone,customer_group\nalice@example.com,555-1234,A\n",
+        encoding="utf-8",
+    )
+    result = runner.invoke(
+        app, ["profile-dataset", str(csv_file), "--repo", str(sample_repo)]
+    )
+    assert result.exit_code == 0
+    assert "Privacy warning" in result.output
+    assert "email" in result.output
+    assert "phone" in result.output
+
+    # Verify saved profile has redacted samples
+    profile_path = sample_repo / "generated" / "dataset_profiles" / "sensitive.json"
+    assert profile_path.exists()
+    data = json.loads(profile_path.read_text(encoding="utf-8"))
+    for col in data["columns"]:
+        if col["name"] in ("email", "phone"):
+            assert all(v == "[REDACTED]" for v in col["sample_values"])
+
+
+def test_cli_profile_dataset_include_raw_samples(sample_repo: Path, tmp_path: Path) -> None:
+    csv_file = tmp_path / "sensitive.csv"
+    csv_file.write_text("email,customer_group\nalice@example.com,A\n", encoding="utf-8")
+    result = runner.invoke(
+        app, [
+            "profile-dataset",
+            str(csv_file),
+            "--repo",
+            str(sample_repo),
+            "--include-raw-samples",
+        ]
+    )
+    assert result.exit_code == 0
+    profile_path = sample_repo / "generated" / "dataset_profiles" / "sensitive.json"
+    data = json.loads(profile_path.read_text(encoding="utf-8"))
+    email_col = next(c for c in data["columns"] if c["name"] == "email")
+    # Even with --include-raw-samples, high-risk columns are redacted
+    assert all(v == "[REDACTED]" for v in email_col["sample_values"])
+
+
 def test_cli_infer_model(sample_repo: Path) -> None:
     # First profile a dataset
     csv_file = FIXTURES_DIR / "customer_sample.csv"
