@@ -88,6 +88,7 @@ from modelops_core.reports.audit_service import (
 )
 from modelops_core.reports.health_report import generate_repository_health
 from modelops_core.reports.scorecard_service import generate_scorecard
+from modelops_core.reports.usage_report_service import generate_usage_report
 from modelops_core.repository import parse_file, scan_repository
 from modelops_core.schemas.migration import migrate_object, needs_migration
 from modelops_core.schemas.versioning import (
@@ -2154,6 +2155,68 @@ def audit_log(
             e.proposal_id or "—",
         )
     console.print(table)
+
+
+@app.command("usage-report")
+def usage_report(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Show usage report from audit events."""
+    repo_root = _resolve_repo(repo)
+    report = generate_usage_report(repo_root)
+
+    if json_output:
+        result = {
+            "total_events": report.total_events,
+            "event_type_counts": report.event_type_counts,
+            "command_counts": report.command_counts,
+            "status_counts": report.status_counts,
+            "ai_usage_summary": report.ai_usage_summary,
+            "date_range": report.date_range,
+        }
+        print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print("[bold]Usage Report[/bold]")
+    console.print(f"  Total events: {report.total_events}")
+
+    if report.date_range.get("from"):
+        console.print(
+            f"  Period: {report.date_range['from']} to {report.date_range['to']}"
+        )
+
+    if report.event_type_counts:
+        console.print("\n[bold]Event Types[/bold]")
+        table = Table("Event Type", "Count")
+        for et, count in sorted(report.event_type_counts.items(), key=lambda x: -x[1]):
+            table.add_row(et, str(count))
+        console.print(table)
+
+    if report.command_counts:
+        console.print("\n[bold]Commands[/bold]")
+        table = Table("Command", "Count")
+        for cmd, count in sorted(report.command_counts.items(), key=lambda x: -x[1]):
+            table.add_row(cmd, str(count))
+        console.print(table)
+
+    if report.status_counts:
+        console.print("\n[bold]Status[/bold]")
+        table = Table("Status", "Count")
+        for status, count in sorted(report.status_counts.items(), key=lambda x: -x[1]):
+            table.add_row(status, str(count))
+        console.print(table)
+
+    console.print("\n[bold]AI Usage[/bold]")
+    ai = report.ai_usage_summary
+    console.print(f"  AI calls: {ai.get('ai_calls', 0)}")
+    console.print(f"  Total tokens: {ai.get('total_tokens', 0)}")
+    console.print(f"  Note: {ai.get('note', '')}")
+
+    if report.total_events == 0:
+        console.print(
+            "\n[yellow]No audit events found. Run workflows to generate usage data.[/yellow]"
+        )
 
 
 @app.command("config-guard")
