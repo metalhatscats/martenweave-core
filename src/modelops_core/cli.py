@@ -31,6 +31,7 @@ from modelops_core.config import (
     resolve_generated_path,
     resolve_model_path,
 )
+from modelops_core.connectors.google_drive import GoogleDriveConnector
 from modelops_core.diff import diff_repositories
 from modelops_core.docs.static_doc_generator import generate_static_docs
 from modelops_core.errors import ResourceLimitExceeded
@@ -315,6 +316,146 @@ def profile_dataset(
         row_count=profile_dict.get("row_count", 0),
         column_count=profile_dict.get("column_count", 0),
     )
+
+    if json_output:
+        print(json.dumps(profile_dict, indent=2, default=str, sort_keys=True))
+    else:
+        console.print(f"[green]Profile saved to {output_path}[/green]")
+        if hasattr(profile, "sheet_names"):
+            console.print(f"  Sheets: {len(profile.sheets)}")
+            for sheet in profile.sheets:
+                console.print(
+                    f"    {sheet.sheet_name}: {sheet.row_count} rows, "
+                    f"{sheet.column_count} cols"
+                )
+        else:
+            console.print(f"  Rows: {profile.row_count}")
+            console.print(f"  Columns: {profile.column_count}")
+            status_label = "OK"
+            if not profile.status.success:
+                status_label = "TRUNCATED"
+            elif profile.status.sampled:
+                status_label = "SAMPLED"
+            console.print(f"  Status: {status_label}")
+            if profile.status.sampled and profile.status.reason:
+                console.print(f"  [yellow]{profile.status.reason}[/yellow]")
+
+    if high_risk_cols:
+        console.print(
+            f"[yellow]Privacy warning: detected high-risk columns: "
+            f"{', '.join(sorted(set(high_risk_cols)))}. "
+            f"Sample values redacted.[/yellow]"
+        )
+
+
+@app.command("import-drive")
+def import_drive(
+    file_id: str = typer.Argument(..., help="Google Drive file ID."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+    include_raw_samples: bool = typer.Option(
+        False,
+        "--include-raw-samples",
+        help="Include raw sample values in the saved profile (default: redacted).",
+    ),
+) -> None:
+    """Import a CSV or XLSX file from Google Drive and profile it.
+
+    Requires google-api-python-client. Install with:
+    pip install modelops_core[google]
+    """
+    repo_root = _resolve_repo(repo)
+    generated_path = resolve_generated_path(repo_root)
+    profile_dir = generated_path / "dataset_profiles"
+    profile_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        connector = GoogleDriveConnector()
+        meta = connector.fetch_metadata(file_id)
+        content = connector.fetch_content(file_id)
+    except Exception as exc:
+        console.print(f"[red]Failed to fetch from Google Drive: {exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    # Determine file extension from MIME type or display name
+    ext = ".csv"
+    if meta.mime_type in (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
+    ):
+        ext = ".xlsx"
+    elif ".xlsx" in meta.display_name.lower():
+        ext = ".xlsx"
+    elif ".csv" in meta.display_name.lower():
+        ext = ".csv"
+
+    safe_name = meta.display_name or file_id
+    if safe_name.endswith((".csv", ".xlsx", ".xls")):
+        safe_name = Path(safe_name).stem
+    dataset_id = f"drive_{safe_name}"
+
+    temp_file = profile_dir / f"{dataset_id}{ext}"
+    temp_file.write_bytes(content)
+
+    limits = load_resource_limits(repo_root)
+
+    if ext == ".csv":
+        raw_profile = profile_csv(
+            temp_file,
+            dataset_id=dataset_id,
+            max_file_size=limits.max_file_size_bytes,
+            max_rows=limits.max_profile_rows,
+            max_columns=limits.max_profile_columns,
+            sample_interval=limits.profile_sample_interval,
+        )
+    else:
+        raw_profile = profile_xlsx(
+            temp_file,
+            dataset_id=dataset_id,
+            max_file_size=limits.max_file_size_bytes,
+            max_rows=limits.max_profile_rows,
+            max_columns=limits.max_profile_columns,
+            sample_interval=limits.profile_sample_interval,
+        )
+
+    # Apply privacy controls
+    from modelops_core.imports.privacy import (
+        DatasetPrivacyPolicy,
+        apply_privacy_to_profile,
+        apply_privacy_to_workbook,
+        detect_high_risk_columns,
+    )
+
+    policy = DatasetPrivacyPolicy(include_raw_samples=include_raw_samples)
+    if isinstance(raw_profile, WorkbookProfile):
+        profile = apply_privacy_to_workbook(raw_profile, policy)
+        high_risk_cols: list[str] = []
+        for sheet in profile.sheets:
+            high_risk_cols.extend(detect_high_risk_columns(sheet))
+    else:
+        profile = apply_privacy_to_profile(raw_profile, policy)
+        high_risk_cols = detect_high_risk_columns(profile)
+
+    profile_dict = dataset_profile_to_dict(profile)
+    output_path = profile_dir / f"{dataset_id}.json"
+    output_path.write_text(
+        json.dumps(profile_dict, indent=2, default=str, sort_keys=True),
+        encoding="utf-8",
+    )
+
+    # Register source
+    src_service = SourceRegistryService(repo_root)
+    entry = connector.to_source_entry(file_id)
+    entry.source_id = dataset_id
+    entry.display_name = f"Drive import: {meta.display_name or file_id}"
+    entry.metadata = {
+        **entry.metadata,
+        "drive_file_id": file_id,
+        "row_count": profile_dict.get("row_count", 0),
+        "column_count": profile_dict.get("column_count", 0),
+        "profiled_at": profile_dict.get("profiled_at", ""),
+    }
+    src_service.register(entry)
 
     if json_output:
         print(json.dumps(profile_dict, indent=2, default=str, sort_keys=True))

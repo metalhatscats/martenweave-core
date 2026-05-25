@@ -7,6 +7,7 @@ from modelops_core.connectors.adapter import (
     ConnectorError,
     ConnectorSourceInfo,
 )
+from modelops_core.connectors.google_drive import GoogleDriveConnector
 from modelops_core.connectors.google_sheets import GoogleSheetsConnector
 from modelops_core.connectors.local_file import LocalFileConnector
 
@@ -16,4 +17,5 @@ __all__ = [
     "ConnectorSourceInfo",
     "LocalFileConnector",
     "GoogleSheetsConnector",
+    "GoogleDriveConnector",
 ]
