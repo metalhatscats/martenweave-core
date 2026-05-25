@@ -51,6 +51,24 @@ _PARENT_ENTITY_REF = ReferenceField(
     "parent_entity", "part_of_entity", "BusinessEntity", "core_dependency"
 )
 _SYSTEM_REF = ReferenceField("system", "located_in_system", "System", "context")
+_APPLICATION_REF = ReferenceField("application", "used_by_application", "Application", "context")
+_SOURCE_SYSTEM_REF = ReferenceField("source_system", "flows_from", "System", "context")
+_TARGET_SYSTEM_REF = ReferenceField("target_system", "flows_to", "System", "context")
+_INTERFACE_REF = ReferenceField("interface", "part_of_interface", "Interface", "core_dependency")
+_INTEGRATION_FLOW_REF = ReferenceField(
+    "integration_flow", "part_of_flow", "IntegrationFlow", "core_dependency"
+)
+_SOURCE_STEP_REF = ReferenceField("source_step", "preceded_by", "DataFlowStep", "core_dependency")
+_TARGET_STEP_REF = ReferenceField("target_step", "followed_by", "DataFlowStep", "core_dependency")
+_TRANSFORMATION_RULE_REF = ReferenceField(
+    "transformation_rule", "applies_transformation", "TransformationRule", "mapping"
+)
+_SOURCE_FIELD_ENDPOINT_REF = ReferenceField(
+    "source_field_endpoint", "reads_from", "FieldEndpoint", "mapping"
+)
+_TARGET_FIELD_ENDPOINT_REF = ReferenceField(
+    "target_field_endpoint", "writes_to", "FieldEndpoint", "mapping"
+)
 _BUSINESS_ATTRIBUTE_REF = ReferenceField(
     "business_attribute", "represents_attribute", "Attribute", "core_dependency"
 )
@@ -228,6 +246,54 @@ _REGISTRY: dict[str, ObjectTypeEntry] = {
         ui_label_singular="Interface",
         ui_label_plural="Interfaces",
         reference_fields=(_DOMAIN_REF, _SYSTEM_REF),
+        search_fields=_COMMON_SEARCH_FIELDS,
+    ),
+    "InterfaceEndpoint": ObjectTypeEntry(
+        type_id="InterfaceEndpoint",
+        ui_label_singular="Interface Endpoint",
+        ui_label_plural="Interface Endpoints",
+        reference_fields=(_DOMAIN_REF, _INTERFACE_REF, _SYSTEM_REF, _APPLICATION_REF),
+        search_fields=_COMMON_SEARCH_FIELDS,
+    ),
+    "Application": ObjectTypeEntry(
+        type_id="Application",
+        ui_label_singular="Application",
+        ui_label_plural="Applications",
+        reference_fields=(_DOMAIN_REF, _SYSTEM_REF),
+        search_fields=_COMMON_SEARCH_FIELDS,
+    ),
+    "IntegrationFlow": ObjectTypeEntry(
+        type_id="IntegrationFlow",
+        ui_label_singular="Integration Flow",
+        ui_label_plural="Integration Flows",
+        reference_fields=(_DOMAIN_REF, _SOURCE_SYSTEM_REF, _TARGET_SYSTEM_REF, _INTERFACE_REF),
+        search_fields=_COMMON_SEARCH_FIELDS,
+    ),
+    "DataFlowStep": ObjectTypeEntry(
+        type_id="DataFlowStep",
+        ui_label_singular="Data Flow Step",
+        ui_label_plural="Data Flow Steps",
+        reference_fields=(
+            _DOMAIN_REF,
+            _INTEGRATION_FLOW_REF,
+            _SOURCE_STEP_REF,
+            _TARGET_STEP_REF,
+            _TRANSFORMATION_RULE_REF,
+            _SOURCE_FIELD_ENDPOINT_REF,
+            _TARGET_FIELD_ENDPOINT_REF,
+        ),
+        search_fields=_COMMON_SEARCH_FIELDS,
+    ),
+    "TransformationRule": ObjectTypeEntry(
+        type_id="TransformationRule",
+        ui_label_singular="Transformation Rule",
+        ui_label_plural="Transformation Rules",
+        reference_fields=(
+            _DOMAIN_REF,
+            _SOURCE_FIELD_ENDPOINT_REF,
+            _TARGET_FIELD_ENDPOINT_REF,
+            _ATTRIBUTE_REF,
+        ),
         search_fields=_COMMON_SEARCH_FIELDS,
     ),
     "Dataset": ObjectTypeEntry(
