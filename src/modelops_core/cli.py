@@ -90,6 +90,11 @@ from modelops_core.reports.audit_service import (
 )
 from modelops_core.reports.health_report import generate_repository_health
 from modelops_core.reports.scorecard_service import generate_scorecard
+from modelops_core.reports.source_registry_service import (
+    SourceRegistryService,
+    register_dataset_source,
+    register_import_source,
+)
 from modelops_core.reports.usage_report_service import generate_usage_report
 from modelops_core.repository import parse_file, scan_repository
 from modelops_core.schemas.migration import migrate_object, needs_migration
@@ -299,6 +304,17 @@ def profile_dataset(
         encoding="utf-8",
     )
 
+    # Register source
+    src_service = SourceRegistryService(repo_root)
+    register_dataset_source(
+        src_service,
+        dataset_id=dataset_id,
+        file_path=file,
+        file_hash=profile_dict.get("file_hash", ""),
+        row_count=profile_dict.get("row_count", 0),
+        column_count=profile_dict.get("column_count", 0),
+    )
+
     if json_output:
         print(json.dumps(profile_dict, indent=2, default=str, sort_keys=True))
     else:
@@ -328,6 +344,65 @@ def profile_dataset(
             f"{', '.join(sorted(set(high_risk_cols)))}. "
             f"Sample values redacted.[/yellow]"
         )
+
+
+@app.command("sources")
+def sources_list(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """List registered external sources for this repository."""
+    repo_root = _resolve_repo(repo)
+    service = SourceRegistryService(repo_root)
+    entries = service.list_sources()
+
+    if json_output:
+        print(json.dumps(entries, indent=2, default=str))
+    else:
+        if not entries:
+            console.print("[yellow]No sources registered.[/yellow]")
+            return
+        console.print(f"[bold]Registered sources ({len(entries)}):[/bold]")
+        table = Table("Source ID", "Type", "Status", "File")
+        for e in entries:
+            table.add_row(
+                e.get("source_id", "—"),
+                e.get("source_type", "—"),
+                e.get("status", "—"),
+                e.get("file_path", "—") or "—",
+            )
+        console.print(table)
+
+
+@app.command("source-show")
+def source_show(
+    source_id: str = typer.Argument(..., help="Source ID to show."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Show details for a single registered source."""
+    repo_root = _resolve_repo(repo)
+    service = SourceRegistryService(repo_root)
+    entry = service.get_latest_by_id(source_id)
+
+    if entry is None:
+        console.print(f"[red]Source not found: {source_id}[/red]")
+        raise typer.Exit(code=1)
+
+    if json_output:
+        print(json.dumps(entry.to_dict(), indent=2, default=str))
+    else:
+        console.print(f"[bold]Source: {entry.source_id}[/bold]")
+        console.print(f"  Type:   {entry.source_type}")
+        console.print(f"  Status: {entry.status}")
+        if entry.file_path:
+            console.print(f"  File:   {entry.file_path}")
+        if entry.file_hash:
+            console.print(f"  Hash:   {entry.file_hash}")
+        console.print(f"  Registered: {entry.registered_at}")
+        if entry.metadata:
+            for key, val in entry.metadata.items():
+                console.print(f"  {key}: {val}")
 
 
 @app.command()
@@ -2043,6 +2118,16 @@ def import_model_sheet(
                 "warnings_count": len(proposal.get("warnings", [])),
             },
         )
+    )
+
+    # Register source
+    src_service = SourceRegistryService(repo_root)
+    register_import_source(
+        src_service,
+        proposal_id=proposal.get("id", ""),
+        source_path=input_path,
+        operations_count=len(proposal.get("operations", [])),
+        warnings_count=len(proposal.get("warnings", [])),
     )
 
     if json_output:
