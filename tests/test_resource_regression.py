@@ -150,6 +150,51 @@ class TestProfilerBounds:
         assert sheet.row_count == 10
         assert sheet.status.rows_processed == 10
 
+    def test_profile_csv_sampling(self, tmp_path: Path) -> None:
+        csv_path = tmp_path / "sampled.csv"
+        rows = ["col1,col2"] + [f"v{i},v{i}" for i in range(100)]
+        csv_path.write_text("\n".join(rows), encoding="utf-8")
+
+        profile = profile_csv(csv_path, dataset_id="sampled", sample_interval=10)
+        assert profile.status.success is True
+        assert profile.status.sampled is True
+        assert profile.status.sample_interval == 10
+        assert profile.row_count == 100
+        assert profile.status.rows_processed == 10
+        assert "every 10th row" in (profile.status.reason or "")
+
+    def test_profile_xlsx_sampling(self, tmp_path: Path) -> None:
+        pytest.importorskip("openpyxl")
+        from openpyxl import Workbook
+
+        xlsx_path = tmp_path / "sampled.xlsx"
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "data"
+        ws.append(["col1", "col2"])
+        for i in range(100):
+            ws.append([f"v{i}", f"v{i}"])
+        wb.save(str(xlsx_path))
+        wb.close()
+
+        profile = profile_xlsx(xlsx_path, dataset_id="sampled", sample_interval=10)
+        assert profile.status.success is True
+        assert profile.status.sampled is True
+        sheet = profile.sheets[0]
+        assert sheet.row_count == 100
+        assert sheet.status.rows_processed == 10
+        assert "every 10th row" in (sheet.status.reason or "")
+
+    def test_profile_csv_no_sampling_by_default(self, tmp_path: Path) -> None:
+        csv_path = tmp_path / "full.csv"
+        rows = ["col1,col2"] + [f"v{i},v{i}" for i in range(20)]
+        csv_path.write_text("\n".join(rows), encoding="utf-8")
+
+        profile = profile_csv(csv_path, dataset_id="full")
+        assert profile.status.sampled is False
+        assert profile.row_count == 20
+        assert profile.status.rows_processed == 20
+
 
 class TestTraceBounds:
     """Trace traversal must respect max_depth."""

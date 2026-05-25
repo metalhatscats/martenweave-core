@@ -263,6 +263,7 @@ def profile_dataset(
             max_file_size=limits.max_file_size_bytes,
             max_rows=limits.max_profile_rows,
             max_columns=limits.max_profile_columns,
+            sample_interval=limits.profile_sample_interval,
         )
     elif suffix in {".xlsx", ".xls"}:
         raw_profile = profile_xlsx(
@@ -271,6 +272,7 @@ def profile_dataset(
             max_file_size=limits.max_file_size_bytes,
             max_rows=limits.max_profile_rows,
             max_columns=limits.max_profile_columns,
+            sample_interval=limits.profile_sample_interval,
         )
     else:
         console.print(f"[red]Unsupported file format: {suffix}[/red]")
@@ -308,7 +310,14 @@ def profile_dataset(
         else:
             console.print(f"  Rows: {profile.row_count}")
             console.print(f"  Columns: {profile.column_count}")
-            console.print(f"  Status: {'OK' if profile.status.success else 'TRUNCATED'}")
+            status_label = "OK"
+            if not profile.status.success:
+                status_label = "TRUNCATED"
+            elif profile.status.sampled:
+                status_label = "SAMPLED"
+            console.print(f"  Status: {status_label}")
+            if profile.status.sampled and profile.status.reason:
+                console.print(f"  [yellow]{profile.status.reason}[/yellow]")
 
     if high_risk_cols:
         console.print(

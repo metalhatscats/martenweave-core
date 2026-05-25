@@ -12,6 +12,8 @@ from pathlib import Path
 class ProfilingStatus:
     success: bool = True
     truncated: bool = False
+    sampled: bool = False
+    sample_interval: int | None = None
     reason: str | None = None
     rows_processed: int = 0
     file_size_bytes: int = 0
@@ -103,8 +105,13 @@ def profile_csv(
     max_file_size: int = MAX_FILE_SIZE_BYTES,
     max_rows: int = MAX_ROWS,
     max_columns: int = MAX_COLUMNS,
+    sample_interval: int | None = None,
 ) -> DatasetProfile:
-    """Profile a CSV file with bounded memory usage."""
+    """Profile a CSV file with bounded memory usage.
+
+    If *sample_interval* is provided, every Nth row is processed for
+    statistics and the result is marked as sampled rather than exact.
+    """
     file_size = csv_path.stat().st_size
     if file_size > max_file_size:
         return DatasetProfile(
@@ -155,12 +162,17 @@ def profile_csv(
             ColumnProfile(name=h, position=i + 1) for i, h in enumerate(headers)
         ]
         row_count = 0
+        processed_count = 0
         distinct_sets: list[set[str]] = [set() for _ in headers]
+        sampled = sample_interval is not None and sample_interval > 1
 
         for row in reader:
             if row_count >= max_rows:
                 break
             row_count += 1
+            if sampled and row_count % sample_interval != 0:
+                continue
+            processed_count += 1
             for i, value in enumerate(row):
                 if i >= len(columns):
                     break
@@ -177,6 +189,19 @@ def profile_csv(
             col.distinct_count = len(distinct_sets[i])
             col.inferred_type = _infer_type(list(distinct_sets[i])[:SAMPLE_SIZE * 2])
 
+    status = ProfilingStatus(
+        success=True,
+        sampled=sampled,
+        sample_interval=sample_interval,
+        rows_processed=processed_count,
+        file_size_bytes=file_size,
+    )
+    if sampled:
+        status.reason = (
+            f"Statistics estimated from every {sample_interval}th row "
+            f"({processed_count} sampled out of {row_count} total)."
+        )
+
     return DatasetProfile(
         dataset_id=dataset_id,
         file_path=str(csv_path),
@@ -184,11 +209,7 @@ def profile_csv(
         row_count=row_count,
         column_count=len(columns),
         columns=columns,
-        status=ProfilingStatus(
-            success=True,
-            rows_processed=row_count,
-            file_size_bytes=file_size,
-        ),
+        status=status,
     )
 
 
@@ -198,8 +219,13 @@ def profile_xlsx(
     max_file_size: int = MAX_FILE_SIZE_BYTES,
     max_rows: int = MAX_ROWS,
     max_columns: int = MAX_COLUMNS,
+    sample_interval: int | None = None,
 ) -> WorkbookProfile:
-    """Profile an XLSX workbook, profiling each sheet independently."""
+    """Profile an XLSX workbook, profiling each sheet independently.
+
+    If *sample_interval* is provided, every Nth row is processed for
+    statistics and the result is marked as sampled rather than exact.
+    """
     from openpyxl import load_workbook
 
     file_size = xlsx_path.stat().st_size
@@ -279,12 +305,17 @@ def profile_xlsx(
             ColumnProfile(name=h, position=i + 1) for i, h in enumerate(headers)
         ]
         row_count = 0
+        processed_count = 0
         distinct_sets: list[set[str]] = [set() for _ in headers]
+        sampled = sample_interval is not None and sample_interval > 1
 
         for row in ws.iter_rows(min_row=2, values_only=True):
             if row_count >= max_rows:
                 break
             row_count += 1
+            if sampled and row_count % sample_interval != 0:
+                continue
+            processed_count += 1
             for i, value in enumerate(row):
                 if i >= len(columns):
                     break
@@ -302,6 +333,19 @@ def profile_xlsx(
             col.distinct_count = len(distinct_sets[i])
             col.inferred_type = _infer_type(list(distinct_sets[i])[:SAMPLE_SIZE * 2])
 
+        status = ProfilingStatus(
+            success=True,
+            sampled=sampled,
+            sample_interval=sample_interval,
+            rows_processed=processed_count,
+            file_size_bytes=file_size,
+        )
+        if sampled:
+            status.reason = (
+                f"Statistics estimated from every {sample_interval}th row "
+                f"({processed_count} sampled out of {row_count} total)."
+            )
+
         sheet_profiles.append(
             DatasetProfile(
                 dataset_id=dataset_id,
@@ -311,11 +355,7 @@ def profile_xlsx(
                 row_count=row_count,
                 column_count=len(columns),
                 columns=columns,
-                status=ProfilingStatus(
-                    success=True,
-                    rows_processed=row_count,
-                    file_size_bytes=file_size,
-                ),
+                status=status,
             )
         )
 
@@ -329,6 +369,8 @@ def profile_xlsx(
         sheets=sheet_profiles,
         status=ProfilingStatus(
             success=all(s.status.success for s in sheet_profiles) if sheet_profiles else True,
+            sampled=any(s.status.sampled for s in sheet_profiles),
+            sample_interval=sample_interval,
             rows_processed=sum(s.status.rows_processed for s in sheet_profiles),
             file_size_bytes=file_size,
         ),

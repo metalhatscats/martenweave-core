@@ -46,6 +46,13 @@ class ResourceLimits(BaseModel):
     max_response_size_bytes: int = Field(
         default=10 * 1024 * 1024, description="Maximum CLI/API response payload (10 MB)"
     )
+    profile_sample_interval: int | None = Field(
+        default=None,
+        description=(
+            "If set, profile every Nth row for large files "
+            "instead of a full scan."
+        ),
+    )
 
 
 class RepoConfig(BaseModel):
