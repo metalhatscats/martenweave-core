@@ -279,7 +279,7 @@ def profile_dataset(
     )
 
     if json_output:
-        console.print(json.dumps(profile_dict, indent=2, default=str, sort_keys=True))
+        print(json.dumps(profile_dict, indent=2, default=str, sort_keys=True))
     else:
         console.print(f"[green]Profile saved to {output_path}[/green]")
         if hasattr(profile, "sheet_names"):
@@ -345,7 +345,7 @@ def infer_model(
     proposal_path = write_patch_proposal(proposal, model_path)
 
     if json_output:
-        console.print(json.dumps(proposal, indent=2, default=str, sort_keys=True))
+        print(json.dumps(proposal, indent=2, default=str, sort_keys=True))
     else:
         console.print(f"[green]PatchProposal written to {proposal_path}[/green]")
         console.print(f"  ID: {proposal['id']}")
@@ -502,7 +502,7 @@ def health(
             ],
             "type_counts": report.type_counts,
         }
-        console.print(json.dumps(result, indent=2, default=str))
+        print(json.dumps(result, indent=2, default=str))
         raise typer.Exit()
 
     console.print("[bold]Repository Health[/bold]")
@@ -621,7 +621,7 @@ def analyze(
                 else [],
             },
         }
-        console.print(json.dumps(result, indent=2, default=str))
+        print(json.dumps(result, indent=2, default=str))
         raise typer.Exit()
 
     console.print("[bold]Model Analysis[/bold]")
@@ -735,7 +735,7 @@ def trace(
                 for e in result.edges
             ],
         }
-        console.print(json.dumps(data, indent=2, default=str))
+        print(json.dumps(data, indent=2, default=str))
         raise typer.Exit()
 
     console.print(f"[bold]Trace: {object_id}[/bold]")
@@ -794,7 +794,7 @@ def impact(
                 for o in report.affected_objects
             ],
         }
-        console.print(json.dumps(result, indent=2, default=str))
+        print(json.dumps(result, indent=2, default=str))
     else:
         console.print(f"[bold]Impact Report for {object_id}[/bold]")
         console.print(f"  Type: {report.root_object_type or 'Unknown'}")
@@ -828,19 +828,23 @@ def propose_patch(
 
     result = build_patch_proposal_from_note(note)
 
+    proposal = result.get("proposal")
+    if proposal is None:
+        if json_output:
+            print(json.dumps(result, indent=2, default=str))
+        else:
+            console.print("[red]No proposal generated.[/red]")
+        raise typer.Exit(code=1)
+
+    path = write_patch_proposal(proposal, model_path)
+
     if json_output:
-        console.print(json.dumps(result, indent=2, default=str))
+        print(json.dumps(result, indent=2, default=str))
         return
 
     if not result.get("is_safe"):
         console.print("[yellow]Proposal generated but failed validation.[/yellow]")
 
-    proposal = result.get("proposal")
-    if proposal is None:
-        console.print("[red]No proposal generated.[/red]")
-        raise typer.Exit(code=1)
-
-    path = write_patch_proposal(proposal, model_path)
     console.print(f"[green]Patch proposal written to {path}[/green]")
     console.print(f"  ID:    {proposal['id']}")
     console.print(f"  Ops:   {len(proposal.get('operations', []))}")
@@ -1377,10 +1381,6 @@ def notifications_list(
     repo_root = _resolve_repo(repo)
     events = read_notification_events(repo_root)
 
-    if not events:
-        console.print("[yellow]No notification events found.[/yellow]")
-        raise typer.Exit()
-
     filtered = filter_notification_events(
         events,
         recipient=recipient,
@@ -1391,6 +1391,10 @@ def notifications_list(
 
     if json_output:
         print(json.dumps([e.to_dict() for e in filtered], indent=2, default=str))
+        raise typer.Exit()
+
+    if not events:
+        console.print("[yellow]No notification events found.[/yellow]")
         raise typer.Exit()
 
     console.print(f"[bold]Notification Events ({len(filtered)})[/bold]")
@@ -1634,7 +1638,7 @@ def proposal_impact(
                 for op_report in report.operation_reports
             ],
         }
-        console.print(json.dumps(result, indent=2, default=str))
+        print(json.dumps(result, indent=2, default=str))
         raise typer.Exit()
 
     console.print(f"[bold]Impact Report for {proposal_id}[/bold]")
@@ -1871,7 +1875,7 @@ def import_model_sheet(
     )
 
     if json_output:
-        console.print(json.dumps(proposal, indent=2, default=str))
+        print(json.dumps(proposal, indent=2, default=str))
     else:
         console.print(f"[bold]PatchProposal: {proposal['id']}[/bold]")
         console.print(f"  Operations: {len(proposal['operations'])}")
@@ -1956,7 +1960,7 @@ def audit_log(
     )
 
     if json_output:
-        console.print(json.dumps([e.to_dict() for e in filtered], indent=2, default=str))
+        print(json.dumps([e.to_dict() for e in filtered], indent=2, default=str))
         raise typer.Exit()
 
     console.print(f"[bold]Audit Log ({len(filtered)} events)[/bold]")
@@ -2000,7 +2004,7 @@ def config_guard(
                 }
                 for i in issues
             ]
-        console.print(json.dumps(output, indent=2, default=str))
+        print(json.dumps(output, indent=2, default=str))
         if has_blocking_issues(results):
             raise typer.Exit(code=1)
         raise typer.Exit()
@@ -2087,7 +2091,7 @@ def diff(
                 for c in result.changed
             ],
         }
-        console.print(json.dumps(output, indent=2, default=str))
+        print(json.dumps(output, indent=2, default=str))
         raise typer.Exit()
 
     console.print("[bold]Model Diff[/bold]")
@@ -2182,7 +2186,7 @@ def search(
             }
             for r in results
         ]
-        console.print(json.dumps(output, indent=2, default=str))
+        print(json.dumps(output, indent=2, default=str))
         raise typer.Exit()
 
     if not results:
@@ -2251,7 +2255,7 @@ def query(
             }
             for r in results
         ]
-        console.print(json.dumps(output, indent=2, default=str))
+        print(json.dumps(output, indent=2, default=str))
         raise typer.Exit()
 
     if not results:
