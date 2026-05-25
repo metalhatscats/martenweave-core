@@ -87,6 +87,7 @@ from modelops_core.reports.audit_service import (
     filter_audit_events,
 )
 from modelops_core.reports.health_report import generate_repository_health
+from modelops_core.reports.scorecard_service import generate_scorecard
 from modelops_core.repository import parse_file, scan_repository
 from modelops_core.schemas.migration import migrate_object, needs_migration
 from modelops_core.schemas.versioning import (
@@ -581,6 +582,93 @@ def health(
         for t, c in sorted(report.type_counts.items()):
             table.add_row(t, str(c))
         console.print(table)
+
+
+@app.command()
+def scorecard(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Show a compact governance scorecard with readiness metrics."""
+    repo_root = _resolve_repo(repo)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+
+    if not db_path.exists():
+        console.print(
+            "[yellow]No index found. Run `modelops build-index` first.[/yellow]"
+        )
+        raise typer.Exit(code=1)
+
+    report = generate_scorecard(db_path, repo_root)
+
+    if json_output:
+        result = {
+            "repo_name": report.repo_name,
+            "generated_at": report.generated_at,
+            "readiness_level": report.readiness_level,
+            "object_count": report.object_count,
+            "metrics": [
+                {
+                    "name": m.name,
+                    "value": m.value,
+                    "target": m.target,
+                    "status": m.status,
+                    "explanation": m.explanation,
+                    "suggested_action": m.suggested_action,
+                }
+                for m in report.metrics
+            ],
+            "gaps": [
+                {
+                    "object_id": g.object_id,
+                    "object_type": g.object_type,
+                    "gap_type": g.gap_type,
+                    "suggested_action": g.suggested_action,
+                }
+                for g in report.gaps
+            ],
+            "summary": report.summary,
+        }
+        print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print(f"[bold]Scorecard: {report.repo_name}[/bold]")
+    console.print(f"  Readiness: {report.readiness_level}")
+    console.print(f"  Objects:   {report.object_count}")
+    console.print(f"  Generated: {report.generated_at}")
+    console.print("")
+
+    table = Table("Metric", "Value", "Target", "Status", "Explanation")
+    for m in report.metrics:
+        status_color = {
+            "pass": "[green]",
+            "warning": "[yellow]",
+            "fail": "[red]",
+        }.get(m.status, "")
+        table.add_row(
+            m.name,
+            str(m.value),
+            str(m.target),
+            f"{status_color}{m.status}[/]",
+            m.explanation,
+        )
+    console.print(table)
+
+    if report.gaps:
+        console.print("")
+        console.print(f"[bold]Top Gaps ({len(report.gaps)} shown)[/bold]")
+        gap_table = Table("Object ID", "Type", "Gap", "Suggested Action")
+        for g in report.gaps:
+            gap_table.add_row(
+                g.object_id or "—",
+                g.object_type or "—",
+                g.gap_type,
+                g.suggested_action,
+            )
+        console.print(gap_table)
+
+    console.print("")
+    console.print(f"[italic]{report.summary}[/italic]")
 
 
 @app.command()
