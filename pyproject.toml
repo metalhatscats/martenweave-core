@@ -23,6 +23,9 @@ google_adk = [
   "google-adk>=0.1.0",
   "google-generativeai>=0.8.0",
 ]
+mcp = [
+  "mcp>=1.0",
+]
 
 [project.scripts]
 modelops = "modelops_core.cli:app"
