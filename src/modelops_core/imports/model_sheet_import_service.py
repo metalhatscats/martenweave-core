@@ -8,9 +8,34 @@ from typing import Any
 
 from modelops_core.patching.patch_model import PatchOperation
 from modelops_core.repository import parse_file, scan_repository
+from modelops_core.schemas import ObjectType
 
 # Columns that are metadata / not frontmatter fields
 _META_COLUMNS = {"source_file"}
+
+# Reference-like fields that are validated for broken references
+_REFERENCE_LIKE_FIELDS = {
+    "domain",
+    "entity",
+    "parent_entity",
+    "entity_context",
+    "attribute",
+    "business_attribute",
+    "field_endpoint",
+    "value_list",
+    "mapping",
+    "validation_rule",
+    "system",
+    "migration_object",
+    "source_value_list",
+    "target_value_list",
+    "owner",
+    "business_owner",
+    "technical_owner",
+    "data_steward",
+    "approver",
+    "accountable_team",
+}
 
 
 def _read_csv_dir(csv_dir: Path) -> dict[str, list[dict[str, str]]]:
@@ -50,6 +75,94 @@ def _read_xlsx(xlsx_path: Path) -> dict[str, list[dict[str, str]]]:
         rows_by_type[obj_type] = rows
     wb.close()
     return rows_by_type
+
+
+def _detect_formulas(xlsx_path: Path) -> list[str]:
+    """Detect formula cells in an XLSX workbook.
+
+    Returns a list of human-readable warning strings with sheet and cell refs.
+    """
+    try:
+        from openpyxl import load_workbook
+    except ImportError:
+        return []
+
+    warnings: list[str] = []
+    wb = load_workbook(xlsx_path, data_only=False)
+    for sheet_name in wb.sheetnames:
+        ws = wb[sheet_name]
+        for row in ws.iter_rows(min_row=2):
+            for cell in row:
+                if (
+                    cell.value is not None
+                    and isinstance(cell.value, str)
+                    and cell.value.startswith("=")
+                ):
+                    warnings.append(
+                        f"Formula detected in sheet '{sheet_name}' cell {cell.coordinate}: "
+                        f"formulas are not evaluated during import."
+                    )
+    wb.close()
+    return warnings
+
+
+def _validate_import(
+    rows_by_type: dict[str, list[dict[str, str]]],
+    existing: dict[str, dict[str, Any]],
+) -> list[str]:
+    """Validate spreadsheet rows and return actionable warnings.
+
+    Checks:
+    - Missing 'id' column in sheets
+    - Unknown sheet / object type names
+    - Broken references to objects not in existing or workbook
+    """
+    warnings: list[str] = []
+    known_types = {ot.value for ot in ObjectType}
+    all_ids_in_workbook: set[str] = set()
+
+    for obj_type, rows in rows_by_type.items():
+        if obj_type not in known_types:
+            warnings.append(
+                f"Sheet '{obj_type}' does not match a known object type. "
+                f"Expected one of: {', '.join(sorted(known_types)[:5])}..."
+            )
+
+        if rows and "id" not in rows[0]:
+            warnings.append(
+                f"Sheet '{obj_type}' is missing required 'id' column. "
+                f"All rows will be skipped."
+            )
+            continue
+
+        for row in rows:
+            obj_id = row.get("id")
+            if obj_id:
+                all_ids_in_workbook.add(obj_id)
+
+    # Check references
+    for obj_type, rows in rows_by_type.items():
+        for idx, row in enumerate(rows, start=2):
+            obj_id = row.get("id")
+            if not obj_id:
+                continue
+            for col, val in row.items():
+                if col in _META_COLUMNS or col == "id" or not val:
+                    continue
+                if col in _REFERENCE_LIKE_FIELDS or col.endswith("_id"):
+                    refs: list[str] = []
+                    if "; " in val:
+                        refs = [v.strip() for v in val.split(";") if v.strip()]
+                    else:
+                        refs = [val.strip()]
+                    for ref_id in refs:
+                        if ref_id not in existing and ref_id not in all_ids_in_workbook:
+                            warnings.append(
+                                f"Broken reference in sheet '{obj_type}' row {idx} "
+                                f"({obj_id}): '{col}' points to '{ref_id}' which does not exist."
+                            )
+
+    return warnings
 
 
 def _load_existing_objects(repo_model_path: Path) -> dict[str, dict[str, Any]]:
@@ -118,12 +231,15 @@ def _build_proposal(
     rows_by_type: dict[str, list[dict[str, str]]],
     existing: dict[str, dict[str, Any]],
     source: str,
+    extra_warnings: list[str] | None = None,
 ) -> dict[str, Any]:
     """Build a PatchProposal from spreadsheet rows compared to existing objects."""
     operations: list[PatchOperation] = []
-    warnings: list[str] = []
+    warnings: list[str] = list(extra_warnings or [])
     affected_objects: list[str] = []
     seen_ids: set[str] = set()
+
+    warnings.extend(_validate_import(rows_by_type, existing))
 
     for obj_type, rows in rows_by_type.items():
         for row in rows:
@@ -212,4 +328,5 @@ def import_model_sheet_xlsx(
     """
     rows_by_type = _read_xlsx(xlsx_path)
     existing = _load_existing_objects(repo_model_path)
-    return _build_proposal(rows_by_type, existing, str(xlsx_path))
+    formula_warnings = _detect_formulas(xlsx_path)
+    return _build_proposal(rows_by_type, existing, str(xlsx_path), extra_warnings=formula_warnings)
