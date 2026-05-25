@@ -638,6 +638,31 @@ def _validate_methodology(
                     )
                 )
 
+    # Rule 5: Active AttributeUsage objects without usage_type
+    for obj in attribute_usages:
+        fm = obj.frontmatter
+        status = str(fm.get("status", "")).lower()
+        if status not in ("active", "draft"):
+            continue
+        obj_id = fm.get("id")
+        if not fm.get("usage_type"):
+            results.append(
+                ValidationResult(
+                    severity=ValidationSeverity.WARNING,
+                    code="ATTRIBUTE_USAGE_MISSING_TYPE",
+                    message=(
+                        f"AttributeUsage '{obj_id}' has no usage_type. "
+                        f"Consider adding usage_type to clarify how the attribute is used."
+                    ),
+                    object_id=obj_id,
+                    source_file=obj.source_path,
+                    suggested_fix=(
+                        "Add 'usage_type' (e.g. primary, secondary, derived, reference) "
+                        "to this AttributeUsage."
+                    ),
+                )
+            )
+
     return results
 
 

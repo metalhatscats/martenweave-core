@@ -7,6 +7,8 @@ name: Customer Group in S/4 Customer Sales Area
 domain: DOMAIN-CUSTOMER-BP
 attribute: ATTR-CUST-SALES-CUSTOMER-GROUP
 entity_context: CTX-CUSTOMER-SALES-AREA-S4
+usage_type: primary
+scope: sales_area
 requiredness: conditional
 description: >
   AttributeUsage placing the Customer Group Attribute into the
