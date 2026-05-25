@@ -59,7 +59,7 @@ def _read_xlsx(xlsx_path: Path, max_rows: int | None = None) -> dict[str, list[d
         ) from exc
 
     rows_by_type: dict[str, list[dict[str, str]]] = {}
-    wb = load_workbook(xlsx_path, data_only=True)
+    wb = load_workbook(xlsx_path, data_only=True, read_only=True)
     for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
         obj_type = sheet_name.replace("_", " ")
@@ -92,7 +92,7 @@ def _detect_formulas(xlsx_path: Path) -> list[str]:
         return []
 
     warnings: list[str] = []
-    wb = load_workbook(xlsx_path, data_only=False)
+    wb = load_workbook(xlsx_path, data_only=False, read_only=True)
     for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
         for row in ws.iter_rows(min_row=2):
