@@ -49,7 +49,7 @@ def _read_csv_dir(csv_dir: Path) -> dict[str, list[dict[str, str]]]:
     return rows_by_type
 
 
-def _read_xlsx(xlsx_path: Path) -> dict[str, list[dict[str, str]]]:
+def _read_xlsx(xlsx_path: Path, max_rows: int | None = None) -> dict[str, list[dict[str, str]]]:
     """Read all sheets from an XLSX workbook, keyed by object type."""
     try:
         from openpyxl import load_workbook
@@ -65,7 +65,11 @@ def _read_xlsx(xlsx_path: Path) -> dict[str, list[dict[str, str]]]:
         obj_type = sheet_name.replace("_", " ")
         headers = [str(cell.value) for cell in next(ws.iter_rows(min_row=1, max_row=1))]
         rows: list[dict[str, str]] = []
+        row_count = 0
         for row in ws.iter_rows(min_row=2, values_only=True):
+            if max_rows is not None and row_count >= max_rows:
+                break
+            row_count += 1
             row_dict = {
                 h: str(v) if v is not None else ""
                 for h, v in zip(headers, row, strict=False)
@@ -316,17 +320,26 @@ def import_model_sheet_csv(
 def import_model_sheet_xlsx(
     xlsx_path: Path,
     repo_model_path: Path,
+    max_rows: int | None = None,
 ) -> dict[str, Any]:
     """Import an XLSX workbook and produce a PatchProposal.
 
     Args:
         xlsx_path: Path to the exported XLSX workbook.
         repo_model_path: Path to the model directory.
+        max_rows: Maximum rows to read per sheet. If exceeded, rows are truncated.
 
     Returns:
         A PatchProposal dict capturing detected changes.
     """
-    rows_by_type = _read_xlsx(xlsx_path)
+    rows_by_type = _read_xlsx(xlsx_path, max_rows=max_rows)
     existing = _load_existing_objects(repo_model_path)
     formula_warnings = _detect_formulas(xlsx_path)
-    return _build_proposal(rows_by_type, existing, str(xlsx_path), extra_warnings=formula_warnings)
+    extra_warnings: list[str] = list(formula_warnings)
+    if max_rows is not None:
+        for obj_type, rows in rows_by_type.items():
+            if len(rows) >= max_rows:
+                extra_warnings.append(
+                    f"Sheet '{obj_type}' truncated at {max_rows} rows (max_import_rows limit)."
+                )
+    return _build_proposal(rows_by_type, existing, str(xlsx_path), extra_warnings=extra_warnings)

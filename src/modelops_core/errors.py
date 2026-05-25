@@ -25,3 +25,16 @@ class IndexError(ModelOpsError):
 
 class PathTraversalError(ModelOpsError):
     """Raised when a path escapes allowed boundaries."""
+
+
+class ResourceLimitExceeded(ModelOpsError):
+    """Raised when an operation exceeds a configured resource limit.
+
+    The *resource* field identifies which limit was hit (e.g. ``max_index_objects``).
+    The *message* field contains a human-readable explanation with recovery hints.
+    """
+
+    def __init__(self, resource: str, message: str) -> None:
+        self.resource = resource
+        self.message = message
+        super().__init__(message)
