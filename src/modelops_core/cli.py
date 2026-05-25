@@ -2270,6 +2270,35 @@ def serve(
     uvicorn.run(api_app, host=host, port=port)
 
 
+@app.command("mcp")
+def mcp_server_cmd(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    transport: str = typer.Option("stdio", "--transport", help="Transport: stdio or sse."),
+) -> None:
+    """Start the MCP server for agent integration."""
+    try:
+        from modelops_core.mcp_server import create_mcp_server
+    except ImportError as exc:
+        console.print(
+            "[red]The MCP server requires the 'mcp' package. "
+            "Install it with: pip install mcp[/red]"
+        )
+        raise typer.Exit(code=1) from exc
+
+    repo_root = _resolve_repo(repo)
+    console.print(f"[green]Starting MCP server ({transport})[/green]")
+    console.print(f"  Repository: {repo_root}")
+
+    mcp = create_mcp_server(repo=str(repo_root))
+    if transport == "stdio":
+        mcp.run(transport="stdio")
+    elif transport == "sse":
+        mcp.run(transport="sse")
+    else:
+        console.print(f"[red]Unknown transport: {transport}. Use 'stdio' or 'sse'.[/red]")
+        raise typer.Exit(code=1)
+
+
 @app.command("import-model-sheet")
 def import_model_sheet(
     input_path: Path = typer.Argument(  # noqa: B008
