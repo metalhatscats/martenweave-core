@@ -44,9 +44,15 @@ class ObjectType(StrEnum):
 class GeneralStatus(StrEnum):
     """Generic lifecycle statuses."""
 
+    PROPOSED = "proposed"
     DRAFT = "draft"
     ACTIVE = "active"
+    UNDER_REVIEW = "under_review"
     DEPRECATED = "deprecated"
+    RETIRED = "retired"
+    BLOCKED = "blocked"
+    PLANNED = "planned"
+    IMPLEMENTED = "implemented"
     ARCHIVED = "archived"
 
 
@@ -89,3 +95,9 @@ class BaseObject(BaseModel):
     title: str | None = Field(default=None, description="Human-readable title.")
     domain: str | None = Field(default=None, description="Owning domain ID.")
     description: str | None = Field(default=None, description="Long-form description.")
+    target_release: str | None = Field(
+        default=None, description="Target release version or milestone."
+    )
+    roadmap_priority: str | None = Field(
+        default=None, description="Roadmap priority (e.g. low, medium, high, critical)."
+    )
