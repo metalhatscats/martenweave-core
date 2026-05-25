@@ -206,6 +206,34 @@ class GoogleSheetsConnector:
     # Sheets-specific helpers
     # ------------------------------------------------------------------
 
+    def read_sheet_values(
+        self,
+        spreadsheet_id: str,
+        sheet_name: str,
+    ) -> list[list[Any]]:
+        """Read all cell values from a specific sheet tab.
+
+        Returns a list of rows, where each row is a list of cell values.
+        Empty cells are returned as empty strings.
+        """
+        service = self._get_service()
+        try:
+            result = (
+                service.spreadsheets()
+                .values()
+                .get(spreadsheetId=spreadsheet_id, range=sheet_name)
+                .execute()
+            )
+        except Exception as exc:
+            raise ConnectorError(
+                f"Failed to read sheet {sheet_name}: {exc}",
+                connector_type=self.connector_type,
+                action="fetch_content",
+                details={"spreadsheet_id": spreadsheet_id, "sheet_name": sheet_name},
+            ) from exc
+
+        return result.get("values", [])
+
     def write_sheet_values(
         self,
         spreadsheet_id: str,

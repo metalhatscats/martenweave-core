@@ -50,6 +50,9 @@ from modelops_core.imports import (
     profile_xlsx,
 )
 from modelops_core.imports.dataset_profiler import WorkbookProfile
+from modelops_core.imports.google_sheets_import_service import (
+    import_google_sheet_as_proposal,
+)
 from modelops_core.imports.model_sheet_import_service import (
     import_model_sheet_csv,
     import_model_sheet_xlsx,
@@ -486,6 +489,54 @@ def import_drive(
             f"{', '.join(sorted(set(high_risk_cols)))}. "
             f"Sample values redacted.[/yellow]"
         )
+
+
+@app.command("import-sheet")
+def import_sheet(
+    spreadsheet_id: str = typer.Argument(..., help="Google Sheets spreadsheet ID."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Import a Google Sheet as a PatchProposal.
+
+    Reads all non-metadata tabs and compares against existing canonical
+    objects to generate a PatchProposal for human review.
+
+    Requires google-api-python-client. Install with:
+    pip install modelops_core[google]
+    """
+    repo_root = _resolve_repo(repo)
+
+    try:
+        proposal = import_google_sheet_as_proposal(repo_root, spreadsheet_id)
+    except Exception as exc:
+        console.print(f"[red]Failed to import from Google Sheets: {exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        print(json.dumps(proposal, indent=2, default=str))
+    else:
+        console.print(f"[bold]PatchProposal: {proposal['id']}[/bold]")
+        console.print(f"  Operations: {len(proposal['operations'])}")
+        console.print(f"  Warnings: {len(proposal.get('warnings', []))}")
+        for w in proposal.get("warnings", [])[:5]:
+            console.print(f"    [yellow]{w}[/yellow]")
+        if len(proposal.get("warnings", [])) > 5:
+            console.print(
+                f"    ... and {len(proposal['warnings']) - 5} more warnings"
+            )
+        if proposal["operations"]:
+            table = Table("Op", "Object", "Type", "Target")
+            for op in proposal["operations"][:20]:
+                table.add_row(
+                    op.get("op", "—"),
+                    op.get("object_id", "—"),
+                    op.get("object_type", "—"),
+                    op.get("target_path", "—"),
+                )
+            console.print(table)
+            if len(proposal["operations"]) > 20:
+                console.print(f"  ... and {len(proposal['operations']) - 20} more")
 
 
 @app.command("sources")
