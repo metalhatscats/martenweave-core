@@ -43,6 +43,13 @@ class AttributeUsage(BaseObject):
     attribute: str | None = Field(default=None)
     entity_context: str | None = Field(default=None)
     field_endpoint: str | None = Field(default=None)
+    usage_type: str | None = Field(
+        default=None,
+        description="Usage classification (e.g. primary, secondary, derived, reference).",
+    )
+    scope: str | None = Field(
+        default=None, description="Scope of usage (e.g. sales_area, company_code, global, market)."
+    )
 
 
 class System(BaseObject):
