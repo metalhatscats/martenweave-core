@@ -1,4 +1,4 @@
-"""Tests for the optional MCP server scaffold."""
+"""Tests for the optional MCP server scaffold, resources, and prompts."""
 
 from __future__ import annotations
 
@@ -134,6 +134,166 @@ class TestMCPTools:
             "trace_object_tool",
             "validate_model",
             "health_report",
+        }
+        assert expected.issubset(names)
+
+
+class TestMCPResources:
+    def test_repo_manifest_resource(self, sample_repo):
+        """repo_manifest should return repository info."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = asyncio.run(server.read_resource("modelops://repo/manifest"))
+        data = json.loads(result[0].content)
+        assert "repo_name" in data
+        assert "object_count" in data
+        assert "type_counts" in data
+
+    def test_repo_validation_resource(self, sample_repo):
+        """repo_validation should return validation summary."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = asyncio.run(server.read_resource("modelops://repo/validation"))
+        data = json.loads(result[0].content)
+        assert "is_valid" in data
+        assert "error_count" in data
+
+    def test_repo_health_resource(self, sample_repo):
+        """repo_health should return health metrics."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = asyncio.run(server.read_resource("modelops://repo/health"))
+        data = json.loads(result[0].content)
+        assert "object_count" in data
+        assert "index_fresh" in data
+
+    def test_repo_scorecard_resource(self, sample_repo):
+        """repo_scorecard should return scorecard."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = asyncio.run(server.read_resource("modelops://repo/scorecard"))
+        data = json.loads(result[0].content)
+        assert "repo_name" in data
+        assert "readiness_level" in data
+
+    def test_repo_audit_resource(self, sample_repo):
+        """repo_audit should return audit events list."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = asyncio.run(server.read_resource("modelops://repo/audit"))
+        data = json.loads(result[0].content)
+        assert isinstance(data, list)
+
+    def test_repo_proposals_resource(self, sample_repo):
+        """repo_proposals should return proposals list."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = asyncio.run(server.read_resource("modelops://repo/proposals"))
+        data = json.loads(result[0].content)
+        assert "proposals" in data
+
+    def test_repo_sources_resource(self, sample_repo):
+        """repo_sources should return sources list."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = asyncio.run(server.read_resource("modelops://repo/sources"))
+        data = json.loads(result[0].content)
+        assert "sources" in data
+
+    def test_object_by_id_resource_found(self, sample_repo):
+        """object_by_id should return an existing object."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = asyncio.run(
+            server.read_resource("modelops://object/ATTR-CUST-SALES-CUSTOMER-GROUP")
+        )
+        data = json.loads(result[0].content)
+        assert data.get("id") == "ATTR-CUST-SALES-CUSTOMER-GROUP"
+
+    def test_object_by_id_resource_not_found(self, sample_repo):
+        """object_by_id should return error for missing object."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = asyncio.run(server.read_resource("modelops://object/DOES-NOT-EXIST"))
+        data = json.loads(result[0].content)
+        assert "error" in data
+
+    def test_list_resources(self, sample_repo):
+        """Server should register expected resources."""
+        server = create_mcp_server(repo=str(sample_repo))
+        resources = asyncio.run(server.list_resources())
+        templates = asyncio.run(server.list_resource_templates())
+        uris = {str(r.uri) for r in resources}
+        template_uris = {str(t.uriTemplate) for t in templates}
+        assert "modelops://repo/manifest" in uris
+        assert "modelops://repo/validation" in uris
+        assert "modelops://repo/health" in uris
+        assert "modelops://repo/scorecard" in uris
+        assert "modelops://repo/audit" in uris
+        assert "modelops://repo/proposals" in uris
+        assert "modelops://repo/sources" in uris
+        assert "modelops://object/{object_id}" in template_uris
+
+
+class TestMCPPrompts:
+    def test_review_proposal_prompt(self, sample_repo):
+        """review_proposal should return a guidance message."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = asyncio.run(server.get_prompt("review_proposal", {"proposal_id": "PP-001"}))
+        messages = result.messages
+        assert len(messages) == 1
+        assert "PP-001" in messages[0].content.text
+        assert "get_object" in messages[0].content.text
+
+    def test_explain_trace_prompt(self, sample_repo):
+        """explain_trace should return a guidance message."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = asyncio.run(
+            server.get_prompt("explain_trace", {"object_id": "FEP-S4-KNVV-KDGRP"})
+        )
+        messages = result.messages
+        assert len(messages) == 1
+        assert "FEP-S4-KNVV-KDGRP" in messages[0].content.text
+
+    def test_find_governance_gaps_prompt(self, sample_repo):
+        """find_governance_gaps should return a guidance message."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = asyncio.run(server.get_prompt("find_governance_gaps", {}))
+        messages = result.messages
+        assert len(messages) == 1
+        assert "health_report" in messages[0].content.text
+
+    def test_build_model_from_file_prompt(self, sample_repo):
+        """build_model_from_file should return a guidance message."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = asyncio.run(
+            server.get_prompt("build_model_from_file", {"dataset_path": "/tmp/data.csv"})
+        )
+        messages = result.messages
+        assert len(messages) == 1
+        assert "/tmp/data.csv" in messages[0].content.text
+
+    def test_prepare_excel_review_prompt(self, sample_repo):
+        """prepare_excel_review should return a guidance message."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = asyncio.run(server.get_prompt("prepare_excel_review", {}))
+        messages = result.messages
+        assert len(messages) == 1
+        assert "export-model" in messages[0].content.text
+
+    def test_create_change_request_prompt(self, sample_repo):
+        """create_change_request should return a guidance message."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = asyncio.run(
+            server.get_prompt("create_change_request", {"description": "Add new field"})
+        )
+        messages = result.messages
+        assert len(messages) == 1
+        assert "Add new field" in messages[0].content.text
+
+    def test_list_prompts(self, sample_repo):
+        """Server should register expected prompts."""
+        server = create_mcp_server(repo=str(sample_repo))
+        prompts = asyncio.run(server.list_prompts())
+        names = {p.name for p in prompts}
+        expected = {
+            "review_proposal",
+            "explain_trace",
+            "find_governance_gaps",
+            "build_model_from_file",
+            "prepare_excel_review",
+            "create_change_request",
         }
         assert expected.issubset(names)
 
