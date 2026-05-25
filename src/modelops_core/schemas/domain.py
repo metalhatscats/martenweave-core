@@ -204,3 +204,50 @@ class Evidence(BaseObject):
     """Evidence supporting a decision."""
 
     pass
+
+
+class Application(BaseObject):
+    """A software application in the system landscape."""
+
+    system: str | None = Field(default=None)
+    application_type: str | None = Field(default=None)
+
+
+class InterfaceEndpoint(BaseObject):
+    """An endpoint of an interface (URL, queue, file path, API operation)."""
+
+    interface: str | None = Field(default=None)
+    system: str | None = Field(default=None)
+    application: str | None = Field(default=None)
+    endpoint_type: str | None = Field(default=None)
+    protocol: str | None = Field(default=None)
+
+
+class IntegrationFlow(BaseObject):
+    """A data integration flow connecting source and target systems."""
+
+    source_system: str | None = Field(default=None)
+    target_system: str | None = Field(default=None)
+    interface: str | None = Field(default=None)
+    flow_type: str | None = Field(default=None)
+
+
+class DataFlowStep(BaseObject):
+    """A step within an integration flow (extract, transform, load, validate)."""
+
+    integration_flow: str | None = Field(default=None)
+    source_step: str | None = Field(default=None)
+    target_step: str | None = Field(default=None)
+    transformation_rule: str | None = Field(default=None)
+    source_field_endpoint: str | None = Field(default=None)
+    target_field_endpoint: str | None = Field(default=None)
+    step_type: str | None = Field(default=None)
+
+
+class TransformationRule(BaseObject):
+    """A rule that transforms data from a source to a target representation."""
+
+    source_field_endpoint: str | None = Field(default=None)
+    target_field_endpoint: str | None = Field(default=None)
+    attribute: str | None = Field(default=None)
+    rule_type: str | None = Field(default=None)
