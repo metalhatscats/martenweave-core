@@ -11,7 +11,7 @@ from modelops_core.repository import parse_file, scan_repository
 from modelops_core.schemas import ObjectType
 
 # Columns that are metadata / not frontmatter fields
-_META_COLUMNS = {"source_file"}
+_META_COLUMNS = {"source_file", "reviewer_notes"}
 
 # Reference-like fields that are validated for broken references
 _REFERENCE_LIKE_FIELDS = {

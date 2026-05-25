@@ -111,3 +111,56 @@ def test_export_model_xlsx_includes_lov_sheets(sample_repo: Path) -> None:
     assert "valuelist" in sheet_names
     assert "valuemapping" in sheet_names
     wb.close()
+
+
+# ---------------------------------------------------------------------------
+# Business-review export tests (#48)
+# ---------------------------------------------------------------------------
+
+
+def test_export_model_xlsx_business_review_has_readme(temp_model_dir: Path) -> None:
+    pytest.importorskip("openpyxl")
+    from openpyxl import load_workbook
+
+    path = export_model_xlsx(temp_model_dir, business_review=True)
+    wb = load_workbook(path)
+    sheet_names = [s.lower() for s in wb.sheetnames]
+    assert "read me" in sheet_names
+    wb.close()
+
+
+def test_export_model_xlsx_business_review_has_reviewer_notes(temp_model_dir: Path) -> None:
+    pytest.importorskip("openpyxl")
+    from openpyxl import load_workbook
+
+    path = export_model_xlsx(temp_model_dir, business_review=True)
+    wb = load_workbook(path)
+    sheet_name = next(s for s in wb.sheetnames if s.lower() == "masterdatadomain")
+    ws = wb[sheet_name]
+    headers = [cell.value for cell in ws[1]]
+    assert "reviewer_notes" in headers
+    wb.close()
+
+
+def test_export_model_xlsx_business_review_styled_headers(temp_model_dir: Path) -> None:
+    pytest.importorskip("openpyxl")
+    from openpyxl import load_workbook
+
+    path = export_model_xlsx(temp_model_dir, business_review=True)
+    wb = load_workbook(path)
+    sheet_name = next(s for s in wb.sheetnames if s.lower() == "masterdatadomain")
+    ws = wb[sheet_name]
+    header_cell = ws.cell(row=1, column=1)
+    assert header_cell.font.bold is True
+    wb.close()
+
+
+def test_cli_export_model_xlsx_business_review(temp_model_dir: Path) -> None:
+    pytest.importorskip("openpyxl")
+    repo = str(temp_model_dir.parent)
+    result = runner.invoke(
+        app, ["export-model", "--repo", repo, "--format", "xlsx", "--business-review"]
+    )
+    assert result.exit_code == 0
+    assert "business-review" in result.output
+    assert ".xlsx" in result.output

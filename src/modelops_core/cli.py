@@ -2070,6 +2070,9 @@ def import_model_sheet(
 def export_model(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     fmt: str = typer.Option("csv", "--format", help="Export format: csv or xlsx."),
+    business_review: bool = typer.Option(
+        False, "--business-review", help="Styled XLSX for non-technical review."
+    ),
 ) -> None:
     """Export canonical model objects to CSV or XLSX."""
     repo_root = _resolve_repo(repo)
@@ -2084,8 +2087,13 @@ def export_model(
                 console.print(f"  {f}")
             path = written[0] if written else None
         elif fmt.lower() == "xlsx":
-            path = export_model_xlsx(model_path, max_objects=limits.max_export_objects)
-            console.print("[green]Exported XLSX workbook[/green]")
+            path = export_model_xlsx(
+                model_path,
+                max_objects=limits.max_export_objects,
+                business_review=business_review,
+            )
+            label = "business-review XLSX workbook" if business_review else "XLSX workbook"
+            console.print(f"[green]Exported {label}[/green]")
             console.print(f"  {path}")
         else:
             console.print(f"[red]Unknown format: {fmt}. Use 'csv' or 'xlsx'.[/red]")

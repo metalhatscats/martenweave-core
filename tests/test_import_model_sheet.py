@@ -194,3 +194,44 @@ def test_import_xlsx_unknown_sheet_type_warning(sample_repo: Path) -> None:
         "does not match a known object type" in w
         for w in proposal.get("warnings", [])
     )
+
+
+# ---------------------------------------------------------------------------
+# Business-review roundtrip tests (#48)
+# ---------------------------------------------------------------------------
+
+
+def test_import_xlsx_business_review_roundtrip_no_changes(temp_model_dir: Path) -> None:
+    pytest.importorskip("openpyxl")
+
+    export_model_xlsx(temp_model_dir, business_review=True)
+    xlsx_path = temp_model_dir.parent / "generated" / "exports" / "model.xlsx"
+
+    proposal = import_model_sheet_xlsx(xlsx_path, temp_model_dir)
+    assert proposal["id"].startswith("PP-IMPORT-")
+    # reviewer_notes is a meta column and should not produce operations
+    assert len(proposal["operations"]) == 0
+
+
+def test_import_xlsx_business_review_roundtrip_detects_update(temp_model_dir: Path) -> None:
+    pytest.importorskip("openpyxl")
+    from openpyxl import load_workbook
+
+    export_model_xlsx(temp_model_dir, business_review=True)
+    xlsx_path = temp_model_dir.parent / "generated" / "exports" / "model.xlsx"
+
+    wb = load_workbook(xlsx_path)
+    sheet_name = next(s for s in wb.sheetnames if s.lower() == "masterdatadomain")
+    ws = wb[sheet_name]
+    for row in ws.iter_rows(min_row=2):
+        if row[0].value == "DOMAIN-TEST":
+            row[3].value = "Test Domain Updated"
+            break
+    wb.save(xlsx_path)
+    wb.close()
+
+    proposal = import_model_sheet_xlsx(xlsx_path, temp_model_dir)
+    update_ops = [op for op in proposal["operations"] if op["op"] == "update_object"]
+    assert len(update_ops) == 1
+    assert update_ops[0]["after"] == "Test Domain Updated"
+    assert update_ops[0]["target_path"] == "name"
