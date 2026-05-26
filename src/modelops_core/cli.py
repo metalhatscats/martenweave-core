@@ -111,6 +111,7 @@ from modelops_core.schemas.versioning import (
     CURRENT_SCHEMA_VERSION,
     validate_repo_schema_version,
 )
+from modelops_core.telemetry import record_object_count, with_telemetry
 from modelops_core.trace import trace_object
 from modelops_core.validation import validate_objects
 
@@ -603,6 +604,7 @@ def source_show(
 
 
 @app.command()
+@with_telemetry("infer-model")
 def infer_model(
     profile: Path = typer.Argument(  # noqa: B008
         ..., help="Path to dataset profile JSON (e.g. generated/dataset_profiles/xxx.json)."
@@ -662,6 +664,7 @@ def infer_model(
 
 
 @app.command()
+@with_telemetry("validate")
 def validate(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
@@ -675,6 +678,7 @@ def validate(
         raise typer.Exit(code=1)
 
     files = scan_repository(model_path)
+    record_object_count(len(files))
     parsed_objects = [parse_file(f) for f in files]
     config = load_repo_config(repo_root)
     enabled_packs = config.enabled_domain_packs if config else None
@@ -715,6 +719,7 @@ def validate(
 
 
 @app.command()
+@with_telemetry("build-index")
 def build_index(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     db: str | None = typer.Option(None, "--db", help="Path for SQLite DB output."),
@@ -748,6 +753,8 @@ def build_index(
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
+    record_object_count(len(scan_repository(resolve_model_path(repo_root))))
+
     if db_path is None:
         db_path = resolve_generated_path(repo_root) / "modelops.db"
 
@@ -762,6 +769,7 @@ def build_index(
 
 
 @app.command()
+@with_telemetry("health")
 def health(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
@@ -869,6 +877,7 @@ def health(
 
 
 @app.command()
+@with_telemetry("scorecard")
 def scorecard(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
@@ -1131,6 +1140,7 @@ def analyze(
 
 
 @app.command("trace")
+@with_telemetry("trace")
 def trace(
     object_id: str = typer.Argument(..., help="Object ID to trace from."),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
@@ -1204,6 +1214,7 @@ def trace(
 
 
 @app.command()
+@with_telemetry("impact")
 def impact(
     object_id: str = typer.Argument(..., help="Object ID to analyze."),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
@@ -1247,6 +1258,7 @@ def impact(
 
 
 @app.command()
+@with_telemetry("propose-patch")
 def propose_patch(
     note_file: Path = typer.Option(  # noqa: B008
         ..., "--from", help="Path to note file."
@@ -1415,6 +1427,7 @@ app.add_typer(cr_app, name="change-request")
 
 
 @cr_app.command("create")
+@with_telemetry("cr-create")
 def cr_create(
     title: str = typer.Option(..., "--title", help="ChangeRequest title."),
     cr_id: str = typer.Option(..., "--id", help="ChangeRequest ID (e.g. CR-001)."),
@@ -2013,6 +2026,7 @@ def proposal_validate(
 
 
 @proposal_app.command("impact")
+@with_telemetry("proposal-impact")
 def proposal_impact(
     proposal_id: str = typer.Argument(..., help="PatchProposal ID (e.g. PP-001)."),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
@@ -2113,6 +2127,7 @@ def proposal_impact(
 
 
 @proposal_app.command("apply")
+@with_telemetry("proposal-apply")
 def proposal_apply(
     proposal_id: str = typer.Argument(..., help="PatchProposal ID (e.g. PP-001)."),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
@@ -2379,6 +2394,7 @@ def import_model_sheet(
 
 
 @app.command("export-model")
+@with_telemetry("export-model")
 def export_model(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     fmt: str = typer.Option("csv", "--format", help="Export format: csv or xlsx."),
