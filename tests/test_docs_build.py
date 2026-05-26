@@ -76,3 +76,25 @@ class TestDocsBuildCli:
         )
         assert result.exit_code == 1
         assert "build-index" in result.output
+
+    def test_cli_docs_build_json(self, indexed_repo: Path) -> None:
+        import json
+
+        result = runner.invoke(
+            app, ["docs-build", "--repo", str(indexed_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert "output_dir" in data
+        assert isinstance(data["files"], list)
+        assert "index.md" in data["files"]
+
+    def test_cli_docs_build_no_index_json(self, tmp_path: Path) -> None:
+        import json
+
+        result = runner.invoke(
+            app, ["docs-build", "--repo", str(tmp_path), "--json"]
+        )
+        assert result.exit_code == 1
+        data = json.loads(result.output)
+        assert "error" in data

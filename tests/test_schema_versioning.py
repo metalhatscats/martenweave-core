@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
+from typer.testing import CliRunner
+
+from modelops_core.cli import app
 from modelops_core.repository.parser import rewrite_frontmatter
 from modelops_core.schemas.migration import (
     MIGRATIONS,
@@ -207,3 +211,70 @@ class TestRewriteFrontmatter:
         text = path.read_text(encoding="utf-8")
         assert "id: TEST" in text
         assert "status: active" in text
+
+
+# ---------------------------------------------------------------------------
+# CLI migrate --json
+# ---------------------------------------------------------------------------
+
+runner = CliRunner()
+
+
+class TestMigrateCliJson:
+    def test_migrate_json_empty_model(self, tmp_path: Path) -> None:
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        model_dir = repo / "model"
+        model_dir.mkdir()
+        config = repo / "modelops.config.yaml"
+        config.write_text("schema_version: 0.1\n", encoding="utf-8")
+
+        result = runner.invoke(app, ["migrate", "--repo", str(repo), "--json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["migrated_count"] == 0
+        assert data["skipped_count"] == 0
+        assert data["migrated_files"] == []
+        assert "schema_version" in data
+
+    def test_migrate_json_no_model_path(self, tmp_path: Path) -> None:
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        result = runner.invoke(app, ["migrate", "--repo", str(repo), "--json"])
+        assert result.exit_code == 1
+        data = json.loads(result.output)
+        assert "error" in data
+
+    def test_migrate_dry_run_json_with_old_schema(self, tmp_path: Path) -> None:
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        model_dir = repo / "model"
+        model_dir.mkdir()
+        config = repo / "modelops.config.yaml"
+        config.write_text("schema_version: 0.1\n", encoding="utf-8")
+
+        obj = model_dir / "DOMAIN-TEST.md"
+        frontmatter = (
+            "---\n"
+            "id: DOMAIN-TEST\n"
+            "type: MasterDataDomain\n"
+            "status: draft\n"
+            "schema_version: 0.1\n"
+            "---\n"
+        )
+        obj.write_text(frontmatter, encoding="utf-8")
+
+        result = runner.invoke(
+            app, ["migrate", "--repo", str(repo), "--dry-run", "--json"]
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["dry_run"] is True
+        assert data["migrated_count"] >= 1
+        assert len(data["migrated_files"]) >= 1
+        assert data["migrated_files"][0]["file"] == "DOMAIN-TEST.md"
+        assert "old_version" in data["migrated_files"][0]
+        assert "new_version" in data["migrated_files"][0]
+        # Verify file was NOT changed in dry-run
+        text = obj.read_text(encoding="utf-8")
+        assert "schema_version: 0.1" in text

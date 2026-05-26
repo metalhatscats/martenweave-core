@@ -164,3 +164,48 @@ def test_cli_export_model_xlsx_business_review(temp_model_dir: Path) -> None:
     assert result.exit_code == 0
     assert "business-review" in result.output
     assert ".xlsx" in result.output
+
+
+# --json flag tests -----------------------------------------------------------
+
+
+def test_cli_export_model_csv_json(temp_model_dir: Path) -> None:
+    import json
+
+    repo = str(temp_model_dir.parent)
+    result = runner.invoke(
+        app, ["export-model", "--repo", repo, "--format", "csv", "--json"]
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["format"] == "csv"
+    assert isinstance(data["files"], list)
+    assert len(data["files"]) > 0
+    assert data["business_review"] is False
+
+
+def test_cli_export_model_xlsx_json(temp_model_dir: Path) -> None:
+    pytest.importorskip("openpyxl")
+    import json
+
+    repo = str(temp_model_dir.parent)
+    result = runner.invoke(
+        app, ["export-model", "--repo", repo, "--format", "xlsx", "--json"]
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["format"] == "xlsx"
+    assert "file" in data
+    assert data["business_review"] is False
+
+
+def test_cli_export_model_unknown_format_json(temp_model_dir: Path) -> None:
+    import json
+
+    repo = str(temp_model_dir.parent)
+    result = runner.invoke(
+        app, ["export-model", "--repo", repo, "--format", "pdf", "--json"]
+    )
+    assert result.exit_code == 1
+    data = json.loads(result.output)
+    assert "error" in data

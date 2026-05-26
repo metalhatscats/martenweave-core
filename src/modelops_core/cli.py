@@ -2513,6 +2513,7 @@ def export_model(
     business_review: bool = typer.Option(
         False, "--business-review", help="Styled XLSX for non-technical review."
     ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Export canonical model objects to CSV or XLSX."""
     repo_root = _resolve_repo(repo)
@@ -2522,6 +2523,19 @@ def export_model(
     try:
         if fmt.lower() == "csv":
             written = export_model_csv(model_path, max_objects=limits.max_export_objects)
+            if json_output:
+                print(
+                    json.dumps(
+                        {
+                            "format": "csv",
+                            "files": [str(f) for f in written],
+                            "business_review": business_review,
+                        },
+                        indent=2,
+                        default=str,
+                    )
+                )
+                raise typer.Exit()
             console.print(f"[green]Exported {len(written)} CSV files[/green]")
             for f in written:
                 console.print(f"  {f}")
@@ -2532,14 +2546,33 @@ def export_model(
                 max_objects=limits.max_export_objects,
                 business_review=business_review,
             )
+            if json_output:
+                print(
+                    json.dumps(
+                        {
+                            "format": "xlsx",
+                            "file": str(path),
+                            "business_review": business_review,
+                        },
+                        indent=2,
+                        default=str,
+                    )
+                )
+                raise typer.Exit()
             label = "business-review XLSX workbook" if business_review else "XLSX workbook"
             console.print(f"[green]Exported {label}[/green]")
             console.print(f"  {path}")
         else:
-            console.print(f"[red]Unknown format: {fmt}. Use 'csv' or 'xlsx'.[/red]")
+            if json_output:
+                print(json.dumps({"error": f"Unknown format: {fmt}"}))
+            else:
+                console.print(f"[red]Unknown format: {fmt}. Use 'csv' or 'xlsx'.[/red]")
             raise typer.Exit(code=1)
     except ResourceLimitExceeded as exc:
-        console.print(f"[red]{exc}[/red]")
+        if json_output:
+            print(json.dumps({"error": str(exc)}))
+        else:
+            console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
     changed_files = [str(f) for f in (written if fmt.lower() == "csv" else [path])]
@@ -2839,6 +2872,7 @@ def docs_build(
         "--output",
         help="Output directory for generated docs.",
     ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Generate static Markdown documentation from the model index."""
     repo_root = _resolve_repo(repo)
@@ -2847,11 +2881,25 @@ def docs_build(
     try:
         result = generate_static_docs(repo_root, output_path)
     except FileNotFoundError as exc:
-        console.print(f"[yellow]{exc}[/yellow]")
+        if json_output:
+            print(json.dumps({"error": str(exc)}))
+        else:
+            console.print(f"[yellow]{exc}[/yellow]")
         raise typer.Exit(code=1) from None
 
-    console.print(f"[bold]Documentation generated[/bold] at {result}")
     files = sorted(f.name for f in result.iterdir() if f.suffix == ".md")
+
+    if json_output:
+        print(
+            json.dumps(
+                {"output_dir": str(result), "files": files},
+                indent=2,
+                default=str,
+            )
+        )
+        raise typer.Exit()
+
+    console.print(f"[bold]Documentation generated[/bold] at {result}")
     console.print(f"  {len(files)} Markdown file(s):")
     for name in files:
         console.print(f"    - {name}")
@@ -3157,20 +3205,27 @@ def migrate(
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Preview changes without writing files."
     ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Migrate canonical objects to the current schema version."""
     repo_root = _resolve_repo(repo)
     model_path = resolve_model_path(repo_root)
 
     if not model_path.exists():
-        console.print(f"[red]Model path does not exist: {model_path}[/red]")
+        if json_output:
+            print(json.dumps({"error": f"Model path does not exist: {model_path}"}))
+        else:
+            console.print(f"[red]Model path does not exist: {model_path}[/red]")
         raise typer.Exit(code=1)
 
     files = scan_repository(model_path)
     migrated_count = 0
     skipped_count = 0
+    migrated_files = []
+    config_updated = False
 
-    for file_path in files:
+    for file_path_str in files:
+        file_path = Path(file_path_str)
         parsed = parse_file(file_path)
         fm = parsed.frontmatter
         if fm is None:
@@ -3186,21 +3241,29 @@ def migrate(
             continue
 
         migrated_count += 1
+        old_version = fm.get("schema_version", "none")
+        migrated_files.append({
+            "file": file_path.name,
+            "old_version": old_version,
+            "new_version": CURRENT_SCHEMA_VERSION,
+        })
         if dry_run:
-            console.print(
-                f"[yellow]Would migrate[/yellow] {file_path.name} "
-                f"({fm.get('schema_version', 'none')} → {CURRENT_SCHEMA_VERSION})"
-            )
+            if not json_output:
+                console.print(
+                    f"[yellow]Would migrate[/yellow] {file_path.name} "
+                    f"({old_version} → {CURRENT_SCHEMA_VERSION})"
+                )
             continue
 
         # Rewrite file with new frontmatter
         from modelops_core.repository import rewrite_frontmatter
 
         rewrite_frontmatter(file_path, new_fm)
-        console.print(
-            f"[green]Migrated[/green] {file_path.name} "
-            f"({fm.get('schema_version', 'none')} → {CURRENT_SCHEMA_VERSION})"
-        )
+        if not json_output:
+            console.print(
+                f"[green]Migrated[/green] {file_path.name} "
+                f"({old_version} → {CURRENT_SCHEMA_VERSION})"
+            )
 
     # Update repo config schema_version
     config_path = repo_root / "modelops.config.yaml"
@@ -3209,11 +3272,13 @@ def migrate(
     if config_path.exists():
         config = load_repo_config(repo_root)
         if config and config.schema_version != CURRENT_SCHEMA_VERSION:
+            config_updated = True
             if dry_run:
-                console.print(
-                    f"[yellow]Would update[/yellow] {config_path.name} "
-                    f"({config.schema_version} → {CURRENT_SCHEMA_VERSION})"
-                )
+                if not json_output:
+                    console.print(
+                        f"[yellow]Would update[/yellow] {config_path.name} "
+                        f"({config.schema_version} → {CURRENT_SCHEMA_VERSION})"
+                    )
             else:
                 import yaml
 
@@ -3223,10 +3288,28 @@ def migrate(
                     yaml.safe_dump(raw, default_flow_style=False, sort_keys=False),
                     encoding="utf-8",
                 )
-                console.print(
-                    f"[green]Updated[/green] {config_path.name} "
-                    f"({config.schema_version} → {CURRENT_SCHEMA_VERSION})"
-                )
+                if not json_output:
+                    console.print(
+                        f"[green]Updated[/green] {config_path.name} "
+                        f"({config.schema_version} → {CURRENT_SCHEMA_VERSION})"
+                    )
+
+    if json_output:
+        print(
+            json.dumps(
+                {
+                    "dry_run": dry_run,
+                    "migrated_count": migrated_count,
+                    "skipped_count": skipped_count,
+                    "schema_version": CURRENT_SCHEMA_VERSION,
+                    "migrated_files": migrated_files,
+                    "config_updated": config_updated,
+                },
+                indent=2,
+                default=str,
+            )
+        )
+        raise typer.Exit()
 
     console.print(
         f"\n[bold]Migration complete[/bold] — "
