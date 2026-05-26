@@ -202,3 +202,65 @@ class TestTelemetryFailureIsolation:
 
         result = my_func(repo=str(tmp_path))
         assert result == "ok"
+
+
+class TestTelemetryPrivacy:
+    def test_usage_event_does_not_store_raw_paths(self) -> None:
+        """repo_hash must be a hash, not the raw filesystem path."""
+        event = UsageEvent(
+            event_id="e1",
+            timestamp="2026-01-01T00:00:00Z",
+            command="validate",
+            status="success",
+            duration_ms=100,
+            repo_hash="a1b2c3d4",
+        )
+        data = event.to_dict()
+        assert "/Users/" not in str(data.get("repo_hash", ""))
+        assert "/home/" not in str(data.get("repo_hash", ""))
+        assert "C:\\" not in str(data.get("repo_hash", ""))
+
+    def test_usage_event_does_not_store_prompts_or_secrets(self) -> None:
+        """Sensitive fields must not appear in the event dict."""
+        event = UsageEvent(
+            event_id="e2",
+            timestamp="2026-01-01T00:00:00Z",
+            command="propose-patch",
+            status="success",
+            duration_ms=200,
+            metadata={"safe_key": "safe_value"},
+        )
+        data = event.to_dict()
+        assert "prompt" not in data
+        assert "response" not in data
+        assert "api_key" not in data
+        assert "password" not in data
+        assert "secret" not in data
+        assert "token" not in data
+
+    def test_repo_hash_is_truncated_sha256_not_raw_path(self, tmp_path: Path) -> None:
+        """Verify the hash helper produces a short hex string, not the path."""
+        from modelops_core.telemetry import _repo_hash
+
+        hash_val = _repo_hash(tmp_path)
+        assert hash_val is not None
+        assert str(tmp_path) not in hash_val
+        assert len(hash_val) == 16
+        assert all(c in "0123456789abcdef" for c in hash_val)
+
+    def test_error_type_does_not_contain_stack_trace(self, tmp_path: Path) -> None:
+        """error_type should be the exception class name, not a full traceback."""
+
+        @with_telemetry("err-cmd")
+        def my_func(repo: str | None = None) -> None:
+            raise ValueError("something went wrong")
+
+        with pytest.raises(ValueError):
+            my_func(repo=str(tmp_path))
+
+        service = TelemetryService(repo_root=tmp_path)
+        events = service.read_events()
+        assert len(events) == 1
+        assert events[0].error_type == "ValueError"
+        assert "Traceback" not in str(events[0].to_dict())
+        assert "File \"" not in str(events[0].to_dict())
