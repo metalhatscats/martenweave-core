@@ -417,6 +417,9 @@ def gaps(
     promote_to_proposal: bool = typer.Option(
         False, "--promote-to-proposal", help="Promote gaps to a draft PatchProposal."
     ),
+    check_model: bool = typer.Option(
+        False, "--check-model", help="Also check model-side gaps."
+    ),
 ) -> None:
     """Detect dataset-to-model gaps by comparing dataset columns against FieldEndpoints."""
     repo_root = _resolve_repo(repo)
@@ -465,6 +468,14 @@ def gaps(
 
     report = detect_dataset_gaps(profile, db_path)
 
+    model_gaps: list[Any] = []
+    if check_model:
+        from modelops_core.gaps.gap_detection import detect_model_gaps
+
+        model_gaps = detect_model_gaps(db_path)
+
+    all_gaps = report.gaps + model_gaps
+
     if json_output:
         result = {
             "dataset_id": report.dataset_id,
@@ -486,16 +497,16 @@ def gaps(
                     "source_dataset_metadata": g.source_dataset_metadata,
                     "recommended_proposal_op": g.recommended_proposal_op,
                 }
-                for g in report.gaps
+                for g in all_gaps
             ],
         }
         print(json.dumps(result, indent=2, default=str))
         raise typer.Exit()
 
-    if report.gaps:
-        console.print(f"[bold]Gaps found for {report.dataset_id} ({len(report.gaps)})[/bold]")
+    if all_gaps:
+        console.print(f"[bold]Gaps found for {report.dataset_id} ({len(all_gaps)})[/bold]")
         table = Table("Column", "Code", "Severity", "Message")
-        for g in report.gaps:
+        for g in all_gaps:
             table.add_row(g.column_name, g.gap_code, g.severity, g.message)
         console.print(table)
     else:
@@ -508,10 +519,10 @@ def gaps(
             match_table.add_row(m.column_name, m.matched_endpoint_id, m.match_type)
         console.print(match_table)
 
-    if create_issues and report.gaps:
+    if create_issues and all_gaps:
         issues_dir = model_path / "issues"
         issues_dir.mkdir(parents=True, exist_ok=True)
-        for idx, g in enumerate(report.gaps, start=1):
+        for idx, g in enumerate(all_gaps, start=1):
             issue_id = f"ISSUE-GAP-{dataset_id.upper()}-{idx:03d}"
             issue_fm = {
                 "id": issue_id,

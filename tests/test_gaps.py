@@ -242,6 +242,12 @@ class TestGapsCli:
                 created_at TEXT,
                 updated_at TEXT
             );
+            CREATE TABLE object_relationships (
+                from_object_id TEXT NOT NULL,
+                to_object_id TEXT NOT NULL,
+                relationship_type TEXT NOT NULL,
+                relationship_class TEXT
+            );
             """
         )
         conn.execute(
@@ -533,3 +539,382 @@ class TestGapsPromoteCli:
         text = proposal_file.read_text(encoding="utf-8")
         assert "PatchProposal" in text
         assert "pending_review" in text
+
+
+
+def test_detect_dataset_gaps_empty_dataset(tmp_path: Path) -> None:
+    db = tmp_path / "modelops.db"
+    import sqlite3
+
+    conn = sqlite3.connect(str(db))
+    conn.executescript(
+        """
+        CREATE TABLE objects (
+            id TEXT PRIMARY KEY,
+            type TEXT NOT NULL,
+            status TEXT NOT NULL,
+            name TEXT,
+            title TEXT,
+            domain TEXT,
+            description TEXT,
+            source_file TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            frontmatter_json TEXT NOT NULL,
+            body TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        );
+        """
+    )
+    conn.commit()
+    conn.close()
+
+    profile = DatasetProfile(
+        dataset_id="empty-dataset",
+        file_path="/tmp/empty.csv",
+        file_hash="abc",
+        row_count=0,
+        column_count=0,
+        columns=[],
+    )
+    report = detect_dataset_gaps(profile, db)
+
+    assert len(report.gaps) == 1
+    assert report.gaps[0].gap_code == "EMPTY_DATASET"
+    assert report.gaps[0].severity == "info"
+    assert len(report.matches) == 0
+
+
+def test_detect_dataset_gaps_no_matching_endpoints(tmp_path: Path) -> None:
+    db = tmp_path / "modelops.db"
+    import sqlite3
+
+    conn = sqlite3.connect(str(db))
+    conn.executescript(
+        """
+        CREATE TABLE objects (
+            id TEXT PRIMARY KEY,
+            type TEXT NOT NULL,
+            status TEXT NOT NULL,
+            name TEXT,
+            title TEXT,
+            domain TEXT,
+            description TEXT,
+            source_file TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            frontmatter_json TEXT NOT NULL,
+            body TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        );
+        """
+    )
+    conn.execute(
+        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "FEP-001",
+            "FieldEndpoint",
+            "active",
+            "Other",
+            None,
+            None,
+            None,
+            "model/FEP-001.md",
+            "abc",
+            '{"id": "FEP-001", "column_name": "OTHER"}',
+            None,
+            None,
+            None,
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    profile = _make_profile(["COL_A", "COL_B"])
+    report = detect_dataset_gaps(profile, db)
+
+    no_match_gap = [g for g in report.gaps if g.gap_code == "NO_MATCHING_ENDPOINTS"]
+    assert len(no_match_gap) == 1
+    assert no_match_gap[0].severity == "warning"
+
+
+def test_detect_dataset_gaps_case_sensitivity(tmp_path: Path) -> None:
+    db = tmp_path / "modelops.db"
+    import sqlite3
+
+    conn = sqlite3.connect(str(db))
+    conn.executescript(
+        """
+        CREATE TABLE objects (
+            id TEXT PRIMARY KEY,
+            type TEXT NOT NULL,
+            status TEXT NOT NULL,
+            name TEXT,
+            title TEXT,
+            domain TEXT,
+            description TEXT,
+            source_file TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            frontmatter_json TEXT NOT NULL,
+            body TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        );
+        """
+    )
+    conn.execute(
+        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "FEP-001",
+            "FieldEndpoint",
+            "active",
+            "Customer ID",
+            None,
+            None,
+            None,
+            "model/FEP-001.md",
+            "abc",
+            '{"id": "FEP-001", "column_name": "customer_id"}',
+            None,
+            None,
+            None,
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    profile = _make_profile(["CUSTOMER_ID"])
+    report = detect_dataset_gaps(profile, db)
+
+    assert len(report.gaps) == 0
+    assert len(report.matches) == 1
+    assert report.matches[0].match_type == "normalized"
+
+
+def test_detect_model_gaps_attribute_missing_source(tmp_path: Path) -> None:
+    from modelops_core.gaps.gap_detection import detect_model_gaps
+
+    db = tmp_path / "modelops.db"
+    import sqlite3
+
+    conn = sqlite3.connect(str(db))
+    conn.executescript(
+        """
+        CREATE TABLE objects (
+            id TEXT PRIMARY KEY,
+            type TEXT NOT NULL,
+            status TEXT NOT NULL,
+            name TEXT,
+            title TEXT,
+            domain TEXT,
+            description TEXT,
+            source_file TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            frontmatter_json TEXT NOT NULL,
+            body TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        );
+        CREATE TABLE object_relationships (
+            from_object_id TEXT NOT NULL,
+            to_object_id TEXT NOT NULL,
+            relationship_type TEXT NOT NULL,
+            relationship_class TEXT
+        );
+        """
+    )
+    conn.execute(
+        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "ATTR-001",
+            "Attribute",
+            "active",
+            "Test Attr",
+            None,
+            None,
+            None,
+            "model/ATTR-001.md",
+            "abc",
+            '{"id": "ATTR-001"}',
+            None,
+            None,
+            None,
+        ),
+    )
+    conn.execute(
+        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "ATTR-002",
+            "Attribute",
+            "active",
+            "Linked Attr",
+            None,
+            None,
+            None,
+            "model/ATTR-002.md",
+            "def",
+            '{"id": "ATTR-002"}',
+            None,
+            None,
+            None,
+        ),
+    )
+    conn.execute(
+        "INSERT INTO object_relationships VALUES (?, ?, ?, ?)",
+        ("FEP-002", "ATTR-002", "represents_attribute", None),
+    )
+    conn.commit()
+    conn.close()
+
+    gaps = detect_model_gaps(db)
+    missing = [g for g in gaps if g.gap_code == "MODEL_ATTRIBUTE_MISSING_SOURCE"]
+    assert len(missing) == 1
+    assert missing[0].column_name == "ATTR-001"
+    assert missing[0].severity == "critical"
+
+
+def test_detect_model_gaps_missing_owner(tmp_path: Path) -> None:
+    from modelops_core.gaps.gap_detection import detect_model_gaps
+
+    db = tmp_path / "modelops.db"
+    import sqlite3
+
+    conn = sqlite3.connect(str(db))
+    conn.executescript(
+        """
+        CREATE TABLE objects (
+            id TEXT PRIMARY KEY,
+            type TEXT NOT NULL,
+            status TEXT NOT NULL,
+            name TEXT,
+            title TEXT,
+            domain TEXT,
+            description TEXT,
+            source_file TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            frontmatter_json TEXT NOT NULL,
+            body TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        );
+        CREATE TABLE object_relationships (
+            from_object_id TEXT NOT NULL,
+            to_object_id TEXT NOT NULL,
+            relationship_type TEXT NOT NULL,
+            relationship_class TEXT
+        );
+        """
+    )
+    conn.execute(
+        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "ATTR-001",
+            "Attribute",
+            "active",
+            "Test Attr",
+            None,
+            None,
+            None,
+            "model/ATTR-001.md",
+            "abc",
+            '{"id": "ATTR-001"}',
+            None,
+            None,
+            None,
+        ),
+    )
+    conn.execute(
+        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "FEP-001",
+            "FieldEndpoint",
+            "active",
+            "Test FEP",
+            None,
+            None,
+            None,
+            "model/FEP-001.md",
+            "def",
+            '{"id": "FEP-001", "business_owner": "alice"}',
+            None,
+            None,
+            None,
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    gaps = detect_model_gaps(db)
+    missing = [g for g in gaps if g.gap_code == "MISSING_OWNER"]
+    assert len(missing) == 1
+    assert missing[0].column_name == "ATTR-001"
+    assert missing[0].severity == "warning"
+
+
+class TestGapsCheckModelCli:
+    def test_gaps_check_model(self, tmp_path: Path) -> None:
+        repo = tmp_path / "repo"
+        model_dir = repo / "model"
+        model_dir.mkdir(parents=True)
+        generated = repo / "generated"
+        generated.mkdir()
+        db = generated / "modelops.db"
+
+        import sqlite3
+
+        conn = sqlite3.connect(str(db))
+        conn.executescript(
+            """
+            CREATE TABLE objects (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                name TEXT,
+                title TEXT,
+                domain TEXT,
+                description TEXT,
+                source_file TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                frontmatter_json TEXT NOT NULL,
+                body TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            );
+            CREATE TABLE object_relationships (
+                from_object_id TEXT NOT NULL,
+                to_object_id TEXT NOT NULL,
+                relationship_type TEXT NOT NULL,
+                relationship_class TEXT
+            );
+            """
+        )
+        conn.execute(
+            "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "FEP-001",
+                "FieldEndpoint",
+                "active",
+                "Customer ID",
+                None,
+                None,
+                None,
+                "model/FEP-001.md",
+                "abc",
+                '{"id": "FEP-001", "column_name": "CUSTOMER_ID"}',
+                None,
+                None,
+                None,
+            ),
+        )
+        conn.commit()
+        conn.close()
+
+        csv_path = tmp_path / "data.csv"
+        csv_path.write_text("CUSTOMER_ID,UNKNOWN\n1,a\n", encoding="utf-8")
+
+        result = runner.invoke(
+            app, ["gaps", str(csv_path), "--repo", str(repo), "--check-model", "--json"]
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert len(data["gaps"]) >= 1
