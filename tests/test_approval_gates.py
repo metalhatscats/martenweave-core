@@ -293,7 +293,7 @@ def test_cli_proposal_apply_blocks_high_risk_without_cr(tmp_path: Path) -> None:
 
     result = runner.invoke(
         app,
-        ["proposal", "apply", "PP-HIGH-001", "--repo", str(repo_root)],
+        ["proposal", "apply", "PP-HIGH-001", "--repo", str(repo_root), "--apply"],
     )
     assert result.exit_code == 1
     assert "Approval required" in result.output
@@ -339,7 +339,7 @@ def test_cli_proposal_apply_allows_with_approved_cr(tmp_path: Path) -> None:
 
     result = runner.invoke(
         app,
-        ["proposal", "apply", "PP-HIGH-002", "--repo", str(repo_root)],
+        ["proposal", "apply", "PP-HIGH-002", "--repo", str(repo_root), "--apply"],
     )
     assert result.exit_code == 0
     assert "Applied PP-HIGH-002" in result.output
@@ -375,7 +375,15 @@ def test_cli_proposal_apply_force_bypasses_gate(tmp_path: Path) -> None:
 
     result = runner.invoke(
         app,
-        ["proposal", "apply", "PP-HIGH-003", "--repo", str(repo_root), "--force"],
+        [
+            "proposal",
+            "apply",
+            "PP-HIGH-003",
+            "--repo",
+            str(repo_root),
+            "--apply",
+            "--force",
+        ],
     )
     assert result.exit_code == 0
     assert "Applied PP-HIGH-003" in result.output

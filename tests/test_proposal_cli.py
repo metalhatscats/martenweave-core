@@ -117,7 +117,15 @@ def test_proposal_apply_create_object(temp_model_dir: Path) -> None:
     _create_accepted_proposal(temp_model_dir, "PP-APP-001", [op])
 
     result = runner.invoke(
-        app, ["proposal", "apply", "PP-APP-001", "--repo", _repo_from_model(temp_model_dir)]
+        app,
+        [
+            "proposal",
+            "apply",
+            "PP-APP-001",
+            "--repo",
+            _repo_from_model(temp_model_dir),
+            "--apply",
+        ],
     )
     assert result.exit_code == 0
     assert "Applied PP-APP-001" in result.output
@@ -131,7 +139,15 @@ def test_proposal_apply_rejects_unaccepted(temp_model_dir: Path) -> None:
     # Leave status as pending_review
 
     result = runner.invoke(
-        app, ["proposal", "apply", "PP-REJ-001", "--repo", _repo_from_model(temp_model_dir)]
+        app,
+        [
+            "proposal",
+            "apply",
+            "PP-REJ-001",
+            "--repo",
+            _repo_from_model(temp_model_dir),
+            "--apply",
+        ],
     )
     assert result.exit_code == 1
     assert "Only 'accepted'" in result.output
@@ -399,3 +415,30 @@ def test_proposal_apply_dry_run_json(temp_model_dir: Path) -> None:
     assert data["dry_run"] is True
     assert "would_change" in data
     assert "risk_level" in data
+
+
+def test_proposal_apply_default_is_dry_run(temp_model_dir: Path) -> None:
+    """Default proposal apply should be dry-run without mutating files."""
+    op = PatchOperation(
+        op="create_object",
+        object_id="SYS-DEFAULT-DRY",
+        object_type="System",
+        after={"id": "SYS-DEFAULT-DRY", "type": "System", "status": "draft"},
+    )
+    _create_accepted_proposal(temp_model_dir, "PP-DEFAULT-DRY-001", [op])
+
+    result = runner.invoke(
+        app,
+        [
+            "proposal",
+            "apply",
+            "PP-DEFAULT-DRY-001",
+            "--repo",
+            _repo_from_model(temp_model_dir),
+        ],
+    )
+    assert result.exit_code == 0
+    assert "Dry-run" in result.output
+    assert "--apply" in result.output
+    # File should NOT exist after default dry-run
+    assert not (temp_model_dir / "systems" / "SYS-DEFAULT-DRY.md").exists()
