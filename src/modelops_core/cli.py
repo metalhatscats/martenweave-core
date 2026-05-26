@@ -41,6 +41,7 @@ from modelops_core.exports.github_publish_service import (
     publish_pr_from_bundle,
 )
 from modelops_core.exports.google_sheets_export import export_to_google_sheets
+from modelops_core.gaps import detect_dataset_gaps
 from modelops_core.guardrails.config_guard import (
     has_blocking_issues,
     run_all_checks,
@@ -354,6 +355,132 @@ def profile_dataset(
             f"{', '.join(sorted(set(high_risk_cols)))}. "
             f"Sample values redacted.[/yellow]"
         )
+
+
+@app.command("gaps")
+@with_telemetry("gaps")
+def gaps(
+    dataset: Path = typer.Argument(..., help="Path to CSV or XLSX dataset file."),  # noqa: B008
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+    create_issues: bool = typer.Option(
+        False, "--create-issues", help="Create Issue canonical files for gaps."
+    ),
+) -> None:
+    """Detect dataset-to-model gaps by comparing dataset columns against FieldEndpoints."""
+    repo_root = _resolve_repo(repo)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+    model_path = resolve_model_path(repo_root)
+
+    if not db_path.exists():
+        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        raise typer.Exit(code=1)
+
+    if not dataset.exists():
+        console.print(f"[red]Dataset not found: {dataset}[/red]")
+        raise typer.Exit(code=1)
+
+    limits = load_resource_limits(repo_root)
+    dataset_id = dataset.stem
+    suffix = dataset.suffix.lower()
+
+    if suffix == ".csv":
+        raw_profile = profile_csv(
+            dataset,
+            dataset_id=dataset_id,
+            max_file_size=limits.max_file_size_bytes,
+            max_rows=limits.max_profile_rows,
+            max_columns=limits.max_profile_columns,
+            sample_interval=limits.profile_sample_interval,
+        )
+    elif suffix in {".xlsx", ".xls"}:
+        raw_profile = profile_xlsx(
+            dataset,
+            dataset_id=dataset_id,
+            max_file_size=limits.max_file_size_bytes,
+            max_rows=limits.max_profile_rows,
+            max_columns=limits.max_profile_columns,
+            sample_interval=limits.profile_sample_interval,
+        )
+    else:
+        console.print(f"[red]Unsupported dataset format: {suffix}[/red]")
+        raise typer.Exit(code=1)
+
+    policy = DatasetPrivacyPolicy(include_raw_samples=False)
+    if isinstance(raw_profile, WorkbookProfile):
+        profile = apply_privacy_to_workbook(raw_profile, policy)
+    else:
+        profile = apply_privacy_to_profile(raw_profile, policy)
+
+    report = detect_dataset_gaps(profile, db_path)
+
+    if json_output:
+        result = {
+            "dataset_id": report.dataset_id,
+            "matches": [
+                {
+                    "column_name": m.column_name,
+                    "matched_endpoint_id": m.matched_endpoint_id,
+                    "match_type": m.match_type,
+                }
+                for m in report.matches
+            ],
+            "gaps": [
+                {
+                    "column_name": g.column_name,
+                    "gap_code": g.gap_code,
+                    "severity": g.severity,
+                    "message": g.message,
+                }
+                for g in report.gaps
+            ],
+        }
+        print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
+    if report.gaps:
+        console.print(f"[bold]Gaps found for {report.dataset_id} ({len(report.gaps)})[/bold]")
+        table = Table("Column", "Code", "Severity", "Message")
+        for g in report.gaps:
+            table.add_row(g.column_name, g.gap_code, g.severity, g.message)
+        console.print(table)
+    else:
+        console.print(f"[green]No gaps found for {report.dataset_id}[/green]")
+
+    if report.matches:
+        console.print(f"\n[bold]Matches ({len(report.matches)})[/bold]")
+        match_table = Table("Column", "Endpoint", "Match Type")
+        for m in report.matches:
+            match_table.add_row(m.column_name, m.matched_endpoint_id, m.match_type)
+        console.print(match_table)
+
+    if create_issues and report.gaps:
+        issues_dir = model_path / "issues"
+        issues_dir.mkdir(parents=True, exist_ok=True)
+        for idx, g in enumerate(report.gaps, start=1):
+            issue_id = f"ISSUE-GAP-{dataset_id.upper()}-{idx:03d}"
+            issue_fm = {
+                "id": issue_id,
+                "type": "Issue",
+                "status": "open",
+                "name": f"Gap: {g.gap_code}",
+                "issue_type": "dataset_gap",
+                "severity": g.severity,
+                "source_dataset_id": dataset_id,
+                "source_column": g.column_name,
+                "source_gap_code": g.gap_code,
+                "recommended_action": g.message,
+            }
+            issue_path = issues_dir / f"{issue_id}.md"
+            body_text = f"# {g.gap_code}\n\n{g.message}\n"
+            yaml_text = yaml.safe_dump(
+                issue_fm, default_flow_style=False, sort_keys=False, allow_unicode=True
+            )
+            issue_path.write_text(
+                f"---\n{yaml_text}---\n\n{body_text}\n",
+                encoding="utf-8",
+            )
+            console.print(f"[green]Created {issue_path.name}[/green]")
 
 
 @app.command("import-drive")
