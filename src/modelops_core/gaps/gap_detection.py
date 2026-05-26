@@ -23,6 +23,9 @@ class ColumnGap:
     gap_code: str
     severity: str
     message: str
+    evidence_ids: list[str] = field(default_factory=list)
+    source_dataset_metadata: dict[str, Any] = field(default_factory=dict)
+    recommended_proposal_op: dict[str, Any] | None = None
 
 
 @dataclass
@@ -89,32 +92,94 @@ def _find_matches(column_name: str, endpoints: dict[str, dict[str, Any]]) -> lis
     return matches
 
 
+_GAP_SEVERITY: dict[str, str] = {
+    "UNMODELED_DATASET_COLUMN": "warning",
+    "DATASET_COLUMN_MULTIPLE_MATCHES": "warning",
+    "MODEL_ATTRIBUTE_MISSING_SOURCE": "critical",
+    "MISSING_OWNER": "warning",
+    "DUPLICATE_COLUMN_NAME": "warning",
+}
+
+
+def _severity_for_gap(gap_code: str) -> str:
+    return _GAP_SEVERITY.get(gap_code, "info")
+
+
+def _build_recommended_op(gap: ColumnGap) -> dict[str, Any] | None:
+    if gap.gap_code == "UNMODELED_DATASET_COLUMN":
+        return {
+            "op": "create_object",
+            "object_type": "FieldEndpoint",
+            "target_path": "column_name",
+            "after": gap.column_name,
+            "reason": gap.message,
+        }
+    if gap.gap_code == "DATASET_COLUMN_MULTIPLE_MATCHES":
+        return {
+            "op": "create_issue",
+            "object_type": "Issue",
+            "target_path": "source_column",
+            "after": gap.column_name,
+            "reason": gap.message,
+        }
+    return None
+
+
 def detect_dataset_gaps(profile: DatasetProfile, db_path: Path) -> DatasetGapReport:
     """Match dataset columns against FieldEndpoint objects in the index."""
     endpoints = _build_endpoint_index(db_path)
     matches: list[ColumnMatch] = []
     gaps: list[ColumnGap] = []
 
+    dataset_meta = {
+        "dataset_id": profile.dataset_id,
+        "row_count": profile.row_count,
+    }
+
+    # Detect duplicate column names
+    seen: set[str] = set()
+    for col in profile.columns:
+        if col.name in seen:
+            gaps.append(
+                ColumnGap(
+                    column_name=col.name,
+                    gap_code="DUPLICATE_COLUMN_NAME",
+                    severity=_severity_for_gap("DUPLICATE_COLUMN_NAME"),
+                    message=f"Duplicate column name '{col.name}' in dataset.",
+                    source_dataset_metadata=dataset_meta,
+                    recommended_proposal_op={
+                        "op": "create_issue",
+                        "object_type": "Issue",
+                        "target_path": "source_column",
+                        "after": col.name,
+                        "reason": f"Duplicate column name '{col.name}' in dataset.",
+                    },
+                )
+            )
+        seen.add(col.name)
+
     for col in profile.columns:
         col_matches = _find_matches(col.name, endpoints)
         if not col_matches:
-            gaps.append(
-                ColumnGap(
-                    column_name=col.name,
-                    gap_code="UNMODELED_DATASET_COLUMN",
-                    severity="warning",
-                    message=f"Dataset column '{col.name}' has no matching FieldEndpoint.",
-                )
+            gap = ColumnGap(
+                column_name=col.name,
+                gap_code="UNMODELED_DATASET_COLUMN",
+                severity=_severity_for_gap("UNMODELED_DATASET_COLUMN"),
+                message=f"Dataset column '{col.name}' has no matching FieldEndpoint.",
+                source_dataset_metadata=dataset_meta,
             )
+            gap.recommended_proposal_op = _build_recommended_op(gap)
+            gaps.append(gap)
         elif len(col_matches) > 1:
-            gaps.append(
-                ColumnGap(
-                    column_name=col.name,
-                    gap_code="DATASET_COLUMN_MULTIPLE_MATCHES",
-                    severity="info",
-                    message=f"Dataset column '{col.name}' matches multiple endpoints.",
-                )
+            gap = ColumnGap(
+                column_name=col.name,
+                gap_code="DATASET_COLUMN_MULTIPLE_MATCHES",
+                severity=_severity_for_gap("DATASET_COLUMN_MULTIPLE_MATCHES"),
+                message=f"Dataset column '{col.name}' matches multiple endpoints.",
+                source_dataset_metadata=dataset_meta,
             )
+            gap.recommended_proposal_op = _build_recommended_op(gap)
+            gaps.append(gap)
             matches.extend(col_matches)
         else:
             matches.extend(col_matches)
@@ -124,3 +189,52 @@ def detect_dataset_gaps(profile: DatasetProfile, db_path: Path) -> DatasetGapRep
         matches=matches,
         gaps=gaps,
     )
+
+
+def _sanitize_id_part(value: str) -> str:
+    """Sanitize a string for use in an object ID part.
+
+    Replaces underscores with hyphens and removes characters that do not
+    match ``^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$``.
+    """
+    cleaned = value.upper().replace("_", "-").replace(" ", "-")
+    # Remove any remaining invalid characters
+    allowed = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-")
+    cleaned = "".join(c for c in cleaned if c in allowed)
+    # Collapse multiple hyphens
+    while "--" in cleaned:
+        cleaned = cleaned.replace("--", "-")
+    return cleaned.strip("-")
+
+
+def promote_gaps_to_proposal(
+    report: DatasetGapReport,
+    repo_model_path: Path,
+) -> Path:
+    """Promote dataset gaps to a draft PatchProposal.
+
+    Creates a PatchProposal with operations derived from gap
+    ``recommended_proposal_op`` values. The proposal is written to
+    ``model/patch-proposals/`` and remains in ``pending_review`` status.
+    """
+    from modelops_core.patching.patch_model import PatchOperation
+    from modelops_core.patching.patch_proposal_service import (
+        build_patch_proposal,
+        write_patch_proposal,
+    )
+
+    safe_dataset_id = _sanitize_id_part(report.dataset_id)
+    proposal_id = f"PP-GAP-{safe_dataset_id}-001"
+    ops: list[PatchOperation] = []
+    for gap in report.gaps:
+        if gap.recommended_proposal_op:
+            ops.append(PatchOperation(**gap.recommended_proposal_op))
+
+    proposal = build_patch_proposal(
+        proposal_id=proposal_id,
+        operations=ops,
+        affected_objects=[],
+        source_evidence=f"Auto-generated from gap detection on {report.dataset_id}",
+        created_by="system",
+    )
+    return write_patch_proposal(proposal, repo_model_path)
