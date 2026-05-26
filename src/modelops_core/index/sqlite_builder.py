@@ -64,6 +64,12 @@ CREATE TABLE object_relationships (
     source_file TEXT NOT NULL,
     confidence TEXT NOT NULL DEFAULT 'explicit'
 );
+
+CREATE TABLE tags (
+    object_id TEXT NOT NULL,
+    tag TEXT NOT NULL,
+    PRIMARY KEY (object_id, tag)
+);
 """
 
 
@@ -76,6 +82,7 @@ def _insert_objects(conn: sqlite3.Connection, objects: list[Any]) -> None:
         if obj.parser_error is not None or obj.frontmatter is None:
             continue
         fm = obj.frontmatter
+        obj_id = fm.get("id")
         conn.execute(
             """
             INSERT INTO objects (
@@ -85,7 +92,7 @@ def _insert_objects(conn: sqlite3.Connection, objects: list[Any]) -> None:
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                fm.get("id"),
+                obj_id,
                 fm.get("type"),
                 fm.get("status"),
                 fm.get("name"),
@@ -100,6 +107,14 @@ def _insert_objects(conn: sqlite3.Connection, objects: list[Any]) -> None:
                 fm.get("updated_at"),
             ),
         )
+        tags = fm.get("tags")
+        if isinstance(tags, list):
+            for tag in tags:
+                if isinstance(tag, str) and tag:
+                    conn.execute(
+                        "INSERT OR IGNORE INTO tags (object_id, tag) VALUES (?, ?)",
+                        (obj_id, tag),
+                    )
 
 
 def _insert_validation_results(conn: sqlite3.Connection, results: list[Any]) -> None:

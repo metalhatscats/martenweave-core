@@ -66,6 +66,7 @@ def search_objects(
     object_type: str | None = None,
     status: str | None = None,
     domain: str | None = None,
+    tags: list[str] | None = None,
     limit: int = 50,
 ) -> list[SearchResult]:
     """Keyword search over indexed objects.
@@ -87,6 +88,10 @@ def search_objects(
     if domain:
         sql += " AND domain = ?"
         params.append(domain)
+    if tags:
+        placeholders = ", ".join("?" for _ in tags)
+        sql += f" AND id IN (SELECT object_id FROM tags WHERE tag IN ({placeholders}))"
+        params.extend(tags)
     sql += " LIMIT ?"
     params.append(limit)
 
@@ -123,6 +128,7 @@ def query_objects(
     status: str | None = None,
     domain: str | None = None,
     name_like: str | None = None,
+    tags: list[str] | None = None,
     limit: int = 50,
 ) -> list[SearchResult]:
     """Structured query over indexed objects.
@@ -148,6 +154,12 @@ def query_objects(
     if name_like:
         conditions.append("name LIKE ?")
         params.append(f"%{name_like}%")
+    if tags:
+        placeholders = ", ".join("?" for _ in tags)
+        conditions.append(
+            f"id IN (SELECT object_id FROM tags WHERE tag IN ({placeholders}))"
+        )
+        params.extend(tags)
 
     sql = "SELECT * FROM objects WHERE " + " AND ".join(conditions)
     sql += " LIMIT ?"
