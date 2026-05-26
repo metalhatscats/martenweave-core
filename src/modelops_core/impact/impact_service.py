@@ -30,7 +30,8 @@ def generate_impact_report(
 
         # Load all relationships
         rel_rows = conn.execute(
-            "SELECT from_object_id, to_object_id, relationship_type FROM object_relationships"
+            "SELECT from_object_id, to_object_id, relationship_type, relationship_class "
+            "FROM object_relationships"
         ).fetchall()
 
         # Load all object metadata for caching
@@ -45,11 +46,11 @@ def generate_impact_report(
     }
 
     # Build adjacency (bidirectional)
-    outgoing: dict[str, list[tuple[str, str]]] = {}
-    incoming: dict[str, list[tuple[str, str]]] = {}
-    for from_id, to_id, rel_type in rel_rows:
-        outgoing.setdefault(from_id, []).append((to_id, rel_type))
-        incoming.setdefault(to_id, []).append((from_id, rel_type))
+    outgoing: dict[str, list[tuple[str, str, str | None]]] = {}
+    incoming: dict[str, list[tuple[str, str, str | None]]] = {}
+    for from_id, to_id, rel_type, rel_class in rel_rows:
+        outgoing.setdefault(from_id, []).append((to_id, rel_type, rel_class))
+        incoming.setdefault(to_id, []).append((from_id, rel_type, rel_class))
 
     visited: set[str] = {object_id}
     queue: list[tuple[str, int, str]] = [(object_id, 0, "root")]
@@ -61,7 +62,7 @@ def generate_impact_report(
             continue
 
         # Outgoing = downstream
-        for next_id, rel_type in outgoing.get(current_id, []):
+        for next_id, rel_type, rel_class in outgoing.get(current_id, []):
             if next_id not in visited:
                 visited.add(next_id)
                 meta = metadata.get(next_id, {})
@@ -71,6 +72,7 @@ def generate_impact_report(
                         object_type=meta.get("type", "Unknown"),
                         object_name=meta.get("name"),
                         relationship_type=rel_type,
+                        relationship_class=rel_class,
                         direction="downstream",
                         depth=depth + 1,
                     )
@@ -78,7 +80,7 @@ def generate_impact_report(
                 queue.append((next_id, depth + 1, "downstream"))
 
         # Incoming = upstream
-        for prev_id, rel_type in incoming.get(current_id, []):
+        for prev_id, rel_type, rel_class in incoming.get(current_id, []):
             if prev_id not in visited:
                 visited.add(prev_id)
                 meta = metadata.get(prev_id, {})
@@ -88,6 +90,7 @@ def generate_impact_report(
                         object_type=meta.get("type", "Unknown"),
                         object_name=meta.get("name"),
                         relationship_type=rel_type,
+                        relationship_class=rel_class,
                         direction="upstream",
                         depth=depth + 1,
                     )
