@@ -121,7 +121,30 @@ app = typer.Typer(
     help="ModelOps MDM Core — backend-first model registry CLI.",
     no_args_is_help=True,
 )
-console = Console()
+_base_console = Console()
+console = _base_console
+
+_quiet = False
+_no_color = False
+_unwrapped_console: Console = _base_console
+
+
+class _QuietConsole:
+    """Wraps a Rich Console to suppress non-error output in quiet mode."""
+
+    def __init__(self, wrapped: Console) -> None:
+        self.wrapped = wrapped
+
+    def print(self, *args: Any, **kwargs: Any) -> None:
+        if _quiet:
+            text = " ".join(str(a) for a in args)
+            if "[red]" in text:
+                self.wrapped.print(*args, **kwargs)
+            return
+        self.wrapped.print(*args, **kwargs)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.wrapped, name)
 
 
 def _resolve_repo(repo: str | None) -> Path:
@@ -131,11 +154,14 @@ def _resolve_repo(repo: str | None) -> Path:
 
 
 def _print_validation_summary(summary: Any) -> None:
-    console.print("[bold]Validation Results:[/bold]")
-    console.print(f"  Errors:   {summary.error_count}")
-    console.print(f"  Warnings: {summary.warning_count}")
-    console.print(f"  Info:     {summary.info_count}")
-    console.print(f"  Valid:    {summary.is_valid}")
+    if _quiet and summary.is_valid:
+        return
+    target = _unwrapped_console if (_quiet and not summary.is_valid) else console
+    target.print("[bold]Validation Results:[/bold]")
+    target.print(f"  Errors:   {summary.error_count}")
+    target.print(f"  Warnings: {summary.warning_count}")
+    target.print(f"  Info:     {summary.info_count}")
+    target.print(f"  Valid:    {summary.is_valid}")
     if summary.results:
         table = Table("Severity", "Code", "Object", "Message", "Fix")
         for r in summary.results:
@@ -146,7 +172,7 @@ def _print_validation_summary(summary: Any) -> None:
                 r.message,
                 r.suggested_fix or "—",
             )
-        console.print(table)
+        target.print(table)
 
 
 def _version_callback(value: bool) -> None:
@@ -164,8 +190,30 @@ def callback(
         is_eager=True,
         help="Show version and exit.",
     ),
+    quiet: bool = typer.Option(
+        False,
+        "--quiet",
+        help="Suppress non-error output.",
+    ),
+    no_color: bool = typer.Option(
+        False,
+        "--no-color",
+        help="Disable ANSI color codes in terminal output.",
+    ),
 ) -> None:
-    pass
+    global console, _quiet, _no_color, _unwrapped_console
+    _quiet = quiet
+    _no_color = no_color
+
+    if no_color:
+        _unwrapped_console = Console(color_system=None)
+    else:
+        _unwrapped_console = _base_console
+
+    console = _unwrapped_console
+
+    if quiet:
+        console = _QuietConsole(console)
 
 
 _TEMPLATES_DIR = Path(__file__).parent.parent.parent / "templates" / "model_spines"

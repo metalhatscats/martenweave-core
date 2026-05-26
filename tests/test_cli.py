@@ -221,3 +221,56 @@ def test_cli_infer_model(sample_repo: Path) -> None:
 
     proposal_path = sample_repo / "model" / "patch-proposals" / "PP-INFER-CUSTOMER-SAMPLE.md"
     assert proposal_path.exists()
+
+
+# Global option tests ---------------------------------------------------------
+
+
+def test_cli_quiet_validate_no_output_on_success(sample_repo: Path) -> None:
+    result = runner.invoke(
+        app, ["--quiet", "validate", "--repo", str(sample_repo)]
+    )
+    assert result.exit_code == 0
+    assert result.output == ""
+
+
+def test_cli_quiet_validate_shows_errors(sample_repo: Path) -> None:
+    # Create an invalid object to trigger an error
+    bad_file = sample_repo / "model" / "BAD-ID.md"
+    bad_file.write_text(
+        "---\nid: bad-id-lower\ntype: Attribute\nstatus: draft\n---\n",
+        encoding="utf-8",
+    )
+    result = runner.invoke(
+        app, ["--quiet", "validate", "--repo", str(sample_repo)]
+    )
+    assert result.exit_code == 1
+    assert "bad-id-lower" in result.output
+
+
+def test_cli_no_color_health_no_ansi_codes(sample_repo: Path) -> None:
+    runner.invoke(app, ["build-index", "--repo", str(sample_repo)])
+    result = runner.invoke(
+        app, ["--no-color", "health", "--repo", str(sample_repo)]
+    )
+    assert result.exit_code == 0
+    assert "\033[" not in result.output
+
+
+def test_cli_json_output_unaffected_by_quiet(sample_repo: Path) -> None:
+    result = runner.invoke(
+        app, ["--quiet", "validate", "--repo", str(sample_repo), "--json"]
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["is_valid"] is True
+
+
+def test_cli_quiet_and_no_color_together(sample_repo: Path) -> None:
+    runner.invoke(app, ["build-index", "--repo", str(sample_repo)])
+    result = runner.invoke(
+        app, ["--quiet", "--no-color", "health", "--repo", str(sample_repo)]
+    )
+    assert result.exit_code == 0
+    assert result.output == ""
+    assert "\033[" not in result.output
