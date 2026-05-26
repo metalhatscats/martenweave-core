@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
+from typer.testing import CliRunner
+
+from modelops_core.cli import app
 from modelops_core.index.query_service import (
     get_object_by_id,
     list_related_objects,
     query_objects,
     search_objects,
 )
+
+runner = CliRunner()
 
 
 def _build_index(db_path: Path) -> None:
@@ -363,4 +369,159 @@ class TestListRelatedObjects:
         db = tmp_path / "modelops.db"
         _build_index(db)
         results = query_objects(db, sap_table="NONEXISTENT")
+        assert results == []
+
+
+class TestJsonContract:
+    def test_search_result_fields_present(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = search_objects(db, "Customer")
+        assert len(results) > 0
+        for r in results:
+            assert isinstance(r.object_id, str)
+            assert isinstance(r.object_type, str)
+            assert isinstance(r.status, str)
+            assert r.name is None or isinstance(r.name, str)
+            assert r.title is None or isinstance(r.title, str)
+            assert r.domain is None or isinstance(r.domain, str)
+            assert isinstance(r.source_file, str)
+            assert isinstance(r.score, (int, float))
+            assert isinstance(r.matched_fields, list)
+
+    def test_query_result_fields_consistent(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+
+        # Run multiple queries with different filters
+        queries = [
+            query_objects(db, object_type="Attribute"),
+            query_objects(db, status="active"),
+            query_objects(db, domain="DOMAIN-A"),
+            query_objects(db, name_like="Group"),
+            query_objects(db, tags=["customer"]),
+            query_objects(db, owner="PERSON-001"),
+            query_objects(db, sap_table="KNVV"),
+        ]
+
+        for results in queries:
+            for r in results:
+                assert isinstance(r.object_id, str)
+                assert isinstance(r.object_type, str)
+                assert isinstance(r.status, str)
+                assert r.name is None or isinstance(r.name, str)
+                assert r.title is None or isinstance(r.title, str)
+                assert r.domain is None or isinstance(r.domain, str)
+                assert isinstance(r.source_file, str)
+
+    def test_empty_results_are_lists(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        assert search_objects(db, "nonexistent_xyz") == []
+        assert query_objects(db, object_type="Nonexistent") == []
+        assert query_objects(db, owner="UNKNOWN") == []
+        assert query_objects(db, sap_table="UNKNOWN") == []
+
+    def test_search_scores_sorted_descending(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = search_objects(db, "Customer")
+        scores = [r.score for r in results]
+        assert scores == sorted(scores, reverse=True)
+
+    def test_cli_query_json_roundtrip(self, tmp_path: Path) -> None:
+        repo = tmp_path / "repo"
+        model_dir = repo / "model"
+        model_dir.mkdir(parents=True)
+        generated = repo / "generated"
+        generated.mkdir()
+        db = generated / "modelops.db"
+        _build_index(db)
+
+        result = runner.invoke(
+            app, ["query", "--repo", str(repo), "--type", "Attribute", "--json"]
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert isinstance(data, list)
+        assert len(data) >= 1
+        assert "object_id" in data[0]
+        assert "object_type" in data[0]
+        assert "status" in data[0]
+
+    def test_cli_search_json_roundtrip(self, tmp_path: Path) -> None:
+        repo = tmp_path / "repo"
+        model_dir = repo / "model"
+        model_dir.mkdir(parents=True)
+        generated = repo / "generated"
+        generated.mkdir()
+        db = generated / "modelops.db"
+        _build_index(db)
+
+        result = runner.invoke(
+            app, ["search", "Customer", "--repo", str(repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert isinstance(data, list)
+        assert len(data) >= 1
+        assert "object_id" in data[0]
+        assert "score" in data[0]
+        assert "matched_fields" in data[0]
+
+
+class TestFilterCombinations:
+    def test_type_plus_status(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = query_objects(db, object_type="FieldEndpoint", status="active")
+        assert len(results) == 2
+        for r in results:
+            assert r.object_type == "FieldEndpoint"
+            assert r.status == "active"
+
+    def test_domain_plus_owner(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = query_objects(db, domain="DOMAIN-A", owner="PERSON-001")
+        # No object in DOMAIN-A has owner PERSON-001
+        assert results == []
+
+    def test_tags_plus_name_like(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = query_objects(db, tags=["customer"], name_like="Group")
+        assert len(results) == 1
+        assert results[0].object_id == "ATTR-001"
+
+    def test_sap_table_plus_type(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = query_objects(db, sap_table="KNVV", object_type="FieldEndpoint")
+        assert len(results) == 1
+        assert results[0].object_id == "FEP-001"
+
+    def test_all_filters_together(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = query_objects(
+            db,
+            object_type="FieldEndpoint",
+            status="active",
+            domain="DOMAIN-A",
+            sap_table="KNVV",
+        )
+        assert len(results) == 1
+        assert results[0].object_id == "FEP-001"
+
+    def test_all_filters_no_match(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = query_objects(
+            db,
+            object_type="FieldEndpoint",
+            status="active",
+            domain="DOMAIN-A",
+            sap_table="NONEXISTENT",
+        )
         assert results == []
