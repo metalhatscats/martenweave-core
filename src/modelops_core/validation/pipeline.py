@@ -396,6 +396,90 @@ def _validate_references(
     return results
 
 
+def _detect_reference_cycles(
+    objects: list[ParsedObject], registry: dict[str, dict[str, Any]]
+) -> list[ValidationResult]:
+    """Detect circular references in the object graph."""
+    results: list[ValidationResult] = []
+
+    # Build adjacency list from reference fields
+    graph: dict[str, list[str]] = {}
+    node_to_source: dict[str, str] = {}
+    reference_fields = get_expected_target_types()
+
+    for obj in objects:
+        if obj.parser_error is not None or obj.frontmatter is None:
+            continue
+        obj_id = obj.frontmatter.get("id")
+        if not isinstance(obj_id, str) or obj_id not in registry:
+            continue
+        node_to_source[obj_id] = obj.source_path
+
+        edges: list[str] = []
+        for field in reference_fields:
+            value = obj.frontmatter.get(field)
+            if value is None:
+                continue
+            refs: list[str] = []
+            if isinstance(value, str):
+                refs = [value]
+            elif isinstance(value, list):
+                refs = [str(v) for v in value if isinstance(v, str)]
+            else:
+                continue
+            for ref_id in refs:
+                if ref_id in registry:
+                    edges.append(ref_id)
+        if edges:
+            graph[obj_id] = edges
+
+    # DFS with coloring to detect cycles
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color = {node: WHITE for node in graph}
+    cycles_found: set[tuple[str, ...]] = set()
+
+    def dfs(node: str, path: list[str]) -> None:
+        color[node] = GRAY
+        path.append(node)
+        for neighbor in graph.get(node, []):
+            if neighbor not in color:
+                continue
+            if color[neighbor] == GRAY:
+                # Found a cycle
+                try:
+                    cycle_start = path.index(neighbor)
+                except ValueError:
+                    continue
+                cycle = tuple(path[cycle_start:])
+                if cycle not in cycles_found:
+                    cycles_found.add(cycle)
+            elif color[neighbor] == WHITE:
+                dfs(neighbor, path)
+        path.pop()
+        color[node] = BLACK
+
+    for node in graph:
+        if color[node] == WHITE:
+            dfs(node, [])
+
+    for cycle in cycles_found:
+        cycle_str = " → ".join(cycle) + " → " + cycle[0]
+        for obj_id in cycle:
+            results.append(
+                ValidationResult(
+                    severity=ValidationSeverity.ERROR,
+                    code="REFERENCE_CIRCULAR",
+                    message=f"Circular reference detected: {cycle_str}",
+                    object_id=obj_id,
+                    source_file=node_to_source.get(obj_id, ""),
+                    related_objects=list(cycle),
+                    suggested_fix="Break the cycle by removing one of the references.",
+                )
+            )
+
+    return results
+
+
 _OWNERSHIP_TYPES = frozenset(
     {
         "Attribute",
@@ -817,6 +901,7 @@ def validate_objects(
 
     registry = _build_registry(objects)
     all_results.extend(_validate_references(objects, registry))
+    all_results.extend(_detect_reference_cycles(objects, registry))
     all_results.extend(_validate_lov_governance(objects, registry))
     all_results.extend(_validate_ownership(objects))
     all_results.extend(_validate_methodology(objects, registry))
