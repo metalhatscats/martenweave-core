@@ -210,6 +210,7 @@ def build_index(
     allow_invalid: bool = False,
     export_jsonl: bool = False,
     max_objects: int | None = None,
+    dry_run: bool = False,
 ) -> ValidationSummary:
     """Build a SQLite index from canonical repository objects.
 
@@ -225,6 +226,8 @@ def build_index(
             ``lineage_edges.jsonl`` to the generated directory.
         max_objects: Maximum number of canonical objects to index. If None,
             reads from repository config defaults.
+        dry_run: If True, runs validation and parsing but does not write
+            the database or JSONL exports.
 
     Returns:
         The validation summary from the pipeline.
@@ -263,6 +266,9 @@ def build_index(
 
     if db_path is None:
         db_path = resolve_generated_path(repo_root) / "modelops.db"
+
+    if dry_run:
+        return summary
 
     source_hash = _compute_source_hash(parsed_objects)
     db_path.parent.mkdir(parents=True, exist_ok=True)
