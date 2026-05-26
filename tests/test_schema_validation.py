@@ -264,3 +264,229 @@ def test_tags_invalid_type_warning() -> None:
     )
     summary = validate_objects([obj])
     assert any(r.code == "TAGS_INVALID_TYPE" for r in summary.results)
+
+
+# Lifecycle validation tests --------------------------------------------------
+
+
+def test_deprecated_object_incomplete() -> None:
+    from modelops_core.repository.parser import ParsedObject
+
+    obj = ParsedObject(
+        source_path="test.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "ATTR-DEP",
+            "type": "Attribute",
+            "status": "deprecated",
+            "name": "Deprecated Attr",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([obj])
+    assert any(
+        r.code == "DEPRECATED_OBJECT_INCOMPLETE" and r.severity == ValidationSeverity.ERROR
+        for r in summary.results
+    )
+
+
+def test_deprecated_object_complete() -> None:
+    from modelops_core.repository.parser import ParsedObject
+
+    obj = ParsedObject(
+        source_path="test.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "ATTR-DEP",
+            "type": "Attribute",
+            "status": "deprecated",
+            "name": "Deprecated Attr",
+            "deprecated_reason": "Replaced by ATTR-NEW",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([obj])
+    assert not any(r.code == "DEPRECATED_OBJECT_INCOMPLETE" for r in summary.results)
+
+
+def test_retired_object_referenced() -> None:
+    from modelops_core.repository.parser import ParsedObject
+
+    retired = ParsedObject(
+        source_path="retired.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "ATTR-OLD",
+            "type": "Attribute",
+            "status": "retired",
+            "name": "Old",
+        },
+        body=None,
+        parser_error=None,
+    )
+    active = ParsedObject(
+        source_path="active.md",
+        content_hash="def",
+        frontmatter={
+            "id": "ATTR-NEW",
+            "type": "Attribute",
+            "status": "active",
+            "name": "New",
+            "domain": "ATTR-OLD",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([retired, active])
+    assert any(
+        r.code == "RETIRED_OBJECT_REFERENCED" and r.severity == ValidationSeverity.ERROR
+        for r in summary.results
+    )
+
+
+def test_retired_object_not_referenced_by_draft() -> None:
+    from modelops_core.repository.parser import ParsedObject
+
+    retired = ParsedObject(
+        source_path="retired.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "ATTR-OLD",
+            "type": "Attribute",
+            "status": "retired",
+            "name": "Old",
+        },
+        body=None,
+        parser_error=None,
+    )
+    draft = ParsedObject(
+        source_path="draft.md",
+        content_hash="def",
+        frontmatter={
+            "id": "ATTR-NEW",
+            "type": "Attribute",
+            "status": "draft",
+            "name": "New",
+            "domain": "ATTR-OLD",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([retired, draft])
+    assert any(r.code == "RETIRED_OBJECT_REFERENCED" for r in summary.results)
+
+
+def test_retired_object_reference_ignored_for_inactive_source() -> None:
+    from modelops_core.repository.parser import ParsedObject
+
+    retired = ParsedObject(
+        source_path="retired.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "ATTR-OLD",
+            "type": "Attribute",
+            "status": "retired",
+            "name": "Old",
+        },
+        body=None,
+        parser_error=None,
+    )
+    archived = ParsedObject(
+        source_path="archived.md",
+        content_hash="def",
+        frontmatter={
+            "id": "ATTR-NEW",
+            "type": "Attribute",
+            "status": "archived",
+            "name": "New",
+            "domain": "ATTR-OLD",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([retired, archived])
+    assert not any(r.code == "RETIRED_OBJECT_REFERENCED" for r in summary.results)
+
+
+def test_invalid_status_transition_retired_to_active() -> None:
+    from modelops_core.repository.parser import ParsedObject
+
+    obj = ParsedObject(
+        source_path="test.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "ATTR-001",
+            "type": "Attribute",
+            "status": "active",
+            "name": "Test",
+            "previous_status": "retired",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([obj])
+    assert any(
+        r.code == "INVALID_STATUS_TRANSITION" and r.severity == ValidationSeverity.WARNING
+        for r in summary.results
+    )
+
+
+def test_invalid_status_transition_archived_to_draft() -> None:
+    from modelops_core.repository.parser import ParsedObject
+
+    obj = ParsedObject(
+        source_path="test.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "ATTR-001",
+            "type": "Attribute",
+            "status": "draft",
+            "name": "Test",
+            "previous_status": "archived",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([obj])
+    assert any(r.code == "INVALID_STATUS_TRANSITION" for r in summary.results)
+
+
+def test_valid_status_transition_no_warning() -> None:
+    from modelops_core.repository.parser import ParsedObject
+
+    obj = ParsedObject(
+        source_path="test.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "ATTR-001",
+            "type": "Attribute",
+            "status": "active",
+            "name": "Test",
+            "previous_status": "draft",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([obj])
+    assert not any(r.code == "INVALID_STATUS_TRANSITION" for r in summary.results)
+
+
+def test_no_previous_status_no_transition_warning() -> None:
+    from modelops_core.repository.parser import ParsedObject
+
+    obj = ParsedObject(
+        source_path="test.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "ATTR-001",
+            "type": "Attribute",
+            "status": "active",
+            "name": "Test",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([obj])
+    assert not any(r.code == "INVALID_STATUS_TRANSITION" for r in summary.results)

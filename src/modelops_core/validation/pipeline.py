@@ -319,8 +319,13 @@ def _build_registry(objects: list[ParsedObject]) -> dict[str, dict[str, Any]]:
             continue
         obj_id = obj.frontmatter.get("id")
         obj_type = obj.frontmatter.get("type")
+        obj_status = obj.frontmatter.get("status")
         if isinstance(obj_id, str) and _ID_PATTERN.match(obj_id):
-            registry[obj_id] = {"type": obj_type, "source_path": obj.source_path}
+            registry[obj_id] = {
+                "type": obj_type,
+                "source_path": obj.source_path,
+                "status": obj_status,
+            }
     return registry
 
 
@@ -597,6 +602,125 @@ def _validate_lov_governance(
                         suggested_fix="Use a code that exists in the target ValueList.",
                     )
                 )
+
+    return results
+
+
+_SUSPICIOUS_STATUS_TRANSITIONS: frozenset[tuple[str, str]] = frozenset(
+    {
+        ("retired", "active"),
+        ("retired", "draft"),
+        ("archived", "active"),
+        ("archived", "draft"),
+    }
+)
+
+
+def _validate_lifecycle(
+    objects: list[ParsedObject], registry: dict[str, dict[str, Any]]
+) -> list[ValidationResult]:
+    """Validate deprecated and retired object lifecycle rules."""
+    results: list[ValidationResult] = []
+    reference_fields = get_expected_target_types()
+
+    for obj in objects:
+        if obj.parser_error is not None or obj.frontmatter is None:
+            continue
+        fm = obj.frontmatter
+        obj_id = fm.get("id")
+        status = str(fm.get("status", "")).lower()
+
+        # DEPRECATED_OBJECT_INCOMPLETE
+        if status == "deprecated":
+            deprecated_reason = fm.get("deprecated_reason")
+            if not deprecated_reason:
+                results.append(
+                    ValidationResult(
+                        severity=ValidationSeverity.ERROR,
+                        code="DEPRECATED_OBJECT_INCOMPLETE",
+                        message=(
+                            f"Object '{obj_id}' is deprecated but "
+                            f"missing 'deprecated_reason'."
+                        ),
+                        object_id=obj_id,
+                        source_file=obj.source_path,
+                        field_path="deprecated_reason",
+                        suggested_fix=(
+                            "Add 'deprecated_reason' to explain why "
+                            "this object was deprecated."
+                        ),
+                    )
+                )
+
+        # INVALID_STATUS_TRANSITION
+        previous_status = fm.get("previous_status")
+        if isinstance(previous_status, str):
+            transition = (previous_status.lower(), status)
+            if transition in _SUSPICIOUS_STATUS_TRANSITIONS:
+                results.append(
+                    ValidationResult(
+                        severity=ValidationSeverity.WARNING,
+                        code="INVALID_STATUS_TRANSITION",
+                        message=(
+                            f"Suspicious status transition: "
+                            f"'{previous_status}' → '{status}'."
+                        ),
+                        object_id=obj_id,
+                        source_file=obj.source_path,
+                        field_path="status",
+                        suggested_fix=(
+                            "Verify the status transition is intentional "
+                            "and documented."
+                        ),
+                    )
+                )
+
+    # RETIRED_OBJECT_REFERENCED
+    for obj in objects:
+        if obj.parser_error is not None or obj.frontmatter is None:
+            continue
+        fm = obj.frontmatter
+        source_id = fm.get("id")
+        source_status = str(fm.get("status", "")).lower()
+        if source_status not in ("active", "draft"):
+            continue
+
+        for field in reference_fields:
+            value = fm.get(field)
+            if value is None:
+                continue
+            refs: list[str] = []
+            if isinstance(value, str):
+                refs = [value]
+            elif isinstance(value, list):
+                refs = [str(v) for v in value if isinstance(v, str)]
+            else:
+                continue
+
+            for ref_id in refs:
+                target = registry.get(ref_id)
+                if target is None:
+                    continue
+                target_status = str(target.get("status", "")).lower()
+                if target_status == "retired":
+                    results.append(
+                        ValidationResult(
+                            severity=ValidationSeverity.ERROR,
+                            code="RETIRED_OBJECT_REFERENCED",
+                            message=(
+                                f"Active object '{source_id}' references "
+                                f"retired object '{ref_id}' via '{field}'."
+                            ),
+                            object_id=source_id,
+                            source_file=obj.source_path,
+                            field_path=field,
+                            related_objects=[ref_id],
+                            suggested_fix=(
+                                f"Remove the reference to '{ref_id}' or "
+                                f"re-activate the retired object."
+                            ),
+                        )
+                    )
 
     return results
 
@@ -902,6 +1026,7 @@ def validate_objects(
     registry = _build_registry(objects)
     all_results.extend(_validate_references(objects, registry))
     all_results.extend(_detect_reference_cycles(objects, registry))
+    all_results.extend(_validate_lifecycle(objects, registry))
     all_results.extend(_validate_lov_governance(objects, registry))
     all_results.extend(_validate_ownership(objects))
     all_results.extend(_validate_methodology(objects, registry))
