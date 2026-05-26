@@ -2010,6 +2010,7 @@ app.add_typer(proposal_app, name="proposal")
 def proposal_list(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+    stale: bool = typer.Option(False, "--stale", help="Show only expired proposals."),
 ) -> None:
     """List all PatchProposals in the repository."""
     repo_root = _resolve_repo(repo)
@@ -2032,22 +2033,41 @@ def proposal_list(
         raise typer.Exit()
 
     proposals = []
+    from datetime import UTC, datetime
+
     for f in files:
         parsed = parse_file(f)
         fm = parsed.frontmatter or {}
+        expires_at = fm.get("expires_at")
+        is_expired = False
+        if expires_at:
+            try:
+                exp_dt = datetime.fromisoformat(str(expires_at))
+                if exp_dt.tzinfo is None:
+                    exp_dt = exp_dt.replace(tzinfo=UTC)
+                is_expired = exp_dt < datetime.now(UTC)
+            except ValueError:
+                pass
+        if stale and not is_expired:
+            continue
         proposals.append({
             "id": fm.get("id", f.stem),
             "status": fm.get("status", ""),
             "applied": bool(fm.get("applied_at")),
+            "expires_at": expires_at,
+            "expired": is_expired,
         })
 
     if json_output:
         print(json.dumps(proposals, indent=2, default=str))
         raise typer.Exit()
 
-    table = Table("ID", "Status", "Applied")
+    table = Table("ID", "Status", "Applied", "Expires")
     for p in proposals:
-        table.add_row(p["id"], p["status"], "yes" if p["applied"] else "no")
+        expires_label = p["expires_at"] or "—"
+        if p.get("expired"):
+            expires_label = f"[red]{expires_label}[/red]"
+        table.add_row(p["id"], p["status"], "yes" if p["applied"] else "no", expires_label)
     console.print(table)
 
 
@@ -2077,6 +2097,8 @@ def proposal_show(
     console.print(f"  Status: {fm.get('status', '—')}")
     console.print(f"  Validation: {fm.get('validation_status', '—')}")
     console.print(f"  Operations: {len(fm.get('operations', []))}")
+    if fm.get("expires_at"):
+        console.print(f"  Expires at: {fm['expires_at']}")
     if fm.get("applied_at"):
         console.print(f"  Applied at: {fm['applied_at']}")
         console.print(f"  Changed files: {fm.get('applied_changed_files', [])}")
