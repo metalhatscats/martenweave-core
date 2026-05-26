@@ -3120,6 +3120,9 @@ def audit_log(
     event_type: str | None = typer.Option(None, "--event-type", help="Filter by event type."),
     date_from: str | None = typer.Option(None, "--date-from", help="Filter from date (ISO)."),
     date_to: str | None = typer.Option(None, "--date-to", help="Filter to date (ISO)."),
+    filter_expr: list[str] | None = typer.Option(  # noqa: B008
+        None, "--filter", help="Filter expressions in key=value format (e.g. proposal_id=PP-001)."
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Query the append-only audit log."""
@@ -3130,6 +3133,25 @@ def audit_log(
     if not events:
         console.print("[yellow]No audit events found.[/yellow]")
         raise typer.Exit()
+
+    # Parse --filter expressions into individual filter params
+    for expr in filter_expr or []:
+        if "=" not in expr:
+            console.print(f"[red]Invalid filter expression: {expr}. Use key=value format.[/red]")
+            raise typer.Exit(code=1)
+        key, value = expr.split("=", 1)
+        if key == "object_id":
+            object_id = value
+        elif key == "proposal_id":
+            proposal_id = value
+        elif key == "event_type":
+            event_type = value
+        elif key == "date_from":
+            date_from = value
+        elif key == "date_to":
+            date_to = value
+        else:
+            console.print(f"[yellow]Unknown filter key: {key}. Ignored.[/yellow]")
 
     filtered = filter_audit_events(
         events,
