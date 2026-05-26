@@ -46,6 +46,40 @@ modelops export-model --repo examples/supplier_vendor_model --format csv
 modelops export-model --repo examples/supplier_vendor_model --format xlsx
 ```
 
+## v0.3 Gap-to-Proposal Workflow
+
+This example includes a synthetic dataset (`data/samples/vendor_extract.csv`) that demonstrates the full gap-to-proposal pipeline:
+
+```bash
+# 1. Profile the synthetic dataset
+modelops profile-dataset examples/supplier_vendor_model/data/samples/vendor_extract.csv \
+  --repo examples/supplier_vendor_model
+
+# 2. Detect gaps (dataset-side + model-side)
+modelops gaps examples/supplier_vendor_model/data/samples/vendor_extract.csv \
+  --repo examples/supplier_vendor_model --check-model
+
+# 3. Promote gaps to a draft PatchProposal
+modelops gaps examples/supplier_vendor_model/data/samples/vendor_extract.csv \
+  --repo examples/supplier_vendor_model --promote-to-proposal
+
+# 4. Impact analysis with direction grouping
+modelops impact FEP-S4-LFA1-KTOKK --repo examples/supplier_vendor_model --group-by direction
+
+# 5. Query by SAP table
+modelops query --repo examples/supplier_vendor_model --sap-table LFA1 --json
+
+# 6. Review the promoted proposal
+modelops proposal show PP-GAP-VENDOR-EXTRACT-001 --repo examples/supplier_vendor_model
+modelops proposal diff PP-GAP-VENDOR-EXTRACT-001 --repo examples/supplier_vendor_model
+```
+
+Run the full end-to-end demo script:
+
+```bash
+./scripts/demo_v0_3_gap_to_proposal.sh
+```
+
 ## Requirements
 
 - Python 3.11+
