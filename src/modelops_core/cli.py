@@ -99,6 +99,7 @@ from modelops_core.reports.audit_service import (
     create_audit_event,
     filter_audit_events,
 )
+from modelops_core.reports.decisions_report import generate_decisions_report
 from modelops_core.reports.gap_summary import generate_gap_summary_report
 from modelops_core.reports.health_report import generate_repository_health
 from modelops_core.reports.ownership_report import generate_ownership_report
@@ -909,6 +910,9 @@ def infer_model(
 def validate(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+    check_decisions: bool = typer.Option(
+        False, "--check-decisions", help="Run extended Decision evidence validation."
+    ),
 ) -> None:
     """Run deterministic validation on canonical files."""
     repo_root = _resolve_repo(repo)
@@ -923,7 +927,7 @@ def validate(
     parsed_objects = [parse_file(f) for f in files]
     config = load_repo_config(repo_root)
     enabled_packs = config.enabled_domain_packs if config else None
-    summary = validate_objects(parsed_objects, enabled_packs)
+    summary = validate_objects(parsed_objects, enabled_packs, check_decisions=check_decisions)
 
     # Validate repo config schema version
     repo_config_issues = validate_repo_schema_version(
@@ -2537,6 +2541,119 @@ def decisions_show(
     related_issue = frontmatter.get("related_issue")
     if related_issue:
         console.print(f"  Related issue: {related_issue}")
+
+
+@decisions_app.command("report")
+@with_telemetry("decisions-report")
+def decisions_report(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Show Decision evidence coverage and category breakdown."""
+    repo_root = _resolve_repo(repo)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+
+    if not db_path.exists():
+        console.print(
+            "[yellow]No index found. Run `modelops build-index` first.[/yellow]"
+        )
+        raise typer.Exit(code=1)
+
+    report = generate_decisions_report(db_path, repo_root)
+
+    if json_output:
+        result = {
+            "evidence_coverage": [
+                {
+                    "domain": d.domain,
+                    "total_decisions": d.total_decisions,
+                    "decisions_with_evidence": d.decisions_with_evidence,
+                    "coverage_percent": d.coverage_percent,
+                }
+                for d in report.evidence_coverage
+            ],
+            "uncovered_decisions": [
+                {
+                    "object_id": d.object_id,
+                    "object_name": d.object_name,
+                    "status": d.status,
+                    "domain": d.domain,
+                }
+                for d in report.uncovered_decisions
+            ],
+            "deprecated_evidence_decisions": [
+                {
+                    "object_id": d.object_id,
+                    "object_name": d.object_name,
+                    "status": d.status,
+                    "domain": d.domain,
+                }
+                for d in report.deprecated_evidence_decisions
+            ],
+            "category_breakdown": [
+                {"category": c.category, "count": c.count}
+                for c in report.category_breakdown
+            ],
+            "total_decisions": report.total_decisions,
+            "total_with_evidence": report.total_with_evidence,
+            "overall_coverage_percent": report.overall_coverage_percent,
+        }
+        print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print("[bold]Decisions Report[/bold]")
+    console.print(f"  Total decisions: {report.total_decisions}")
+    console.print(f"  With evidence: {report.total_with_evidence}")
+    console.print(f"  Overall coverage: {report.overall_coverage_percent}%")
+    console.print("")
+
+    if report.evidence_coverage:
+        table = Table("Domain", "Decisions", "With Evidence", "Coverage %")
+        for d in report.evidence_coverage:
+            domain_label = d.domain or "(no domain)"
+            table.add_row(
+                domain_label,
+                str(d.total_decisions),
+                str(d.decisions_with_evidence),
+                f"{d.coverage_percent}%",
+            )
+        console.print(table)
+    else:
+        console.print("[yellow]No Decision objects found.[/yellow]")
+
+    if report.uncovered_decisions:
+        console.print("")
+        console.print("[bold]Decisions Without Evidence[/bold]")
+        ut = Table("Object ID", "Name", "Status", "Domain")
+        for d in report.uncovered_decisions:
+            ut.add_row(
+                d.object_id,
+                d.object_name or "—",
+                d.status,
+                d.domain or "—",
+            )
+        console.print(ut)
+
+    if report.deprecated_evidence_decisions:
+        console.print("")
+        console.print("[bold]Decisions With Deprecated Evidence[/bold]")
+        dt = Table("Object ID", "Name", "Status", "Domain")
+        for d in report.deprecated_evidence_decisions:
+            dt.add_row(
+                d.object_id,
+                d.object_name or "—",
+                d.status,
+                d.domain or "—",
+            )
+        console.print(dt)
+
+    if report.category_breakdown:
+        console.print("")
+        console.print("[bold]Category Breakdown[/bold]")
+        ct = Table("Category", "Count")
+        for c in report.category_breakdown:
+            ct.add_row(c.category or "(none)", str(c.count))
+        console.print(ct)
 
 
 # ---------------------------------------------------------------------------

@@ -828,6 +828,55 @@ def _validate_decision_evidence(
     return results
 
 
+def _validate_decision_evidence_advanced(
+    objects: list[ParsedObject], registry: dict[str, dict[str, Any]]
+) -> list[ValidationResult]:
+    """Extended Decision evidence validation: evidence must not be retired/deprecated."""
+    results: list[ValidationResult] = []
+    for obj in objects:
+        if obj.parser_error is not None or obj.frontmatter is None:
+            continue
+        fm = obj.frontmatter
+        if fm.get("type") != "Decision":
+            continue
+        obj_id = fm.get("id")
+        evidence = fm.get("evidence")
+        if evidence is None:
+            continue
+
+        refs: list[str] = []
+        if isinstance(evidence, str):
+            refs = [evidence]
+        elif isinstance(evidence, list):
+            refs = [str(v) for v in evidence if isinstance(v, str)]
+        else:
+            continue
+
+        for ref_id in refs:
+            if ref_id not in registry:
+                continue  # covered by base validation
+            ref_fm = registry[ref_id]
+            ref_status = str(ref_fm.get("status", "")).lower()
+            if ref_status in ("retired", "deprecated"):
+                results.append(
+                    ValidationResult(
+                        severity=ValidationSeverity.WARNING,
+                        code="DECISION_DEPRECATED_EVIDENCE",
+                        message=(
+                            f"Decision '{obj_id}' evidence '{ref_id}' "
+                            f"has status '{ref_status}'."
+                        ),
+                        object_id=obj_id,
+                        source_file=obj.source_path,
+                        field_path="evidence",
+                        related_objects=[ref_id],
+                        suggested_fix="Replace with active Evidence or update the decision.",
+                    )
+                )
+
+    return results
+
+
 def _validate_methodology(
     objects: list[ParsedObject], registry: dict[str, dict[str, Any]]
 ) -> list[ValidationResult]:
@@ -1074,6 +1123,7 @@ def _run_domain_pack_validation(
 def validate_objects(
     objects: list[ParsedObject],
     enabled_domain_packs: list[str] | None = None,
+    check_decisions: bool = False,
 ) -> ValidationSummary:
     """Run Layer 1–3 deterministic validation on a batch of parsed objects.
 
@@ -1081,6 +1131,8 @@ def validate_objects(
         objects: Parsed canonical objects to validate.
         enabled_domain_packs: List of domain pack identifiers to enable
             (e.g. ``["sap"]``). If None or empty, only generic validation runs.
+        check_decisions: If True, run extended Decision evidence validation
+            (checks for deprecated/retired evidence).
 
     Returns:
         ValidationSummary with all results.
@@ -1096,6 +1148,8 @@ def validate_objects(
     all_results.extend(_validate_references(objects, registry))
     all_results.extend(_detect_reference_cycles(objects, registry))
     all_results.extend(_validate_decision_evidence(objects, registry))
+    if check_decisions:
+        all_results.extend(_validate_decision_evidence_advanced(objects, registry))
     all_results.extend(_validate_lifecycle(objects, registry))
     all_results.extend(_validate_lov_governance(objects, registry))
     all_results.extend(_validate_ownership(objects))
