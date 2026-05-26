@@ -81,6 +81,205 @@ class TestScorecardGaps:
         assert len(report.gaps) <= 5
 
 
+class TestScorecardEvidenceCoverage:
+    def test_evidence_coverage_100_percent(self, tmp_path: Path) -> None:
+        from modelops_core.index.sqlite_builder import build_index
+
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        generated_dir = tmp_path / "generated"
+        generated_dir.mkdir()
+        (model_dir / "DEC-001.md").write_text(
+            "---\nid: DEC-001\ntype: Decision\nstatus: active\n"
+            "name: Test Decision\nevidence: EVIDENCE-001\n"
+            "schema_version: '1.0'\n---\n",
+            encoding="utf-8",
+        )
+        (model_dir / "DEC-002.md").write_text(
+            "---\nid: DEC-002\ntype: Decision\nstatus: active\n"
+            "name: Test Decision 2\nevidence: EVIDENCE-002\n"
+            "schema_version: '1.0'\n---\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "modelops.config.yaml").write_text(
+            "model_dir: model\ngenerated_dir: generated\n", encoding="utf-8"
+        )
+        build_index(
+            repo_root=tmp_path, db_path=generated_dir / "modelops.db",
+            allow_invalid=True,
+        )
+        report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
+        ev_metric = next(m for m in report.metrics if m.name == "evidence_coverage")
+        assert ev_metric.value == 100.0
+        assert ev_metric.status == "pass"
+
+    def test_evidence_coverage_partial(self, tmp_path: Path) -> None:
+        from modelops_core.index.sqlite_builder import build_index
+
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        generated_dir = tmp_path / "generated"
+        generated_dir.mkdir()
+        (model_dir / "DEC-001.md").write_text(
+            "---\nid: DEC-001\ntype: Decision\nstatus: active\n"
+            "name: Test Decision\nevidence: EVIDENCE-001\n"
+            "schema_version: '1.0'\n---\n",
+            encoding="utf-8",
+        )
+        (model_dir / "DEC-002.md").write_text(
+            "---\nid: DEC-002\ntype: Decision\nstatus: active\n"
+            "name: Test Decision 2\nschema_version: '1.0'\n---\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "modelops.config.yaml").write_text(
+            "model_dir: model\ngenerated_dir: generated\n", encoding="utf-8"
+        )
+        build_index(
+            repo_root=tmp_path, db_path=generated_dir / "modelops.db",
+            allow_invalid=True,
+        )
+        report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
+        ev_metric = next(m for m in report.metrics if m.name == "evidence_coverage")
+        assert ev_metric.value == 50.0
+        assert ev_metric.status == "warning"
+
+    def test_evidence_coverage_zero_decisions(self, tmp_path: Path) -> None:
+        from modelops_core.index.sqlite_builder import build_index
+
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        generated_dir = tmp_path / "generated"
+        generated_dir.mkdir()
+        (model_dir / "DOMAIN-TEST.md").write_text(
+            "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\n"
+            "name: Test Domain\nschema_version: '1.0'\n---\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "modelops.config.yaml").write_text(
+            "model_dir: model\ngenerated_dir: generated\n", encoding="utf-8"
+        )
+        build_index(
+            repo_root=tmp_path, db_path=generated_dir / "modelops.db",
+            allow_invalid=True,
+        )
+        report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
+        ev_metric = next(m for m in report.metrics if m.name == "evidence_coverage")
+        assert ev_metric.value == 0.0
+        assert ev_metric.status == "pass"
+        assert "No Decision objects" in ev_metric.explanation
+
+
+class TestScorecardSapTableCoverage:
+    def test_sap_table_coverage_counts_target_tables(self, tmp_path: Path) -> None:
+        from modelops_core.index.sqlite_builder import build_index
+
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        generated_dir = tmp_path / "generated"
+        generated_dir.mkdir()
+        (model_dir / "FEP-KNVV.md").write_text(
+            "---\nid: FEP-KNVV\ntype: FieldEndpoint\nstatus: active\n"
+            "name: KNVV Field\nsap_table: KNVV\n"
+            "business_attribute: ATTR-001\nschema_version: '1.0'\n---\n",
+            encoding="utf-8",
+        )
+        (model_dir / "FEP-OTHER.md").write_text(
+            "---\nid: FEP-OTHER\ntype: FieldEndpoint\nstatus: active\n"
+            "name: Other Field\nsap_table: OTHER\nschema_version: '1.0'\n---\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "modelops.config.yaml").write_text(
+            "model_dir: model\ngenerated_dir: generated\n", encoding="utf-8"
+        )
+        build_index(
+            repo_root=tmp_path, db_path=generated_dir / "modelops.db",
+            allow_invalid=True,
+        )
+        report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
+        sap_metric = next(m for m in report.metrics if m.name == "sap_table_coverage")
+        assert sap_metric.value == 100.0
+        assert sap_metric.status == "pass"
+
+    def test_sap_table_coverage_partial(self, tmp_path: Path) -> None:
+        from modelops_core.index.sqlite_builder import build_index
+
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        generated_dir = tmp_path / "generated"
+        generated_dir.mkdir()
+        (model_dir / "FEP-KNVV.md").write_text(
+            "---\nid: FEP-KNVV\ntype: FieldEndpoint\nstatus: active\n"
+            "name: KNVV Field\nsap_table: KNVV\nschema_version: '1.0'\n---\n",
+            encoding="utf-8",
+        )
+        (model_dir / "FEP-KNB1.md").write_text(
+            "---\nid: FEP-KNB1\ntype: FieldEndpoint\nstatus: active\n"
+            "name: KNB1 Field\nsap_table: KNB1\n"
+            "attribute: ATTR-001\nschema_version: '1.0'\n---\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "modelops.config.yaml").write_text(
+            "model_dir: model\ngenerated_dir: generated\n", encoding="utf-8"
+        )
+        build_index(
+            repo_root=tmp_path, db_path=generated_dir / "modelops.db",
+            allow_invalid=True,
+        )
+        report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
+        sap_metric = next(m for m in report.metrics if m.name == "sap_table_coverage")
+        assert sap_metric.value == 50.0
+        assert sap_metric.status == "fail"
+
+    def test_sap_table_coverage_zero_targets(self, tmp_path: Path) -> None:
+        from modelops_core.index.sqlite_builder import build_index
+
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        generated_dir = tmp_path / "generated"
+        generated_dir.mkdir()
+        (model_dir / "FEP-OTHER.md").write_text(
+            "---\nid: FEP-OTHER\ntype: FieldEndpoint\nstatus: active\n"
+            "name: Other Field\nsap_table: OTHER\nschema_version: '1.0'\n---\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "modelops.config.yaml").write_text(
+            "model_dir: model\ngenerated_dir: generated\n", encoding="utf-8"
+        )
+        build_index(
+            repo_root=tmp_path, db_path=generated_dir / "modelops.db",
+            allow_invalid=True,
+        )
+        report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
+        sap_metric = next(m for m in report.metrics if m.name == "sap_table_coverage")
+        assert sap_metric.value == 0.0
+        assert sap_metric.status == "pass"
+        assert "No target SAP FieldEndpoints" in sap_metric.explanation
+
+    def test_sap_table_coverage_ignores_non_target_tables(self, tmp_path: Path) -> None:
+        from modelops_core.index.sqlite_builder import build_index
+
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        generated_dir = tmp_path / "generated"
+        generated_dir.mkdir()
+        (model_dir / "FEP-OTHER.md").write_text(
+            "---\nid: FEP-OTHER\ntype: FieldEndpoint\nstatus: active\n"
+            "name: Other Field\nsap_table: OTHER\nschema_version: '1.0'\n---\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "modelops.config.yaml").write_text(
+            "model_dir: model\ngenerated_dir: generated\n", encoding="utf-8"
+        )
+        build_index(
+            repo_root=tmp_path, db_path=generated_dir / "modelops.db",
+            allow_invalid=True,
+        )
+        report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
+        sap_metric = next(m for m in report.metrics if m.name == "sap_table_coverage")
+        assert sap_metric.value == 0.0
+        assert sap_metric.status == "pass"
+
+
 class TestScorecardReadinessLevels:
     def test_seed_for_tiny_repo(self, tmp_path: Path) -> None:
         from modelops_core.fixtures.fixture_generator import generate_fixture_repo
@@ -114,5 +313,7 @@ class TestScorecardReadinessLevels:
             "unresolved_issue_count",
             "pending_change_count",
             "high_risk_change_count",
+            "evidence_coverage",
+            "sap_table_coverage",
         }
         assert expected.issubset(names)
