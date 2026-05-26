@@ -204,6 +204,81 @@ def test_proposal_diff_not_found(temp_model_dir: Path) -> None:
     assert "not found" in result.output
 
 
+# Proposal expiration tests ---------------------------------------------------
+
+
+def test_proposal_list_stale_filters_expired(temp_model_dir: Path) -> None:
+    from datetime import UTC, datetime
+
+    op = PatchOperation(op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X")
+    _create_accepted_proposal(temp_model_dir, "PP-EXPIRED-001", [op])
+    # Set expires_at to past
+    proposal_path = temp_model_dir / "patch-proposals" / "PP-EXPIRED-001.md"
+    text = proposal_path.read_text(encoding="utf-8")
+    past = datetime(2020, 1, 1, tzinfo=UTC).isoformat()
+    text = text.replace(
+        "status: accepted", f"status: accepted\nexpires_at: {past}"
+    )
+    proposal_path.write_text(text, encoding="utf-8")
+
+    # Create a non-expired proposal
+    _create_accepted_proposal(temp_model_dir, "PP-FRESH-001", [op])
+
+    result = runner.invoke(
+        app, ["proposal", "list", "--stale", "--repo", _repo_from_model(temp_model_dir)]
+    )
+    assert result.exit_code == 0
+    assert "PP-EXPIRED-001" in result.output
+    assert "PP-FRESH-001" not in result.output
+
+
+def test_proposal_show_displays_expiration(temp_model_dir: Path) -> None:
+    op = PatchOperation(op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X")
+    _create_accepted_proposal(temp_model_dir, "PP-EXP-SHOW-001", [op])
+    proposal_path = temp_model_dir / "patch-proposals" / "PP-EXP-SHOW-001.md"
+    text = proposal_path.read_text(encoding="utf-8")
+    text = text.replace(
+        "status: accepted", "status: accepted\nexpires_at: 2025-12-31T23:59:59+00:00"
+    )
+    proposal_path.write_text(text, encoding="utf-8")
+
+    result = runner.invoke(
+        app, ["proposal", "show", "PP-EXP-SHOW-001", "--repo", _repo_from_model(temp_model_dir)]
+    )
+    assert result.exit_code == 0
+    assert "Expires at" in result.output
+    assert "2025-12-31" in result.output
+
+
+def test_proposal_validate_warns_on_expired(temp_model_dir: Path) -> None:
+    from datetime import UTC, datetime
+
+    op = PatchOperation(op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X")
+    _create_accepted_proposal(temp_model_dir, "PP-EXP-VAL-001", [op])
+    proposal_path = temp_model_dir / "patch-proposals" / "PP-EXP-VAL-001.md"
+    text = proposal_path.read_text(encoding="utf-8")
+    past = datetime(2020, 1, 1, tzinfo=UTC).isoformat()
+    text = text.replace(
+        "status: accepted", f"status: accepted\nexpires_at: {past}"
+    )
+    proposal_path.write_text(text, encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        [
+            "proposal",
+            "validate",
+            "PP-EXP-VAL-001",
+            "--json",
+            "--repo",
+            _repo_from_model(temp_model_dir),
+        ],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert any(r["code"] == "PATCH_PROPOSAL_EXPIRED" for r in data["results"])
+
+
 # --json flag tests -----------------------------------------------------------
 
 

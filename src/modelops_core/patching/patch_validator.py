@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from datetime import UTC, datetime
 from typing import Any
 
 from modelops_core.patching.patch_model import _ALLOWED_OPERATIONS
@@ -96,5 +97,32 @@ def validate_patch_proposal(proposal: dict[str, Any]) -> list[ValidationResult]:
                 suggested_fix="Change affected_objects to a list of object IDs.",
             )
         )
+
+    expires_at = proposal.get("expires_at")
+    if expires_at:
+        try:
+            exp_dt = datetime.fromisoformat(str(expires_at))
+            if exp_dt.tzinfo is None:
+                exp_dt = exp_dt.replace(tzinfo=UTC)
+            if exp_dt < datetime.now(UTC):
+                results.append(
+                    ValidationResult(
+                        severity=ValidationSeverity.WARNING,
+                        code="PATCH_PROPOSAL_EXPIRED",
+                        message=f"PatchProposal expired on {expires_at}.",
+                        object_id=str(proposal_id) if proposal_id else None,
+                        suggested_fix="Renew expires_at or close the proposal.",
+                    )
+                )
+        except ValueError:
+            results.append(
+                ValidationResult(
+                    severity=ValidationSeverity.WARNING,
+                    code="PATCH_EXPIRES_AT_INVALID",
+                    message=f"Invalid expires_at format: '{expires_at}'.",
+                    object_id=str(proposal_id) if proposal_id else None,
+                    suggested_fix="Use ISO 8601 format (e.g. 2024-12-31T23:59:59+00:00).",
+                )
+            )
 
     return results
