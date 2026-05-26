@@ -233,7 +233,7 @@ def test_decision_with_valid_evidence() -> None:
         parser_error=None,
     )
     summary = validate_objects([evidence, decision])
-    assert not any(r.code == "EVIDENCE_BROKEN_LINK" for r in summary.results)
+    assert not any(r.code == "DECISION_BROKEN_EVIDENCE" for r in summary.results)
 
 
 def test_decision_with_missing_evidence() -> None:
@@ -250,7 +250,7 @@ def test_decision_with_missing_evidence() -> None:
         parser_error=None,
     )
     summary = validate_objects([decision])
-    broken = [r for r in summary.results if r.code == "EVIDENCE_BROKEN_LINK"]
+    broken = [r for r in summary.results if r.code == "DECISION_BROKEN_EVIDENCE"]
     assert len(broken) == 1
     assert broken[0].severity.name == "ERROR"
     assert "EVIDENCE-MISSING" in broken[0].message
@@ -282,7 +282,7 @@ def test_decision_with_wrong_type_evidence() -> None:
         parser_error=None,
     )
     summary = validate_objects([attr, decision])
-    broken = [r for r in summary.results if r.code == "EVIDENCE_BROKEN_LINK"]
+    broken = [r for r in summary.results if r.code == "DECISION_BROKEN_EVIDENCE"]
     assert len(broken) == 1
     assert broken[0].severity.name == "WARNING"
     assert "ATTR-001" in broken[0].message
@@ -314,7 +314,7 @@ def test_decision_with_multiple_evidence_one_broken() -> None:
         parser_error=None,
     )
     summary = validate_objects([evidence, decision])
-    broken = [r for r in summary.results if r.code == "EVIDENCE_BROKEN_LINK"]
+    broken = [r for r in summary.results if r.code == "DECISION_BROKEN_EVIDENCE"]
     assert len(broken) == 1
     assert broken[0].severity.name == "ERROR"
     assert "EVIDENCE-MISSING" in broken[0].message

@@ -442,6 +442,7 @@ _REGISTRY: dict[str, ObjectTypeEntry] = {
             _DOMAIN_REF,
             _ATTRIBUTE_REF,
             _EVIDENCE_REF,
+            _RELATED_DECISIONS_REF,
             _BUSINESS_OWNER_REF,
             _APPROVER_REF,
         ),

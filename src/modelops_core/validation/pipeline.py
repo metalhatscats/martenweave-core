@@ -788,7 +788,7 @@ def _validate_decision_evidence(
                 results.append(
                     ValidationResult(
                         severity=ValidationSeverity.ERROR,
-                        code="EVIDENCE_BROKEN_LINK",
+                        code="DECISION_BROKEN_EVIDENCE",
                         message=(
                             f"Decision '{obj_id}' references missing "
                             f"Evidence '{ref_id}'."
@@ -810,7 +810,7 @@ def _validate_decision_evidence(
                 results.append(
                     ValidationResult(
                         severity=ValidationSeverity.WARNING,
-                        code="EVIDENCE_BROKEN_LINK",
+                        code="DECISION_BROKEN_EVIDENCE",
                         message=(
                             f"Decision '{obj_id}' evidence '{ref_id}' "
                             f"is not an Evidence object (found '{actual_type}')."

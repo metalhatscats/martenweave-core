@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import sqlite3
 from pathlib import Path
 from typing import Any
 
@@ -2269,6 +2270,142 @@ def notifications_list(
             e.status,
         )
     console.print(table)
+
+
+# ---------------------------------------------------------------------------
+# Decision subcommands
+# ---------------------------------------------------------------------------
+decisions_app = typer.Typer(
+    name="decisions",
+    help="Browse and inspect Decision objects.",
+)
+app.add_typer(decisions_app, name="decisions")
+
+
+@decisions_app.command("list")
+def decisions_list(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """List all Decision objects in the repository."""
+    repo_root = _resolve_repo(repo)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+
+    if not db_path.exists():
+        if json_output:
+            print(json.dumps([]))
+            raise typer.Exit()
+        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        raise typer.Exit(code=1)
+
+    conn = sqlite3.connect(str(db_path))
+    try:
+        rows = conn.execute(
+            "SELECT id, status, name, title, domain, source_file FROM objects WHERE type = ?",
+            ("Decision",),
+        ).fetchall()
+    finally:
+        conn.close()
+
+    decisions = []
+    for row in rows:
+        decisions.append({
+            "id": row[0],
+            "status": row[1],
+            "name": row[2],
+            "title": row[3],
+            "domain": row[4],
+            "source_file": row[5],
+        })
+
+    if json_output:
+        print(json.dumps(decisions, indent=2, default=str))
+        raise typer.Exit()
+
+    if not decisions:
+        console.print("[yellow]No Decision objects found.[/yellow]")
+        raise typer.Exit()
+
+    table = Table("ID", "Status", "Name / Title", "Domain", "Source File")
+    for d in decisions:
+        display_name = d["name"] or d["title"] or "—"
+        table.add_row(d["id"], d["status"], display_name, d["domain"] or "—", d["source_file"])
+    console.print(table)
+
+
+@decisions_app.command("show")
+def decisions_show(
+    decision_id: str = typer.Argument(..., help="Decision ID (e.g. DEC-001)."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Show details of a single Decision object."""
+    repo_root = _resolve_repo(repo)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+
+    if not db_path.exists():
+        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        raise typer.Exit(code=1)
+
+    conn = sqlite3.connect(str(db_path))
+    try:
+        row = conn.execute(
+            "SELECT id, status, name, title, domain, description, source_file, frontmatter_json "
+            "FROM objects WHERE id = ? AND type = ?",
+            (decision_id, "Decision"),
+        ).fetchone()
+    finally:
+        conn.close()
+
+    if row is None:
+        console.print(f"[red]Decision not found: {decision_id}[/red]")
+        raise typer.Exit(code=1)
+
+    obj_id, status, name, title, domain, description, source_file, frontmatter_json = row
+    frontmatter: dict[str, Any] = {}
+    if frontmatter_json:
+        try:
+            frontmatter = json.loads(frontmatter_json)
+        except json.JSONDecodeError:
+            pass
+
+    if json_output:
+        print(json.dumps(frontmatter, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print(f"[bold]Decision: {obj_id}[/bold]")
+    console.print(f"  Status: {status}")
+    if name:
+        console.print(f"  Name: {name}")
+    if title:
+        console.print(f"  Title: {title}")
+    if domain:
+        console.print(f"  Domain: {domain}")
+    if description:
+        console.print(f"  Description: {description}")
+    console.print(f"  Source: {source_file}")
+
+    attribute = frontmatter.get("attribute")
+    if attribute:
+        console.print(f"  Attribute: {attribute}")
+
+    evidence = frontmatter.get("evidence")
+    if evidence:
+        if isinstance(evidence, list):
+            console.print(f"  Evidence: {', '.join(evidence)}")
+        else:
+            console.print(f"  Evidence: {evidence}")
+
+    related_decisions = frontmatter.get("related_decisions")
+    if related_decisions:
+        if isinstance(related_decisions, list):
+            console.print(f"  Related decisions: {', '.join(related_decisions)}")
+        else:
+            console.print(f"  Related decisions: {related_decisions}")
+
+    related_issue = frontmatter.get("related_issue")
+    if related_issue:
+        console.print(f"  Related issue: {related_issue}")
 
 
 # ---------------------------------------------------------------------------
