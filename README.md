@@ -43,14 +43,57 @@ Martenweave Core requires Python 3.11+. The examples below use the project venv 
 # Build SQLite index + JSONL exports
 .venv/bin/modelops build-index --repo ./my-model --jsonl
 
-# Health report
+# Health report and scorecard
 .venv/bin/modelops health --repo ./my-model
+.venv/bin/modelops scorecard --repo ./my-model
 
 # Impact analysis
 .venv/bin/modelops impact FEP-S4-KNVV-KDGRP --repo ./my-model
 
 # Propose a patch from a note
 .venv/bin/modelops propose-patch --from ./note.md --repo ./my-model
+```
+
+## Command Reference
+
+| Command | Purpose |
+|---|---|
+| `init` | Scaffold a new model repository |
+| `validate` | Run deterministic validation on canonical files |
+| `build-index` | Build SQLite index and optional JSONL exports |
+| `health` | Show repository health report |
+| `scorecard` | Show governance readiness scorecard |
+| `analyze` | Analyze model completeness, risk, and readiness |
+| `trace` | Trace upstream/downstream relationships for an object |
+| `impact` | Generate impact report for an object or proposal |
+| `search` | Search indexed objects by keyword |
+| `query` | Run structured queries over the index |
+| `propose-patch` | Create a PatchProposal from a note |
+| `proposal` | Review and apply PatchProposals (subcommands: `impact`, `apply`, `validate`) |
+| `change-request` | Create and manage ChangeRequests (subcommands: `create`, `approve`, `reject`, `list`, `show`, `update-status`) |
+| `export-model` | Export canonical objects to CSV or XLSX |
+| `docs-build` | Generate static Markdown docs from the index |
+| `usage-report` | Show aggregated usage report from telemetry |
+| `audit-log` | Query the append-only audit log |
+| `config-guard` | Scan for secrets and configuration guardrail issues |
+| `diff` | Compare two model repositories |
+| `migrate` | Migrate canonical objects to the current schema version |
+| `profile-dataset` | Profile a CSV/XLSX dataset |
+| `infer-model` | Infer draft model objects from a dataset profile |
+| `import-model-sheet` | Import spreadsheet edits as a PatchProposal |
+| `sources` | List registered external sources |
+| `issue-draft` | Generate GitHub-ready issue drafts |
+| `git-bundle` | Generate a GitHub-ready change bundle |
+| `publish-issue` | Publish an issue draft to GitHub |
+| `publish-pr` | Publish a git bundle as a GitHub pull request |
+| `notifications` | Preview notification recipients |
+| `serve` | Start the local API server |
+| `mcp` | Start the MCP server for agent integration |
+
+Use `--help` on any command for full options:
+
+```bash
+.venv/bin/modelops <command> --help
 ```
 
 ## Example Model
@@ -83,6 +126,8 @@ generated/                  # Disposable artifacts
   search_documents.jsonl    # Search export
   lineage_edges.jsonl       # Lineage export
   audit_events.jsonl        # Audit log
+  usage_events.jsonl        # Application usage telemetry
+  ai_usage_events.jsonl     # AI provider usage telemetry
 data/samples/               # Sample datasets for profiling
 ```
 
@@ -100,6 +145,10 @@ The first domain pack includes SAP-specific context rules:
 - `BUT000` fields must be in `bp_central` context.
 
 Future domain packs can add their own validation rules without changing core concepts.
+
+## Documentation
+
+See [docs/README.md](docs/README.md) for the full documentation index, including architecture docs, developer guides, product playbooks, and the Data Model Book.
 
 ## Development
 
