@@ -1882,6 +1882,7 @@ app.add_typer(proposal_app, name="proposal")
 @proposal_app.command("list")
 def proposal_list(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """List all PatchProposals in the repository."""
     repo_root = _resolve_repo(repo)
@@ -1889,21 +1890,37 @@ def proposal_list(
     proposals_dir = model_path / "patch-proposals"
 
     if not proposals_dir.exists():
+        if json_output:
+            print(json.dumps([]))
+            raise typer.Exit()
         console.print("[yellow]No patch-proposals directory found.[/yellow]")
         raise typer.Exit()
 
     files = sorted(proposals_dir.glob("PP-*.md"))
     if not files:
+        if json_output:
+            print(json.dumps([]))
+            raise typer.Exit()
         console.print("[yellow]No PatchProposals found.[/yellow]")
         raise typer.Exit()
 
-    table = Table("ID", "Status", "Applied")
+    proposals = []
     for f in files:
         parsed = parse_file(f)
         fm = parsed.frontmatter or {}
-        status = fm.get("status", "—")
-        applied = "yes" if fm.get("applied_at") else "no"
-        table.add_row(fm.get("id", f.stem), status, applied)
+        proposals.append({
+            "id": fm.get("id", f.stem),
+            "status": fm.get("status", ""),
+            "applied": bool(fm.get("applied_at")),
+        })
+
+    if json_output:
+        print(json.dumps(proposals, indent=2, default=str))
+        raise typer.Exit()
+
+    table = Table("ID", "Status", "Applied")
+    for p in proposals:
+        table.add_row(p["id"], p["status"], "yes" if p["applied"] else "no")
     console.print(table)
 
 
@@ -1911,6 +1928,7 @@ def proposal_list(
 def proposal_show(
     proposal_id: str = typer.Argument(..., help="PatchProposal ID (e.g. PP-001)."),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Show details of a PatchProposal."""
     repo_root = _resolve_repo(repo)
@@ -1923,6 +1941,10 @@ def proposal_show(
 
     parsed = parse_file(proposal_path)
     fm = parsed.frontmatter or {}
+
+    if json_output:
+        print(json.dumps(fm, indent=2, default=str))
+        raise typer.Exit()
 
     console.print(f"[bold]PatchProposal: {proposal_id}[/bold]")
     console.print(f"  Status: {fm.get('status', '—')}")
@@ -1949,6 +1971,7 @@ def proposal_show(
 def proposal_validate(
     proposal_id: str = typer.Argument(..., help="PatchProposal ID (e.g. PP-001)."),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Run deterministic validation on a PatchProposal."""
     repo_root = _resolve_repo(repo)
@@ -1967,6 +1990,35 @@ def proposal_validate(
     results = validate_patch_proposal(fm)
     error_count = sum(1 for r in results if r.severity == "ERROR")
     warning_count = sum(1 for r in results if r.severity == "WARNING")
+
+    if json_output:
+        result = {
+            "proposal_id": proposal_id,
+            "error_count": error_count,
+            "warning_count": warning_count,
+            "results": [r.model_dump(mode="json") for r in results],
+        }
+        print(json.dumps(result, indent=2, default=str))
+
+        service = AuditEventService(repo_root)
+        service.emit(
+            create_audit_event(
+                event_type="proposal_validated",
+                actor="system",
+                status="success" if error_count == 0 else "failed",
+                command="proposal validate",
+                proposal_id=proposal_id,
+                validation_status="valid" if error_count == 0 else "invalid",
+                outputs={
+                    "error_count": error_count,
+                    "warning_count": warning_count,
+                },
+            )
+        )
+
+        if error_count > 0:
+            raise typer.Exit(code=1)
+        raise typer.Exit()
 
     console.print(f"[bold]Validation for {proposal_id}[/bold]")
     console.print(f"  Errors: {error_count}")
@@ -2137,6 +2189,7 @@ def proposal_apply(
     force: bool = typer.Option(
         False, "--force", help="Skip approval gate (not recommended)."
     ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Apply an accepted PatchProposal to canonical files."""
     repo_root = _resolve_repo(repo)
@@ -2144,6 +2197,10 @@ def proposal_apply(
 
     # Load proposal for risk assessment and notifications
     proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
+    if not proposal_path.exists():
+        console.print(f"[red]PatchProposal not found: {proposal_id}[/red]")
+        raise typer.Exit(code=1)
+
     parsed_proposal = parse_file(proposal_path)
     fm = parsed_proposal.frontmatter or {}
     operations = fm.get("operations", [])
@@ -2160,8 +2217,41 @@ def proposal_apply(
     if dry_run:
         result = dry_run_patch_proposal(model_path, proposal_id)
         if result.error:
-            console.print(f"[red]{result.error}[/red]")
+            if json_output:
+                print(json.dumps({"error": result.error, "proposal_id": proposal_id}))
+            else:
+                console.print(f"[red]{result.error}[/red]")
             raise typer.Exit(code=1)
+
+        if json_output:
+            output = {
+                "proposal_id": proposal_id,
+                "dry_run": True,
+                "would_change": result.would_change,
+                "risk_level": risk.risk_level,
+                "risk_assessment": {
+                    "requires_approval": risk.requires_approval,
+                    "risk_level": risk.risk_level,
+                    "risk_reasons": risk.risk_reasons,
+                    "triggering_rules": risk.triggering_rules,
+                    "affected_object_count": risk.affected_object_count,
+                    "max_impact_depth": risk.max_impact_depth,
+                },
+                "operations_preview": result.operations_preview,
+            }
+            if impact_report:
+                output["affected_objects"] = [
+                    {
+                        "object_id": obj.object_id,
+                        "object_type": obj.object_type,
+                        "direction": obj.direction,
+                        "depth": obj.depth,
+                        "relationship_type": obj.relationship_type,
+                    }
+                    for obj in impact_report.all_affected_objects
+                ]
+            print(json.dumps(output, indent=2, default=str))
+            raise typer.Exit()
 
         console.print(f"[bold]Dry-run for {proposal_id}[/bold]")
         console.print(f"  Would change: {result.would_change}")
@@ -2207,26 +2297,48 @@ def proposal_apply(
     if risk.requires_approval and not force:
         approved_cr = find_approved_cr_for_proposal(model_path, proposal_id)
         if approved_cr is None:
-            console.print(
-                f"[red]Approval required for {proposal_id}. "
-                f"Risk level: {risk.risk_level}[/red]"
-            )
-            for reason in risk.risk_reasons:
-                console.print(f"  • {reason}")
-            console.print(
-                "[yellow]Create an approved ChangeRequest linking to this proposal, "
-                "or use --force to override.[/yellow]"
-            )
+            if json_output:
+                print(json.dumps({
+                    "error": "Approval required",
+                    "proposal_id": proposal_id,
+                    "risk_level": risk.risk_level,
+                    "risk_reasons": risk.risk_reasons,
+                }))
+            else:
+                console.print(
+                    f"[red]Approval required for {proposal_id}. "
+                    f"Risk level: {risk.risk_level}[/red]"
+                )
+                for reason in risk.risk_reasons:
+                    console.print(f"  • {reason}")
+                console.print(
+                    "[yellow]Create an approved ChangeRequest linking to this proposal, "
+                    "or use --force to override.[/yellow]"
+                )
             raise typer.Exit(code=1)
-        console.print(
-            f"[green]Approved via ChangeRequest {approved_cr.get('id')}[/green]"
-        )
+        if not json_output:
+            console.print(
+                f"[green]Approved via ChangeRequest {approved_cr.get('id')}[/green]"
+            )
 
     try:
         result = apply_patch_proposal(model_path, proposal_id)
     except (ValueError, FileNotFoundError) as exc:
-        console.print(f"[red]{exc}[/red]")
+        if json_output:
+            print(json.dumps({"error": str(exc), "proposal_id": proposal_id}))
+        else:
+            console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
+
+    if json_output:
+        print(json.dumps({
+            "proposal_id": proposal_id,
+            "applied": True,
+            "changed_files": result.changed_files,
+            "audit_event_written": result.audit_event_written,
+            "index_rebuilt": result.index_rebuilt,
+        }, indent=2, default=str))
+        raise typer.Exit()
 
     console.print(f"[green]Applied {proposal_id}[/green]")
     console.print(f"  Changed files: {len(result.changed_files)}")

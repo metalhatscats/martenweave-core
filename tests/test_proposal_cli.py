@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -134,3 +135,125 @@ def test_proposal_apply_rejects_unaccepted(temp_model_dir: Path) -> None:
     )
     assert result.exit_code == 1
     assert "Only 'accepted'" in result.output
+
+
+# --json flag tests -----------------------------------------------------------
+
+
+def test_proposal_list_json_empty(temp_model_dir: Path) -> None:
+    result = runner.invoke(
+        app, ["proposal", "list", "--json", "--repo", _repo_from_model(temp_model_dir)]
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data == []
+
+
+def test_proposal_list_json_with_proposals(temp_model_dir: Path) -> None:
+    op = PatchOperation(op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X")
+    _create_accepted_proposal(temp_model_dir, "PP-JSON-LIST-001", [op])
+
+    result = runner.invoke(
+        app, ["proposal", "list", "--json", "--repo", _repo_from_model(temp_model_dir)]
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert len(data) == 1
+    assert data[0]["id"] == "PP-JSON-LIST-001"
+    assert data[0]["status"] == "accepted"
+    assert data[0]["applied"] is False
+
+
+def test_proposal_show_json(temp_model_dir: Path) -> None:
+    op = PatchOperation(op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X")
+    _create_accepted_proposal(temp_model_dir, "PP-JSON-SHOW-001", [op])
+
+    result = runner.invoke(
+        app,
+        [
+            "proposal",
+            "show",
+            "PP-JSON-SHOW-001",
+            "--json",
+            "--repo",
+            _repo_from_model(temp_model_dir),
+        ],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["id"] == "PP-JSON-SHOW-001"
+    assert data["status"] == "accepted"
+    assert "operations" in data
+
+
+def test_proposal_validate_json_valid(temp_model_dir: Path) -> None:
+    op = PatchOperation(op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X")
+    _create_accepted_proposal(temp_model_dir, "PP-JSON-VAL-001", [op])
+
+    result = runner.invoke(
+        app,
+        [
+            "proposal",
+            "validate",
+            "PP-JSON-VAL-001",
+            "--json",
+            "--repo",
+            _repo_from_model(temp_model_dir),
+        ],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["proposal_id"] == "PP-JSON-VAL-001"
+    assert data["error_count"] == 0
+    assert "results" in data
+
+
+def test_proposal_validate_json_invalid(temp_model_dir: Path) -> None:
+    proposal = build_patch_proposal("PP-JSON-VAL-002", [])
+    write_patch_proposal(proposal, temp_model_dir)
+
+    result = runner.invoke(
+        app,
+        [
+            "proposal",
+            "validate",
+            "PP-JSON-VAL-002",
+            "--json",
+            "--repo",
+            _repo_from_model(temp_model_dir),
+        ],
+    )
+    assert result.exit_code == 1
+    data = json.loads(result.output)
+    assert data["proposal_id"] == "PP-JSON-VAL-002"
+    assert data["error_count"] > 0
+    assert "results" in data
+
+
+def test_proposal_apply_dry_run_json(temp_model_dir: Path) -> None:
+    op = PatchOperation(
+        op="create_object",
+        object_id="SYS-JSON-DRY",
+        object_type="System",
+        after={"id": "SYS-JSON-DRY", "type": "System", "status": "draft"},
+    )
+    _create_accepted_proposal(temp_model_dir, "PP-JSON-DRY-001", [op])
+
+    result = runner.invoke(
+        app,
+        [
+            "proposal",
+            "apply",
+            "PP-JSON-DRY-001",
+            "--repo",
+            _repo_from_model(temp_model_dir),
+            "--dry-run",
+            "--json",
+        ],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["proposal_id"] == "PP-JSON-DRY-001"
+    assert data["dry_run"] is True
+    assert "would_change" in data
+    assert "risk_level" in data
