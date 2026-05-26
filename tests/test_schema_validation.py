@@ -96,3 +96,47 @@ def test_display_name_missing_warning() -> None:
         r.code == "DISPLAY_NAME_MISSING" and r.severity == ValidationSeverity.WARNING
         for r in summary.results
     )
+    assert any(
+        r.code == "TIMESTAMP_MISSING" and r.severity == ValidationSeverity.WARNING
+        for r in summary.results
+    )
+
+
+def test_timestamp_missing_warning() -> None:
+    from modelops_core.repository.parser import ParsedObject
+
+    obj = ParsedObject(
+        source_path="test.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "TEST",
+            "type": "Attribute",
+            "status": "draft",
+            "name": "Test",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([obj])
+    assert any(
+        r.code == "TIMESTAMP_MISSING" and r.severity == ValidationSeverity.WARNING
+        for r in summary.results
+    )
+
+
+def test_timestamp_present_no_warning(tmp_path: Path) -> None:
+    path = tmp_path / "valid.md"
+    path.write_text(
+        "---\n"
+        "id: ATTR-VALID\n"
+        "type: Attribute\n"
+        "status: draft\n"
+        "name: Valid\n"
+        "created_at: 2024-01-15T10:30:00+00:00\n"
+        "---\n",
+        encoding="utf-8",
+    )
+    obj = parse_file(path)
+    summary = validate_objects([obj])
+    assert summary.is_valid
+    assert not any(r.code == "TIMESTAMP_MISSING" for r in summary.results)

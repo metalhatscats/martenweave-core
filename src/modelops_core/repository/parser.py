@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +24,22 @@ class ParsedObject:
 
 def _compute_hash(raw: str) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _auto_populate_timestamps(path: Path, frontmatter: dict[str, Any]) -> None:
+    """Set created_at/updated_at from file metadata if missing in frontmatter."""
+    try:
+        stat = path.stat()
+    except OSError:
+        return
+
+    created_ts = getattr(stat, "st_birthtime", stat.st_mtime)
+    updated_ts = stat.st_mtime
+
+    if not frontmatter.get("created_at"):
+        frontmatter["created_at"] = datetime.fromtimestamp(created_ts, tz=UTC).isoformat()
+    if not frontmatter.get("updated_at"):
+        frontmatter["updated_at"] = datetime.fromtimestamp(updated_ts, tz=UTC).isoformat()
 
 
 def parse_file(file_path: str | Path) -> ParsedObject:
@@ -97,6 +114,8 @@ def _parse_markdown(path: Path) -> ParsedObject:
             parser_error=f"Invalid YAML frontmatter: {exc}",
         )
 
+    _auto_populate_timestamps(path, frontmatter)
+
     return ParsedObject(
         source_path=str(path),
         content_hash=content_hash,
@@ -132,6 +151,8 @@ def _parse_yaml(path: Path) -> ParsedObject:
             body=None,
             parser_error=f"Invalid YAML: {exc}",
         )
+
+    _auto_populate_timestamps(path, frontmatter)
 
     return ParsedObject(
         source_path=str(path),

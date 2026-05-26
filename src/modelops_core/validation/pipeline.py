@@ -121,6 +121,31 @@ def _check_display_name(
     return results
 
 
+def _check_timestamps(
+    frontmatter: dict[str, Any] | None, source_file: str
+) -> list[ValidationResult]:
+    """Warn if created_at or updated_at are missing."""
+    results: list[ValidationResult] = []
+    created_at = _fm_value(frontmatter, "created_at")
+    if not created_at:
+        obj_id = _fm_value(frontmatter, "id")
+        results.append(
+            ValidationResult(
+                severity=ValidationSeverity.WARNING,
+                code="TIMESTAMP_MISSING",
+                message="Object is missing 'created_at' timestamp.",
+                object_id=str(obj_id) if obj_id is not None else None,
+                source_file=source_file,
+                field_path="created_at",
+                suggested_fix=(
+                    "Add a 'created_at' ISO 8601 timestamp "
+                    "(e.g. 2024-01-15T10:30:00+00:00)."
+                ),
+            )
+        )
+    return results
+
+
 def _check_schema_version(
     frontmatter: dict[str, Any] | None, source_file: str
 ) -> list[ValidationResult]:
@@ -174,6 +199,7 @@ def _validate_individual(obj: ParsedObject) -> list[ValidationResult]:
     results.extend(_check_type(obj.frontmatter, obj.source_path))
     results.extend(_check_status(obj.frontmatter, obj.source_path))
     results.extend(_check_display_name(obj.frontmatter, obj.source_path))
+    results.extend(_check_timestamps(obj.frontmatter, obj.source_path))
     results.extend(_check_schema_version(obj.frontmatter, obj.source_path))
     return results
 

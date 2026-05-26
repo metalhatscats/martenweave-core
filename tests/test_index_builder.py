@@ -48,3 +48,22 @@ def test_build_index_rejects_invalid(temp_model_dir: Path) -> None:
     db_path = repo_root / "generated" / "modelops.db"
     with pytest.raises(ValueError, match="Validation failed"):
         build_index(repo_root=repo_root, db_path=db_path, allow_invalid=False)
+
+
+def test_build_index_stores_timestamps(temp_model_dir: Path) -> None:
+    repo_root = temp_model_dir.parent
+    db_path = repo_root / "generated" / "modelops.db"
+    build_index(repo_root=repo_root, db_path=db_path)
+
+    import sqlite3
+
+    conn = sqlite3.connect(db_path)
+    row = conn.execute(
+        "SELECT created_at, updated_at FROM objects WHERE id = ?", ("DOMAIN-TEST",)
+    ).fetchone()
+    conn.close()
+    assert row is not None
+    assert row[0] is not None
+    assert row[1] is not None
+    assert "T" in row[0]  # ISO 8601 format
+    assert "T" in row[1]
