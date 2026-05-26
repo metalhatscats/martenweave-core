@@ -53,3 +53,76 @@ def test_e2e_propose_patch(sample_repo: Path) -> None:
     assert result.exit_code == 0
     assert "Patch proposal written" in result.output
     assert (sample_repo / "model" / "patch-proposals" / "PP-SCAFFOLD-001.md").exists()
+
+
+def test_e2e_v0_1_command_surface(sample_repo: Path) -> None:
+    """Exercise the broader v0.1 CLI surface on a populated repository."""
+    repo = str(sample_repo)
+
+    # 1. Scorecard
+    result = runner.invoke(app, ["scorecard", "--repo", repo])
+    assert result.exit_code == 0
+    assert "readiness" in result.output.lower() or "score" in result.output.lower()
+
+    # 2. Analyze
+    result = runner.invoke(app, ["analyze", "--repo", repo, "--json"])
+    assert result.exit_code == 0
+
+    # 3. Trace
+    result = runner.invoke(
+        app,
+        [
+            "trace",
+            "FEP-S4-KNVV-KDGRP",
+            "--repo",
+            repo,
+            "--direction",
+            "both",
+            "--json",
+        ],
+    )
+    assert result.exit_code == 0
+
+    # 4. Search
+    result = runner.invoke(
+        app, ["search", "Customer Group", "--repo", repo, "--json"]
+    )
+    assert result.exit_code == 0
+
+    # 5. Query
+    result = runner.invoke(
+        app, ["query", "--type", "Attribute", "--repo", repo, "--json"]
+    )
+    assert result.exit_code == 0
+
+    # 6. Export model CSV
+    result = runner.invoke(
+        app, ["export-model", "--repo", repo, "--format", "csv"]
+    )
+    assert result.exit_code == 0
+
+    # 7. Export model XLSX
+    result = runner.invoke(
+        app, ["export-model", "--repo", repo, "--format", "xlsx"]
+    )
+    assert result.exit_code == 0
+
+    # 8. Usage report
+    result = runner.invoke(app, ["usage-report", "--repo", repo, "--json"])
+    assert result.exit_code == 0
+
+    # 9. Audit log
+    result = runner.invoke(app, ["audit-log", "--repo", repo, "--json"])
+    assert result.exit_code == 0
+
+    # 10. Config guard
+    result = runner.invoke(app, ["config-guard", "--repo", repo, "--json"])
+    assert result.exit_code == 0
+
+    # 11. Docs build
+    result = runner.invoke(app, ["docs-build", "--repo", repo])
+    assert result.exit_code == 0
+
+    # 12. Diff against itself (smoke test)
+    result = runner.invoke(app, ["diff", repo, repo, "--json"])
+    assert result.exit_code == 0
