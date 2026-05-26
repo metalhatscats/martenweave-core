@@ -3336,6 +3336,9 @@ def audit_log(
     events = service.read_events()
 
     if not events:
+        if json_output:
+            print(json.dumps([]))
+            raise typer.Exit()
         console.print("[yellow]No audit events found.[/yellow]")
         raise typer.Exit()
 
