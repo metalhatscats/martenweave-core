@@ -49,6 +49,10 @@ class PatchProposal(BaseObject):
     applied_by: str | None = Field(default=None)
     applied_changed_files: list[str] | None = Field(default=None)
     applied_audit_event_id: str | None = Field(default=None)
+    reviewer: str | None = Field(default=None)
+    reviewed_at: str | None = Field(default=None)
+    reviewer_notes: str | None = Field(default=None)
+    rejection_reason: str | None = Field(default=None)
     expires_at: str | None = Field(
         default=None, description="ISO 8601 timestamp when the proposal expires."
     )
