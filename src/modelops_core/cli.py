@@ -153,6 +153,46 @@ def _resolve_repo(repo: str | None) -> Path:
     return Path(repo).resolve()
 
 
+def _build_impact_grouping(
+    report: Any, group_by: str
+) -> dict[str, Any]:
+    from modelops_core.impact.impact_report import ImpactReport
+
+    assert isinstance(report, ImpactReport)
+    if group_by == "type":
+        return {
+            obj_type: [
+                {"object_id": o.object_id, "direction": o.direction, "depth": o.depth}
+                for o in objs
+            ]
+            for obj_type, objs in report.grouped_by_type.items()
+        }
+    if group_by == "direction":
+        return {
+            "downstream": [
+                {"object_id": o.object_id, "object_type": o.object_type, "depth": o.depth}
+                for o in report.downstream_objects
+            ],
+            "upstream": [
+                {"object_id": o.object_id, "object_type": o.object_type, "depth": o.depth}
+                for o in report.upstream_objects
+            ],
+        }
+    if group_by == "relationship":
+        groups: dict[str, list[Any]] = {}
+        for o in report.affected_objects:
+            groups.setdefault(o.relationship_type or "Unknown", []).append(
+                {
+                    "object_id": o.object_id,
+                    "object_type": o.object_type,
+                    "direction": o.direction,
+                    "depth": o.depth,
+                }
+            )
+        return groups
+    return {}
+
+
 def _print_validation_summary(summary: Any) -> None:
     if _quiet and summary.is_valid:
         return
@@ -1422,6 +1462,11 @@ def impact(
         None, "--output", help="Write report to file (default: stdout)."
     ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+    group_by: str | None = typer.Option(
+        None,
+        "--group-by",
+        help="Group output by: type, direction, relationship.",
+    ),
 ) -> None:
     """Generate impact report for an object."""
     repo_root = _resolve_repo(repo)
@@ -1435,7 +1480,7 @@ def impact(
 
     # Legacy --json flag takes precedence
     if json_output or fmt.lower() == "json":
-        result = {
+        result: dict[str, Any] = {
             "root_object_id": report.root_object_id,
             "root_object_type": report.root_object_type,
             "affected_objects": [
@@ -1444,10 +1489,14 @@ def impact(
                     "object_type": o.object_type,
                     "direction": o.direction,
                     "depth": o.depth,
+                    "relationship_type": o.relationship_type,
+                    "relationship_class": o.relationship_class,
                 }
                 for o in report.affected_objects
             ],
         }
+        if group_by:
+            result["grouped"] = _build_impact_grouping(report, group_by)
         content = json.dumps(result, indent=2, default=str)
     elif fmt.lower() == "markdown":
         from modelops_core.impact.impact_report import render_impact_report_markdown
@@ -1464,10 +1513,44 @@ def impact(
         console.print(f"  Type: {report.root_object_type or 'Unknown'}")
         console.print(f"  Affected objects: {len(report.affected_objects)}")
         if report.affected_objects:
-            table = Table("Object ID", "Type", "Direction", "Depth")
-            for o in report.affected_objects:
-                table.add_row(o.object_id, o.object_type or "—", o.direction or "—", str(o.depth))
-            console.print(table)
+            if group_by == "type":
+                for obj_type, objs in sorted(report.grouped_by_type.items()):
+                    console.print(f"\n[bold]{obj_type} ({len(objs)})[/bold]")
+                    table = Table("Object ID", "Direction", "Depth")
+                    for o in objs:
+                        table.add_row(o.object_id, o.direction or "—", str(o.depth))
+                    console.print(table)
+            elif group_by == "direction":
+                for direction in ("downstream", "upstream"):
+                    objs = [
+                        o for o in report.affected_objects if o.direction == direction
+                    ]
+                    if not objs:
+                        continue
+                    console.print(f"\n[bold]{direction.capitalize()} ({len(objs)})[/bold]")
+                    table = Table("Object ID", "Type", "Depth")
+                    for o in objs:
+                        table.add_row(o.object_id, o.object_type or "—", str(o.depth))
+                    console.print(table)
+            elif group_by == "relationship":
+                rel_groups: dict[str, list[Any]] = {}
+                for o in report.affected_objects:
+                    rel_groups.setdefault(o.relationship_type or "Unknown", []).append(o)
+                for rel_type, objs in sorted(rel_groups.items()):
+                    console.print(f"\n[bold]{rel_type} ({len(objs)})[/bold]")
+                    table = Table("Object ID", "Type", "Direction", "Depth")
+                    for o in objs:
+                        table.add_row(
+                            o.object_id, o.object_type or "—", o.direction or "—", str(o.depth)
+                        )
+                    console.print(table)
+            else:
+                table = Table("Object ID", "Type", "Direction", "Depth")
+                for o in report.affected_objects:
+                    table.add_row(
+                        o.object_id, o.object_type or "—", o.direction or "—", str(o.depth)
+                    )
+                console.print(table)
         return
 
     if output is not None:

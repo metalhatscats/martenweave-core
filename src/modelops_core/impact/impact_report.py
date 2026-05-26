@@ -13,6 +13,7 @@ class AffectedObject:
     object_type: str
     object_name: str | None = None
     relationship_type: str | None = None
+    relationship_class: str | None = None
     direction: str | None = None  # "upstream" or "downstream"
     depth: int = 0
 
@@ -32,6 +33,36 @@ class ImpactReport:
         for obj in self.affected_objects:
             groups.setdefault(obj.object_type, []).append(obj)
         return groups
+
+    @property
+    def grouped_by_direction_and_type(self) -> dict[str, dict[str, list[AffectedObject]]]:
+        groups: dict[str, dict[str, list[AffectedObject]]] = {}
+        for obj in self.affected_objects:
+            direction = obj.direction or "unknown"
+            groups.setdefault(direction, {}).setdefault(obj.object_type, []).append(obj)
+        return groups
+
+    @property
+    def affected_relationship_classes(self) -> dict[str, int]:
+        counts: dict[str, int] = {}
+        for obj in self.affected_objects:
+            rc = obj.relationship_class or "unknown"
+            counts[rc] = counts.get(rc, 0) + 1
+        return counts
+
+    @property
+    def affected_mappings(self) -> list[AffectedObject]:
+        return [
+            o for o in self.affected_objects if o.object_type in ("Mapping", "MappingSet")
+        ]
+
+    @property
+    def affected_rules(self) -> list[AffectedObject]:
+        return [o for o in self.affected_objects if o.object_type == "ValidationRule"]
+
+    @property
+    def affected_contexts(self) -> list[AffectedObject]:
+        return [o for o in self.affected_objects if o.object_type == "EntityContext"]
 
     @property
     def downstream_objects(self) -> list[AffectedObject]:
@@ -84,6 +115,32 @@ def render_impact_report_markdown(report: ImpactReport) -> str:
             for rel, count in sorted(rel_counts.items()):
                 lines.append(f"- **{rel}**: {count}")
             lines.append("")
+
+        # Relationship class summary
+        if report.affected_relationship_classes:
+            lines.append("## Relationship Classes")
+            lines.append("")
+            for rc, count in sorted(report.affected_relationship_classes.items()):
+                lines.append(f"- **{rc}**: {count}")
+            lines.append("")
+
+        # Grouped by direction and type
+        grouped = report.grouped_by_direction_and_type
+        if grouped:
+            lines.append("## Grouped by Direction and Type")
+            lines.append("")
+            for direction in ("downstream", "upstream"):
+                type_groups = grouped.get(direction, {})
+                if not type_groups:
+                    continue
+                lines.append(f"### {direction.capitalize()}")
+                lines.append("")
+                for obj_type, objs in sorted(type_groups.items()):
+                    lines.append(f"- **{obj_type}** ({len(objs)})")
+                    for obj in objs:
+                        name = obj.object_name or "—"
+                        lines.append(f"  - {obj.object_id} — {name}")
+                lines.append("")
     else:
         lines.append("*No related objects found.*")
         lines.append("")
