@@ -1278,7 +1278,7 @@ def propose_patch(
 
     from modelops_core.ai.patch_proposal_service import build_patch_proposal_from_note
 
-    result = build_patch_proposal_from_note(note)
+    result = build_patch_proposal_from_note(note, repo_root=repo_root)
 
     proposal = result.get("proposal")
     if proposal is None:
