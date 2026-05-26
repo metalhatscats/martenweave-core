@@ -2513,12 +2513,23 @@ def proposal_apply(
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Preview changes without applying."
     ),
+    apply: bool = typer.Option(
+        False, "--apply", help="Apply the proposal to canonical files."
+    ),
     force: bool = typer.Option(
         False, "--force", help="Skip approval gate (not recommended)."
     ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
-    """Apply an accepted PatchProposal to canonical files."""
+    """Apply an accepted PatchProposal to canonical files.
+
+    By default, this command runs in dry-run mode and shows what would change.
+    Pass --apply to actually mutate canonical files.
+    """
+    if dry_run and apply:
+        console.print("[red]Cannot use both --dry-run and --apply.[/red]")
+        raise typer.Exit(code=1)
+
     repo_root = _resolve_repo(repo)
     model_path = resolve_model_path(repo_root)
 
@@ -2541,7 +2552,9 @@ def proposal_apply(
         )
     risk = compute_proposal_risk(operations, model_path, impact_report=impact_report)
 
-    if dry_run:
+    is_dry_run = not apply
+
+    if is_dry_run:
         result = dry_run_patch_proposal(model_path, proposal_id)
         if result.error:
             if json_output:
@@ -2618,6 +2631,9 @@ def proposal_apply(
                 console.print(table)
                 if len(affected) > 10:
                     console.print(f"  ... and {len(affected) - 10} more")
+        console.print(
+            "\n[yellow]This was a dry-run. Pass --apply to actually mutate files.[/yellow]"
+        )
         raise typer.Exit()
 
     # Approval gate
