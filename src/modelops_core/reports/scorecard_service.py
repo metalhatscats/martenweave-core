@@ -208,6 +208,18 @@ def generate_scorecard(
         active_objects = 0
         objects_with_owner = 0
 
+        # Evidence coverage tracking
+        decisions_total = 0
+        decisions_with_evidence = 0
+
+        # SAP table coverage tracking
+        _TARGET_SAP_TABLES = {"KNVV", "KNB1", "KNVP", "BUT000"}
+        sap_total = 0
+        sap_with_attribute = 0
+        sap_by_table: dict[str, dict[str, int]] = {}
+        for t in _TARGET_SAP_TABLES:
+            sap_by_table[t] = {"total": 0, "covered": 0}
+
         validation_rule_attributes: set[str] = set()
         endpoint_value_lists: set[str] = set()
         mapping_value_mappings: set[str] = set()
@@ -322,6 +334,22 @@ def generate_scorecard(
                     "accountable_team", "approver",
                 )):
                     objects_with_owner += 1
+
+            # Evidence coverage
+            if obj_type == "Decision":
+                decisions_total += 1
+                if fm.get("evidence"):
+                    decisions_with_evidence += 1
+
+            # SAP table coverage
+            if obj_type == "FieldEndpoint" and active:
+                sap_table = fm.get("sap_table")
+                if sap_table in _TARGET_SAP_TABLES:
+                    sap_total += 1
+                    sap_by_table[sap_table]["total"] += 1
+                    if fm.get("business_attribute") or fm.get("attribute"):
+                        sap_with_attribute += 1
+                        sap_by_table[sap_table]["covered"] += 1
 
         # Traceability
         trace_with, trace_total = _compute_traceability_coverage(conn)
@@ -521,6 +549,56 @@ def generate_scorecard(
                     if high_risk_changes > 0
                     else None
                 ),
+            )
+        )
+
+        # Evidence coverage metric
+        if decisions_total > 0:
+            ev_value = _pct(decisions_with_evidence, decisions_total)
+            ev_status = _status(ev_value, 80.0, 50.0)
+            ev_explanation = (
+                f"{decisions_with_evidence} of {decisions_total} "
+                f"decisions have evidence."
+            )
+        else:
+            ev_value = 0.0
+            ev_status = "pass"
+            ev_explanation = "No Decision objects in model."
+        metrics.append(
+            ScorecardMetric(
+                name="evidence_coverage",
+                value=ev_value,
+                target=80.0,
+                status=ev_status,
+                explanation=ev_explanation,
+                suggested_action="Add evidence references to decisions."
+                if decisions_total > decisions_with_evidence
+                else None,
+            )
+        )
+
+        # SAP table coverage metric
+        if sap_total > 0:
+            sap_value = _pct(sap_with_attribute, sap_total)
+            sap_status = _status(sap_value, 90.0, 60.0)
+            sap_explanation = (
+                f"{sap_with_attribute} of {sap_total} "
+                f"target SAP FieldEndpoints have attribute linkage."
+            )
+        else:
+            sap_value = 0.0
+            sap_status = "pass"
+            sap_explanation = "No target SAP FieldEndpoints in model."
+        metrics.append(
+            ScorecardMetric(
+                name="sap_table_coverage",
+                value=sap_value,
+                target=90.0,
+                status=sap_status,
+                explanation=sap_explanation,
+                suggested_action="Link attributes to SAP FieldEndpoints."
+                if sap_total > sap_with_attribute
+                else None,
             )
         )
 
