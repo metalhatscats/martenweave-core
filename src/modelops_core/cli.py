@@ -99,6 +99,7 @@ from modelops_core.reports.audit_service import (
     create_audit_event,
     filter_audit_events,
 )
+from modelops_core.reports.gap_summary import generate_gap_summary_report
 from modelops_core.reports.health_report import generate_repository_health
 from modelops_core.reports.scorecard_service import generate_scorecard
 from modelops_core.reports.source_registry_service import (
@@ -1475,6 +1476,64 @@ def analyze(
                 item.get("proposal_id") or "—",
             )
         console.print(table)
+
+
+@app.command("gap-report")
+@with_telemetry("gap-report")
+def gap_report(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Generate a consolidated gap summary report."""
+    repo_root = _resolve_repo(repo)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+
+    if not db_path.exists():
+        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        raise typer.Exit(code=1)
+
+    report = generate_gap_summary_report(db_path, repo_root)
+
+    if json_output:
+        result = {
+            "gaps_by_type": {
+                key: {
+                    "count": summary.count,
+                    "sample_object_ids": summary.sample_object_ids,
+                }
+                for key, summary in report.gaps_by_type.items()
+            },
+            "total_gap_count": report.total_gap_count,
+            "gap_score": report.gap_score,
+            "top_objects": report.top_objects,
+            "total_objects": report.total_objects,
+            "sources_checked": report.sources_checked,
+        }
+        print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print("[bold]Gap Summary Report[/bold]")
+    console.print(f"  Total objects: {report.total_objects}")
+    console.print(f"  Total gaps: {report.total_gap_count}")
+    console.print(f"  Gap score: {report.gap_score}")
+    console.print(f"  Sources checked: {', '.join(report.sources_checked)}")
+
+    if report.gaps_by_type:
+        console.print("")
+        table = Table("Gap Type", "Count", "Sample Objects")
+        for gap_type, summary in report.gaps_by_type.items():
+            samples = ", ".join(summary.sample_object_ids) or "—"
+            table.add_row(gap_type, str(summary.count), samples)
+        console.print(table)
+
+    if report.top_objects:
+        console.print("")
+        console.print("[bold]Top affected objects[/bold]")
+        for obj_id in report.top_objects:
+            console.print(f"  {obj_id}")
+
+    if not report.gaps_by_type:
+        console.print("[green]No gaps found.[/green]")
 
 
 @app.command("trace")
