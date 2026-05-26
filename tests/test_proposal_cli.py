@@ -137,6 +137,73 @@ def test_proposal_apply_rejects_unaccepted(temp_model_dir: Path) -> None:
     assert "Only 'accepted'" in result.output
 
 
+# proposal diff tests ---------------------------------------------------------
+
+
+def test_proposal_diff_update_object(temp_model_dir: Path) -> None:
+    op = PatchOperation(
+        op="update_object", object_id="DOMAIN-TEST", target_path="name", after="New Name"
+    )
+    _create_accepted_proposal(temp_model_dir, "PP-DIFF-001", [op])
+
+    result = runner.invoke(
+        app, ["proposal", "diff", "PP-DIFF-001", "--repo", _repo_from_model(temp_model_dir)]
+    )
+    assert result.exit_code == 0
+    assert "update_object" in result.output
+    assert "New Name" in result.output
+
+
+def test_proposal_diff_create_object(temp_model_dir: Path) -> None:
+    op = PatchOperation(
+        op="create_object",
+        object_id="SYS-DIFF",
+        object_type="System",
+        after={"id": "SYS-DIFF", "type": "System", "status": "draft"},
+    )
+    _create_accepted_proposal(temp_model_dir, "PP-DIFF-002", [op])
+
+    result = runner.invoke(
+        app, ["proposal", "diff", "PP-DIFF-002", "--repo", _repo_from_model(temp_model_dir)]
+    )
+    assert result.exit_code == 0
+    assert "create_object" in result.output
+    assert "SYS-DIFF" in result.output
+
+
+def test_proposal_diff_json(temp_model_dir: Path) -> None:
+    op = PatchOperation(
+        op="update_object", object_id="DOMAIN-TEST", target_path="name", after="Json Name"
+    )
+    _create_accepted_proposal(temp_model_dir, "PP-DIFF-003", [op])
+
+    result = runner.invoke(
+        app,
+        [
+            "proposal",
+            "diff",
+            "PP-DIFF-003",
+            "--json",
+            "--repo",
+            _repo_from_model(temp_model_dir),
+        ],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["proposal_id"] == "PP-DIFF-003"
+    assert len(data["diffs"]) == 1
+    assert data["diffs"][0]["op"] == "update_object"
+    assert data["diffs"][0]["after"] == "Json Name"
+
+
+def test_proposal_diff_not_found(temp_model_dir: Path) -> None:
+    result = runner.invoke(
+        app, ["proposal", "diff", "PP-MISSING", "--repo", _repo_from_model(temp_model_dir)]
+    )
+    assert result.exit_code == 1
+    assert "not found" in result.output
+
+
 # --json flag tests -----------------------------------------------------------
 
 
