@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -162,3 +163,99 @@ def test_audit_event_from_dict() -> None:
     assert restored.changed_files == ["f.md"]
     assert restored.validation_status == "invalid"
     assert restored.source_evidence_ids == ["E1"]
+
+
+def test_proposal_status_transition_creates_audit_event(tmp_path: Path) -> None:
+    from modelops_core.patching.patch_model import PatchOperation
+    from modelops_core.patching.patch_proposal_service import (
+        build_patch_proposal,
+        transition_patch_proposal_status,
+        write_patch_proposal,
+    )
+
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+
+    op = PatchOperation(op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X")
+    proposal = build_patch_proposal("PP-AUDIT-001", [op])
+    write_patch_proposal(proposal, model_dir)
+    proposal_path = model_dir / "patch-proposals" / "PP-AUDIT-001.md"
+
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+    service = AuditEventService(tmp_path)
+    events = service.read_events()
+    status_events = [e for e in events if e.event_type == "proposal_status_changed"]
+    assert len(status_events) == 1
+    assert status_events[0].proposal_id == "PP-AUDIT-001"
+    assert status_events[0].actor == "alice"
+    assert status_events[0].metadata.get("old_status") == "pending_review"
+    assert status_events[0].metadata.get("new_status") == "accepted"
+
+
+def test_proposal_reject_creates_audit_event_with_reason(tmp_path: Path) -> None:
+    from modelops_core.patching.patch_model import PatchOperation
+    from modelops_core.patching.patch_proposal_service import (
+        build_patch_proposal,
+        transition_patch_proposal_status,
+        write_patch_proposal,
+    )
+
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+
+    op = PatchOperation(op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X")
+    proposal = build_patch_proposal("PP-AUDIT-002", [op])
+    write_patch_proposal(proposal, model_dir)
+    proposal_path = model_dir / "patch-proposals" / "PP-AUDIT-002.md"
+
+    transition_patch_proposal_status(
+        proposal_path,
+        "rejected",
+        reviewer="bob",
+        rejection_reason="Does not meet standards.",
+    )
+
+    service = AuditEventService(tmp_path)
+    events = service.read_events()
+    status_events = [e for e in events if e.event_type == "proposal_status_changed"]
+    assert len(status_events) == 1
+    assert status_events[0].proposal_id == "PP-AUDIT-002"
+    assert status_events[0].actor == "bob"
+    assert status_events[0].metadata.get("new_status") == "rejected"
+    assert status_events[0].metadata.get("reason") == "Does not meet standards."
+
+
+def test_cli_audit_log_filter_by_proposal_id(tmp_path: Path) -> None:
+    service = AuditEventService(tmp_path)
+    service.emit(create_audit_event(event_type="patch_apply", proposal_id="PP-001"))
+    service.emit(create_audit_event(event_type="patch_apply", proposal_id="PP-002"))
+
+    result = runner.invoke(
+        app, ["audit-log", "--repo", str(tmp_path), "--proposal-id", "PP-001"]
+    )
+    assert result.exit_code == 0
+    assert "PP-001" in result.output
+    assert "PP-002" not in result.output
+
+
+def test_cli_audit_log_filter_expression(tmp_path: Path) -> None:
+    service = AuditEventService(tmp_path)
+    service.emit(create_audit_event(event_type="patch_apply", proposal_id="PP-FILTER-001"))
+    service.emit(create_audit_event(event_type="patch_apply", proposal_id="PP-FILTER-002"))
+
+    result = runner.invoke(
+        app,
+        [
+            "audit-log",
+            "--repo",
+            str(tmp_path),
+            "--filter",
+            "proposal_id=PP-FILTER-001",
+            "--json",
+        ],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert len(data) == 1
+    assert data[0]["proposal_id"] == "PP-FILTER-001"

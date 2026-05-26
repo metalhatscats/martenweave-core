@@ -90,6 +90,7 @@ def transition_patch_proposal_status(
         raise ValueError("PatchProposal file has no frontmatter")
 
     frontmatter = dict(parsed.frontmatter)
+    old_status = frontmatter.get("status", "unknown")
     frontmatter["status"] = new_status
     frontmatter["reviewer"] = reviewer or frontmatter.get("reviewer")
     frontmatter["reviewed_at"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -109,3 +110,27 @@ def transition_patch_proposal_status(
         lines.append("")
         lines.append(parsed.body.strip())
     proposal_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    # Emit audit event for the transition
+    try:
+        repo_root = proposal_path.parent.parent.parent
+        from modelops_core.reports.audit_service import (
+            AuditEventService,
+            create_audit_event,
+        )
+
+        service = AuditEventService(repo_root)
+        event = create_audit_event(
+            event_type="proposal_status_changed",
+            actor=reviewer or "system",
+            status="success",
+            proposal_id=frontmatter.get("id"),
+            metadata={
+                "old_status": old_status,
+                "new_status": new_status,
+                "reason": rejection_reason or reviewer_notes or "",
+            },
+        )
+        service.emit(event)
+    except Exception:
+        pass
