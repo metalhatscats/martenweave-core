@@ -1,0 +1,255 @@
+"""Tests for AI patch proposal service (issue #192)."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from unittest import mock
+
+import pytest
+
+from modelops_core.ai.patch_proposal_service import (
+    _get_default_adapter,
+    build_patch_proposal_from_note,
+)
+from modelops_core.ai.provider_adapter import (
+    AICandidateOutput,
+    AIContextBundle,
+    AIOutputValidationError,
+    NoProviderAdapter,
+    ProviderOutputValidator,
+)
+from modelops_core.telemetry.ai_usage import AIUsageTelemetryService
+
+
+class TestBuildPatchProposalFromNote:
+    def test_uses_no_provider_adapter_by_default(self, monkeypatch) -> None:
+        """Default call with no env var uses NoProviderAdapter scaffold."""
+        monkeypatch.delenv("MARTENWEAVE_AI_PROVIDER", raising=False)
+        result = build_patch_proposal_from_note("update CUSTOMER GROUP")
+        assert result["is_safe"] is True
+        assert result["proposal"] is not None
+        assert result["proposal"]["id"] == "PP-SCAFFOLD-001"
+        assert result["assumptions"]
+        assert result["human_checks"]
+
+    def test_customer_group_keyword_triggers_scaffold_operation(self) -> None:
+        result = build_patch_proposal_from_note("Update the CUSTOMER GROUP logic")
+        assert result["is_safe"] is True
+        proposal = result["proposal"]
+        assert proposal["id"] == "PP-SCAFFOLD-001"
+        assert len(proposal["operations"]) == 1
+        assert proposal["operations"][0]["object_id"] == "ATTR-CUST-SALES-CUSTOMER-GROUP"
+        assert "ATTR-CUST-SALES-CUSTOMER-GROUP" in proposal["affected_objects"]
+
+    def test_knvv_kdgrp_keyword_triggers_scaffold_operation(self) -> None:
+        result = build_patch_proposal_from_note("The KNVV-KDGRP field needs new rules")
+        assert result["is_safe"] is True
+        proposal = result["proposal"]
+        assert proposal["operations"][0]["object_id"] == "ATTR-CUST-SALES-CUSTOMER-GROUP"
+
+    def test_generic_note_raises_validation_error(self) -> None:
+        """NoProviderAdapter returns empty operations for generic notes;
+        ProviderOutputValidator rejects them."""
+        with pytest.raises(AIOutputValidationError, match="no operations"):
+            build_patch_proposal_from_note("This note has no relevant keywords")
+
+    def test_include_raw_samples_false(self) -> None:
+        received: list[AIContextBundle] = []
+
+        class SpyAdapter:
+            def generate_candidates(self, context: AIContextBundle) -> list[AICandidateOutput]:
+                received.append(context)
+                return []
+
+        build_patch_proposal_from_note(
+            "test note", include_raw_samples=False, adapter=SpyAdapter()
+        )
+        assert len(received) == 1
+        assert received[0].include_raw_samples is False
+
+    def test_include_raw_samples_true(self) -> None:
+        received: list[AIContextBundle] = []
+
+        class SpyAdapter:
+            def generate_candidates(self, context: AIContextBundle) -> list[AICandidateOutput]:
+                received.append(context)
+                return []
+
+        build_patch_proposal_from_note(
+            "test note", include_raw_samples=True, adapter=SpyAdapter()
+        )
+        assert len(received) == 1
+        assert received[0].include_raw_samples is True
+
+    def test_custom_adapter_injection(self) -> None:
+        class CustomAdapter:
+            def generate_candidates(self, context: AIContextBundle) -> list[AICandidateOutput]:
+                return [
+                    AICandidateOutput(
+                        proposal_id="PP-CUSTOM-001",
+                        title="Custom Proposal",
+                        operations=[
+                            {
+                                "op": "update_object",
+                                "object_id": "DOMAIN-TEST",
+                                "object_type": "MasterDataDomain",
+                                "target_path": "name",
+                                "after": "Updated",
+                                "reason": "Test",
+                            }
+                        ],
+                        affected_objects=["DOMAIN-TEST"],
+                        assumptions=["Custom assumption"],
+                        human_checks=["Custom check"],
+                        source_evidence="Custom evidence",
+                    )
+                ]
+
+        result = build_patch_proposal_from_note("any note", adapter=CustomAdapter())
+        assert result["is_safe"] is True
+        assert result["proposal"]["id"] == "PP-CUSTOM-001"
+        assert result["assumptions"] == ["Custom assumption"]
+        assert result["human_checks"] == ["Custom check"]
+
+    def test_no_candidates_returns_safe_false(self) -> None:
+        class EmptyAdapter:
+            def generate_candidates(self, context: AIContextBundle) -> list[AICandidateOutput]:
+                return []
+
+        result = build_patch_proposal_from_note("any note", adapter=EmptyAdapter())
+        assert result["is_safe"] is False
+        assert result["proposal"] is None
+        assert result["validation"] == []
+        assert result["markdown"] == ""
+        assert "No candidates generated." in result["assumptions"]
+        assert "refine the note" in result["human_checks"][0].lower()
+
+    def test_telemetry_wraps_adapter_when_repo_root_given(self, tmp_path: Path) -> None:
+        result = build_patch_proposal_from_note(
+            "Update CUSTOMER GROUP",
+            repo_root=tmp_path,
+        )
+        assert result["is_safe"] is True
+
+        service = AIUsageTelemetryService(repo_root=tmp_path)
+        events = service.read_events()
+        assert len(events) == 1
+        assert events[0].provider == "NoProviderAdapter"
+        assert events[0].command == "propose-patch"
+        assert events[0].status == "success"
+
+    def test_proposal_structure(self) -> None:
+        result = build_patch_proposal_from_note("Update CUSTOMER GROUP")
+        proposal = result["proposal"]
+        assert proposal["type"] == "PatchProposal"
+        assert proposal["status"] == "pending_review"
+        assert proposal["created_by"] == "ai"
+        assert "created_at" in proposal
+        assert "validation_status" in proposal
+        assert "validation_results" in proposal
+        assert isinstance(result["assumptions"], list)
+        assert isinstance(result["human_checks"], list)
+        assert isinstance(result["validation"], list)
+
+
+class TestGetDefaultAdapter:
+    def test_returns_no_provider_when_env_unset(self, monkeypatch) -> None:
+        monkeypatch.delenv("MARTENWEAVE_AI_PROVIDER", raising=False)
+        adapter = _get_default_adapter()
+        assert isinstance(adapter, NoProviderAdapter)
+
+    def test_returns_kimi_when_env_set(self, monkeypatch) -> None:
+        monkeypatch.setenv("MARTENWEAVE_AI_PROVIDER", "kimi")
+        monkeypatch.setenv("MOONSHOT_API_KEY", "fake-key")
+
+        with mock.patch(
+            "modelops_core.ai.kimi_adapter._post_chat_completion",
+            return_value={"choices": []},
+        ):
+            adapter = _get_default_adapter()
+            assert type(adapter).__name__ == "KimiAdapter"
+
+
+class TestProviderOutputValidator:
+    def _valid_candidate(self) -> AICandidateOutput:
+        return AICandidateOutput(
+            proposal_id="PP-TEST-001",
+            title="Valid Candidate",
+            operations=[
+                {
+                    "op": "update_object",
+                    "object_id": "DOMAIN-TEST",
+                    "object_type": "MasterDataDomain",
+                    "target_path": "name",
+                    "after": "Updated",
+                    "reason": "Test",
+                }
+            ],
+            affected_objects=["DOMAIN-TEST"],
+            assumptions=["Assume"],
+            human_checks=["Check"],
+        )
+
+    def test_validate_valid_candidate(self) -> None:
+        validator = ProviderOutputValidator()
+        candidate = self._valid_candidate()
+        result = validator.validate(candidate)
+        assert result["valid"] is True
+        assert result["candidate"] == candidate
+
+    def test_validate_missing_proposal_id_raises(self) -> None:
+        validator = ProviderOutputValidator()
+        candidate = self._valid_candidate()
+        candidate.proposal_id = ""
+        with pytest.raises(AIOutputValidationError, match="proposal_id"):
+            validator.validate(candidate)
+
+    def test_validate_missing_title_raises(self) -> None:
+        validator = ProviderOutputValidator()
+        candidate = self._valid_candidate()
+        candidate.title = ""
+        with pytest.raises(AIOutputValidationError, match="title"):
+            validator.validate(candidate)
+
+    def test_validate_empty_operations_raises(self) -> None:
+        validator = ProviderOutputValidator()
+        candidate = self._valid_candidate()
+        candidate.operations = []
+        with pytest.raises(AIOutputValidationError, match="operations"):
+            validator.validate(candidate)
+
+    def test_validate_disallowed_operation_raises(self) -> None:
+        validator = ProviderOutputValidator()
+        candidate = self._valid_candidate()
+        candidate.operations = [
+            {
+                "op": "delete_object",
+                "object_id": "DOMAIN-TEST",
+                "object_type": "MasterDataDomain",
+            }
+        ]
+        with pytest.raises(AIOutputValidationError, match="Disallowed operation"):
+            validator.validate(candidate)
+
+    def test_to_patch_proposal_builds_valid_dict(self) -> None:
+        validator = ProviderOutputValidator()
+        candidate = self._valid_candidate()
+        result = validator.to_patch_proposal(candidate)
+        assert result["is_safe"] is True
+        assert result["proposal"]["type"] == "PatchProposal"
+        assert result["proposal"]["created_by"] == "ai"
+        assert result["proposal"]["id"] == "PP-TEST-001"
+        assert result["assumptions"] == ["Assume"]
+        assert result["human_checks"] == ["Check"]
+        assert isinstance(result["validation"], list)
+
+    def test_to_patch_proposal_sets_is_safe_false_on_invalid_id(self) -> None:
+        validator = ProviderOutputValidator()
+        candidate = self._valid_candidate()
+        candidate.proposal_id = "pp-lowercase"
+        result = validator.to_patch_proposal(candidate)
+        assert result["is_safe"] is False
+        assert result["proposal"]["validation_status"] == "invalid"
+        assert any(
+            v["code"] == "PATCH_ID_INVALID" for v in result["proposal"]["validation_results"]
+        )
