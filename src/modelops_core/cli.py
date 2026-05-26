@@ -3074,6 +3074,230 @@ def proposal_apply(
         pass
 
 
+@proposal_app.command("report")
+@with_telemetry("proposal-report")
+def proposal_report(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+    stale_days: int | None = typer.Option(
+        None, "--stale-days", help="Treat proposals older than N days as stale."
+    ),
+) -> None:
+    """Generate a consolidated proposal lifecycle report."""
+    from datetime import UTC, datetime, timedelta
+
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    proposals_dir = model_path / "patch-proposals"
+
+    proposals: list[dict[str, Any]] = []
+    if proposals_dir.exists():
+        for f in sorted(proposals_dir.glob("PP-*.md")):
+            parsed = parse_file(f)
+            fm = parsed.frontmatter or {}
+            status = fm.get("status", "pending_review")
+            applied = bool(fm.get("applied_at")) or fm.get("application_status") == "applied"
+            effective_status = "applied" if applied else status
+
+            expires_at = fm.get("expires_at")
+            is_stale = False
+            if expires_at:
+                try:
+                    exp_dt = datetime.fromisoformat(str(expires_at))
+                    if exp_dt.tzinfo is None:
+                        exp_dt = exp_dt.replace(tzinfo=UTC)
+                    is_stale = exp_dt < datetime.now(UTC)
+                except ValueError:
+                    pass
+
+            if stale_days is not None and not is_stale:
+                created_at = fm.get("created_at")
+                if created_at:
+                    try:
+                        cre_dt = datetime.fromisoformat(str(created_at))
+                        if cre_dt.tzinfo is None:
+                            cre_dt = cre_dt.replace(tzinfo=UTC)
+                        is_stale = cre_dt < datetime.now(UTC) - timedelta(days=stale_days)
+                    except ValueError:
+                        pass
+
+            operations = fm.get("operations") or []
+            risk = compute_proposal_risk(operations, model_path)
+
+            proposals.append({
+                "id": fm.get("id", f.stem),
+                "status": status,
+                "effective_status": effective_status,
+                "created_at": fm.get("created_at"),
+                "expires_at": expires_at,
+                "is_stale": is_stale,
+                "reviewer": fm.get("reviewer"),
+                "reviewed_at": fm.get("reviewed_at"),
+                "rejection_reason": fm.get("rejection_reason"),
+                "risk_level": risk.risk_level,
+                "requires_approval": risk.requires_approval,
+                "affected_object_count": risk.affected_object_count,
+                "operations_count": len(operations),
+                "validation_status": fm.get("validation_status"),
+            })
+
+    # Audit trail
+    service = AuditEventService(repo_root)
+    all_events = service.read_events()
+    proposal_events = [e for e in all_events if e.proposal_id is not None]
+
+    # Rejection analysis
+    rejection_reasons: dict[str, int] = {}
+    rejected_by_reviewer: dict[str, int] = {}
+    for p in proposals:
+        if p["effective_status"] == "rejected" and p.get("rejection_reason"):
+            reason = p["rejection_reason"]
+            rejection_reasons[reason] = rejection_reasons.get(reason, 0) + 1
+        if p["effective_status"] == "rejected" and p.get("reviewer"):
+            reviewer = p["reviewer"]
+            rejected_by_reviewer[reviewer] = rejected_by_reviewer.get(reviewer, 0) + 1
+
+    # Stale summary
+    stale_proposals = [p for p in proposals if p["is_stale"]]
+    oldest_stale = None
+    if stale_proposals:
+        oldest_stale = min(
+            (p for p in stale_proposals if p.get("expires_at")),
+            key=lambda x: str(x["expires_at"]),
+            default=None,
+        )
+
+    # Count by status
+    by_status: dict[str, int] = {
+        "pending": 0,
+        "accepted": 0,
+        "rejected": 0,
+        "applied": 0,
+        "stale": 0,
+    }
+    _STATUS_MAP = {
+        "pending_review": "pending",
+        "accepted": "accepted",
+        "rejected": "rejected",
+        "applied": "applied",
+    }
+    for p in proposals:
+        key = _STATUS_MAP.get(p["effective_status"], p["effective_status"])
+        if key in by_status:
+            by_status[key] += 1
+        if p["is_stale"]:
+            by_status["stale"] += 1
+
+    if json_output:
+        report = {
+            "proposals_total": len(proposals),
+            "by_status": by_status,
+            "stale_threshold_days": stale_days,
+            "proposals": proposals,
+            "rejected_analysis": {
+                "total_rejected": by_status.get("rejected", 0),
+                "rejection_reason_frequencies": rejection_reasons,
+                "rejected_by_reviewer": rejected_by_reviewer,
+            },
+            "stale_summary": {
+                "stale_count": len(stale_proposals),
+                "oldest_stale_proposal_id": oldest_stale["id"] if oldest_stale else None,
+                "oldest_stale_expires_at": oldest_stale["expires_at"] if oldest_stale else None,
+            },
+            "audit_summary": {
+                "events_total": len(all_events),
+                "proposal_events_total": len(proposal_events),
+                "recent_events": [
+                    {
+                        "event_id": e.event_id,
+                        "event_type": e.event_type,
+                        "timestamp": e.timestamp,
+                        "actor": e.actor,
+                        "proposal_id": e.proposal_id,
+                        "status": e.status,
+                    }
+                    for e in proposal_events[-5:]
+                ],
+            },
+        }
+        print(json.dumps(report, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print("[bold]Proposal Lifecycle Report[/bold]")
+    console.print(f"  Total proposals: {len(proposals)}")
+    console.print("")
+    console.print("[bold]Status Breakdown[/bold]")
+    for label, count in by_status.items():
+        console.print(f"  {label}: {count}")
+
+    if stale_proposals:
+        console.print("")
+        console.print(f"[yellow]Stale proposals: {len(stale_proposals)}[/yellow]")
+        if oldest_stale:
+            console.print(
+                f"  Oldest stale: {oldest_stale['id']} "
+                f"(expires_at: {oldest_stale['expires_at']})"
+            )
+
+    if by_status.get("rejected", 0) > 0:
+        console.print("")
+        console.print("[bold]Rejection Analysis[/bold]")
+        console.print(f"  Total rejected: {by_status['rejected']}")
+        if rejection_reasons:
+            console.print("  Rejection reasons:")
+            for reason, count in sorted(rejection_reasons.items(), key=lambda x: -x[1]):
+                console.print(f"    {reason}: {count}")
+        if rejected_by_reviewer:
+            console.print("  Rejected by reviewer:")
+            for reviewer, count in sorted(rejected_by_reviewer.items(), key=lambda x: -x[1]):
+                console.print(f"    {reviewer}: {count}")
+
+    if proposals:
+        console.print("")
+        table = Table(
+            "ID", "Status", "Risk", "Ops", "Affected", "Stale", "Reviewer"
+        )
+        for p in proposals:
+            risk_label = p["risk_level"]
+            if risk_label == "high":
+                risk_label = f"[red]{risk_label}[/red]"
+            elif risk_label == "medium":
+                risk_label = f"[yellow]{risk_label}[/yellow]"
+            stale_label = "yes" if p["is_stale"] else "no"
+            if p["is_stale"]:
+                stale_label = f"[red]{stale_label}[/red]"
+            table.add_row(
+                p["id"],
+                p["effective_status"],
+                risk_label,
+                str(p["operations_count"]),
+                str(p["affected_object_count"]),
+                stale_label,
+                p.get("reviewer") or "—",
+            )
+        console.print(table)
+
+    if proposal_events:
+        console.print("")
+        console.print("[bold]Audit Trail Summary[/bold]")
+        console.print(f"  Total events: {len(all_events)}")
+        console.print(f"  Proposal-related events: {len(proposal_events)}")
+        if len(proposal_events) > 0:
+            recent = proposal_events[-5:]
+            event_table = Table("Event Type", "Timestamp", "Actor", "Proposal")
+            for e in recent:
+                event_table.add_row(
+                    e.event_type,
+                    e.timestamp,
+                    e.actor,
+                    e.proposal_id or "—",
+                )
+            console.print(event_table)
+
+    if not proposals:
+        console.print("[yellow]No proposals found.[/yellow]")
+
+
 @app.command("serve")
 def serve(
     host: str = typer.Option("127.0.0.1", "--host", help="Bind host."),
