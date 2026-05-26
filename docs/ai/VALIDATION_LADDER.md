@@ -57,6 +57,18 @@ Generated outputs are disposable. Do not commit generated artifacts unless the t
 
 Use task-specific end-to-end paths when changing CLI or workflow behavior.
 
+### v0.3 Gap-to-Proposal Demo
+
+```bash
+.venv/bin/modelops validate --repo examples/supplier_vendor_model
+.venv/bin/modelops build-index --repo examples/supplier_vendor_model --jsonl
+.venv/bin/modelops profile-dataset examples/supplier_vendor_model/data/samples/vendor_extract.csv --repo examples/supplier_vendor_model
+.venv/bin/modelops gaps examples/supplier_vendor_model/data/samples/vendor_extract.csv --repo examples/supplier_vendor_model --check-model --promote-to-proposal
+.venv/bin/modelops impact FEP-S4-LFA1-KTOKK --repo examples/supplier_vendor_model --group-by direction
+.venv/bin/modelops query --repo examples/supplier_vendor_model --sap-table LFA1 --json
+./scripts/demo_v0_3_gap_to_proposal.sh
+```
+
 ## Level 6: Safety And Privacy
 
 ```bash
