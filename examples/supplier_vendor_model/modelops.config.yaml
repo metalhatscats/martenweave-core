@@ -1,0 +1,5 @@
+schema_version: "1.0"
+workspace_name: Supplier Vendor Example
+description: Example supplier/vendor canonical model with LFA1, LFB1, LFM1 SAP patterns.
+enabled_domain_packs:
+  - sap
