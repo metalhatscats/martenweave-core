@@ -2305,6 +2305,114 @@ def proposal_impact(
             console.print("    No affected objects found.")
 
 
+@proposal_app.command("diff")
+def proposal_diff(
+    proposal_id: str = typer.Argument(..., help="PatchProposal ID (e.g. PP-001)."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Show before/after diff for each operation in a PatchProposal."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
+
+    if not proposal_path.exists():
+        console.print(f"[red]PatchProposal not found: {proposal_id}[/red]")
+        raise typer.Exit(code=1)
+
+    parsed = parse_file(proposal_path)
+    fm = parsed.frontmatter or {}
+    operations = fm.get("operations", [])
+
+    diffs: list[dict[str, Any]] = []
+    for op in operations:
+        if not isinstance(op, dict):
+            continue
+        op_type = op.get("op", "")
+        object_id = op.get("object_id", "")
+        target_path = op.get("target_path", "")
+        after = op.get("after")
+
+        diff_entry: dict[str, Any] = {
+            "op": op_type,
+            "object_id": object_id,
+            "target_path": target_path,
+        }
+
+        if op_type in ("create_object", "add_object"):
+            diff_entry["before"] = None
+            diff_entry["after"] = after
+            diffs.append(diff_entry)
+        elif op_type == "update_object":
+            # Find current value from canonical file
+            current_value: Any = None
+            for file_path in scan_repository(model_path):
+                file_parsed = parse_file(file_path)
+                if (
+                    file_parsed.frontmatter
+                    and file_parsed.frontmatter.get("id") == object_id
+                ):
+                    frontmatter = dict(file_parsed.frontmatter)
+                    if "." in target_path:
+                        parts = target_path.split(".")
+                        current_value = frontmatter
+                        for part in parts:
+                            if isinstance(current_value, dict):
+                                current_value = current_value.get(part)
+                            else:
+                                current_value = None
+                                break
+                    else:
+                        current_value = frontmatter.get(target_path)
+                    break
+            diff_entry["before"] = current_value
+            diff_entry["after"] = after
+            diffs.append(diff_entry)
+        elif op_type == "delete_object":
+            # Find current object content
+            current_obj: Any = None
+            for file_path in scan_repository(model_path):
+                file_parsed = parse_file(file_path)
+                if (
+                    file_parsed.frontmatter
+                    and file_parsed.frontmatter.get("id") == object_id
+                ):
+                    current_obj = dict(file_parsed.frontmatter)
+                    break
+            diff_entry["before"] = current_obj
+            diff_entry["after"] = None
+            diffs.append(diff_entry)
+        else:
+            diff_entry["status"] = "skipped"
+            diff_entry["reason"] = f"Operation '{op_type}' diff not supported."
+            diffs.append(diff_entry)
+
+    if json_output:
+        print(json.dumps({"proposal_id": proposal_id, "diffs": diffs}, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print(f"[bold]Diff for {proposal_id}[/bold]")
+    if not diffs:
+        console.print("  No operations to diff.")
+        raise typer.Exit()
+
+    for d in diffs:
+        op_type = d["op"]
+        obj_id = d.get("object_id", "—")
+        if op_type in ("create_object", "add_object"):
+            console.print(f"\n  [green]{op_type}[/green] → {obj_id}")
+            console.print(f"    New object: {d.get('after')}")
+        elif op_type == "update_object":
+            console.print(f"\n  [yellow]{op_type}[/yellow] → {obj_id}")
+            console.print(f"    {d.get('target_path', '')}: {d.get('before')} → {d.get('after')}")
+        elif op_type == "delete_object":
+            console.print(f"\n  [red]{op_type}[/red] → {obj_id}")
+            console.print(f"    Would remove: {d.get('before', {}).get('type', 'object')}")
+        else:
+            console.print(f"\n  [dim]{op_type}[/dim] → {obj_id}")
+            console.print(f"    {d.get('reason')}")
+
+
 @proposal_app.command("apply")
 @with_telemetry("proposal-apply")
 def proposal_apply(
