@@ -32,6 +32,7 @@ For focused changes, run the relevant test file first, then the full suite when 
 .venv/bin/modelops validate --repo examples/customer_bp_model
 .venv/bin/modelops validate --repo examples/simple_product_model
 .venv/bin/modelops validate --repo examples/generic_product_model
+.venv/bin/modelops validate --repo examples/supplier_vendor_model
 ```
 
 Warnings are allowed if documented. Errors are blockers.
@@ -41,6 +42,7 @@ Warnings are allowed if documented. Errors are blockers.
 ```bash
 .venv/bin/modelops build-index --repo examples/customer_bp_model --jsonl
 .venv/bin/modelops build-index --repo examples/simple_product_model --jsonl
+.venv/bin/modelops build-index --repo examples/supplier_vendor_model --jsonl
 ```
 
 Generated outputs are disposable. Do not commit generated artifacts unless the task explicitly requires fixtures.
