@@ -62,6 +62,8 @@ def _load_objects(model_path: Path) -> dict[str, dict[str, Any]]:
 # without being a semantic change).
 _IGNORED_FIELDS: set[str] = {
     "schema_version",
+    "created_at",
+    "updated_at",
 }
 
 

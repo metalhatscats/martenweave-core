@@ -38,7 +38,9 @@ CREATE TABLE objects (
     source_file TEXT NOT NULL,
     content_hash TEXT NOT NULL,
     frontmatter_json TEXT NOT NULL,
-    body TEXT
+    body TEXT,
+    created_at TEXT,
+    updated_at TEXT
 );
 
 CREATE TABLE validation_results (
@@ -78,8 +80,9 @@ def _insert_objects(conn: sqlite3.Connection, objects: list[Any]) -> None:
             """
             INSERT INTO objects (
                 id, type, status, name, title, domain, description,
-                source_file, content_hash, frontmatter_json, body
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                source_file, content_hash, frontmatter_json, body,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 fm.get("id"),
@@ -93,6 +96,8 @@ def _insert_objects(conn: sqlite3.Connection, objects: list[Any]) -> None:
                 obj.content_hash,
                 json.dumps(fm, default=str),
                 obj.body,
+                fm.get("created_at"),
+                fm.get("updated_at"),
             ),
         )
 
