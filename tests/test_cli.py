@@ -65,6 +65,66 @@ def test_cli_impact(sample_repo: Path) -> None:
     assert "Impact Report" in result.output
 
 
+def test_cli_impact_markdown_format(sample_repo: Path) -> None:
+    runner.invoke(app, ["build-index", "--repo", str(sample_repo)])
+    result = runner.invoke(
+        app, ["impact", "FEP-S4-KNVV-KDGRP", "--repo", str(sample_repo), "--format", "markdown"]
+    )
+    assert result.exit_code == 0
+    assert "# Impact Report: FEP-S4-KNVV-KDGRP" in result.output
+    assert "| Object ID | Type | Name | Direction | Depth |" in result.output
+
+
+def test_cli_impact_markdown_output_file(sample_repo: Path, tmp_path: Path) -> None:
+    runner.invoke(app, ["build-index", "--repo", str(sample_repo)])
+    output_path = tmp_path / "impact.md"
+    result = runner.invoke(
+        app,
+        [
+            "impact",
+            "FEP-S4-KNVV-KDGRP",
+            "--repo",
+            str(sample_repo),
+            "--format",
+            "markdown",
+            "--output",
+            str(output_path),
+        ],
+    )
+    assert result.exit_code == 0
+    assert output_path.exists()
+    content = output_path.read_text(encoding="utf-8")
+    assert "# Impact Report: FEP-S4-KNVV-KDGRP" in content
+
+
+def test_cli_impact_json_format(sample_repo: Path) -> None:
+    runner.invoke(app, ["build-index", "--repo", str(sample_repo)])
+    result = runner.invoke(
+        app, ["impact", "FEP-S4-KNVV-KDGRP", "--repo", str(sample_repo), "--format", "json"]
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["root_object_id"] == "FEP-S4-KNVV-KDGRP"
+
+
+def test_cli_impact_table_output_requires_format(sample_repo: Path, tmp_path: Path) -> None:
+    runner.invoke(app, ["build-index", "--repo", str(sample_repo)])
+    output_path = tmp_path / "impact.txt"
+    result = runner.invoke(
+        app,
+        [
+            "impact",
+            "FEP-S4-KNVV-KDGRP",
+            "--repo",
+            str(sample_repo),
+            "--output",
+            str(output_path),
+        ],
+    )
+    assert result.exit_code == 1
+    assert "--output requires --format markdown or --format json" in result.output
+
+
 def test_cli_profile_dataset_csv(sample_repo: Path) -> None:
     csv_file = FIXTURES_DIR / "customer_sample.csv"
     result = runner.invoke(

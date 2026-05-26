@@ -40,3 +40,52 @@ class ImpactReport:
     @property
     def upstream_objects(self) -> list[AffectedObject]:
         return [o for o in self.affected_objects if o.direction == "upstream"]
+
+
+def render_impact_report_markdown(report: ImpactReport) -> str:
+    """Render an ImpactReport as a structured Markdown document."""
+    lines: list[str] = [
+        f"# Impact Report: {report.root_object_id}",
+        "",
+        "## Root Object",
+        "",
+        f"- **ID**: {report.root_object_id}",
+        f"- **Type**: {report.root_object_type or 'Unknown'}",
+    ]
+    if report.root_object_name:
+        lines.append(f"- **Name**: {report.root_object_name}")
+    lines.append("")
+    lines.append(f"- **Total affected objects**: {len(report.affected_objects)}")
+    lines.append(f"- **Downstream**: {len(report.downstream_objects)}")
+    lines.append(f"- **Upstream**: {len(report.upstream_objects)}")
+    lines.append("")
+
+    if report.affected_objects:
+        lines.append("## Affected Objects")
+        lines.append("")
+        lines.append("| Object ID | Type | Name | Direction | Depth |")
+        lines.append("|-----------|------|------|-----------|-------|")
+        for obj in report.affected_objects:
+            name = obj.object_name or "—"
+            lines.append(
+                f"| {obj.object_id} | {obj.object_type} | {name} | "
+                f"{obj.direction or '—'} | {obj.depth} |"
+            )
+        lines.append("")
+
+        # Relationship summary by type
+        rel_counts: dict[str, int] = {}
+        for obj in report.affected_objects:
+            rel = obj.relationship_type or "Unknown"
+            rel_counts[rel] = rel_counts.get(rel, 0) + 1
+        if rel_counts:
+            lines.append("## Relationship Summary")
+            lines.append("")
+            for rel, count in sorted(rel_counts.items()):
+                lines.append(f"- **{rel}**: {count}")
+            lines.append("")
+    else:
+        lines.append("*No related objects found.*")
+        lines.append("")
+
+    return "\n".join(lines)

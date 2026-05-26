@@ -1346,6 +1346,10 @@ def impact(
     object_id: str = typer.Argument(..., help="Object ID to analyze."),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     depth: int = typer.Option(2, "--depth", help="Maximum traversal depth."),
+    fmt: str = typer.Option("table", "--format", help="Output format: table, markdown, json."),
+    output: Path | None = typer.Option(  # noqa: B008
+        None, "--output", help="Write report to file (default: stdout)."
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Generate impact report for an object."""
@@ -1358,7 +1362,8 @@ def impact(
 
     report = generate_impact_report(db_path, object_id, max_depth=depth)
 
-    if json_output:
+    # Legacy --json flag takes precedence
+    if json_output or fmt.lower() == "json":
         result = {
             "root_object_id": report.root_object_id,
             "root_object_type": report.root_object_type,
@@ -1372,8 +1377,18 @@ def impact(
                 for o in report.affected_objects
             ],
         }
-        print(json.dumps(result, indent=2, default=str))
+        content = json.dumps(result, indent=2, default=str)
+    elif fmt.lower() == "markdown":
+        from modelops_core.impact.impact_report import render_impact_report_markdown
+
+        content = render_impact_report_markdown(report)
     else:
+        # Default table output via Rich (not serialisable to string)
+        if output is not None:
+            console.print(
+                "[yellow]--output requires --format markdown or --format json.[/yellow]"
+            )
+            raise typer.Exit(code=1)
         console.print(f"[bold]Impact Report for {object_id}[/bold]")
         console.print(f"  Type: {report.root_object_type or 'Unknown'}")
         console.print(f"  Affected objects: {len(report.affected_objects)}")
@@ -1382,6 +1397,13 @@ def impact(
             for o in report.affected_objects:
                 table.add_row(o.object_id, o.object_type or "—", o.direction or "—", str(o.depth))
             console.print(table)
+        return
+
+    if output is not None:
+        output.write_text(content, encoding="utf-8")
+        console.print(f"[green]Report written to {output}[/green]")
+    else:
+        print(content)
 
 
 @app.command()
