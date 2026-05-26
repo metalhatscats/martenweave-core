@@ -3641,6 +3641,12 @@ def query(
     tags: list[str] | None = typer.Option(  # noqa: B008
         None, "--tag", help="Filter by tag (repeatable)."
     ),
+    owner: str | None = typer.Option(
+        None, "--owner", help="Filter by owner/steward/approver ID."
+    ),
+    sap_table: str | None = typer.Option(
+        None, "--sap-table", help="Filter by SAP table name."
+    ),
     limit: int = typer.Option(50, "--limit", help="Maximum results."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
@@ -3659,6 +3665,8 @@ def query(
         domain=domain,
         name_like=name_like,
         tags=tags,
+        owner=owner,
+        sap_table=sap_table,
         limit=limit,
     )
 

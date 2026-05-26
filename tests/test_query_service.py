@@ -80,8 +80,44 @@ def _build_index(db_path: Path) -> None:
             "SAP field for customer group",
             "model/FEP-001.md",
             "def",
-            '{"id": "FEP-001", "type": "FieldEndpoint", "tags": ["customer"]}',
+            '{"id": "FEP-001", "type": "FieldEndpoint", "tags": ["customer"], "sap_table": "KNVV"}',
             "# KNVV KDGRP",
+            None,
+            None,
+        ),
+    )
+    conn.execute(
+        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "FEP-002",
+            "FieldEndpoint",
+            "active",
+            "BUT000 NAME",
+            None,
+            "DOMAIN-A",
+            "SAP field for name",
+            "model/FEP-002.md",
+            "def",
+            '{"id": "FEP-002", "type": "FieldEndpoint", "sap_table": "BUT000"}',
+            "# BUT000 NAME",
+            None,
+            None,
+        ),
+    )
+    conn.execute(
+        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "VLIST-002",
+            "ValueList",
+            "active",
+            "Owned List",
+            None,
+            None,
+            None,
+            "model/VLIST-002.md",
+            "ghi",
+            '{"id": "VLIST-002", "type": "ValueList", "business_owner": "PERSON-001"}',
+            None,
             None,
             None,
         ),
@@ -191,8 +227,8 @@ class TestQueryObjects:
         db = tmp_path / "modelops.db"
         _build_index(db)
         results = query_objects(db, object_type="FieldEndpoint")
-        assert len(results) == 1
-        assert results[0].object_id == "FEP-001"
+        assert len(results) == 2
+        assert any(r.object_id == "FEP-001" for r in results)
 
     def test_query_by_status(self, tmp_path: Path) -> None:
         db = tmp_path / "modelops.db"
@@ -205,7 +241,7 @@ class TestQueryObjects:
         db = tmp_path / "modelops.db"
         _build_index(db)
         results = query_objects(db, domain="DOMAIN-A")
-        assert len(results) == 2
+        assert len(results) == 3
 
     def test_query_name_like(self, tmp_path: Path) -> None:
         db = tmp_path / "modelops.db"
@@ -294,3 +330,37 @@ class TestListRelatedObjects:
         db = tmp_path / "modelops.db"
         rels = list_related_objects(db, "ATTR-001")
         assert rels == []
+
+
+    def test_query_by_owner(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = query_objects(db, owner="PERSON-001")
+        assert len(results) == 1
+        assert results[0].object_id == "VLIST-002"
+
+    def test_query_by_sap_table(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = query_objects(db, sap_table="KNVV")
+        assert len(results) == 1
+        assert results[0].object_id == "FEP-001"
+
+    def test_query_combined_owner_and_type(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = query_objects(db, object_type="ValueList", owner="PERSON-001")
+        assert len(results) == 1
+        assert results[0].object_id == "VLIST-002"
+
+    def test_query_owner_no_match(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = query_objects(db, owner="UNKNOWN")
+        assert results == []
+
+    def test_query_sap_table_no_match(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = query_objects(db, sap_table="NONEXISTENT")
+        assert results == []

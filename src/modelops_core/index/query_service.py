@@ -129,6 +129,8 @@ def query_objects(
     domain: str | None = None,
     name_like: str | None = None,
     tags: list[str] | None = None,
+    owner: str | None = None,
+    sap_table: str | None = None,
     limit: int = 50,
 ) -> list[SearchResult]:
     """Structured query over indexed objects.
@@ -160,6 +162,21 @@ def query_objects(
             f"id IN (SELECT object_id FROM tags WHERE tag IN ({placeholders}))"
         )
         params.extend(tags)
+    if owner:
+        owner_conds = " OR ".join(
+            f"json_extract(frontmatter_json, '$.{field}') = ?"
+            for field in (
+                "business_owner",
+                "technical_owner",
+                "data_steward",
+                "approver",
+            )
+        )
+        conditions.append(f"({owner_conds})")
+        params.extend([owner] * 4)
+    if sap_table:
+        conditions.append("json_extract(frontmatter_json, '$.sap_table') = ?")
+        params.append(sap_table)
 
     sql = "SELECT * FROM objects WHERE " + " AND ".join(conditions)
     sql += " LIMIT ?"
