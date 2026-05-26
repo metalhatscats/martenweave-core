@@ -63,19 +63,23 @@ Martenweave Core requires Python 3.11+. The examples below use the project venv 
 | `build-index` | Build SQLite index and optional JSONL exports |
 | `health` | Show repository health report |
 | `scorecard` | Show governance readiness scorecard |
+| `gap-report` | Consolidated gap summary across all sources |
+| `owners` | Ownership coverage and steward workload |
 | `analyze` | Analyze model completeness, risk, and readiness |
 | `trace` | Trace upstream/downstream relationships for an object |
 | `impact` | Generate impact report for an object or proposal |
 | `search` | Search indexed objects by keyword |
 | `query` | Run structured queries over the index |
 | `propose-patch` | Create a PatchProposal from a note |
-| `proposal` | Review and apply PatchProposals (subcommands: `impact`, `apply`, `validate`) |
+| `proposal` | Review and apply PatchProposals (subcommands: `impact`, `apply`, `validate`, `report`) |
 | `change-request` | Create and manage ChangeRequests (subcommands: `create`, `approve`, `reject`, `list`, `show`, `update-status`) |
+| `decisions` | Browse and inspect Decision objects (subcommands: `list`, `show`, `report`) |
 | `export-model` | Export canonical objects to CSV or XLSX |
 | `docs-build` | Generate static Markdown docs from the index |
 | `usage-report` | Show aggregated usage report from telemetry |
 | `audit-log` | Query the append-only audit log |
 | `config-guard` | Scan for secrets and configuration guardrail issues |
+| `clean` | Remove generated artifacts from a repository |
 | `diff` | Compare two model repositories |
 | `migrate` | Migrate canonical objects to the current schema version |
 | `profile-dataset` | Profile a CSV/XLSX dataset |

@@ -126,3 +126,38 @@ def test_e2e_v0_1_command_surface(sample_repo: Path) -> None:
     # 12. Diff against itself (smoke test)
     result = runner.invoke(app, ["diff", repo, repo, "--json"])
     assert result.exit_code == 0
+
+
+def test_e2e_v0_4_command_surface(sample_repo: Path) -> None:
+    """Exercise v0.4 operational readiness CLI surface."""
+    repo = str(sample_repo)
+
+    # 1. Scorecard (with new metrics)
+    result = runner.invoke(app, ["scorecard", "--repo", repo, "--json"])
+    assert result.exit_code == 0
+    assert "evidence_coverage" in result.output
+    assert "sap_table_coverage" in result.output
+
+    # 2. Gap report
+    result = runner.invoke(app, ["gap-report", "--repo", repo, "--json"])
+    assert result.exit_code == 0
+    assert "gap_score" in result.output
+
+    # 3. Owners
+    result = runner.invoke(app, ["owners", "--repo", repo, "--json"])
+    assert result.exit_code == 0
+    assert "coverage_percent" in result.output
+
+    # 4. Decisions list
+    result = runner.invoke(app, ["decisions", "list", "--repo", repo, "--json"])
+    assert result.exit_code == 0
+
+    # 5. Decisions report
+    result = runner.invoke(app, ["decisions", "report", "--repo", repo, "--json"])
+    assert result.exit_code == 0
+    assert "evidence_coverage" in result.output
+    assert "category_breakdown" in result.output
+
+    # 6. Proposal report
+    result = runner.invoke(app, ["proposal", "report", "--repo", repo])
+    assert result.exit_code == 0

@@ -37,7 +37,7 @@ def test_decisions_list_table(sample_repo: Path) -> None:
     result = runner.invoke(app, ["decisions", "list", "--repo", str(sample_repo)])
     assert result.exit_code == 0
     assert "DEC-CH01-A17-" in result.output
-    assert "proposed" in result.output
+    assert "active" in result.output
 
 
 def test_decisions_list_json(sample_repo: Path) -> None:
@@ -50,7 +50,7 @@ def test_decisions_list_json(sample_repo: Path) -> None:
     ids = [d["id"] for d in data]
     assert "DEC-CH01-A17-CUSTOMER-GROUP" in ids
     decision = next(d for d in data if d["id"] == "DEC-CH01-A17-CUSTOMER-GROUP")
-    assert decision["status"] == "proposed"
+    assert decision["status"] == "active"
     assert decision["domain"] == "DOMAIN-CUSTOMER-BP"
 
 
@@ -70,7 +70,7 @@ def test_decisions_show_table(sample_repo: Path) -> None:
     )
     assert result.exit_code == 0
     assert "DEC-CH01-A17-CUSTOMER-GROUP" in result.output
-    assert "proposed" in result.output
+    assert "active" in result.output
     assert "DOMAIN-CUSTOMER-BP" in result.output
 
 
@@ -84,7 +84,7 @@ def test_decisions_show_json(sample_repo: Path) -> None:
     data = json.loads(result.output)
     assert data["id"] == "DEC-CH01-A17-CUSTOMER-GROUP"
     assert data["type"] == "Decision"
-    assert data["status"] == "proposed"
+    assert data["status"] == "active"
     assert data["domain"] == "DOMAIN-CUSTOMER-BP"
 
 
