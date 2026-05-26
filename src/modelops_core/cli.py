@@ -971,6 +971,11 @@ def build_index(
         "--allow-invalid",
         help="Build index even if validation fails.",
     ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Preview what would be indexed without writing the database.",
+    ),
 ) -> None:
     """Build SQLite index from canonical files."""
     repo_root = _resolve_repo(repo)
@@ -986,6 +991,7 @@ def build_index(
             allow_invalid=allow_invalid,
             export_jsonl=jsonl,
             max_objects=max_objects,
+            dry_run=dry_run,
         )
     except (ValueError, ResourceLimitExceeded) as exc:
         console.print(f"[red]{exc}[/red]")
@@ -996,6 +1002,17 @@ def build_index(
     if db_path is None:
         db_path = resolve_generated_path(repo_root) / "modelops.db"
 
+    if dry_run:
+        console.print("[bold]Dry-run: index preview[/bold]")
+        console.print(f"  Objects: {len(scan_repository(resolve_model_path(repo_root)))}")
+        console.print(f"  Valid:   {summary.is_valid}")
+        console.print(f"  Would write to: {db_path}")
+        if jsonl:
+            gen = resolve_generated_path(repo_root)
+            console.print(f"  Would export JSONL: {gen / 'search_documents.jsonl'}")
+            console.print(f"  Would export JSONL: {gen / 'lineage_edges.jsonl'}")
+        return
+
     console.print(f"[green]Index built at {db_path}[/green]")
     console.print(f"  Objects: {len(scan_repository(resolve_model_path(repo_root)))}")
     console.print(f"  Valid:   {summary.is_valid}")
@@ -1004,6 +1021,88 @@ def build_index(
         gen = resolve_generated_path(repo_root)
         console.print(f"  JSONL:   {gen / 'search_documents.jsonl'}")
         console.print(f"  JSONL:   {gen / 'lineage_edges.jsonl'}")
+
+
+@app.command()
+@with_telemetry("clean")
+def clean(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Preview what would be cleaned without deleting.",
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Remove generated artifacts (database, JSONL exports, dataset profiles)."""
+    repo_root = _resolve_repo(repo)
+    generated_path = resolve_generated_path(repo_root)
+
+    # Safety: generated must be a subdirectory of repo_root
+    try:
+        generated_path.resolve().relative_to(repo_root.resolve())
+    except ValueError:
+        console.print(
+            f"[red]Refusing to clean: {generated_path} is not a subdirectory of {repo_root}[/red]"
+        )
+        raise typer.Exit(code=1) from None
+
+    targets: list[Path] = []
+    if generated_path.exists():
+        targets.extend(generated_path.glob("*.jsonl"))
+        targets.extend(generated_path.glob("*.db"))
+        targets.extend(generated_path.glob("*.db.tmp"))
+        profile_dir = generated_path / "dataset_profiles"
+        if profile_dir.exists():
+            targets.extend(profile_dir.glob("*.json"))
+
+    removed: list[str] = []
+    skipped: list[str] = []
+
+    for path in targets:
+        if dry_run:
+            skipped.append(str(path))
+        else:
+            try:
+                path.unlink()
+                removed.append(str(path))
+            except OSError:
+                skipped.append(str(path))
+
+    if not dry_run:
+        # Also try to remove empty dataset_profiles dir
+        profile_dir = generated_path / "dataset_profiles"
+        if profile_dir.exists() and not any(profile_dir.iterdir()):
+            try:
+                profile_dir.rmdir()
+                removed.append(str(profile_dir))
+            except OSError:
+                skipped.append(str(profile_dir))
+
+    if json_output:
+        result = {
+            "dry_run": dry_run,
+            "generated_path": str(generated_path),
+            "removed_count": len(removed),
+            "skipped_count": len(skipped),
+            "removed": removed,
+            "skipped": skipped,
+        }
+        print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
+    if dry_run:
+        console.print(f"[bold]Dry-run: would clean {len(skipped)} file(s)[/bold]")
+        for path in skipped:
+            console.print(f"  [dim]{path}[/dim]")
+    else:
+        console.print(f"[green]Cleaned {len(removed)} file(s)[/green]")
+        for path in removed:
+            console.print(f"  [dim]{path}[/dim]")
+        if skipped:
+            console.print(f"[yellow]Skipped {len(skipped)} file(s)[/yellow]")
+            for path in skipped:
+                console.print(f"  [dim]{path}[/dim]")
 
 
 @app.command()
