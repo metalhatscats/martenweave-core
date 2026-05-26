@@ -30,7 +30,9 @@ def _build_index(db_path: Path) -> None:
             source_file TEXT NOT NULL,
             content_hash TEXT NOT NULL,
             frontmatter_json TEXT NOT NULL,
-            body TEXT
+            body TEXT,
+            created_at TEXT,
+            updated_at TEXT
         );
         CREATE TABLE object_relationships (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,10 +43,15 @@ def _build_index(db_path: Path) -> None:
             source_file TEXT NOT NULL,
             confidence TEXT NOT NULL DEFAULT 'explicit'
         );
+        CREATE TABLE tags (
+            object_id TEXT NOT NULL,
+            tag TEXT NOT NULL,
+            PRIMARY KEY (object_id, tag)
+        );
         """
     )
     conn.execute(
-        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             "ATTR-001",
             "Attribute",
@@ -55,12 +62,14 @@ def _build_index(db_path: Path) -> None:
             "Sales-area-dependent customer grouping",
             "model/ATTR-001.md",
             "abc",
-            '{"id": "ATTR-001", "type": "Attribute"}',
+            '{"id": "ATTR-001", "type": "Attribute", "tags": ["customer", "sales"]}',
             "# Customer Group\n\nBody text here.",
+            None,
+            None,
         ),
     )
     conn.execute(
-        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             "FEP-001",
             "FieldEndpoint",
@@ -71,12 +80,14 @@ def _build_index(db_path: Path) -> None:
             "SAP field for customer group",
             "model/FEP-001.md",
             "def",
-            '{"id": "FEP-001", "type": "FieldEndpoint"}',
+            '{"id": "FEP-001", "type": "FieldEndpoint", "tags": ["customer"]}',
             "# KNVV KDGRP",
+            None,
+            None,
         ),
     )
     conn.execute(
-        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             "VLIST-001",
             "ValueList",
@@ -89,8 +100,13 @@ def _build_index(db_path: Path) -> None:
             "ghi",
             '{"id": "VLIST-001", "type": "ValueList"}',
             None,
+            None,
+            None,
         ),
     )
+    conn.execute("INSERT INTO tags VALUES (?, ?)", ("ATTR-001", "customer"))
+    conn.execute("INSERT INTO tags VALUES (?, ?)", ("ATTR-001", "sales"))
+    conn.execute("INSERT INTO tags VALUES (?, ?)", ("FEP-001", "customer"))
     conn.execute(
         "INSERT INTO object_relationships "
         "(from_object_id, relationship_type, to_object_id, source_file) "
@@ -150,6 +166,25 @@ class TestSearchObjects:
         scores = [r.score for r in results]
         assert scores == sorted(scores, reverse=True)
 
+    def test_search_with_tag_filter(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = search_objects(db, "Customer", tags=["sales"])
+        assert len(results) == 1
+        assert results[0].object_id == "ATTR-001"
+
+    def test_search_with_multiple_tags(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = search_objects(db, "Customer", tags=["customer", "sales"])
+        assert len(results) == 2
+
+    def test_search_tag_no_match(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = search_objects(db, "Customer", tags=["nonexistent"])
+        assert results == []
+
 
 class TestQueryObjects:
     def test_query_by_type(self, tmp_path: Path) -> None:
@@ -195,6 +230,26 @@ class TestQueryObjects:
         db = tmp_path / "modelops.db"
         results = query_objects(db, object_type="Attribute")
         assert results == []
+
+    def test_query_by_tag(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = query_objects(db, tags=["sales"])
+        assert len(results) == 1
+        assert results[0].object_id == "ATTR-001"
+
+    def test_query_by_multiple_tags(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = query_objects(db, tags=["customer"])
+        assert len(results) == 2
+
+    def test_query_tag_combined_with_type(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = query_objects(db, object_type="FieldEndpoint", tags=["customer"])
+        assert len(results) == 1
+        assert results[0].object_id == "FEP-001"
 
 
 class TestGetObjectById:

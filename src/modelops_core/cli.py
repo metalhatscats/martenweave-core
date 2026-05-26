@@ -3075,6 +3075,9 @@ def search(
     domain: str | None = typer.Option(
         None, "--domain", help="Filter by domain ID."
     ),
+    tags: list[str] | None = typer.Option(  # noqa: B008
+        None, "--tag", help="Filter by tag (repeatable)."
+    ),
     limit: int = typer.Option(50, "--limit", help="Maximum results."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
@@ -3092,6 +3095,7 @@ def search(
         object_type=object_type,
         status=status,
         domain=domain,
+        tags=tags,
         limit=limit,
     )
 
@@ -3146,6 +3150,9 @@ def query(
     name_like: str | None = typer.Option(
         None, "--name-like", help="Substring match on name."
     ),
+    tags: list[str] | None = typer.Option(  # noqa: B008
+        None, "--tag", help="Filter by tag (repeatable)."
+    ),
     limit: int = typer.Option(50, "--limit", help="Maximum results."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
@@ -3163,6 +3170,7 @@ def query(
         status=status,
         domain=domain,
         name_like=name_like,
+        tags=tags,
         limit=limit,
     )
 

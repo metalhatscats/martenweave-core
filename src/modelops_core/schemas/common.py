@@ -112,3 +112,6 @@ class BaseObject(BaseModel):
     updated_at: str | None = Field(
         default=None, description="ISO 8601 timestamp when the object was last updated."
     )
+    tags: list[str] | None = Field(
+        default=None, description="Categorical labels for filtering and search."
+    )

@@ -146,6 +146,83 @@ def _check_timestamps(
     return results
 
 
+_MAX_TAG_LENGTH = 32
+_MAX_TAGS = 10
+
+
+def _check_tags(
+    frontmatter: dict[str, Any] | None, source_file: str
+) -> list[ValidationResult]:
+    """Validate tag format: lowercase, no spaces, max length, max count."""
+    results: list[ValidationResult] = []
+    tags = _fm_value(frontmatter, "tags")
+    if tags is None:
+        return results
+    if not isinstance(tags, list):
+        obj_id = _fm_value(frontmatter, "id")
+        results.append(
+            ValidationResult(
+                severity=ValidationSeverity.WARNING,
+                code="TAGS_INVALID_TYPE",
+                message="'tags' must be a list of strings.",
+                object_id=str(obj_id) if obj_id is not None else None,
+                source_file=source_file,
+                field_path="tags",
+                suggested_fix="Use a YAML list: tags: [customer, sales]",
+            )
+        )
+        return results
+    if len(tags) > _MAX_TAGS:
+        obj_id = _fm_value(frontmatter, "id")
+        results.append(
+            ValidationResult(
+                severity=ValidationSeverity.WARNING,
+                code="TAGS_TOO_MANY",
+                message=f"Object has {len(tags)} tags (max {_MAX_TAGS}).",
+                object_id=str(obj_id) if obj_id is not None else None,
+                source_file=source_file,
+                field_path="tags",
+                suggested_fix=f"Reduce to {_MAX_TAGS} or fewer tags.",
+            )
+        )
+    for idx, tag in enumerate(tags):
+        if not isinstance(tag, str):
+            obj_id = _fm_value(frontmatter, "id")
+            results.append(
+                ValidationResult(
+                    severity=ValidationSeverity.WARNING,
+                    code="TAG_INVALID_TYPE",
+                    message=f"Tag at index {idx} is not a string.",
+                    object_id=str(obj_id) if obj_id is not None else None,
+                    source_file=source_file,
+                    field_path=f"tags[{idx}]",
+                    suggested_fix="All tags must be strings.",
+                )
+            )
+            continue
+        issues: list[str] = []
+        if " " in tag:
+            issues.append("contains spaces")
+        if tag != tag.lower():
+            issues.append("not lowercase")
+        if len(tag) > _MAX_TAG_LENGTH:
+            issues.append(f"exceeds {_MAX_TAG_LENGTH} chars")
+        if issues:
+            obj_id = _fm_value(frontmatter, "id")
+            results.append(
+                ValidationResult(
+                    severity=ValidationSeverity.WARNING,
+                    code="TAG_INVALID_FORMAT",
+                    message=f"Tag '{tag}' is invalid: {', '.join(issues)}.",
+                    object_id=str(obj_id) if obj_id is not None else None,
+                    source_file=source_file,
+                    field_path=f"tags[{idx}]",
+                    suggested_fix="Use lowercase, no spaces, max 32 chars.",
+                )
+            )
+    return results
+
+
 def _check_schema_version(
     frontmatter: dict[str, Any] | None, source_file: str
 ) -> list[ValidationResult]:
@@ -200,6 +277,7 @@ def _validate_individual(obj: ParsedObject) -> list[ValidationResult]:
     results.extend(_check_status(obj.frontmatter, obj.source_path))
     results.extend(_check_display_name(obj.frontmatter, obj.source_path))
     results.extend(_check_timestamps(obj.frontmatter, obj.source_path))
+    results.extend(_check_tags(obj.frontmatter, obj.source_path))
     results.extend(_check_schema_version(obj.frontmatter, obj.source_path))
     return results
 
