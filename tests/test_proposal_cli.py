@@ -14,6 +14,7 @@ from modelops_core.patching.patch_proposal_service import (
     transition_patch_proposal_status,
     write_patch_proposal,
 )
+from modelops_core.repository import parse_file
 
 runner = CliRunner()
 
@@ -442,3 +443,88 @@ def test_proposal_apply_default_is_dry_run(temp_model_dir: Path) -> None:
     assert "--apply" in result.output
     # File should NOT exist after default dry-run
     assert not (temp_model_dir / "systems" / "SYS-DEFAULT-DRY.md").exists()
+
+
+def test_proposal_accept_with_reviewer_notes(temp_model_dir: Path) -> None:
+    op = PatchOperation(
+        op="update_object", object_id="DOMAIN-TEST", target_path="name", after="New Name"
+    )
+    proposal = build_patch_proposal("PP-REVIEW-001", [op])
+    write_patch_proposal(proposal, temp_model_dir)
+    proposal_path = temp_model_dir / "patch-proposals" / "PP-REVIEW-001.md"
+
+    transition_patch_proposal_status(
+        proposal_path,
+        "accepted",
+        reviewer="alice",
+        reviewer_notes="Looks good, minor naming change.",
+    )
+
+    parsed = parse_file(proposal_path)
+    assert parsed.frontmatter is not None
+    assert parsed.frontmatter["status"] == "accepted"
+    assert parsed.frontmatter["reviewer"] == "alice"
+    assert parsed.frontmatter["reviewer_notes"] == "Looks good, minor naming change."
+    assert parsed.frontmatter["reviewed_at"] is not None
+
+
+def test_proposal_reject_with_reason(temp_model_dir: Path) -> None:
+    op = PatchOperation(
+        op="update_object", object_id="DOMAIN-TEST", target_path="name", after="Bad Name"
+    )
+    proposal = build_patch_proposal("PP-REJECT-001", [op])
+    write_patch_proposal(proposal, temp_model_dir)
+    proposal_path = temp_model_dir / "patch-proposals" / "PP-REJECT-001.md"
+
+    transition_patch_proposal_status(
+        proposal_path,
+        "rejected",
+        reviewer="bob",
+        rejection_reason="Name does not follow naming conventions.",
+    )
+
+    parsed = parse_file(proposal_path)
+    assert parsed.frontmatter is not None
+    assert parsed.frontmatter["status"] == "rejected"
+    assert parsed.frontmatter["reviewer"] == "bob"
+    assert parsed.frontmatter["rejection_reason"] == "Name does not follow naming conventions."
+    assert parsed.frontmatter["reviewed_at"] is not None
+
+
+def test_proposal_show_reviewer_metadata(temp_model_dir: Path) -> None:
+    op = PatchOperation(
+        op="update_object", object_id="DOMAIN-TEST", target_path="name", after="Updated"
+    )
+    proposal = build_patch_proposal("PP-SHOW-REVIEW-001", [op])
+    write_patch_proposal(proposal, temp_model_dir)
+    proposal_path = temp_model_dir / "patch-proposals" / "PP-SHOW-REVIEW-001.md"
+    transition_patch_proposal_status(
+        proposal_path,
+        "rejected",
+        reviewer="carol",
+        reviewer_notes="Needs more context.",
+        rejection_reason="Insufficient evidence.",
+    )
+
+    result = runner.invoke(
+        app, ["proposal", "show", "PP-SHOW-REVIEW-001", "--repo", _repo_from_model(temp_model_dir)]
+    )
+    assert result.exit_code == 0
+    assert "carol" in result.output
+    assert "Needs more context." in result.output
+    assert "Insufficient evidence." in result.output
+
+
+def test_proposal_list_shows_reviewer(temp_model_dir: Path) -> None:
+    op = PatchOperation(
+        op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X"
+    )
+    proposal = build_patch_proposal("PP-LIST-REVIEW-001", [op])
+    write_patch_proposal(proposal, temp_model_dir)
+    proposal_path = temp_model_dir / "patch-proposals" / "PP-LIST-REVIEW-001.md"
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="dave")
+
+    result = runner.invoke(app, ["proposal", "list", "--repo", _repo_from_model(temp_model_dir)])
+    assert result.exit_code == 0
+    assert "PP-LIST-REVIEW-001" in result.output
+    assert "dave" in result.output

@@ -2126,18 +2126,27 @@ def proposal_list(
             "applied": bool(fm.get("applied_at")),
             "expires_at": expires_at,
             "expired": is_expired,
+            "reviewer": fm.get("reviewer"),
+            "reviewed_at": fm.get("reviewed_at"),
         })
 
     if json_output:
         print(json.dumps(proposals, indent=2, default=str))
         raise typer.Exit()
 
-    table = Table("ID", "Status", "Applied", "Expires")
+    table = Table("ID", "Status", "Applied", "Reviewer", "Expires")
     for p in proposals:
         expires_label = p["expires_at"] or "—"
         if p.get("expired"):
             expires_label = f"[red]{expires_label}[/red]"
-        table.add_row(p["id"], p["status"], "yes" if p["applied"] else "no", expires_label)
+        reviewer_label = p.get("reviewer") or "—"
+        table.add_row(
+            p["id"],
+            p["status"],
+            "yes" if p["applied"] else "no",
+            reviewer_label,
+            expires_label,
+        )
     console.print(table)
 
 
@@ -2167,6 +2176,14 @@ def proposal_show(
     console.print(f"  Status: {fm.get('status', '—')}")
     console.print(f"  Validation: {fm.get('validation_status', '—')}")
     console.print(f"  Operations: {len(fm.get('operations', []))}")
+    if fm.get("reviewer"):
+        console.print(f"  Reviewer: {fm['reviewer']}")
+    if fm.get("reviewed_at"):
+        console.print(f"  Reviewed at: {fm['reviewed_at']}")
+    if fm.get("reviewer_notes"):
+        console.print(f"  Reviewer notes: {fm['reviewer_notes']}")
+    if fm.get("rejection_reason"):
+        console.print(f"  Rejection reason: {fm['rejection_reason']}")
     if fm.get("expires_at"):
         console.print(f"  Expires at: {fm['expires_at']}")
     if fm.get("applied_at"):

@@ -68,9 +68,21 @@ def write_patch_proposal(proposal: dict[str, Any], repo_model_path: Path) -> Pat
 
 
 def transition_patch_proposal_status(
-    proposal_path: Path, new_status: str
+    proposal_path: Path,
+    new_status: str,
+    reviewer: str | None = None,
+    reviewer_notes: str | None = None,
+    rejection_reason: str | None = None,
 ) -> None:
-    """Transition a PatchProposal's status in its canonical file."""
+    """Transition a PatchProposal's status in its canonical file.
+
+    Args:
+        proposal_path: Path to the PatchProposal canonical file.
+        new_status: Target status (e.g. 'accepted', 'rejected').
+        reviewer: Identity of the reviewer.
+        reviewer_notes: Free-form notes from the reviewer.
+        rejection_reason: Reason for rejection (when new_status is 'rejected').
+    """
     from modelops_core.repository import parse_file
 
     parsed = parse_file(proposal_path)
@@ -79,6 +91,13 @@ def transition_patch_proposal_status(
 
     frontmatter = dict(parsed.frontmatter)
     frontmatter["status"] = new_status
+    frontmatter["reviewer"] = reviewer or frontmatter.get("reviewer")
+    frontmatter["reviewed_at"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if reviewer_notes:
+        frontmatter["reviewer_notes"] = reviewer_notes
+    if rejection_reason:
+        frontmatter["rejection_reason"] = rejection_reason
+
     yaml_text = yaml.safe_dump(
         frontmatter,
         default_flow_style=False,
