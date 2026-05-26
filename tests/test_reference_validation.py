@@ -205,3 +205,132 @@ def test_nested_cycle() -> None:
     assert any(r.code == "REFERENCE_CIRCULAR" for r in summary.results)
     cycle_result = next(r for r in summary.results if r.code == "REFERENCE_CIRCULAR")
     assert set(cycle_result.related_objects) == {"A", "B", "C"}
+
+
+
+def test_decision_with_valid_evidence() -> None:
+    evidence = ParsedObject(
+        source_path="evidence.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "EVIDENCE-001",
+            "type": "Evidence",
+            "status": "active",
+        },
+        body=None,
+        parser_error=None,
+    )
+    decision = ParsedObject(
+        source_path="decision.md",
+        content_hash="def",
+        frontmatter={
+            "id": "DECISION-001",
+            "type": "Decision",
+            "status": "active",
+            "evidence": "EVIDENCE-001",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([evidence, decision])
+    assert not any(r.code == "EVIDENCE_BROKEN_LINK" for r in summary.results)
+
+
+def test_decision_with_missing_evidence() -> None:
+    decision = ParsedObject(
+        source_path="decision.md",
+        content_hash="def",
+        frontmatter={
+            "id": "DECISION-001",
+            "type": "Decision",
+            "status": "active",
+            "evidence": "EVIDENCE-MISSING",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([decision])
+    broken = [r for r in summary.results if r.code == "EVIDENCE_BROKEN_LINK"]
+    assert len(broken) == 1
+    assert broken[0].severity.name == "ERROR"
+    assert "EVIDENCE-MISSING" in broken[0].message
+    assert "DECISION-001" in broken[0].message
+
+
+def test_decision_with_wrong_type_evidence() -> None:
+    attr = ParsedObject(
+        source_path="attr.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "ATTR-001",
+            "type": "Attribute",
+            "status": "active",
+        },
+        body=None,
+        parser_error=None,
+    )
+    decision = ParsedObject(
+        source_path="decision.md",
+        content_hash="def",
+        frontmatter={
+            "id": "DECISION-001",
+            "type": "Decision",
+            "status": "active",
+            "evidence": "ATTR-001",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([attr, decision])
+    broken = [r for r in summary.results if r.code == "EVIDENCE_BROKEN_LINK"]
+    assert len(broken) == 1
+    assert broken[0].severity.name == "WARNING"
+    assert "ATTR-001" in broken[0].message
+    assert "DECISION-001" in broken[0].message
+
+
+def test_decision_with_multiple_evidence_one_broken() -> None:
+    evidence = ParsedObject(
+        source_path="evidence.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "EVIDENCE-001",
+            "type": "Evidence",
+            "status": "active",
+        },
+        body=None,
+        parser_error=None,
+    )
+    decision = ParsedObject(
+        source_path="decision.md",
+        content_hash="def",
+        frontmatter={
+            "id": "DECISION-001",
+            "type": "Decision",
+            "status": "active",
+            "evidence": ["EVIDENCE-001", "EVIDENCE-MISSING"],
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([evidence, decision])
+    broken = [r for r in summary.results if r.code == "EVIDENCE_BROKEN_LINK"]
+    assert len(broken) == 1
+    assert broken[0].severity.name == "ERROR"
+    assert "EVIDENCE-MISSING" in broken[0].message
+
+
+def test_decision_without_evidence_no_error() -> None:
+    decision = ParsedObject(
+        source_path="decision.md",
+        content_hash="def",
+        frontmatter={
+            "id": "DECISION-001",
+            "type": "Decision",
+            "status": "active",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([decision])
+    assert not any(r.code == "EVIDENCE_BROKEN_LINK" for r in summary.results)

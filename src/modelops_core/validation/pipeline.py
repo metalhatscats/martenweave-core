@@ -759,6 +759,75 @@ def _validate_ownership(objects: list[ParsedObject]) -> list[ValidationResult]:
     return results
 
 
+def _validate_decision_evidence(
+    objects: list[ParsedObject], registry: dict[str, dict[str, Any]]
+) -> list[ValidationResult]:
+    """Validate that Decision.evidence references point to Evidence objects."""
+    results: list[ValidationResult] = []
+    for obj in objects:
+        if obj.parser_error is not None or obj.frontmatter is None:
+            continue
+        fm = obj.frontmatter
+        if fm.get("type") != "Decision":
+            continue
+        obj_id = fm.get("id")
+        evidence = fm.get("evidence")
+        if evidence is None:
+            continue
+
+        refs: list[str] = []
+        if isinstance(evidence, str):
+            refs = [evidence]
+        elif isinstance(evidence, list):
+            refs = [str(v) for v in evidence if isinstance(v, str)]
+        else:
+            continue
+
+        for ref_id in refs:
+            if ref_id not in registry:
+                results.append(
+                    ValidationResult(
+                        severity=ValidationSeverity.ERROR,
+                        code="EVIDENCE_BROKEN_LINK",
+                        message=(
+                            f"Decision '{obj_id}' references missing "
+                            f"Evidence '{ref_id}'."
+                        ),
+                        object_id=obj_id,
+                        source_file=obj.source_path,
+                        field_path="evidence",
+                        related_objects=[ref_id],
+                        suggested_fix=(
+                            f"Create an Evidence object with id '{ref_id}' "
+                            f"or remove the evidence reference."
+                        ),
+                    )
+                )
+                continue
+
+            actual_type = registry[ref_id].get("type")
+            if actual_type != "Evidence":
+                results.append(
+                    ValidationResult(
+                        severity=ValidationSeverity.WARNING,
+                        code="EVIDENCE_BROKEN_LINK",
+                        message=(
+                            f"Decision '{obj_id}' evidence '{ref_id}' "
+                            f"is not an Evidence object (found '{actual_type}')."
+                        ),
+                        object_id=obj_id,
+                        source_file=obj.source_path,
+                        field_path="evidence",
+                        related_objects=[ref_id],
+                        suggested_fix=(
+                            "Point 'evidence' to an object of type 'Evidence'."
+                        ),
+                    )
+                )
+
+    return results
+
+
 def _validate_methodology(
     objects: list[ParsedObject], registry: dict[str, dict[str, Any]]
 ) -> list[ValidationResult]:
@@ -1026,6 +1095,7 @@ def validate_objects(
     registry = _build_registry(objects)
     all_results.extend(_validate_references(objects, registry))
     all_results.extend(_detect_reference_cycles(objects, registry))
+    all_results.extend(_validate_decision_evidence(objects, registry))
     all_results.extend(_validate_lifecycle(objects, registry))
     all_results.extend(_validate_lov_governance(objects, registry))
     all_results.extend(_validate_ownership(objects))
