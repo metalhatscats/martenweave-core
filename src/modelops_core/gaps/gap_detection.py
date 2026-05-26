@@ -98,6 +98,8 @@ _GAP_SEVERITY: dict[str, str] = {
     "MODEL_ATTRIBUTE_MISSING_SOURCE": "critical",
     "MISSING_OWNER": "warning",
     "DUPLICATE_COLUMN_NAME": "warning",
+    "EMPTY_DATASET": "info",
+    "NO_MATCHING_ENDPOINTS": "warning",
 }
 
 
@@ -135,6 +137,23 @@ def detect_dataset_gaps(profile: DatasetProfile, db_path: Path) -> DatasetGapRep
         "dataset_id": profile.dataset_id,
         "row_count": profile.row_count,
     }
+
+    # Edge case: empty dataset
+    if not profile.columns:
+        gaps.append(
+            ColumnGap(
+                column_name="",
+                gap_code="EMPTY_DATASET",
+                severity=_severity_for_gap("EMPTY_DATASET"),
+                message=f"Dataset '{profile.dataset_id}' has no columns.",
+                source_dataset_metadata=dataset_meta,
+            )
+        )
+        return DatasetGapReport(
+            dataset_id=profile.dataset_id,
+            matches=matches,
+            gaps=gaps,
+        )
 
     # Detect duplicate column names
     seen: set[str] = set()
@@ -184,11 +203,83 @@ def detect_dataset_gaps(profile: DatasetProfile, db_path: Path) -> DatasetGapRep
         else:
             matches.extend(col_matches)
 
+    # Edge case: no matching endpoints at all
+    if profile.columns and not matches:
+        gaps.append(
+            ColumnGap(
+                column_name="",
+                gap_code="NO_MATCHING_ENDPOINTS",
+                severity=_severity_for_gap("NO_MATCHING_ENDPOINTS"),
+                message=(
+                    f"None of the {len(profile.columns)} columns in "
+                    f"'{profile.dataset_id}' matched a FieldEndpoint."
+                ),
+                source_dataset_metadata=dataset_meta,
+            )
+        )
+
     return DatasetGapReport(
         dataset_id=profile.dataset_id,
         matches=matches,
         gaps=gaps,
     )
+
+
+def detect_model_gaps(db_path: Path) -> list[ColumnGap]:
+    """Detect model-side gaps by querying the SQLite index.
+
+    Returns gaps for:
+    - Attributes with no linked FieldEndpoint (MODEL_ATTRIBUTE_MISSING_SOURCE)
+    - Objects missing an owner (MISSING_OWNER)
+    """
+    gaps: list[ColumnGap] = []
+    conn = sqlite3.connect(str(db_path))
+    try:
+        # Attributes with no incoming represents_attribute relationship
+        attr_rows = conn.execute(
+            "SELECT id, frontmatter_json FROM objects WHERE type = 'Attribute'"
+        ).fetchall()
+
+        rel_rows = conn.execute(
+            "SELECT to_object_id FROM object_relationships "
+            "WHERE relationship_type = 'represents_attribute'"
+        ).fetchall()
+        linked_attrs = {r[0] for r in rel_rows}
+
+        for attr_id, _fm_json in attr_rows:
+            if attr_id not in linked_attrs:
+                gaps.append(
+                    ColumnGap(
+                        column_name=attr_id,
+                        gap_code="MODEL_ATTRIBUTE_MISSING_SOURCE",
+                        severity=_severity_for_gap("MODEL_ATTRIBUTE_MISSING_SOURCE"),
+                        message=(
+                            f"Attribute '{attr_id}' has no linked FieldEndpoint."
+                        ),
+                    )
+                )
+
+        # Objects missing owner
+        owner_types = ("Attribute", "FieldEndpoint")
+        obj_rows = conn.execute(
+            "SELECT id, type, frontmatter_json FROM objects WHERE type IN (?, ?)",
+            owner_types,
+        ).fetchall()
+        for obj_id, obj_type, fm_json in obj_rows:
+            fm = __import__("json").loads(fm_json)
+            if not fm.get("business_owner") and not fm.get("technical_owner"):
+                gaps.append(
+                    ColumnGap(
+                        column_name=obj_id,
+                        gap_code="MISSING_OWNER",
+                        severity=_severity_for_gap("MISSING_OWNER"),
+                        message=f"{obj_type} '{obj_id}' is missing an owner.",
+                    )
+                )
+    finally:
+        conn.close()
+
+    return gaps
 
 
 def _sanitize_id_part(value: str) -> str:
