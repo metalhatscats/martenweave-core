@@ -414,6 +414,9 @@ def gaps(
     create_issues: bool = typer.Option(
         False, "--create-issues", help="Create Issue canonical files for gaps."
     ),
+    promote_to_proposal: bool = typer.Option(
+        False, "--promote-to-proposal", help="Promote gaps to a draft PatchProposal."
+    ),
 ) -> None:
     """Detect dataset-to-model gaps by comparing dataset columns against FieldEndpoints."""
     repo_root = _resolve_repo(repo)
@@ -479,6 +482,9 @@ def gaps(
                     "gap_code": g.gap_code,
                     "severity": g.severity,
                     "message": g.message,
+                    "evidence_ids": g.evidence_ids,
+                    "source_dataset_metadata": g.source_dataset_metadata,
+                    "recommended_proposal_op": g.recommended_proposal_op,
                 }
                 for g in report.gaps
             ],
@@ -529,6 +535,12 @@ def gaps(
                 encoding="utf-8",
             )
             console.print(f"[green]Created {issue_path.name}[/green]")
+
+    if promote_to_proposal and report.gaps:
+        from modelops_core.gaps.gap_detection import promote_gaps_to_proposal
+
+        proposal_path = promote_gaps_to_proposal(report, model_path)
+        console.print(f"[green]Created PatchProposal {proposal_path.name}[/green]")
 
 
 @app.command("import-drive")
