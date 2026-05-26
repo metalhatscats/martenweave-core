@@ -70,8 +70,8 @@ These tools query the model index or canonical files without modifying anything.
 | `search_model` | `modelops search --json` | Keyword search across all objects |
 | `query_model` | `modelops query --json` | Structured query by type, status, domain |
 | `get_object` | `query_service.get_object_by_id` | Fetch full frontmatter for one object |
-| `trace_object` | `modelops trace --json` | Upstream/downstream relationship trace |
-| `analyze_impact` | `modelops impact --json` | Impact report for an object or proposal |
+| `trace_object_tool` | `modelops trace --json` | Upstream/downstream relationship trace |
+| `proposal_impact` | `modelops impact --json` | Impact report for a PatchProposal |
 | `validate_model` | `modelops validate --json` | Run deterministic validation |
 | `health_report` | `modelops health --json` | Repository health and coverage gaps |
 | `scorecard` | `modelops scorecard --json` | Governance readiness scorecard |
@@ -92,13 +92,12 @@ These tools produce proposals, trigger workflows, or create governance objects. 
 
 | Tool Name | Maps to CLI / Service | Purpose |
 |---|---|---|
-| `propose_patch` | `modelops propose-patch --json` | Create PatchProposal from a note |
+| `propose_model_change` | `modelops propose-patch --json` | Create PatchProposal from a note |
 | `infer_model` | `modelops infer-model --json` | Generate PatchProposal from dataset profile |
 | `profile_dataset` | `modelops profile-dataset --json` | Profile CSV/XLSX and store result |
 | `import_model_sheet` | `modelops import-model-sheet --json` | Import spreadsheet as PatchProposal |
 | `proposal_dry_run` | `modelops proposal apply --dry-run` | Preview proposal application |
-| `apply_proposal` | `modelops proposal apply` | Apply an approved proposal |
-| `create_change_request` | `modelops change-request create --json` | Create a ChangeRequest |
+| `create_change_request_tool` | `modelops change-request create --json` | Create a ChangeRequest |
 | `update_cr_status` | `modelops change-request update-status` | Update CR status |
 | `approve_change_request` | `modelops change-request approve` | Approve a CR |
 | `reject_change_request` | `modelops change-request reject` | Reject a CR |
@@ -396,11 +395,12 @@ The MCP server **never** exposes tools that:
 
 | Tool | Guardrail |
 |---|---|
-| `apply_proposal` | Requires approved ChangeRequest or explicit `force: true` |
-| `propose_patch` | Always writes to `model/patch-proposals/`, never to `model/` |
+| `propose_model_change` | Always writes to `model/patch-proposals/`, never to `model/` |
 | `infer_model` | Generates PatchProposal; human review required before apply |
-| `build_index` | Only touches `generated/`; safe but logged |
-| `create_change_request` | Creates governance object; does not modify model files |
+| `proposal_dry_run` | Read-only preview; no file modifications |
+| `proposal_impact` | Read-only analysis; no file modifications |
+| `create_change_request_tool` | Creates governance object; does not modify model files |
+| `export_model` | Read-only export; does not modify canonical files |
 
 ### Audit and Telemetry
 
@@ -496,15 +496,15 @@ An AI agent asked to "add a new customer attribute" would use the MCP tools in t
 2. get_object(object_id="ATTR-CUST-SALES-CUSTOMER-GROUP")
    └─ Understand the pattern for customer attributes
 
-3. propose_patch(note_text="Add Customer Credit Group...")
+3. propose_model_change(note="Add Customer Credit Group...")
    └─ Generate PatchProposal for human review
 
-4. analyze_impact(object_id="PP-2026-001")
+4. proposal_impact(proposal_id="PP-2026-001")
    └─ Assess impact of the proposal
 
 5. (Human reviews and approves via CLI or UI)
 
-6. apply_proposal(proposal_id="PP-2026-001")
+6. apply_patch_proposal (via CLI, not exposed as MCP tool)
    └─ Apply the approved proposal
 ```
 
@@ -523,9 +523,9 @@ At no point does the agent directly edit a Markdown file.
 
 ## Acceptance Criteria
 
-- [ ] The MCP design exposes useful model operations without allowing direct unsafe file mutation.
-- [ ] Tool inputs and outputs are JSON-compatible and align with CLI `--json` contracts.
-- [ ] The design can be implemented after command contracts are stable.
-- [ ] The document explains how MCP complements CLI/API/UI.
-- [ ] Context-size limits and compaction strategies are defined.
-- [ ] Audit logging for every MCP tool call is specified.
+- [x] The MCP design exposes useful model operations without allowing direct unsafe file mutation.
+- [x] Tool inputs and outputs are JSON-compatible and align with CLI `--json` contracts.
+- [x] The design can be implemented after command contracts are stable.
+- [x] The document explains how MCP complements CLI/API/UI.
+- [x] Context-size limits and compaction strategies are defined.
+- [x] Audit logging for every MCP tool call is specified.

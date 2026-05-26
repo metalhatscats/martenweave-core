@@ -1,4 +1,4 @@
-"""Tests for the optional MCP server scaffold, resources, and prompts."""
+"""Tests for the optional MCP server scaffold, resources, prompts, and write-intent tools."""
 
 from __future__ import annotations
 
@@ -294,6 +294,107 @@ class TestMCPPrompts:
             "build_model_from_file",
             "prepare_excel_review",
             "create_change_request",
+        }
+        assert expected.issubset(names)
+
+
+class TestMCPWriteIntentTools:
+    def test_propose_model_change_tool(self, sample_repo):
+        """propose_model_change should create a PatchProposal from a note."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = _call_tool_sync(
+            server,
+            "propose_model_change",
+            {"note": "Update the description of Customer Group to clarify usage."},
+        )
+        assert "proposal_id" in result
+        assert "operations_count" in result
+        assert "path" in result
+
+    def test_proposal_dry_run_not_found(self, sample_repo):
+        """proposal_dry_run should error for a missing proposal."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = _call_tool_sync(
+            server,
+            "proposal_dry_run",
+            {"proposal_id": "PP-DOES-NOT-EXIST"},
+        )
+        assert "error" in result
+
+    def test_proposal_impact_not_found(self, sample_repo):
+        """proposal_impact should error for a missing proposal."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = _call_tool_sync(
+            server,
+            "proposal_impact",
+            {"proposal_id": "PP-DOES-NOT-EXIST"},
+        )
+        assert "error" in result
+
+    def test_create_change_request_tool(self, sample_repo):
+        """create_change_request_tool should create a CR file."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = _call_tool_sync(
+            server,
+            "create_change_request_tool",
+            {
+                "cr_id": "CR-TEST-001",
+                "title": "Test Change Request",
+                "requester": "tester",
+                "reason": "Testing MCP write-intent tool.",
+            },
+        )
+        assert "error" not in result
+        assert result.get("id") == "CR-TEST-001"
+        assert "path" in result
+
+    def test_create_change_request_tool_invalid_id(self, sample_repo):
+        """create_change_request_tool should error for invalid ID."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = _call_tool_sync(
+            server,
+            "create_change_request_tool",
+            {
+                "cr_id": "invalid-id",
+                "title": "Test",
+            },
+        )
+        assert "error" in result
+
+    def test_export_model_tool(self, sample_repo):
+        """export_model should return exported file summary."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = _call_tool_sync(
+            server,
+            "export_model",
+            {"fmt": "csv"},
+        )
+        assert "error" not in result
+        assert result.get("format") == "csv"
+        assert "files" in result
+
+    def test_export_model_unknown_format(self, sample_repo):
+        """export_model should error for unknown format."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = _call_tool_sync(
+            server,
+            "export_model",
+            {"fmt": "pdf"},
+        )
+        assert "error" in result
+
+    def test_list_write_intent_tools(self, sample_repo):
+        """Server should register write-intent tools."""
+        server = create_mcp_server(repo=str(sample_repo))
+        tools = asyncio.run(server.list_tools())
+        names = {t.name for t in tools}
+        expected = {
+            "propose_model_change",
+            "proposal_dry_run",
+            "proposal_impact",
+            "create_change_request_tool",
+            "export_model",
+            "infer_model",
         }
         assert expected.issubset(names)
 
