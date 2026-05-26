@@ -101,6 +101,7 @@ from modelops_core.reports.audit_service import (
 )
 from modelops_core.reports.gap_summary import generate_gap_summary_report
 from modelops_core.reports.health_report import generate_repository_health
+from modelops_core.reports.ownership_report import generate_ownership_report
 from modelops_core.reports.scorecard_service import generate_scorecard
 from modelops_core.reports.source_registry_service import (
     SourceRegistryService,
@@ -1301,6 +1302,77 @@ def scorecard(
 
     console.print("")
     console.print(f"[italic]{report.summary}[/italic]")
+
+
+@app.command("owners")
+@with_telemetry("owners")
+def owners(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Show ownership coverage and steward workload."""
+    repo_root = _resolve_repo(repo)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+
+    if not db_path.exists():
+        console.print(
+            "[yellow]No index found. Run `modelops build-index` first.[/yellow]"
+        )
+        raise typer.Exit(code=1)
+
+    report = generate_ownership_report(db_path, repo_root)
+
+    if json_output:
+        result = {
+            "owners": [
+                {
+                    "owner_id": o.owner_id,
+                    "role": o.role,
+                    "object_count": o.object_count,
+                    "object_types": o.object_types,
+                }
+                for o in report.owners
+            ],
+            "orphaned_objects": [
+                {
+                    "object_id": o.object_id,
+                    "object_type": o.object_type,
+                    "object_name": o.object_name,
+                }
+                for o in report.orphaned_objects
+            ],
+            "coverage_percent": report.coverage_percent,
+            "total_eligible": report.total_eligible,
+            "total_with_owner": report.total_with_owner,
+        }
+        print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print("[bold]Ownership Report[/bold]")
+    console.print(f"  Coverage: {report.coverage_percent}%")
+    console.print(f"  Eligible objects: {report.total_eligible}")
+    console.print(f"  With owner: {report.total_with_owner}")
+    console.print(f"  Orphaned: {len(report.orphaned_objects)}")
+    console.print("")
+
+    if report.owners:
+        table = Table("Owner", "Role", "Objects", "Type Breakdown")
+        for o in report.owners:
+            type_breakdown = ", ".join(
+                f"{k}: {v}" for k, v in o.object_types.items()
+            )
+            table.add_row(o.owner_id, o.role, str(o.object_count), type_breakdown)
+        console.print(table)
+    else:
+        console.print("[yellow]No owners found.[/yellow]")
+
+    if report.orphaned_objects:
+        console.print("")
+        console.print("[bold]Orphaned Objects[/bold]")
+        orphan_table = Table("Object ID", "Type", "Name")
+        for o in report.orphaned_objects:
+            orphan_table.add_row(o.object_id, o.object_type, o.object_name or "—")
+        console.print(orphan_table)
 
 
 @app.command()
