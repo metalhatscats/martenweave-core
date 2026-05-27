@@ -2,6 +2,8 @@
 id: DEC-ARCH-001-BP-CENTRAL
 type: Decision
 status: active
+business_owner: PERSON-BUSINESS-OWNER
+data_steward: PERSON-DATA-STEWARD
 schema_version: "1.0"
 title: Business Partner Central as canonical master entity
 domain: DOMAIN-CUSTOMER-BP

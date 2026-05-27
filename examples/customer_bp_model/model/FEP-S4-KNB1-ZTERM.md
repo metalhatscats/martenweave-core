@@ -2,6 +2,8 @@
 id: FEP-S4-KNB1-ZTERM
 type: FieldEndpoint
 status: active
+business_owner: PERSON-BUSINESS-OWNER
+data_steward: PERSON-DATA-STEWARD
 schema_version: "1.0"
 name: ZTERM
 domain: DOMAIN-CUSTOMER-BP

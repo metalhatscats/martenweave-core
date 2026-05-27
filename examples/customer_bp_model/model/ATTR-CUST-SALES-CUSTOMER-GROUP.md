@@ -2,6 +2,8 @@
 id: ATTR-CUST-SALES-CUSTOMER-GROUP
 type: Attribute
 status: active
+business_owner: PERSON-BUSINESS-OWNER
+data_steward: PERSON-DATA-STEWARD
 schema_version: "1.0"
 name: Customer Group
 domain: DOMAIN-CUSTOMER-BP

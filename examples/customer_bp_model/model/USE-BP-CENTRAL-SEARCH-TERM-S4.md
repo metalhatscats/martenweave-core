@@ -1,0 +1,12 @@
+---
+id: USE-BP-CENTRAL-SEARCH-TERM-S4
+type: AttributeUsage
+status: active
+attribute: ATTR-BP-CENTRAL-SEARCH-TERM
+entity_context: CTX-BP-CENTRAL-S4
+field_endpoint: FEP-S4-BUT000-BU-SORT1
+---
+
+# Usage: USE-BP-CENTRAL-SEARCH-TERM-S4
+
+Maps `ATTR-BP-CENTRAL-SEARCH-TERM` to `FEP-S4-BUT000-BU-SORT1` via `CTX-BP-CENTRAL-S4`.

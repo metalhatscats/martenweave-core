@@ -2,6 +2,8 @@
 id: FEP-S4-KNVV-KDGRP
 type: FieldEndpoint
 status: active
+business_owner: PERSON-BUSINESS-OWNER
+data_steward: PERSON-DATA-STEWARD
 schema_version: "1.0"
 name: KNVV Customer Group
 domain: DOMAIN-CUSTOMER-BP

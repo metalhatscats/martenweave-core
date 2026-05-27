@@ -1,0 +1,12 @@
+---
+id: USE-BP-SALES-AREA-INCOTERMS-S4
+type: AttributeUsage
+status: active
+attribute: ATTR-BP-SALES-AREA-INCOTERMS
+entity_context: CTX-CUSTOMER-SALES-AREA-S4
+field_endpoint: FEP-S4-KNVV-INCO1
+---
+
+# Usage: USE-BP-SALES-AREA-INCOTERMS-S4
+
+Maps `ATTR-BP-SALES-AREA-INCOTERMS` to `FEP-S4-KNVV-INCO1` via `CTX-CUSTOMER-SALES-AREA-S4`.
