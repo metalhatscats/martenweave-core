@@ -924,3 +924,35 @@ class TestVersionMetadata:
         self._assert_report_has_version(
             ["analyze", "--repo", str(indexed_repo), "--json"]
         )
+
+
+class TestMiscContract:
+    def test_migrate_json_schema(self, sample_repo: Path) -> None:
+        result = runner.invoke(app, ["migrate", "--repo", str(sample_repo), "--dry-run", "--json"])
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert "dry_run" in data
+        assert "migrated_count" in data
+        assert "skipped_count" in data
+        assert "schema_version" in data
+        assert "migrated_files" in data
+        assert "config_updated" in data
+
+    def test_usage_report_json_schema(self, indexed_repo: Path) -> None:
+        result = runner.invoke(app, ["usage-report", "--repo", str(indexed_repo), "--json"])
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert "total_events" in data
+        assert "event_type_counts" in data
+        assert "command_counts" in data
+        assert "status_counts" in data
+        assert "ai_usage_summary" in data
+        assert "date_range" in data
+
+    def test_docs_build_json_schema(self, indexed_repo: Path) -> None:
+        result = runner.invoke(app, ["docs-build", "--repo", str(indexed_repo), "--json"])
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert "output_dir" in data
+        assert "files" in data
+        assert isinstance(data["files"], list)
