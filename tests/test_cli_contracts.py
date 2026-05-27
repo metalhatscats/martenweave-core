@@ -1067,3 +1067,127 @@ class TestMiscContract:
         assert "output_dir" in data
         assert "files" in data
         assert isinstance(data["files"], list)
+
+
+# ---------------------------------------------------------------------------
+# Governance contract tests (#289)
+# ---------------------------------------------------------------------------
+
+
+class TestGovernanceContract:
+    def test_proposal_show_json_schema(self, repo_with_proposal: Path) -> None:
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "show",
+                "PP-SCAFFOLD-001",
+                "--repo",
+                str(repo_with_proposal),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert data.get("id") == "PP-SCAFFOLD-001"
+        assert "status" in data
+        assert "operations" in data
+        assert isinstance(data["operations"], list)
+
+    def test_proposal_validate_json_schema(self, repo_with_proposal: Path) -> None:
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "validate",
+                "PP-SCAFFOLD-001",
+                "--repo",
+                str(repo_with_proposal),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert "proposal_id" in data
+        assert "error_count" in data
+        assert "warning_count" in data
+        assert "results" in data
+        assert isinstance(data["results"], list)
+
+    def test_proposal_diff_json_schema(self, repo_with_proposal: Path) -> None:
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "diff",
+                "PP-SCAFFOLD-001",
+                "--repo",
+                str(repo_with_proposal),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert data.get("proposal_id") == "PP-SCAFFOLD-001"
+        assert "diffs" in data
+        assert isinstance(data["diffs"], list)
+
+    def test_proposal_review_bundle_json_schema(self, repo_with_proposal: Path) -> None:
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "review-bundle",
+                "PP-SCAFFOLD-001",
+                "--repo",
+                str(repo_with_proposal),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert data.get("proposal_id") == "PP-SCAFFOLD-001"
+        assert "report" in data
+        assert "impact" in data
+        assert "validation" in data
+        assert isinstance(data["validation"].get("is_safe"), bool)
+        assert "error_count" in data["validation"]
+
+    def test_index_fresh_json_schema(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app,
+            ["index-fresh", "--repo", str(indexed_repo), "--json"],
+        )
+        assert result.exit_code == 0, result.output
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert "fresh" in data
+        assert isinstance(data["fresh"], bool)
+        assert "db_path" in data
+        assert "stale_sources" in data
+        assert isinstance(data["stale_sources"], list)
+
+    def test_decisions_show_json_schema(self, sample_repo: Path) -> None:
+        # Use a known decision ID from the sample repo
+        result = runner.invoke(
+            app,
+            [
+                "decisions",
+                "show",
+                "DEC-ARCH-001-BP-CENTRAL",
+                "--repo",
+                str(sample_repo),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert data.get("id") == "DEC-ARCH-001-BP-CENTRAL"
+        assert data.get("type") == "Decision"
+        assert "status" in data
+        assert "title" in data
