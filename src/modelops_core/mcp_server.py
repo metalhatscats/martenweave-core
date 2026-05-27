@@ -85,7 +85,7 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
     ) -> str:
         """Search model objects by keywords across name, title, description, and body."""
         db_path = _ensure_index(repo_root)
-        results = search_objects(
+        paginated = search_objects(
             db_path=db_path,
             query=query,
             object_type=object_type,
@@ -104,9 +104,9 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
                     "score": r.score,
                     "matched_fields": r.matched_fields,
                 }
-                for r in results
+                for r in paginated.results
             ],
-            "total_returned": len(results),
+            "total_returned": paginated.total_count,
         }
         return json.dumps(output, indent=2, default=str)
 
@@ -120,7 +120,7 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
     ) -> str:
         """Run a structured query over indexed objects."""
         db_path = _ensure_index(repo_root)
-        results = query_objects(
+        paginated = query_objects(
             db_path=db_path,
             object_type=object_type,
             status=status,
@@ -137,9 +137,9 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
                     "name": r.name or r.title,
                     "domain": r.domain,
                 }
-                for r in results
+                for r in paginated.results
             ],
-            "total_returned": len(results),
+            "total_returned": paginated.total_count,
         }
         return json.dumps(output, indent=2, default=str)
 

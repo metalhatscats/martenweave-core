@@ -4646,6 +4646,7 @@ def search(
         None, "--tag", help="Filter by tag (repeatable)."
     ),
     limit: int = typer.Option(50, "--limit", help="Maximum results."),
+    offset: int = typer.Option(0, "--offset", help="Skip first N results."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Search indexed objects by keyword."""
@@ -4656,7 +4657,7 @@ def search(
         console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
-    results = search_objects(
+    paginated = search_objects(
         db_path=db_path,
         query=query,
         object_type=object_type,
@@ -4664,23 +4665,28 @@ def search(
         domain=domain,
         tags=tags,
         limit=limit,
+        offset=offset,
     )
+    results = paginated.results
 
     if json_output:
-        output = [
-            {
-                "object_id": r.object_id,
-                "object_type": r.object_type,
-                "status": r.status,
-                "name": r.name,
-                "title": r.title,
-                "domain": r.domain,
-                "source_file": r.source_file,
-                "score": r.score,
-                "matched_fields": r.matched_fields,
-            }
-            for r in results
-        ]
+        output = {
+            "results": [
+                {
+                    "object_id": r.object_id,
+                    "object_type": r.object_type,
+                    "status": r.status,
+                    "name": r.name,
+                    "title": r.title,
+                    "domain": r.domain,
+                    "source_file": r.source_file,
+                    "score": r.score,
+                    "matched_fields": r.matched_fields,
+                }
+                for r in results
+            ],
+            "total_count": paginated.total_count,
+        }
         print(json.dumps(output, indent=2, default=str))
         raise typer.Exit()
 
@@ -4688,7 +4694,7 @@ def search(
         console.print("[yellow]No results found.[/yellow]")
         raise typer.Exit()
 
-    console.print(f"[bold]Search Results ({len(results)})[/bold]")
+    console.print(f"[bold]Search Results ({paginated.total_count})[/bold]")
     table = Table("ID", "Type", "Name", "Status", "Score", "Matched")
     for r in results:
         table.add_row(
@@ -4727,6 +4733,7 @@ def query(
         None, "--sap-table", help="Filter by SAP table name."
     ),
     limit: int = typer.Option(50, "--limit", help="Maximum results."),
+    offset: int = typer.Option(0, "--offset", help="Skip first N results."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Run a structured query over the generated index."""
@@ -4737,7 +4744,7 @@ def query(
         console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
-    results = query_objects(
+    paginated = query_objects(
         db_path=db_path,
         object_type=object_type,
         status=status,
@@ -4747,21 +4754,26 @@ def query(
         owner=owner,
         sap_table=sap_table,
         limit=limit,
+        offset=offset,
     )
+    results = paginated.results
 
     if json_output:
-        output = [
-            {
-                "object_id": r.object_id,
-                "object_type": r.object_type,
-                "status": r.status,
-                "name": r.name,
-                "title": r.title,
-                "domain": r.domain,
-                "source_file": r.source_file,
-            }
-            for r in results
-        ]
+        output = {
+            "results": [
+                {
+                    "object_id": r.object_id,
+                    "object_type": r.object_type,
+                    "status": r.status,
+                    "name": r.name,
+                    "title": r.title,
+                    "domain": r.domain,
+                    "source_file": r.source_file,
+                }
+                for r in results
+            ],
+            "total_count": paginated.total_count,
+        }
         print(json.dumps(output, indent=2, default=str))
         raise typer.Exit()
 
@@ -4769,7 +4781,7 @@ def query(
         console.print("[yellow]No results found.[/yellow]")
         raise typer.Exit()
 
-    console.print(f"[bold]Query Results ({len(results)})[/bold]")
+    console.print(f"[bold]Query Results ({paginated.total_count})[/bold]")
     table = Table("ID", "Type", "Name", "Status", "Domain")
     for r in results:
         table.add_row(

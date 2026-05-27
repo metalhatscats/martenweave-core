@@ -25,6 +25,30 @@ class SearchResult:
     matched_fields: list[str] = field(default_factory=list)
 
 
+@dataclass
+class PaginatedResult:
+    """Paginated search or query result set."""
+
+    results: list[SearchResult]
+    total_count: int
+
+    def __iter__(self):
+        return iter(self.results)
+
+    def __len__(self) -> int:
+        return len(self.results)
+
+    def __getitem__(self, idx: int) -> SearchResult:
+        return self.results[idx]
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, PaginatedResult):
+            return self.results == other.results and self.total_count == other.total_count
+        if isinstance(other, list):
+            return self.results == other
+        return NotImplemented
+
+
 def _row_to_result(row: sqlite3.Row) -> SearchResult:
     return SearchResult(
         object_id=row["id"],
@@ -68,7 +92,8 @@ def search_objects(
     domain: str | None = None,
     tags: list[str] | None = None,
     limit: int = 50,
-) -> list[SearchResult]:
+    offset: int = 0,
+) -> PaginatedResult:
     """Keyword search over indexed objects.
 
     Searches across ``name``, ``title``, ``description``, and ``body``
@@ -92,8 +117,8 @@ def search_objects(
         placeholders = ", ".join("?" for _ in tags)
         sql += f" AND id IN (SELECT object_id FROM tags WHERE tag IN ({placeholders}))"
         params.extend(tags)
-    sql += " LIMIT ?"
-    params.append(limit)
+    # No SQL LIMIT — fetch all matches so Python-side scoring is correct,
+    # then slice with offset/limit after sorting.
 
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
@@ -119,7 +144,8 @@ def search_objects(
         results.append(result)
 
     results.sort(key=lambda r: r.score, reverse=True)
-    return results
+    total_count = len(results)
+    return PaginatedResult(results=results[offset : offset + limit], total_count=total_count)
 
 
 def query_objects(
@@ -132,7 +158,8 @@ def query_objects(
     owner: str | None = None,
     sap_table: str | None = None,
     limit: int = 50,
-) -> list[SearchResult]:
+    offset: int = 0,
+) -> PaginatedResult:
     """Structured query over indexed objects.
 
     Filters by exact match on ``type``, ``status``, ``domain`` and
@@ -178,9 +205,20 @@ def query_objects(
         conditions.append("json_extract(frontmatter_json, '$.sap_table') = ?")
         params.append(sap_table)
 
-    sql = "SELECT * FROM objects WHERE " + " AND ".join(conditions)
-    sql += " LIMIT ?"
-    params.append(limit)
+    where_clause = " AND ".join(conditions)
+
+    # Count total matching rows before pagination
+    count_sql = "SELECT COUNT(*) FROM objects WHERE " + where_clause
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    try:
+        total_count = conn.execute(count_sql, list(params)).fetchone()[0]
+    finally:
+        conn.close()
+
+    sql = "SELECT * FROM objects WHERE " + where_clause
+    sql += " LIMIT ? OFFSET ?"
+    params.extend([limit, offset])
 
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
@@ -190,7 +228,10 @@ def query_objects(
     finally:
         conn.close()
 
-    return [_row_to_result(row) for row in rows]
+    return PaginatedResult(
+        results=[_row_to_result(row) for row in rows],
+        total_count=total_count,
+    )
 
 
 def get_object_by_id(db_path: Path, object_id: str) -> dict[str, Any] | None:

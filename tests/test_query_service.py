@@ -201,6 +201,32 @@ class TestSearchObjects:
         results = search_objects(db, "a", limit=1)
         assert len(results) == 1
 
+    def test_search_offset(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        # "Customer" matches ATTR-001, FEP-001, FEP-002 (3 results)
+        # Score order: ATTR-001 (name+description), FEP-001 (description), FEP-002 (description)
+        all_results = search_objects(db, "Customer")
+        assert len(all_results) == 3
+        offset_results = search_objects(db, "Customer", offset=1)
+        assert len(offset_results) == 2
+        assert offset_results[0].object_id == all_results[1].object_id
+
+    def test_search_limit_offset(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        all_results = search_objects(db, "Customer")
+        assert len(all_results) == 3
+        results = search_objects(db, "Customer", limit=1, offset=1)
+        assert len(results) == 1
+        assert results[0].object_id == all_results[1].object_id
+
+    def test_search_offset_beyond_results(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = search_objects(db, "Customer", offset=10)
+        assert results == []
+
     def test_search_scores_sorted(self, tmp_path: Path) -> None:
         db = tmp_path / "modelops.db"
         _build_index(db)
@@ -271,6 +297,30 @@ class TestQueryObjects:
     def test_query_missing_db(self, tmp_path: Path) -> None:
         db = tmp_path / "modelops.db"
         results = query_objects(db, object_type="Attribute")
+        assert results == []
+
+    def test_query_offset(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        all_results = query_objects(db, object_type="FieldEndpoint")
+        assert len(all_results) == 2
+        offset_results = query_objects(db, object_type="FieldEndpoint", offset=1)
+        assert len(offset_results) == 1
+        assert offset_results[0].object_id in {r.object_id for r in all_results}
+
+    def test_query_limit_offset(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        all_results = query_objects(db, domain="DOMAIN-A")
+        assert len(all_results) == 3
+        results = query_objects(db, domain="DOMAIN-A", limit=1, offset=1)
+        assert len(results) == 1
+        assert results[0].object_id in {r.object_id for r in all_results}
+
+    def test_query_offset_beyond_results(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = query_objects(db, object_type="Attribute", offset=10)
         assert results == []
 
     def test_query_by_tag(self, tmp_path: Path) -> None:
@@ -443,11 +493,13 @@ class TestJsonContract:
         )
         assert result.exit_code == 0
         data = json.loads(result.output)
-        assert isinstance(data, list)
-        assert len(data) >= 1
-        assert "object_id" in data[0]
-        assert "object_type" in data[0]
-        assert "status" in data[0]
+        assert isinstance(data, dict)
+        assert "results" in data
+        assert "total_count" in data
+        assert len(data["results"]) >= 1
+        assert "object_id" in data["results"][0]
+        assert "object_type" in data["results"][0]
+        assert "status" in data["results"][0]
 
     def test_cli_search_json_roundtrip(self, tmp_path: Path) -> None:
         repo = tmp_path / "repo"
@@ -463,11 +515,13 @@ class TestJsonContract:
         )
         assert result.exit_code == 0
         data = json.loads(result.output)
-        assert isinstance(data, list)
-        assert len(data) >= 1
-        assert "object_id" in data[0]
-        assert "score" in data[0]
-        assert "matched_fields" in data[0]
+        assert isinstance(data, dict)
+        assert "results" in data
+        assert "total_count" in data
+        assert len(data["results"]) >= 1
+        assert "object_id" in data["results"][0]
+        assert "score" in data["results"][0]
+        assert "matched_fields" in data["results"][0]
 
 
 class TestFilterCombinations:
