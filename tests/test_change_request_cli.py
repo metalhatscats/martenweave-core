@@ -879,3 +879,211 @@ class TestChangeRequestApproveRejectCli:
         assert data["approvals"][0]["decision"] == "approved"
         assert data["approvals"][1]["decision"] == "rejected"
         assert data["rejection_reason"] == "Reversing decision."
+
+    # -- audit and notification event tests ---------------------------------
+
+    def test_cr_approve_emits_audit_event(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-AUDIT-001",
+                "--title",
+                "Audit Test",
+                "--repo",
+                str(repo_root),
+            ],
+        )
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "approve",
+                "CR-AUDIT-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "alice",
+            ],
+        )
+        assert result.exit_code == 0
+
+        from modelops_core.reports.audit_service import AuditEventService
+
+        service = AuditEventService(repo_root)
+        events = service.read_events()
+        assert any(e.event_type == "change_request_approved" for e in events)
+        approve_event = next(
+            e for e in events if e.event_type == "change_request_approved"
+        )
+        assert approve_event.actor == "alice"
+        assert approve_event.status == "success"
+        assert approve_event.command == "change-request approve"
+
+    def test_cr_reject_emits_audit_event(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-AUDIT-REJ-001",
+                "--title",
+                "Audit Reject Test",
+                "--repo",
+                str(repo_root),
+            ],
+        )
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "reject",
+                "CR-AUDIT-REJ-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "bob",
+            ],
+        )
+        assert result.exit_code == 0
+
+        from modelops_core.reports.audit_service import AuditEventService
+
+        service = AuditEventService(repo_root)
+        events = service.read_events()
+        assert any(e.event_type == "change_request_rejected" for e in events)
+        reject_event = next(
+            e for e in events if e.event_type == "change_request_rejected"
+        )
+        assert reject_event.actor == "bob"
+        assert reject_event.status == "success"
+        assert reject_event.command == "change-request reject"
+
+    def test_cr_approve_emits_notification_events(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        attr_file = model_dir / "ATTR-TEST.md"
+        attr_file.write_text(
+            "---\n"
+            "id: ATTR-TEST\n"
+            "type: Attribute\n"
+            "status: active\n"
+            "name: Test\n"
+            "business_owner: alice\n"
+            "---\n\n# Test\n",
+            encoding="utf-8",
+        )
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-NOTIF-001",
+                "--title",
+                "Notif Test",
+                "--repo",
+                str(repo_root),
+                "--affected-object",
+                "ATTR-TEST",
+            ],
+        )
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "approve",
+                "CR-NOTIF-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "bob",
+            ],
+        )
+        assert result.exit_code == 0
+
+        from modelops_core.notifications.event_service import read_notification_events
+
+        events = read_notification_events(repo_root)
+        assert len(events) >= 1
+        approve_events = [
+            e for e in events if e.event_type == "change_request_approved"
+        ]
+        assert len(approve_events) >= 1
+        assert any(e.recipient_id == "alice" for e in approve_events)
+
+    def test_cr_reject_emits_notification_events(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        attr_file = model_dir / "ATTR-TEST.md"
+        attr_file.write_text(
+            "---\n"
+            "id: ATTR-TEST\n"
+            "type: Attribute\n"
+            "status: active\n"
+            "name: Test\n"
+            "business_owner: alice\n"
+            "---\n\n# Test\n",
+            encoding="utf-8",
+        )
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-NOTIF-REJ-001",
+                "--title",
+                "Notif Reject Test",
+                "--repo",
+                str(repo_root),
+                "--affected-object",
+                "ATTR-TEST",
+            ],
+        )
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "reject",
+                "CR-NOTIF-REJ-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "bob",
+                "--reason",
+                "Insufficient evidence.",
+            ],
+        )
+        assert result.exit_code == 0
+
+        from modelops_core.notifications.event_service import read_notification_events
+
+        events = read_notification_events(repo_root)
+        assert len(events) >= 1
+        reject_events = [
+            e for e in events if e.event_type == "change_request_rejected"
+        ]
+        assert len(reject_events) >= 1
+        assert any(e.recipient_id == "alice" for e in reject_events)
