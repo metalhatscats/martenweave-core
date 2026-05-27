@@ -174,6 +174,36 @@ class TestIndexQueryContract:
             assert "to_object_id" in edge
             assert "relationship_type" in edge
 
+    def test_build_index_json_schema(self, sample_repo: Path) -> None:
+        result = runner.invoke(
+            app, ["build-index", "--repo", str(sample_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert "martenweave_version" in data
+        assert "repo" in data
+        assert "db_path" in data
+        assert "objects_count" in data
+        assert "valid" in data
+        assert "dry_run" in data
+        assert "jsonl_paths" in data
+        assert "errors" in data
+        assert data["valid"] is True
+        assert data["dry_run"] is False
+
+    def test_build_index_json_dry_run(self, sample_repo: Path) -> None:
+        db_path = sample_repo / "generated" / "modelops.db"
+        if db_path.exists():
+            db_path.unlink()
+        result = runner.invoke(
+            app, ["build-index", "--repo", str(sample_repo), "--dry-run", "--json"]
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert data["dry_run"] is True
+        assert not db_path.exists()
+
     def test_health_json_schema(self, indexed_repo: Path) -> None:
         result = runner.invoke(
             app, ["health", "--repo", str(indexed_repo), "--json"]

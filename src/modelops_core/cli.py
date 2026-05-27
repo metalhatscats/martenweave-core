@@ -984,6 +984,11 @@ def build_index(
         "--dry-run",
         help="Preview what would be indexed without writing the database.",
     ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Output raw JSON.",
+    ),
 ) -> None:
     """Build SQLite index from canonical files."""
     repo_root = _resolve_repo(repo)
@@ -1002,6 +1007,9 @@ def build_index(
             dry_run=dry_run,
         )
     except (ValueError, ResourceLimitExceeded) as exc:
+        if json_output:
+            print(json.dumps({"error": str(exc)}, indent=2))
+            raise typer.Exit(code=1) from exc
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
@@ -1010,23 +1018,48 @@ def build_index(
     if db_path is None:
         db_path = resolve_generated_path(repo_root) / "modelops.db"
 
+    object_count = len(scan_repository(resolve_model_path(repo_root)))
+    gen = resolve_generated_path(repo_root)
+    jsonl_paths = []
+    if jsonl:
+        jsonl_paths = [
+            str(gen / "search_documents.jsonl"),
+            str(gen / "lineage_edges.jsonl"),
+        ]
+
+    if json_output:
+        result = {
+            "martenweave_version": __version__,
+            "repo": str(repo_root),
+            "db_path": str(db_path),
+            "objects_count": object_count,
+            "valid": summary.is_valid,
+            "dry_run": dry_run,
+            "jsonl_paths": jsonl_paths,
+            "errors": [
+                r.model_dump(mode="json")
+                for r in summary.results
+                if r.severity == "ERROR"
+            ],
+        }
+        print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
     if dry_run:
         console.print("[bold]Dry-run: index preview[/bold]")
-        console.print(f"  Objects: {len(scan_repository(resolve_model_path(repo_root)))}")
+        console.print(f"  Objects: {object_count}")
         console.print(f"  Valid:   {summary.is_valid}")
         console.print(f"  Would write to: {db_path}")
         if jsonl:
-            gen = resolve_generated_path(repo_root)
             console.print(f"  Would export JSONL: {gen / 'search_documents.jsonl'}")
             console.print(f"  Would export JSONL: {gen / 'lineage_edges.jsonl'}")
         return
 
     console.print(f"[green]Index built at {db_path}[/green]")
-    console.print(f"  Objects: {len(scan_repository(resolve_model_path(repo_root)))}")
+    console.print(f"  Objects: {object_count}")
     console.print(f"  Valid:   {summary.is_valid}")
 
     if jsonl:
-        gen = resolve_generated_path(repo_root)
         console.print(f"  JSONL:   {gen / 'search_documents.jsonl'}")
         console.print(f"  JSONL:   {gen / 'lineage_edges.jsonl'}")
 
