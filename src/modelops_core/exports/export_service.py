@@ -1,8 +1,9 @@
-"""Export canonical model objects to CSV and XLSX."""
+"""Export canonical model objects to CSV, XLSX, and JSONL."""
 
 from __future__ import annotations
 
 import csv
+import json
 from pathlib import Path
 from typing import Any
 
@@ -106,6 +107,76 @@ def export_model_csv(
             for obj in objects:
                 row = {col: _flatten_value(obj.get(col)) for col in columns}
                 writer.writerow(row)
+
+        written.append(file_path)
+
+    return written
+
+
+def export_model_jsonl(
+    repo_model_path: Path,
+    output_dir: Path | None = None,
+    max_objects: int | None = None,
+) -> list[Path]:
+    """Export canonical objects to one JSONL file per type.
+
+    Each line is a JSON object containing all frontmatter fields,
+    the body/content, and the source file name.
+
+    Args:
+        repo_model_path: Path to the model directory.
+        output_dir: Directory to write JSONL files. Defaults to
+            ``repo_model_path.parent / "generated" / "exports" / "jsonl"``.
+        max_objects: Maximum objects per type. If exceeded, raises
+            ``ResourceLimitExceeded``.
+
+    Returns:
+        List of written file paths.
+
+    Raises:
+        ResourceLimitExceeded: If any object type exceeds the limit.
+    """
+    if output_dir is None:
+        output_dir = repo_model_path.parent / "generated" / "exports" / "jsonl"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    files = scan_repository(repo_model_path)
+    objects_by_type: dict[str, list[dict[str, Any]]] = {}
+
+    for file_path in files:
+        parsed = parse_file(file_path)
+        if parsed.parser_error or not parsed.frontmatter:
+            continue
+        fm = dict(parsed.frontmatter)
+        obj_type = str(fm.get("type", "Unknown"))
+        fm["source_file"] = Path(parsed.source_path).name
+        if parsed.body:
+            fm["body"] = parsed.body
+        objects_by_type.setdefault(obj_type, []).append(fm)
+
+    if max_objects is not None:
+        for obj_type, objects in objects_by_type.items():
+            if len(objects) > max_objects:
+                raise ResourceLimitExceeded(
+                    resource="max_export_objects",
+                    message=(
+                        f"Type '{obj_type}' has {len(objects)} objects, "
+                        f"exceeding max_export_objects limit of {max_objects}. "
+                        f"Increase the limit or filter by type."
+                    ),
+                )
+
+    written: list[Path] = []
+
+    for obj_type, objects in objects_by_type.items():
+        safe_name = obj_type.replace(" ", "_").lower()
+        file_path = output_dir / f"{safe_name}.jsonl"
+        # Deterministic ordering by id
+        objects_sorted = sorted(objects, key=lambda o: str(o.get("id", "")))
+
+        with file_path.open("w", encoding="utf-8") as f:
+            for obj in objects_sorted:
+                f.write(json.dumps(obj, default=str, sort_keys=True) + "\n")
 
         written.append(file_path)
 
