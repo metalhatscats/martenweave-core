@@ -9,6 +9,7 @@ from typing import Any
 
 import yaml
 
+from modelops_core.approval.risk_service import compute_proposal_risk
 from modelops_core.config import load_repo_config, resolve_generated_path
 from modelops_core.index import build_index
 from modelops_core.repository import parse_file, scan_repository
@@ -29,6 +30,8 @@ class ApplyResult:
     index_rebuilt: bool = False
     db_path: str | None = None
     error: str | None = None
+    risk_level: str | None = None
+    risk_assessment: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -227,10 +230,25 @@ def _write_audit_event(
     validation_summary: ValidationSummary,
     event_type: str = "patch_apply",
     status: str | None = None,
+    risk_level: str | None = None,
+    risk_assessment: dict[str, Any] | None = None,
 ) -> str:
     from modelops_core.reports.audit_service import AuditEventService, create_audit_event
 
     service = AuditEventService(repo_root)
+    outputs: dict[str, Any] = {
+        "changed_files": changed_files,
+        "validation": {
+            "is_valid": validation_summary.is_valid,
+            "error_count": validation_summary.error_count,
+            "warning_count": validation_summary.warning_count,
+            "info_count": validation_summary.info_count,
+        },
+    }
+    if risk_level is not None:
+        outputs["risk_level"] = risk_level
+    if risk_assessment is not None:
+        outputs["risk_assessment"] = risk_assessment
     event = create_audit_event(
         event_type=event_type,
         actor="system",
@@ -239,15 +257,7 @@ def _write_audit_event(
         proposal_id=proposal_id,
         changed_files=changed_files,
         validation_status="valid" if validation_summary.is_valid else "invalid",
-        outputs={
-            "changed_files": changed_files,
-            "validation": {
-                "is_valid": validation_summary.is_valid,
-                "error_count": validation_summary.error_count,
-                "warning_count": validation_summary.warning_count,
-                "info_count": validation_summary.info_count,
-            },
-        },
+        outputs=outputs,
     )
     return service.emit(event)
 
@@ -410,7 +420,9 @@ def dry_run_patch_proposal(
     return result
 
 
-def apply_patch_proposal(repo_model_path: Path, proposal_id: str) -> ApplyResult:
+def apply_patch_proposal(
+    repo_model_path: Path, proposal_id: str, skip_risk_check: bool = False
+) -> ApplyResult:
     """Apply an accepted PatchProposal to canonical model files."""
     if not repo_model_path.exists():
         raise FileNotFoundError(f"Repository path not found: {repo_model_path}")
@@ -450,6 +462,17 @@ def apply_patch_proposal(repo_model_path: Path, proposal_id: str) -> ApplyResult
 
     operations = [_Op(op) for op in operations_raw if isinstance(op, dict)]
 
+    # Risk assessment
+    risk = compute_proposal_risk(
+        [op.__dict__ for op in operations], repo_model_path
+    )
+    if risk.risk_level == "high" and not skip_risk_check:
+        raise ValueError(
+            f"High-risk proposal blocked (level: {risk.risk_level}). "
+            f"Reasons: {'; '.join(risk.risk_reasons)}. "
+            "Use --skip-risk-check to override."
+        )
+
     backup_state: dict[Path, str | None] = {}
     changed_files: list[str] = []
 
@@ -483,7 +506,19 @@ def apply_patch_proposal(repo_model_path: Path, proposal_id: str) -> ApplyResult
 
         repo_root = repo_model_path.parent
         audit_event_id = _write_audit_event(
-            repo_root, proposal_id, changed_files, validation_summary
+            repo_root,
+            proposal_id,
+            changed_files,
+            validation_summary,
+            risk_level=risk.risk_level,
+            risk_assessment={
+                "requires_approval": risk.requires_approval,
+                "risk_level": risk.risk_level,
+                "risk_reasons": risk.risk_reasons,
+                "triggering_rules": risk.triggering_rules,
+                "affected_object_count": risk.affected_object_count,
+                "max_impact_depth": risk.max_impact_depth,
+            },
         )
 
         _update_proposal_metadata(proposal_path, changed_files, audit_event_id)
@@ -510,6 +545,15 @@ def apply_patch_proposal(repo_model_path: Path, proposal_id: str) -> ApplyResult
             audit_event_written=True,
             index_rebuilt=index_rebuilt,
             db_path=str(db_path.resolve()) if index_rebuilt else None,
+            risk_level=risk.risk_level,
+            risk_assessment={
+                "requires_approval": risk.requires_approval,
+                "risk_level": risk.risk_level,
+                "risk_reasons": risk.risk_reasons,
+                "triggering_rules": risk.triggering_rules,
+                "affected_object_count": risk.affected_object_count,
+                "max_impact_depth": risk.max_impact_depth,
+            },
         )
 
     except ValueError:

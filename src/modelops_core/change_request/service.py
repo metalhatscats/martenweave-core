@@ -9,6 +9,7 @@ from typing import Any
 
 import yaml
 
+from modelops_core.approval.risk_service import assess_change_request
 from modelops_core.repository import parse_file
 
 _ID_PATTERN = re.compile(r"^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$")
@@ -210,7 +211,7 @@ def update_change_request_status(
 
 
 def approve_change_request(
-    model_path: Path, cr_id: str, approver: str
+    model_path: Path, cr_id: str, approver: str, skip_risk_check: bool = False
 ) -> dict[str, Any]:
     """Approve a ChangeRequest and record the approver."""
     cr_dir = model_path / "change-requests"
@@ -232,8 +233,20 @@ def approve_change_request(
             f"Allowed: {', '.join(allowed) or 'none'}"
         )
 
+    # Risk assessment
+    risk = assess_change_request(frontmatter, model_path)
+    if risk.risk_level == "high" and not skip_risk_check:
+        raise ValueError(
+            f"High-risk ChangeRequest blocked (level: {risk.risk_level}). "
+            f"Reasons: {'; '.join(risk.risk_reasons)}. "
+            "Use --skip-risk-check to override."
+        )
+
     frontmatter["status"] = "approved"
     _record_approval(frontmatter, approver, "approved")
+    frontmatter["risk_level"] = risk.risk_level
+    frontmatter["risk_reasons"] = risk.risk_reasons
+    frontmatter["risk_triggering_rules"] = risk.triggering_rules
     path.write_text(_render_change_request_markdown(frontmatter), encoding="utf-8")
     return frontmatter
 

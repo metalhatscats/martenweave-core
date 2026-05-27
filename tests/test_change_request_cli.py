@@ -982,7 +982,7 @@ class TestChangeRequestApproveRejectCli:
             "---\n"
             "id: ATTR-TEST\n"
             "type: Attribute\n"
-            "status: active\n"
+            "status: draft\n"
             "name: Test\n"
             "business_owner: alice\n"
             "---\n\n# Test\n",
@@ -1039,7 +1039,7 @@ class TestChangeRequestApproveRejectCli:
             "---\n"
             "id: ATTR-TEST\n"
             "type: Attribute\n"
-            "status: active\n"
+            "status: draft\n"
             "name: Test\n"
             "business_owner: alice\n"
             "---\n\n# Test\n",
