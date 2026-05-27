@@ -315,3 +315,567 @@ def test_cr_links_and_fields(tmp_path: Path) -> None:
     assert data["related_decisions"] == ["DEC-001"]
     assert data["approvers"] == ["alice", "bob"]
     assert data["source_evidence"] == "Workshop notes"
+
+
+class TestChangeRequestApproveRejectCli:
+    # -- approve tests ------------------------------------------------------
+
+    def test_cr_approve(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-APPROVE-001",
+                "--title",
+                "Approve Test",
+                "--repo",
+                str(repo_root),
+            ],
+        )
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "approve",
+                "CR-APPROVE-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "alice",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "approved" in result.output
+        assert "alice" in result.output
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "show",
+                "CR-APPROVE-001",
+                "--repo",
+                str(repo_root),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["status"] == "approved"
+        assert len(data["approvals"]) == 1
+        assert data["approvals"][0]["approver"] == "alice"
+        assert data["approvals"][0]["decision"] == "approved"
+
+    def test_cr_approve_json(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-APPROVE-JSON-001",
+                "--title",
+                "Approve JSON",
+                "--repo",
+                str(repo_root),
+            ],
+        )
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "approve",
+                "CR-APPROVE-JSON-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "bob",
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["status"] == "approved"
+        assert data["approvals"][0]["approver"] == "bob"
+        assert data["approvals"][0]["decision"] == "approved"
+
+    def test_cr_approve_already_approved_is_blocked(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-APPROVE-BLOCK-001",
+                "--title",
+                "Already Approved",
+                "--repo",
+                str(repo_root),
+            ],
+        )
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "approve",
+                "CR-APPROVE-BLOCK-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "alice",
+            ],
+        )
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "approve",
+                "CR-APPROVE-BLOCK-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "bob",
+            ],
+        )
+        assert result.exit_code == 1
+        assert "Invalid transition" in result.output
+        assert "approved" in result.output
+
+    def test_cr_approve_rejected_is_blocked(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-APPROVE-REJ-001",
+                "--title",
+                "Rejected CR",
+                "--repo",
+                str(repo_root),
+            ],
+        )
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "reject",
+                "CR-APPROVE-REJ-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "bob",
+            ],
+        )
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "approve",
+                "CR-APPROVE-REJ-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "alice",
+            ],
+        )
+        assert result.exit_code == 1
+        assert "Invalid transition" in result.output
+
+    def test_cr_approve_implemented_is_blocked(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-APPROVE-IMPL-001",
+                "--title",
+                "Implemented CR",
+                "--repo",
+                str(repo_root),
+                "--status",
+                "implemented",
+            ],
+        )
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "approve",
+                "CR-APPROVE-IMPL-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "alice",
+            ],
+        )
+        assert result.exit_code == 1
+        assert "Invalid transition" in result.output
+
+    def test_cr_approve_missing(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "approve",
+                "CR-MISSING",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "alice",
+            ],
+        )
+        assert result.exit_code == 1
+        assert "not found" in result.output
+
+    # -- reject tests -------------------------------------------------------
+
+    def test_cr_reject(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-REJECT-001",
+                "--title",
+                "Reject Test",
+                "--repo",
+                str(repo_root),
+            ],
+        )
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "reject",
+                "CR-REJECT-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "bob",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "rejected" in result.output
+        assert "bob" in result.output
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "show",
+                "CR-REJECT-001",
+                "--repo",
+                str(repo_root),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["status"] == "rejected"
+        assert len(data["approvals"]) == 1
+        assert data["approvals"][0]["approver"] == "bob"
+        assert data["approvals"][0]["decision"] == "rejected"
+
+    def test_cr_reject_with_reason(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-REJECT-REASON-001",
+                "--title",
+                "Reject With Reason",
+                "--repo",
+                str(repo_root),
+            ],
+        )
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "reject",
+                "CR-REJECT-REASON-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "carol",
+                "--reason",
+                "Insufficient evidence.",
+            ],
+        )
+        assert result.exit_code == 0
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "show",
+                "CR-REJECT-REASON-001",
+                "--repo",
+                str(repo_root),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["status"] == "rejected"
+        assert data["rejection_reason"] == "Insufficient evidence."
+
+    def test_cr_reject_json(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-REJECT-JSON-001",
+                "--title",
+                "Reject JSON",
+                "--repo",
+                str(repo_root),
+            ],
+        )
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "reject",
+                "CR-REJECT-JSON-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "dave",
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["status"] == "rejected"
+        assert data["approvals"][0]["approver"] == "dave"
+        assert data["approvals"][0]["decision"] == "rejected"
+
+    def test_cr_reject_already_rejected_is_blocked(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-REJECT-BLOCK-001",
+                "--title",
+                "Already Rejected",
+                "--repo",
+                str(repo_root),
+            ],
+        )
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "reject",
+                "CR-REJECT-BLOCK-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "bob",
+            ],
+        )
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "reject",
+                "CR-REJECT-BLOCK-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "alice",
+            ],
+        )
+        assert result.exit_code == 1
+        assert "Invalid transition" in result.output
+        assert "rejected" in result.output
+
+    def test_cr_reject_implemented_is_blocked(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-REJECT-IMPL-001",
+                "--title",
+                "Implemented CR",
+                "--repo",
+                str(repo_root),
+                "--status",
+                "implemented",
+            ],
+        )
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "reject",
+                "CR-REJECT-IMPL-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "bob",
+            ],
+        )
+        assert result.exit_code == 1
+        assert "Invalid transition" in result.output
+
+    def test_cr_reject_missing(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "reject",
+                "CR-MISSING",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "bob",
+            ],
+        )
+        assert result.exit_code == 1
+        assert "not found" in result.output
+
+    # -- transition tests: approved → rejected ------------------------------
+
+    def test_cr_reject_approved_is_allowed(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-APPROVED-TO-REJECT-001",
+                "--title",
+                "Approved Then Rejected",
+                "--repo",
+                str(repo_root),
+            ],
+        )
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "approve",
+                "CR-APPROVED-TO-REJECT-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "alice",
+            ],
+        )
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "reject",
+                "CR-APPROVED-TO-REJECT-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "bob",
+                "--reason",
+                "Reversing decision.",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "rejected" in result.output
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "show",
+                "CR-APPROVED-TO-REJECT-001",
+                "--repo",
+                str(repo_root),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["status"] == "rejected"
+        assert len(data["approvals"]) == 2
+        assert data["approvals"][0]["decision"] == "approved"
+        assert data["approvals"][1]["decision"] == "rejected"
+        assert data["rejection_reason"] == "Reversing decision."
