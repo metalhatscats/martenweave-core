@@ -70,6 +70,10 @@ CREATE TABLE tags (
     tag TEXT NOT NULL,
     PRIMARY KEY (object_id, tag)
 );
+
+CREATE INDEX idx_rel_from ON object_relationships(from_object_id);
+CREATE INDEX idx_rel_to ON object_relationships(to_object_id);
+CREATE INDEX idx_tag_tag ON tags(tag);
 """
 
 
