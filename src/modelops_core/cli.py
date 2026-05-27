@@ -2768,6 +2768,9 @@ def proposal_list(
     status: str | None = typer.Option(
         None, "--status", help="Filter by status: pending_review, accepted, rejected, applied."
     ),
+    reviewer: str | None = typer.Option(
+        None, "--reviewer", help="Filter by reviewer identity."
+    ),
 ) -> None:
     """List all PatchProposals in the repository."""
     repo_root = _resolve_repo(repo)
@@ -2808,6 +2811,8 @@ def proposal_list(
         if stale and not is_expired:
             continue
         if status and fm.get("status") != status:
+            continue
+        if reviewer and fm.get("reviewer") != reviewer:
             continue
         proposals.append({
             "id": fm.get("id", f.stem),
