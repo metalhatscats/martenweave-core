@@ -5,10 +5,11 @@ status: draft
 schema_version: "1.0"
 name: Vendor Account Group to LFA1-KTOKK
 domain: DOMAIN-SUPPLIER-VENDOR
-source_endpoint: FEP-S4-LFA1-KTOKK
+source_endpoint: FEP-LEGACY-VENDOR-ACCOUNT-GROUP
 target_endpoint: FEP-S4-LFA1-KTOKK
 ---
 
 # Vendor Account Group to LFA1-KTOKK Mapping
 
-Direct field-level mapping for vendor account group to the S/4HANA target field LFA1-KTOKK.
+Direct field-level mapping for vendor account group from the legacy ERP source field
+to the S/4HANA target field LFA1-KTOKK.
