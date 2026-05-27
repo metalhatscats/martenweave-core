@@ -915,6 +915,9 @@ def validate(
     check_decisions: bool = typer.Option(
         False, "--check-decisions", help="Run extended Decision evidence validation."
     ),
+    strict: bool = typer.Option(
+        False, "--strict", help="Exit with code 2 if any warnings exist."
+    ),
 ) -> None:
     """Run deterministic validation on canonical files."""
     repo_root = _resolve_repo(repo)
@@ -963,6 +966,9 @@ def validate(
 
     if not summary.is_valid:
         raise typer.Exit(code=1)
+
+    if strict and summary.warning_count > 0:
+        raise typer.Exit(code=2)
 
 
 @app.command()
