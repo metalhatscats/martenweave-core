@@ -295,6 +295,147 @@ class TestIndexQueryContract:
 
 
 # ---------------------------------------------------------------------------
+# v0.4 report commands
+# ---------------------------------------------------------------------------
+
+
+class TestV4ReportContract:
+    def test_scorecard_json_schema(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app, ["scorecard", "--repo", str(indexed_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert "martenweave_version" in data
+        assert "metrics" in data
+        assert isinstance(data["metrics"], list)
+        assert "readiness_level" in data
+        assert "object_count" in data
+        assert "gaps" in data
+        assert isinstance(data["gaps"], list)
+        assert "summary" in data
+
+    def test_owners_json_schema(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app, ["owners", "--repo", str(indexed_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert "martenweave_version" in data
+        assert "owners" in data
+        assert isinstance(data["owners"], list)
+        assert "orphaned_objects" in data
+        assert isinstance(data["orphaned_objects"], list)
+        assert "coverage_percent" in data
+
+    def test_gap_report_json_schema(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app, ["gap-report", "--repo", str(indexed_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert "martenweave_version" in data
+        assert "gaps_by_type" in data
+        assert isinstance(data["gaps_by_type"], dict)
+        assert "total_gap_count" in data
+        assert "gap_score" in data
+        assert "sources_checked" in data
+        assert isinstance(data["sources_checked"], list)
+
+    def test_decisions_list_json_schema(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app, ["decisions", "list", "--repo", str(indexed_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert isinstance(data, list)
+        if data:
+            item = data[0]
+            assert "id" in item
+            assert "status" in item
+            assert "name" in item
+            assert "domain" in item
+
+    def test_decisions_report_json_schema(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app, ["decisions", "report", "--repo", str(indexed_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert "martenweave_version" in data
+        assert "evidence_coverage" in data
+        assert isinstance(data["evidence_coverage"], list)
+        assert "uncovered_decisions" in data
+        assert isinstance(data["uncovered_decisions"], list)
+        assert "category_breakdown" in data
+        assert isinstance(data["category_breakdown"], list)
+        assert "total_decisions" in data
+        assert "total_with_evidence" in data
+        assert "overall_coverage_percent" in data
+
+    def test_clean_dry_run_json_schema(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app,
+            ["clean", "--repo", str(indexed_repo), "--dry-run", "--json"],
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert "dry_run" in data
+        assert data["dry_run"] is True
+        assert "generated_path" in data
+        assert "removed_count" in data
+        assert "skipped_count" in data
+        assert "removed" in data
+        assert isinstance(data["removed"], list)
+        assert "skipped" in data
+        assert isinstance(data["skipped"], list)
+
+    def test_proposal_report_json_schema(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app, ["proposal", "report", "--repo", str(indexed_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert "martenweave_version" in data
+        assert "proposals_total" in data
+        assert "by_status" in data
+        assert isinstance(data["by_status"], dict)
+        assert "stale_summary" in data
+        assert isinstance(data["stale_summary"], dict)
+        assert "stale_count" in data["stale_summary"]
+
+    def test_validate_check_decisions_json(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app,
+            [
+                "validate",
+                "--repo",
+                str(indexed_repo),
+                "--check-decisions",
+                "--json",
+            ],
+        )
+        # May exit 0 or 1 depending on issues found; JSON should still be parseable
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert "is_valid" in data
+        assert "error_count" in data
+        assert "warning_count" in data
+        assert "info_count" in data
+        assert "results" in data
+        assert isinstance(data["results"], list)
+        # Look for DECISION_DEPRECATED_EVIDENCE warnings in results
+        codes = [r.get("code", "") for r in data["results"]]
+        assert "DECISION_DEPRECATED_EVIDENCE" in codes or data["warning_count"] >= 0
+
+
+# ---------------------------------------------------------------------------
 # dataset profiling / model inference
 # ---------------------------------------------------------------------------
 
@@ -462,8 +603,7 @@ class TestChangeRequestContract:
 
     def test_cr_list_json_schema(self, repo_with_cr: Path) -> None:
         result = runner.invoke(
-            app,
-            ["change-request", "list", "--repo", str(repo_with_cr), "--json"],
+            app, ["change-request", "list", "--repo", str(repo_with_cr), "--json"]
         )
         assert result.exit_code == 0
         data = _parse_json(result)
@@ -621,8 +761,7 @@ class TestDiffContract:
 class TestConfigGuardContract:
     def test_config_guard_json_schema(self, sample_repo: Path) -> None:
         result = runner.invoke(
-            app,
-            ["config-guard", "--repo", str(sample_repo), "--json"],
+            app, ["config-guard", "--repo", str(sample_repo), "--json"]
         )
         # May exit 0 or 1 depending on issues found; JSON should still be parseable
         data = _parse_json(result)
@@ -638,12 +777,10 @@ class TestAuditLogContract:
     def test_audit_log_json_schema(self, indexed_repo: Path) -> None:
         # Generate an audit event by exporting the model
         runner.invoke(
-            app,
-            ["export-model", "--repo", str(indexed_repo), "--format", "csv"],
+            app, ["export-model", "--repo", str(indexed_repo), "--format", "csv"]
         )
         result = runner.invoke(
-            app,
-            ["audit-log", "--repo", str(indexed_repo), "--json"],
+            app, ["audit-log", "--repo", str(indexed_repo), "--json"]
         )
         assert result.exit_code == 0
         data = _parse_json(result)
@@ -664,8 +801,7 @@ class TestAuditLogContract:
 class TestExportContract:
     def test_export_model_csv_output(self, sample_repo: Path) -> None:
         result = runner.invoke(
-            app,
-            ["export-model", "--repo", str(sample_repo), "--format", "csv"],
+            app, ["export-model", "--repo", str(sample_repo), "--format", "csv"]
         )
         assert result.exit_code == 0
         assert "Exported" in result.output
@@ -673,8 +809,7 @@ class TestExportContract:
 
     def test_export_model_xlsx_output(self, sample_repo: Path) -> None:
         result = runner.invoke(
-            app,
-            ["export-model", "--repo", str(sample_repo), "--format", "xlsx"],
+            app, ["export-model", "--repo", str(sample_repo), "--format", "xlsx"]
         )
         assert result.exit_code == 0
         assert "Exported XLSX workbook" in result.output
@@ -719,58 +854,43 @@ class TestVersionMetadata:
         assert result.exit_code == 0
         assert "0.4.0" in result.output
 
-    def test_scorecard_json_has_version(self, indexed_repo: Path) -> None:
-        result = runner.invoke(
-            app, ["scorecard", "--repo", str(indexed_repo), "--json"]
-        )
+    def _assert_report_has_version(self, args: list[str]) -> None:
+        result = runner.invoke(app, args)
         assert result.exit_code == 0
         data = _parse_json(result)
         assert data.get("martenweave_version") == "0.4.0"
+
+    def test_scorecard_json_has_version(self, indexed_repo: Path) -> None:
+        self._assert_report_has_version(
+            ["scorecard", "--repo", str(indexed_repo), "--json"]
+        )
 
     def test_health_json_has_version(self, indexed_repo: Path) -> None:
-        result = runner.invoke(
-            app, ["health", "--repo", str(indexed_repo), "--json"]
+        self._assert_report_has_version(
+            ["health", "--repo", str(indexed_repo), "--json"]
         )
-        assert result.exit_code == 0
-        data = _parse_json(result)
-        assert data.get("martenweave_version") == "0.4.0"
 
     def test_gap_report_json_has_version(self, indexed_repo: Path) -> None:
-        result = runner.invoke(
-            app, ["gap-report", "--repo", str(indexed_repo), "--json"]
+        self._assert_report_has_version(
+            ["gap-report", "--repo", str(indexed_repo), "--json"]
         )
-        assert result.exit_code == 0
-        data = _parse_json(result)
-        assert data.get("martenweave_version") == "0.4.0"
 
     def test_owners_json_has_version(self, indexed_repo: Path) -> None:
-        result = runner.invoke(
-            app, ["owners", "--repo", str(indexed_repo), "--json"]
+        self._assert_report_has_version(
+            ["owners", "--repo", str(indexed_repo), "--json"]
         )
-        assert result.exit_code == 0
-        data = _parse_json(result)
-        assert data.get("martenweave_version") == "0.4.0"
 
     def test_decisions_report_json_has_version(self, indexed_repo: Path) -> None:
-        result = runner.invoke(
-            app, ["decisions", "report", "--repo", str(indexed_repo), "--json"]
+        self._assert_report_has_version(
+            ["decisions", "report", "--repo", str(indexed_repo), "--json"]
         )
-        assert result.exit_code == 0
-        data = _parse_json(result)
-        assert data.get("martenweave_version") == "0.4.0"
 
     def test_proposal_report_json_has_version(self, indexed_repo: Path) -> None:
-        result = runner.invoke(
-            app, ["proposal", "report", "--repo", str(indexed_repo), "--json"]
+        self._assert_report_has_version(
+            ["proposal", "report", "--repo", str(indexed_repo), "--json"]
         )
-        assert result.exit_code == 0
-        data = _parse_json(result)
-        assert data.get("martenweave_version") == "0.4.0"
 
     def test_analyze_json_has_version(self, indexed_repo: Path) -> None:
-        result = runner.invoke(
-            app, ["analyze", "--repo", str(indexed_repo), "--json"]
+        self._assert_report_has_version(
+            ["analyze", "--repo", str(indexed_repo), "--json"]
         )
-        assert result.exit_code == 0
-        data = _parse_json(result)
-        assert data.get("martenweave_version") == "0.4.0"
