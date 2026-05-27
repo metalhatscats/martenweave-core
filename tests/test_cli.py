@@ -274,3 +274,51 @@ def test_cli_quiet_and_no_color_together(sample_repo: Path) -> None:
     assert result.exit_code == 0
     assert result.output == ""
     assert "\033[" not in result.output
+
+
+def test_cli_validate_strict_exits_2_on_warnings(sample_repo: Path) -> None:
+    """--strict should exit 2 when warnings exist but no errors."""
+    result = runner.invoke(app, ["validate", "--repo", str(sample_repo), "--strict"])
+    assert result.exit_code == 2
+    assert "Validation Results" in result.output
+
+
+def test_cli_validate_strict_exits_0_on_clean(tmp_path: Path) -> None:
+    """--strict should exit 0 when no warnings and no errors."""
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    (model_dir / "DOMAIN-TEST.md").write_text(
+        "---\n"
+        "id: DOMAIN-TEST\n"
+        "type: MasterDataDomain\n"
+        "status: active\n"
+        "name: Test Domain\n"
+        "schema_version: \"1.0\"\n"
+        "---\n",
+        encoding="utf-8",
+    )
+    result = runner.invoke(app, ["validate", "--repo", str(tmp_path), "--strict"])
+    assert result.exit_code == 0
+
+
+def test_cli_validate_strict_exits_1_on_errors(sample_repo: Path) -> None:
+    """--strict should exit 1 when errors exist regardless of strict mode."""
+    bad_file = sample_repo / "model" / "BAD-ID.md"
+    bad_file.write_text(
+        "---\nid: bad-id-lower\ntype: Attribute\nstatus: draft\n---\n",
+        encoding="utf-8",
+    )
+    result = runner.invoke(app, ["validate", "--repo", str(sample_repo), "--strict"])
+    assert result.exit_code == 1
+    assert "bad-id-lower" in result.output
+
+
+def test_cli_validate_strict_json_output(sample_repo: Path) -> None:
+    """--strict with --json should still output JSON and exit 2 on warnings."""
+    result = runner.invoke(
+        app, ["validate", "--repo", str(sample_repo), "--strict", "--json"]
+    )
+    assert result.exit_code == 2
+    data = json.loads(result.output)
+    assert data["is_valid"] is True
+    assert data["warning_count"] > 0
