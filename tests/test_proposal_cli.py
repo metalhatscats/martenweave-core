@@ -772,3 +772,85 @@ class TestProposalListStatusFilter:
         assert "PP-ACCEPTED-004" not in result.output
         # Empty table is rendered when no proposals match the filter
         assert "Status" in result.output
+
+
+class TestProposalListReviewerFilter:
+    def test_proposal_list_reviewer_filter(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X"
+        )
+        _create_accepted_proposal(temp_model_dir, "PP-ALICE-001", [op])
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-ALICE-001.md"
+        transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+        _create_accepted_proposal(temp_model_dir, "PP-BOB-001", [op])
+        proposal_path2 = temp_model_dir / "patch-proposals" / "PP-BOB-001.md"
+        transition_patch_proposal_status(proposal_path2, "accepted", reviewer="bob")
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "list",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--reviewer",
+                "alice",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "PP-ALICE-001" in result.output
+        assert "PP-BOB-001" not in result.output
+
+    def test_proposal_list_reviewer_and_status_combined(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X"
+        )
+        _create_accepted_proposal(temp_model_dir, "PP-ALICE-002", [op])
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-ALICE-002.md"
+        transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+        proposal = build_patch_proposal("PP-ALICE-PENDING-002", [op])
+        write_patch_proposal(proposal, temp_model_dir)
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "list",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--reviewer",
+                "alice",
+                "--status",
+                "accepted",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "PP-ALICE-002" in result.output
+        assert "PP-ALICE-PENDING-002" not in result.output
+
+    def test_proposal_list_reviewer_json(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X"
+        )
+        _create_accepted_proposal(temp_model_dir, "PP-ALICE-003", [op])
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-ALICE-003.md"
+        transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "list",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--reviewer",
+                "alice",
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert len(data) == 1
+        assert data[0]["reviewer"] == "alice"
