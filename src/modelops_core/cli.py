@@ -102,6 +102,7 @@ from modelops_core.reports.audit_service import (
 from modelops_core.reports.decisions_report import generate_decisions_report
 from modelops_core.reports.gap_summary import generate_gap_summary_report
 from modelops_core.reports.health_report import generate_repository_health
+from modelops_core.reports.index_freshness import check_index_freshness
 from modelops_core.reports.ownership_report import generate_ownership_report
 from modelops_core.reports.scorecard_service import generate_scorecard
 from modelops_core.reports.source_registry_service import (
@@ -1110,6 +1111,52 @@ def clean(
             console.print(f"[yellow]Skipped {len(skipped)} file(s)[/yellow]")
             for path in skipped:
                 console.print(f"  [dim]{path}[/dim]")
+
+
+@app.command("index-fresh")
+@with_telemetry("index-fresh")
+def index_fresh(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Check whether the generated index is stale relative to canonical files."""
+    repo_root = _resolve_repo(repo)
+    report = check_index_freshness(repo_root)
+
+    if json_output:
+        result = {
+            "martenweave_version": __version__,
+            "fresh": report.fresh,
+            "db_path": str(report.db_path),
+            "db_mtime": report.db_mtime.isoformat() if report.db_mtime else None,
+            "newest_source_mtime": (
+                report.newest_source_mtime.isoformat()
+                if report.newest_source_mtime
+                else None
+            ),
+            "reason": report.reason,
+            "stale_sources": report.stale_sources,
+        }
+        print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
+    status_label = "[green]fresh[/green]" if report.fresh else "[red]stale[/red]"
+    console.print(f"[bold]Index freshness: {status_label}[/bold]")
+    console.print(f"  DB: {report.db_path}")
+    if report.db_mtime:
+        console.print(f"  DB mtime: {report.db_mtime.strftime('%Y-%m-%d %H:%M:%S')}")
+    if report.newest_source_mtime:
+        console.print(
+            f"  Newest source: {report.newest_source_mtime.strftime('%Y-%m-%d %H:%M:%S')}"
+        )
+    if report.reason:
+        console.print(f"  Reason: {report.reason}")
+    if report.stale_sources:
+        console.print(f"  Stale sources: {len(report.stale_sources)} file(s)")
+        for src in report.stale_sources[:10]:
+            console.print(f"    [dim]{src}[/dim]")
+        if len(report.stale_sources) > 10:
+            console.print(f"    ... and {len(report.stale_sources) - 10} more")
 
 
 @app.command()
