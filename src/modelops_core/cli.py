@@ -3600,6 +3600,210 @@ def proposal_report(
         console.print("[yellow]No proposals found.[/yellow]")
 
 
+@proposal_app.command("review-bundle")
+@with_telemetry("proposal-review-bundle")
+def proposal_review_bundle(
+    proposal_id: str = typer.Argument(..., help="PatchProposal ID (e.g. PP-001)."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Run report + impact + validate for a single PatchProposal."""
+    from datetime import UTC, datetime
+
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+    proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
+
+    # Handle nonexistent proposal
+    if not proposal_path.exists():
+        if json_output:
+            print(
+                json.dumps(
+                    {
+                        "proposal_id": proposal_id,
+                        "error": "PatchProposal not found",
+                        "report": None,
+                        "impact": None,
+                        "validation": None,
+                    },
+                    indent=2,
+                    default=str,
+                )
+            )
+            raise typer.Exit(code=1)
+        console.print(f"[red]PatchProposal not found: {proposal_id}[/red]")
+        raise typer.Exit(code=1)
+
+    parsed = parse_file(proposal_path)
+    fm = parsed.frontmatter or {}
+    operations = fm.get("operations", [])
+
+    # ---- Report section (same shape as proposal report per-proposal) ----
+    status = fm.get("status", "pending_review")
+    applied = bool(fm.get("applied_at")) or fm.get("application_status") == "applied"
+    effective_status = "applied" if applied else status
+
+    expires_at = fm.get("expires_at")
+    is_stale = False
+    if expires_at:
+        try:
+            exp_dt = datetime.fromisoformat(str(expires_at))
+            if exp_dt.tzinfo is None:
+                exp_dt = exp_dt.replace(tzinfo=UTC)
+            is_stale = exp_dt < datetime.now(UTC)
+        except ValueError:
+            pass
+
+    risk = compute_proposal_risk(operations, model_path)
+
+    report_section = {
+        "id": fm.get("id", proposal_id),
+        "status": status,
+        "effective_status": effective_status,
+        "created_at": fm.get("created_at"),
+        "expires_at": expires_at,
+        "is_stale": is_stale,
+        "reviewer": fm.get("reviewer"),
+        "reviewed_at": fm.get("reviewed_at"),
+        "rejection_reason": fm.get("rejection_reason"),
+        "risk_level": risk.risk_level,
+        "requires_approval": risk.requires_approval,
+        "affected_object_count": risk.affected_object_count,
+        "operations_count": len(operations),
+        "validation_status": fm.get("validation_status"),
+    }
+
+    # ---- Impact section ----
+    impact_section: dict[str, Any] = {}
+    if db_path.exists():
+        impact_report = generate_proposal_impact_report(
+            db_path, proposal_id, operations, max_depth=2
+        )
+        impact_risk = compute_proposal_risk(
+            operations, model_path, impact_report=impact_report
+        )
+        impact_section = {
+            "proposal_id": impact_report.proposal_id,
+            "high_risk": impact_report.high_risk,
+            "risk_assessment": {
+                "requires_approval": impact_risk.requires_approval,
+                "risk_level": impact_risk.risk_level,
+                "risk_reasons": impact_risk.risk_reasons,
+                "triggering_rules": impact_risk.triggering_rules,
+                "affected_object_count": impact_risk.affected_object_count,
+                "max_impact_depth": impact_risk.max_impact_depth,
+            },
+            "affected_objects": [
+                {
+                    "object_id": obj.object_id,
+                    "object_type": obj.object_type,
+                    "object_name": obj.object_name,
+                    "relationship_type": obj.relationship_type,
+                    "direction": obj.direction,
+                    "depth": obj.depth,
+                }
+                for obj in impact_report.all_affected_objects
+            ],
+            "operations": [
+                {
+                    "op": op_report.op,
+                    "object_id": op_report.object_id,
+                    "object_type": op_report.object_type,
+                    "affected_count": len(op_report.impact_report.affected_objects)
+                    + len(op_report.synthetic_affected),
+                }
+                for op_report in impact_report.operation_reports
+            ],
+        }
+    else:
+        impact_section = {
+            "proposal_id": proposal_id,
+            "high_risk": False,
+            "risk_assessment": {},
+            "affected_objects": [],
+            "operations": [],
+            "note": "No index found. Run `modelops build-index` first.",
+        }
+
+    # ---- Validation section ----
+    from modelops_core.patching.patch_validator import validate_patch_proposal
+
+    validation_results = validate_patch_proposal(fm)
+    error_count = sum(1 for r in validation_results if r.severity == "ERROR")
+    warning_count = sum(1 for r in validation_results if r.severity == "WARNING")
+
+    validation_section = {
+        "is_safe": error_count == 0,
+        "error_count": error_count,
+        "warning_count": warning_count,
+        "issues": [r.model_dump(mode="json") for r in validation_results],
+    }
+
+    if json_output:
+        result = {
+            "martenweave_version": __version__,
+            "proposal_id": proposal_id,
+            "report": report_section,
+            "impact": impact_section,
+            "validation": validation_section,
+        }
+        print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
+    # Human-readable output
+    console.print(f"[bold]Proposal Review Bundle: {proposal_id}[/bold]")
+    console.print("")
+
+    # Report section
+    console.print("[bold]─ Report ─[/bold]")
+    stat = report_section["status"]
+    eff_stat = report_section["effective_status"]
+    console.print(f"  Status: {stat} (effective: {eff_stat})")
+    console.print(f"  Risk level: {report_section['risk_level']}")
+    console.print(f"  Requires approval: {report_section['requires_approval']}")
+    console.print(f"  Operations: {report_section['operations_count']}")
+    console.print(f"  Affected objects: {report_section['affected_object_count']}")
+    if report_section["is_stale"]:
+        console.print("  [red]Stale: yes[/red]")
+    console.print("")
+
+    # Impact section
+    console.print("[bold]─ Impact ─[/bold]")
+    if impact_section.get("note"):
+        console.print(f"  [yellow]{impact_section['note']}[/yellow]")
+    else:
+        if impact_section.get("high_risk"):
+            console.print("  [red]⚠ High-risk proposal[/red]")
+        console.print(
+            f"  Affected objects: {len(impact_section.get('affected_objects', []))}"
+        )
+        console.print(
+            f"  Operations analyzed: {len(impact_section.get('operations', []))}"
+        )
+    console.print("")
+
+    # Validation section
+    console.print("[bold]─ Validation ─[/bold]")
+    if validation_section["is_safe"]:
+        console.print("  [green]✓ Safe[/green]")
+    else:
+        console.print("  [red]✗ Issues found[/red]")
+    console.print(f"  Errors: {validation_section['error_count']}")
+    console.print(f"  Warnings: {validation_section['warning_count']}")
+
+    if validation_section["issues"]:
+        table = Table("Severity", "Code", "Message", "Fix")
+        for issue in validation_section["issues"]:
+            table.add_row(
+                str(issue.get("severity", "—")),
+                issue.get("code", "—"),
+                issue.get("message", "—"),
+                issue.get("suggested_fix") or "—",
+            )
+        console.print(table)
+
+
 @app.command("serve")
 def serve(
     host: str = typer.Option("127.0.0.1", "--host", help="Bind host."),
