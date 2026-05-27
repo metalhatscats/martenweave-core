@@ -88,6 +88,7 @@ def create_change_request(
     approvers: list[str] | None = None,
     priority: str | None = None,
     source_evidence: str | None = None,
+    dry_run: bool = False,
 ) -> Path:
     """Create a new ChangeRequest canonical file."""
     if not _ID_PATTERN.match(cr_id):
@@ -133,7 +134,8 @@ def create_change_request(
 
     cr_dir = _change_requests_dir(model_path)
     path = cr_dir / f"{cr_id}.md"
-    path.write_text(_render_change_request_markdown(data), encoding="utf-8")
+    if not dry_run:
+        path.write_text(_render_change_request_markdown(data), encoding="utf-8")
     return path
 
 

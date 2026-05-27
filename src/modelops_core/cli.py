@@ -1896,6 +1896,9 @@ def propose_patch(
     ),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Preview proposal without writing files."
+    ),
 ) -> None:
     """Create a PatchProposal from a structured note."""
     repo_root = _resolve_repo(repo)
@@ -1919,16 +1922,22 @@ def propose_patch(
             console.print("[red]No proposal generated.[/red]")
         raise typer.Exit(code=1)
 
-    path = write_patch_proposal(proposal, model_path)
+    path = None
+    if not dry_run:
+        path = write_patch_proposal(proposal, model_path)
 
     if json_output:
+        result["dry_run"] = dry_run
         print(json.dumps(result, indent=2, default=str))
         return
 
     if not result.get("is_safe"):
         console.print("[yellow]Proposal generated but failed validation.[/yellow]")
 
-    console.print(f"[green]Patch proposal written to {path}[/green]")
+    if dry_run:
+        console.print("[bold]Dry-run: proposal preview[/bold]")
+    else:
+        console.print(f"[green]Patch proposal written to {path}[/green]")
     console.print(f"  ID:    {proposal['id']}")
     console.print(f"  Ops:   {len(proposal.get('operations', []))}")
     console.print(f"  Safe:  {result.get('is_safe')}")
@@ -1945,26 +1954,27 @@ def propose_patch(
         for h in human_checks:
             console.print(f"  • {h}")
 
-    service = AuditEventService(repo_root)
-    changed_object_ids = [
-        op.get("object_id", "") for op in proposal.get("operations", [])
-    ]
-    service.emit(
-        create_audit_event(
-            event_type="proposal_created",
-            actor="system",
-            status="success",
-            command="propose-patch",
-            proposal_id=proposal.get("id"),
-            changed_object_ids=changed_object_ids,
-            validation_status="valid" if result.get("is_safe") else "invalid",
-            outputs={
-                "proposal_id": proposal.get("id"),
-                "operations_count": len(proposal.get("operations", [])),
-                "is_safe": result.get("is_safe"),
-            },
+    if not dry_run:
+        service = AuditEventService(repo_root)
+        changed_object_ids = [
+            op.get("object_id", "") for op in proposal.get("operations", [])
+        ]
+        service.emit(
+            create_audit_event(
+                event_type="proposal_created",
+                actor="system",
+                status="success",
+                command="propose-patch",
+                proposal_id=proposal.get("id"),
+                changed_object_ids=changed_object_ids,
+                validation_status="valid" if result.get("is_safe") else "invalid",
+                outputs={
+                    "proposal_id": proposal.get("id"),
+                    "operations_count": len(proposal.get("operations", [])),
+                    "is_safe": result.get("is_safe"),
+                },
+            )
         )
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -2092,6 +2102,9 @@ def cr_create(
         None, "--source-evidence", help="Source evidence reference."
     ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Preview CR without writing files."
+    ),
 ) -> None:
     """Create a new ChangeRequest canonical file."""
     repo_root = _resolve_repo(repo)
@@ -2114,6 +2127,7 @@ def cr_create(
             approvers=list(approver) if approver else None,
             priority=priority,
             source_evidence=source_evidence,
+            dry_run=dry_run,
         )
     except ValueError as exc:
         console.print(f"[red]{exc}[/red]")
@@ -2125,13 +2139,20 @@ def cr_create(
             "status": status,
             "title": title,
             "path": str(path),
+            "dry_run": dry_run,
         }
         print(json.dumps(result, indent=2, default=str))
     else:
-        console.print(f"[green]ChangeRequest created: {path}[/green]")
+        if dry_run:
+            console.print("[bold]Dry-run: ChangeRequest preview[/bold]")
+        else:
+            console.print(f"[green]ChangeRequest created: {path}[/green]")
         console.print(f"  ID:     {cr_id}")
         console.print(f"  Status: {status}")
         console.print(f"  Title:  {title}")
+
+    if dry_run:
+        return
 
     # Emit notification events for affected object owners/watchers
     try:
