@@ -2,6 +2,8 @@
 id: DEC-CH01-A17-CUSTOMER-GROUP
 type: Decision
 status: active
+business_owner: PERSON-BUSINESS-OWNER
+data_steward: PERSON-DATA-STEWARD
 schema_version: "1.0"
 title: Customer Group CH01 / A17 handling decision
 domain: DOMAIN-CUSTOMER-BP

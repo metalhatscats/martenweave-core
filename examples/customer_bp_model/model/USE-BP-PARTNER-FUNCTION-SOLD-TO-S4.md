@@ -1,0 +1,12 @@
+---
+id: USE-BP-PARTNER-FUNCTION-SOLD-TO-S4
+type: AttributeUsage
+status: active
+attribute: ATTR-BP-PARTNER-FUNCTION-SOLD-TO
+entity_context: CTX-BP-CUSTOMER-S4
+field_endpoint: FEP-S4-KNVP-PARVW
+---
+
+# Usage: USE-BP-PARTNER-FUNCTION-SOLD-TO-S4
+
+Maps `ATTR-BP-PARTNER-FUNCTION-SOLD-TO` to `FEP-S4-KNVP-PARVW` via `CTX-BP-CUSTOMER-S4`.

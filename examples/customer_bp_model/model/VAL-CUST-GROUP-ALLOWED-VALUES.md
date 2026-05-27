@@ -2,6 +2,8 @@
 id: VAL-CUST-GROUP-ALLOWED-VALUES
 type: ValidationRule
 status: active
+business_owner: PERSON-BUSINESS-OWNER
+data_steward: PERSON-DATA-STEWARD
 schema_version: "1.0"
 name: Customer Group Allowed Values
 domain: DOMAIN-CUSTOMER-BP

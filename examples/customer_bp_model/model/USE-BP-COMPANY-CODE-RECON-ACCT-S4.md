@@ -1,0 +1,12 @@
+---
+id: USE-BP-COMPANY-CODE-RECON-ACCT-S4
+type: AttributeUsage
+status: active
+attribute: ATTR-BP-COMPANY-CODE-RECON-ACCT
+entity_context: CTX-BP-COMPANY-CODE-S4
+field_endpoint: FEP-S4-KNB1-AKONT
+---
+
+# Usage: USE-BP-COMPANY-CODE-RECON-ACCT-S4
+
+Maps `ATTR-BP-COMPANY-CODE-RECON-ACCT` to `FEP-S4-KNB1-AKONT` via `CTX-BP-COMPANY-CODE-S4`.

@@ -2,6 +2,8 @@
 id: ENTITY-CUSTOMER-SALES-AREA
 type: BusinessEntity
 status: active
+business_owner: PERSON-BUSINESS-OWNER
+data_steward: PERSON-DATA-STEWARD
 schema_version: "1.0"
 name: Customer Sales Area
 domain: DOMAIN-CUSTOMER-BP

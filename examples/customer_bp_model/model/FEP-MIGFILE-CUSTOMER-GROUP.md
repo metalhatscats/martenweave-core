@@ -2,6 +2,8 @@
 id: FEP-MIGFILE-CUSTOMER-GROUP
 type: FieldEndpoint
 status: active
+business_owner: PERSON-BUSINESS-OWNER
+data_steward: PERSON-DATA-STEWARD
 schema_version: "1.0"
 name: Migration file Customer Group column
 domain: DOMAIN-CUSTOMER-BP

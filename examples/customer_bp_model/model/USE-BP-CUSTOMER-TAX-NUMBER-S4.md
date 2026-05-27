@@ -1,0 +1,12 @@
+---
+id: USE-BP-CUSTOMER-TAX-NUMBER-S4
+type: AttributeUsage
+status: active
+attribute: ATTR-BP-CUSTOMER-TAX-NUMBER
+entity_context: CTX-BP-CUSTOMER-S4
+field_endpoint: FEP-S4-KNA1-STCD1
+---
+
+# Usage: USE-BP-CUSTOMER-TAX-NUMBER-S4
+
+Maps `ATTR-BP-CUSTOMER-TAX-NUMBER` to `FEP-S4-KNA1-STCD1` via `CTX-BP-CUSTOMER-S4`.

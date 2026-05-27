@@ -1,0 +1,12 @@
+---
+id: USE-BP-SALES-AREA-PRICE-GROUP-S4
+type: AttributeUsage
+status: active
+attribute: ATTR-BP-SALES-AREA-PRICE-GROUP
+entity_context: CTX-CUSTOMER-SALES-AREA-S4
+field_endpoint: FEP-S4-KNVV-PLTYP
+---
+
+# Usage: USE-BP-SALES-AREA-PRICE-GROUP-S4
+
+Maps `ATTR-BP-SALES-AREA-PRICE-GROUP` to `FEP-S4-KNVV-PLTYP` via `CTX-CUSTOMER-SALES-AREA-S4`.

@@ -1,0 +1,15 @@
+---
+id: VLIST-PARTNER-FUNCTIONS
+type: ValueList
+status: active
+name: SAP Partner Functions
+values:
+  - "AG: Sold-To Party"
+  - "WE: Ship-To Party"
+  - "RE: Bill-To Party"
+  - "RG: Payer"
+---
+
+# SAP Partner Functions
+
+Standard SAP customer partner functions (KNVP-PARVW).
