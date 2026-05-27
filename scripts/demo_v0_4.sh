@@ -27,6 +27,15 @@ assert_json_key() {
     fi
 }
 
+assert_exit_code() {
+    local cmd_desc="$1"
+    local code="$2"
+    if [ "${code}" -ne 0 ]; then
+        echo "ERROR: Command failed: ${cmd_desc}"
+        exit 1
+    fi
+}
+
 # ---------------------------------------------------------------------------
 # v0.4 Operational Readiness Workflow
 # ---------------------------------------------------------------------------
@@ -81,6 +90,52 @@ step "10. Audit log"
 "${MODELOPS}" audit-log --repo "${DEMO_REPO}" --json
 
 # ---------------------------------------------------------------------------
+# Discovery, Trace, and Export Surface
+# ---------------------------------------------------------------------------
+
+step "11. Impact analysis (FieldEndpoint)"
+IMPACT_JSON="$(mktemp)"
+"${MODELOPS}" impact FEP-S4-KNVV-KDGRP --repo "${DEMO_REPO}" --json > "${IMPACT_JSON}"
+assert_json_key "${IMPACT_JSON}" "root_object_id"
+assert_json_key "${IMPACT_JSON}" "affected_objects"
+rm "${IMPACT_JSON}"
+
+step "12. Trace lineage (Attribute)"
+TRACE_JSON="$(mktemp)"
+"${MODELOPS}" trace ATTR-CUST-SALES-CUSTOMER-GROUP --repo "${DEMO_REPO}" --json > "${TRACE_JSON}"
+assert_json_key "${TRACE_JSON}" "root_object_id"
+assert_json_key "${TRACE_JSON}" "nodes"
+assert_json_key "${TRACE_JSON}" "edges"
+rm "${TRACE_JSON}"
+
+step "13. Search"
+SEARCH_JSON="$(mktemp)"
+"${MODELOPS}" search "Customer Group" --repo "${DEMO_REPO}" --json > "${SEARCH_JSON}"
+assert_json_key "${SEARCH_JSON}" "object_id"
+rm "${SEARCH_JSON}"
+
+step "14. Query by type"
+QUERY_JSON="$(mktemp)"
+"${MODELOPS}" query --type Attribute --repo "${DEMO_REPO}" --json > "${QUERY_JSON}"
+assert_json_key "${QUERY_JSON}" "object_id"
+rm "${QUERY_JSON}"
+
+step "15. Diff (smoke test against self)"
+DIFF_JSON="$(mktemp)"
+"${MODELOPS}" diff "${DEMO_REPO}" "${DEMO_REPO}" --json > "${DIFF_JSON}"
+assert_json_key "${DIFF_JSON}" "has_changes"
+rm "${DIFF_JSON}"
+
+step "16. Export model (CSV)"
+"${MODELOPS}" export-model --repo "${DEMO_REPO}" --format csv
+
+step "17. Export model (XLSX)"
+"${MODELOPS}" export-model --repo "${DEMO_REPO}" --format xlsx
+
+step "18. Build static docs"
+"${MODELOPS}" docs-build --repo "${DEMO_REPO}"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 
@@ -95,5 +150,12 @@ echo "  Scorecard:   OK"
 echo "  Gap Report:  OK"
 echo "  Owners:      OK"
 echo "  Decisions:   OK"
+echo "  Impact:      OK"
+echo "  Trace:       OK"
+echo "  Search:      OK"
+echo "  Query:       OK"
+echo "  Diff:        OK"
+echo "  Export:      OK"
+echo "  Docs Build:  OK"
 echo "  Audit Log:   OK"
 echo "=========================================="
