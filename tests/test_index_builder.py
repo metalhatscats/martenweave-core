@@ -50,6 +50,45 @@ def test_build_index_rejects_invalid(temp_model_dir: Path) -> None:
         build_index(repo_root=repo_root, db_path=db_path, allow_invalid=False)
 
 
+def test_build_index_creates_relationship_indexes(temp_model_dir: Path) -> None:
+    repo_root = temp_model_dir.parent
+    db_path = repo_root / "generated" / "modelops.db"
+    build_index(repo_root=repo_root, db_path=db_path)
+
+    import sqlite3
+
+    conn = sqlite3.connect(db_path)
+    indexes = {
+        row[0]
+        for row in conn.execute(
+            "SELECT name FROM sqlite_master "
+            "WHERE type = 'index' AND tbl_name = 'object_relationships'"
+        )
+    }
+    conn.close()
+    assert "idx_rel_from" in indexes
+    assert "idx_rel_to" in indexes
+
+
+def test_build_index_creates_tag_index(temp_model_dir: Path) -> None:
+    repo_root = temp_model_dir.parent
+    db_path = repo_root / "generated" / "modelops.db"
+    build_index(repo_root=repo_root, db_path=db_path)
+
+    import sqlite3
+
+    conn = sqlite3.connect(db_path)
+    indexes = {
+        row[0]
+        for row in conn.execute(
+            "SELECT name FROM sqlite_master "
+            "WHERE type = 'index' AND tbl_name = 'tags'"
+        )
+    }
+    conn.close()
+    assert "idx_tag_tag" in indexes
+
+
 def test_build_index_stores_timestamps(temp_model_dir: Path) -> None:
     repo_root = temp_model_dir.parent
     db_path = repo_root / "generated" / "modelops.db"
