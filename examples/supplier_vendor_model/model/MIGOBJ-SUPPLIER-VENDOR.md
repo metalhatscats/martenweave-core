@@ -5,6 +5,7 @@ status: active
 schema_version: "1.0"
 name: Supplier Vendor Migration
 domain: DOMAIN-SUPPLIER-VENDOR
+data_steward: PERSON-DATA-STEWARD-VENDOR
 ---
 
 # Supplier Vendor Migration

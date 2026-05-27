@@ -6,6 +6,7 @@ schema_version: "1.0"
 name: Vendor Account Group
 domain: DOMAIN-SUPPLIER-VENDOR
 entity: ENTITY-SUPPLIER-CENTRAL
+data_steward: PERSON-DATA-STEWARD-VENDOR
 ---
 
 # Vendor Account Group

@@ -6,6 +6,7 @@ schema_version: "1.0"
 name: Vendor Account Group Values
 value_list_type: domain
 domain: DOMAIN-SUPPLIER-VENDOR
+data_steward: PERSON-DATA-STEWARD-VENDOR
 entries:
   - code: "0001"
     label: Domestic Vendor
