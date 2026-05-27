@@ -26,17 +26,17 @@ jobs:
       - name: Lint
         run: ruff check src tests
 
+      - name: Build index for customer_bp_model example
+        run: modelops build-index --repo examples/customer_bp_model --jsonl
+
+      - name: Build index for supplier_vendor_model example
+        run: modelops build-index --repo examples/supplier_vendor_model --jsonl
+
       - name: Test
         run: python -m pytest
 
       - name: Validate customer_bp_model example
         run: modelops validate --repo examples/customer_bp_model
 
-      - name: Build index for customer_bp_model example
-        run: modelops build-index --repo examples/customer_bp_model --jsonl
-
       - name: Validate supplier_vendor_model example
         run: modelops validate --repo examples/supplier_vendor_model
-
-      - name: Build index for supplier_vendor_model example
-        run: modelops build-index --repo examples/supplier_vendor_model --jsonl
