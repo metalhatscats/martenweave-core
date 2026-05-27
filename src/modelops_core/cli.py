@@ -91,6 +91,7 @@ from modelops_core.patching.apply_service import (
     dry_run_patch_proposal,
 )
 from modelops_core.patching.patch_proposal_service import (
+    transition_patch_proposal_status,
     write_patch_proposal,
 )
 from modelops_core.reports.analysis_service import generate_analysis_report
@@ -2878,6 +2879,65 @@ def proposal_show(
                 op.get("target_path", "—"),
             )
         console.print(table)
+
+
+@proposal_app.command("accept")
+@with_telemetry("proposal-accept")
+def proposal_accept(
+    proposal_id: str = typer.Argument(..., help="PatchProposal ID (e.g. PP-001)."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    reviewer: str | None = typer.Option(None, "--reviewer", help="Identity of the reviewer."),
+    notes: str | None = typer.Option(None, "--notes", help="Reviewer notes."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Accept a PatchProposal."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
+
+    if not proposal_path.exists():
+        console.print(f"[red]PatchProposal not found: {proposal_id}[/red]")
+        raise typer.Exit(code=1)
+
+    transition_patch_proposal_status(
+        proposal_path, "accepted", reviewer=reviewer, reviewer_notes=notes
+    )
+
+    if json_output:
+        print(json.dumps({"proposal_id": proposal_id, "status": "accepted"}, indent=2))
+        raise typer.Exit()
+
+    console.print(f"[green]PatchProposal {proposal_id} accepted.[/green]")
+
+
+@proposal_app.command("reject")
+@with_telemetry("proposal-reject")
+def proposal_reject(
+    proposal_id: str = typer.Argument(..., help="PatchProposal ID (e.g. PP-001)."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    reviewer: str | None = typer.Option(None, "--reviewer", help="Identity of the reviewer."),
+    reason: str | None = typer.Option(None, "--reason", help="Reason for rejection."),
+    notes: str | None = typer.Option(None, "--notes", help="Reviewer notes."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Reject a PatchProposal."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
+
+    if not proposal_path.exists():
+        console.print(f"[red]PatchProposal not found: {proposal_id}[/red]")
+        raise typer.Exit(code=1)
+
+    transition_patch_proposal_status(
+        proposal_path, "rejected", reviewer=reviewer, reviewer_notes=notes, rejection_reason=reason
+    )
+
+    if json_output:
+        print(json.dumps({"proposal_id": proposal_id, "status": "rejected"}, indent=2))
+        raise typer.Exit()
+
+    console.print(f"[red]PatchProposal {proposal_id} rejected.[/red]")
 
 
 @proposal_app.command("validate")
