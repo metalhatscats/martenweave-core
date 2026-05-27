@@ -255,7 +255,7 @@ def find_approved_cr_for_proposal(model_path: Path, proposal_id: str) -> dict[st
 
 
 def reject_change_request(
-    model_path: Path, cr_id: str, approver: str
+    model_path: Path, cr_id: str, approver: str, reason: str | None = None
 ) -> dict[str, Any]:
     """Reject a ChangeRequest and record the approver."""
     cr_dir = model_path / "change-requests"
@@ -279,5 +279,7 @@ def reject_change_request(
 
     frontmatter["status"] = "rejected"
     _record_approval(frontmatter, approver, "rejected")
+    if reason:
+        frontmatter["rejection_reason"] = reason
     path.write_text(_render_change_request_markdown(frontmatter), encoding="utf-8")
     return frontmatter

@@ -2335,6 +2335,7 @@ def cr_reject(
     cr_id: str = typer.Argument(..., help="ChangeRequest ID (e.g. CR-001)."),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     approver: str = typer.Option(..., "--approver", help="Approver ID."),
+    reason: str | None = typer.Option(None, "--reason", help="Reason for rejection."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Reject a ChangeRequest."""
@@ -2342,7 +2343,7 @@ def cr_reject(
     model_path = resolve_model_path(repo_root)
 
     try:
-        cr = reject_change_request(model_path, cr_id, approver)
+        cr = reject_change_request(model_path, cr_id, approver, reason=reason)
     except ValueError as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
