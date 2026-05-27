@@ -43,15 +43,29 @@ Martenweave Core requires Python 3.11+. The examples below use the project venv 
 # Build SQLite index + JSONL exports
 .venv/bin/modelops build-index --repo ./my-model --jsonl
 
+# Check index freshness
+.venv/bin/modelops index-fresh --repo ./my-model
+
 # Health report and scorecard
 .venv/bin/modelops health --repo ./my-model
 .venv/bin/modelops scorecard --repo ./my-model
 
-# Impact analysis
+# Impact and trace analysis
 .venv/bin/modelops impact FEP-S4-KNVV-KDGRP --repo ./my-model
+.venv/bin/modelops trace ATTR-CUST-SALES-CUSTOMER-GROUP --repo ./my-model
+
+# Search and query
+.venv/bin/modelops search "Customer Group" --repo ./my-model
+.venv/bin/modelops query --type Attribute --repo ./my-model
+
+# Diff against another repository
+.venv/bin/modelops diff ./my-model ./other-model
 
 # Propose a patch from a note
 .venv/bin/modelops propose-patch --from ./note.md --repo ./my-model
+
+# Clean generated artifacts (dry-run first)
+.venv/bin/modelops clean --repo ./my-model --dry-run
 ```
 
 ## Command Reference
@@ -63,7 +77,8 @@ Martenweave Core requires Python 3.11+. The examples below use the project venv 
 | `build-index` | Build SQLite index and optional JSONL exports |
 | `health` | Show repository health report |
 | `scorecard` | Show governance readiness scorecard |
-| `gap-report` | Consolidated gap summary across all sources |
+| `gap-report` | Consolidated gap summary across all sources (model coverage) |
+| `gaps` | Dataset-to-model gap detection (requires a dataset path) |
 | `owners` | Ownership coverage and steward workload |
 | `analyze` | Analyze model completeness, risk, and readiness |
 | `trace` | Trace upstream/downstream relationships for an object |
@@ -100,7 +115,11 @@ Use `--help` on any command for full options:
 .venv/bin/modelops <command> --help
 ```
 
-## Example Model
+## Example Models
+
+Both example directories contain a working `modelops.config.yaml` and can be run without `init`.
+
+### Customer / Business Partner Model
 
 The `examples/customer_bp_model/` directory contains the first domain pack: a full canonical model slice for SAP Business Partner → Customer:
 
@@ -108,10 +127,19 @@ The `examples/customer_bp_model/` directory contains the first domain pack: a fu
 Business Partner -> Customer -> Customer Sales Area -> Customer Group -> KNVV-KDGRP
 ```
 
-Run validation against it:
+### Supplier / Vendor Model
+
+The `examples/supplier_vendor_model/` directory contains a second domain pack for SAP Supplier / Vendor master data:
+
+```
+Supplier -> Vendor Central -> LFA1/KTOKK, LFB1/ZTERM, LFM1/SPERR
+```
+
+Run validation against either:
 
 ```bash
 .venv/bin/modelops validate --repo examples/customer_bp_model
+.venv/bin/modelops validate --repo examples/supplier_vendor_model
 ```
 
 ## Architecture
