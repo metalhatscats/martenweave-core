@@ -1130,6 +1130,7 @@ def health(
 
     if json_output:
         result = {
+            "martenweave_version": __version__,
             "object_count": report.object_count,
             "index_fresh": report.index_fresh,
             "coverage_gaps": {
@@ -1240,6 +1241,7 @@ def scorecard(
 
     if json_output:
         result = {
+            "martenweave_version": __version__,
             "repo_name": report.repo_name,
             "generated_at": report.generated_at,
             "readiness_level": report.readiness_level,
@@ -1328,6 +1330,7 @@ def owners(
 
     if json_output:
         result = {
+            "martenweave_version": __version__,
             "owners": [
                 {
                     "owner_id": o.owner_id,
@@ -1453,6 +1456,7 @@ def analyze(
                 if report.lifecycle_summary
                 else {}
             ),
+            "martenweave_version": __version__,
         }
         print(json.dumps(result, indent=2, default=str))
         raise typer.Exit()
@@ -1572,6 +1576,7 @@ def gap_report(
 
     if json_output:
         result = {
+            "martenweave_version": __version__,
             "gaps_by_type": {
                 key: {
                     "count": summary.count,
@@ -2563,6 +2568,7 @@ def decisions_report(
 
     if json_output:
         result = {
+            "martenweave_version": __version__,
             "evidence_coverage": [
                 {
                     "domain": d.domain,
@@ -3438,6 +3444,7 @@ def proposal_report(
 
     if json_output:
         report = {
+            "martenweave_version": __version__,
             "proposals_total": len(proposals),
             "by_status": by_status,
             "stale_threshold_days": stale_days,
