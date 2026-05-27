@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from modelops_core.approval.risk_service import (
@@ -20,6 +21,7 @@ from modelops_core.change_request.service import (
 )
 from modelops_core.cli import app
 from modelops_core.index import build_index
+from modelops_core.patching.apply_service import apply_patch_proposal
 from modelops_core.patching.patch_model import PatchOperation
 from modelops_core.patching.patch_proposal_service import (
     build_patch_proposal,
@@ -472,3 +474,324 @@ def test_cli_proposal_impact_json_includes_risk(tmp_path: Path) -> None:
     data = json.loads(result.output)
     assert "risk_assessment" in data
     assert data["risk_assessment"]["risk_level"] == "low"
+
+
+# -- service-level risk gate tests (issue #286) ---------------------------
+
+
+def test_service_apply_blocks_high_risk_by_default(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+
+    (model_dir / "MAP-001.md").write_text(
+        "---\n"
+        "id: MAP-001\n"
+        "type: Mapping\n"
+        "status: active\n"
+        "name: Test Mapping\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    op = PatchOperation(
+        op="update_object", object_id="MAP-001", target_path="name", after="New"
+    )
+    proposal = build_patch_proposal("PP-SVC-HIGH-001", [op])
+    write_patch_proposal(proposal, model_dir)
+    proposal_path = model_dir / "patch-proposals" / "PP-SVC-HIGH-001.md"
+    transition_patch_proposal_status(proposal_path, "accepted")
+
+    with pytest.raises(ValueError, match="High-risk proposal blocked"):
+        apply_patch_proposal(model_dir, "PP-SVC-HIGH-001")
+
+
+def test_service_apply_allows_high_risk_with_skip(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+
+    (model_dir / "MAP-001.md").write_text(
+        "---\n"
+        "id: MAP-001\n"
+        "type: Mapping\n"
+        "status: active\n"
+        "name: Test Mapping\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    op = PatchOperation(
+        op="update_object", object_id="MAP-001", target_path="name", after="New"
+    )
+    proposal = build_patch_proposal("PP-SVC-HIGH-002", [op])
+    write_patch_proposal(proposal, model_dir)
+    proposal_path = model_dir / "patch-proposals" / "PP-SVC-HIGH-002.md"
+    transition_patch_proposal_status(proposal_path, "accepted")
+
+    result = apply_patch_proposal(model_dir, "PP-SVC-HIGH-002", skip_risk_check=True)
+    assert result.application_status == "applied"
+    assert result.risk_level == "high"
+    assert result.risk_assessment["requires_approval"] is True
+
+
+def test_service_approve_cr_blocks_high_risk_by_default(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+
+    (model_dir / "MAP-001.md").write_text(
+        "---\n"
+        "id: MAP-001\n"
+        "type: Mapping\n"
+        "status: active\n"
+        "name: Test Mapping\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    create_change_request(
+        model_path=model_dir,
+        cr_id="CR-SVC-HIGH-001",
+        title="High Risk CR",
+        status="pending",
+        affected_objects=["MAP-001"],
+    )
+
+    with pytest.raises(ValueError, match="High-risk ChangeRequest blocked"):
+        approve_change_request(model_dir, "CR-SVC-HIGH-001", "alice")
+
+
+def test_service_approve_cr_allows_high_risk_with_skip(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+
+    (model_dir / "MAP-001.md").write_text(
+        "---\n"
+        "id: MAP-001\n"
+        "type: Mapping\n"
+        "status: active\n"
+        "name: Test Mapping\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    create_change_request(
+        model_path=model_dir,
+        cr_id="CR-SVC-HIGH-002",
+        title="High Risk CR",
+        status="pending",
+        affected_objects=["MAP-001"],
+    )
+
+    cr = approve_change_request(
+        model_dir, "CR-SVC-HIGH-002", "alice", skip_risk_check=True
+    )
+    assert cr["status"] == "approved"
+    assert cr["risk_level"] == "high"
+
+
+def test_cli_proposal_apply_skip_risk_check(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    generated_dir = tmp_path / "generated"
+    generated_dir.mkdir()
+    repo_root = tmp_path
+
+    (model_dir / "MAP-001.md").write_text(
+        "---\n"
+        "id: MAP-001\n"
+        "type: Mapping\n"
+        "status: active\n"
+        "name: Test Mapping\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    db_path = generated_dir / "modelops.db"
+    build_index(repo_root=tmp_path, db_path=db_path)
+
+    op = PatchOperation(
+        op="update_object", object_id="MAP-001", target_path="name", after="New"
+    )
+    proposal = build_patch_proposal("PP-SKIP-001", [op])
+    write_patch_proposal(proposal, model_dir)
+    proposal_path = model_dir / "patch-proposals" / "PP-SKIP-001.md"
+    transition_patch_proposal_status(proposal_path, "accepted")
+
+    result = runner.invoke(
+        app,
+        [
+            "proposal",
+            "apply",
+            "PP-SKIP-001",
+            "--repo",
+            str(repo_root),
+            "--apply",
+            "--skip-risk-check",
+        ],
+    )
+    assert result.exit_code == 0
+    assert "Applied PP-SKIP-001" in result.output
+
+
+def test_cli_proposal_apply_json_includes_risk(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    generated_dir = tmp_path / "generated"
+    generated_dir.mkdir()
+    repo_root = tmp_path
+
+    (model_dir / "DOMAIN-TEST.md").write_text(
+        "---\n"
+        "id: DOMAIN-TEST\n"
+        "type: MasterDataDomain\n"
+        "status: draft\n"
+        "name: Test\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    db_path = generated_dir / "modelops.db"
+    build_index(repo_root=tmp_path, db_path=db_path)
+
+    op = PatchOperation(
+        op="update_object", object_id="DOMAIN-TEST", target_path="name", after="New"
+    )
+    proposal = build_patch_proposal("PP-JSON-RISK-001", [op])
+    write_patch_proposal(proposal, model_dir)
+    proposal_path = model_dir / "patch-proposals" / "PP-JSON-RISK-001.md"
+    transition_patch_proposal_status(proposal_path, "accepted")
+
+    result = runner.invoke(
+        app,
+        [
+            "proposal",
+            "apply",
+            "PP-JSON-RISK-001",
+            "--repo",
+            str(repo_root),
+            "--apply",
+            "--skip-risk-check",
+            "--json",
+        ],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["applied"] is True
+    assert "risk_level" in data
+    assert "risk_assessment" in data
+
+
+def test_cli_cr_approve_skip_risk_check(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    repo_root = tmp_path
+
+    (model_dir / "MAP-001.md").write_text(
+        "---\n"
+        "id: MAP-001\n"
+        "type: Mapping\n"
+        "status: active\n"
+        "name: Test Mapping\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    runner.invoke(
+        app,
+        [
+            "change-request",
+            "create",
+            "--id",
+            "CR-SKIP-001",
+            "--title",
+            "High Risk",
+            "--repo",
+            str(repo_root),
+            "--affected-object",
+            "MAP-001",
+        ],
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "change-request",
+            "approve",
+            "CR-SKIP-001",
+            "--repo",
+            str(repo_root),
+            "--approver",
+            "alice",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "High-risk ChangeRequest blocked" in result.output
+
+    result = runner.invoke(
+        app,
+        [
+            "change-request",
+            "approve",
+            "CR-SKIP-001",
+            "--repo",
+            str(repo_root),
+            "--approver",
+            "alice",
+            "--skip-risk-check",
+        ],
+    )
+    assert result.exit_code == 0
+    assert "approved by alice" in result.output
+    assert "Risk level: high" in result.output
+
+
+def test_cli_cr_approve_json_includes_risk(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    repo_root = tmp_path
+
+    (model_dir / "MAP-001.md").write_text(
+        "---\n"
+        "id: MAP-001\n"
+        "type: Mapping\n"
+        "status: active\n"
+        "name: Test Mapping\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    runner.invoke(
+        app,
+        [
+            "change-request",
+            "create",
+            "--id",
+            "CR-JSON-RISK-001",
+            "--title",
+            "High Risk",
+            "--repo",
+            str(repo_root),
+            "--affected-object",
+            "MAP-001",
+        ],
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "change-request",
+            "approve",
+            "CR-JSON-RISK-001",
+            "--repo",
+            str(repo_root),
+            "--approver",
+            "alice",
+            "--skip-risk-check",
+            "--json",
+        ],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["status"] == "approved"
+    assert data["risk_level"] == "high"
+    assert "risk_reasons" in data
+    assert "risk_triggering_rules" in data

@@ -2275,6 +2275,9 @@ def cr_approve(
     cr_id: str = typer.Argument(..., help="ChangeRequest ID (e.g. CR-001)."),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     approver: str = typer.Option(..., "--approver", help="Approver ID."),
+    skip_risk_check: bool = typer.Option(
+        False, "--skip-risk-check", help="Skip high-risk ChangeRequest blocking."
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Approve a ChangeRequest."""
@@ -2282,7 +2285,7 @@ def cr_approve(
     model_path = resolve_model_path(repo_root)
 
     try:
-        cr = approve_change_request(model_path, cr_id, approver)
+        cr = approve_change_request(model_path, cr_id, approver, skip_risk_check=skip_risk_check)
     except ValueError as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
@@ -2293,8 +2296,17 @@ def cr_approve(
         console.print(f"[green]ChangeRequest {cr_id} approved by {approver}[/green]")
         if cr.get("approvals"):
             console.print(f"  Approvals: {len(cr['approvals'])}")
+        if cr.get("risk_level"):
+            console.print(f"  Risk level: {cr['risk_level']}")
 
     service = AuditEventService(repo_root)
+    outputs: dict[str, Any] = {"approver": approver, "approvals": cr.get("approvals", [])}
+    if cr.get("risk_level"):
+        outputs["risk_level"] = cr["risk_level"]
+    if cr.get("risk_reasons"):
+        outputs["risk_reasons"] = cr["risk_reasons"]
+    if cr.get("risk_triggering_rules"):
+        outputs["risk_triggering_rules"] = cr["risk_triggering_rules"]
     service.emit(
         create_audit_event(
             event_type="change_request_approved",
@@ -2303,7 +2315,7 @@ def cr_approve(
             command="change-request approve",
             proposal_id=cr_id,
             changed_object_ids=cr.get("affected_objects") or [],
-            outputs={"approver": approver, "approvals": cr.get("approvals", [])},
+            outputs=outputs,
         )
     )
 
@@ -3352,6 +3364,9 @@ def proposal_apply(
     force: bool = typer.Option(
         False, "--force", help="Skip approval gate (not recommended)."
     ),
+    skip_risk_check: bool = typer.Option(
+        False, "--skip-risk-check", help="Skip high-risk proposal blocking."
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Apply an accepted PatchProposal to canonical files.
@@ -3470,7 +3485,8 @@ def proposal_apply(
         raise typer.Exit()
 
     # Approval gate
-    if risk.requires_approval and not force:
+    approved_cr = None
+    if risk.requires_approval and not force and not skip_risk_check:
         approved_cr = find_approved_cr_for_proposal(model_path, proposal_id)
         if approved_cr is None:
             if json_output:
@@ -3489,7 +3505,7 @@ def proposal_apply(
                     console.print(f"  • {reason}")
                 console.print(
                     "[yellow]Create an approved ChangeRequest linking to this proposal, "
-                    "or use --force to override.[/yellow]"
+                    "or use --force or --skip-risk-check to override.[/yellow]"
                 )
             raise typer.Exit(code=1)
         if not json_output:
@@ -3497,8 +3513,10 @@ def proposal_apply(
                 f"[green]Approved via ChangeRequest {approved_cr.get('id')}[/green]"
             )
 
+    skip_risk = skip_risk_check or force or (approved_cr is not None)
+
     try:
-        result = apply_patch_proposal(model_path, proposal_id)
+        result = apply_patch_proposal(model_path, proposal_id, skip_risk_check=skip_risk)
     except (ValueError, FileNotFoundError) as exc:
         if json_output:
             print(json.dumps({"error": str(exc), "proposal_id": proposal_id}))
@@ -3513,6 +3531,8 @@ def proposal_apply(
             "changed_files": result.changed_files,
             "audit_event_written": result.audit_event_written,
             "index_rebuilt": result.index_rebuilt,
+            "risk_level": result.risk_level,
+            "risk_assessment": result.risk_assessment,
         }, indent=2, default=str))
         raise typer.Exit()
 
@@ -3520,6 +3540,8 @@ def proposal_apply(
     console.print(f"  Changed files: {len(result.changed_files)}")
     for f in result.changed_files:
         console.print(f"    {f}")
+    if result.risk_level:
+        console.print(f"  Risk level: {result.risk_level}")
     if result.audit_event_written:
         console.print("  Audit event written")
     if result.index_rebuilt:
