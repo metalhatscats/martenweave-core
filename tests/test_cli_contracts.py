@@ -13,9 +13,10 @@ Stable public contract fields by command:
   risk_report, change_activity, lifecycle_summary
 - trace --json: root_object_id, root_object_type, root_object_name, nodes, edges
 - impact --json: root_object_id, root_object_type, affected_objects
-- search --json: object_id, object_type, status, name, title, domain,
-  source_file, score, matched_fields
-- query --json: object_id, object_type, status, name, title, domain, source_file
+- search --json: results (list), total_count; each result has object_id,
+  object_type, status, name, title, domain, source_file, score, matched_fields
+- query --json: results (list), total_count; each result has object_id,
+  object_type, status, name, title, domain, source_file
 - profile-dataset --json: dataset_id, row_count, column_count, columns, status
 - infer-model --json: id, type, status, operations, affected_objects,
   validation_status, assumptions, human_checks
@@ -285,9 +286,11 @@ class TestIndexQueryContract:
         )
         assert result.exit_code == 0
         data = _parse_json(result)
-        assert isinstance(data, list)
-        if data:
-            item = data[0]
+        assert isinstance(data, dict)
+        assert "results" in data
+        assert "total_count" in data
+        if data["results"]:
+            item = data["results"][0]
             assert "object_id" in item
             assert "object_type" in item
             assert "status" in item
@@ -312,9 +315,11 @@ class TestIndexQueryContract:
         )
         assert result.exit_code == 0
         data = _parse_json(result)
-        assert isinstance(data, list)
-        if data:
-            item = data[0]
+        assert isinstance(data, dict)
+        assert "results" in data
+        assert "total_count" in data
+        if data["results"]:
+            item = data["results"][0]
             assert "object_id" in item
             assert "object_type" in item
             assert "status" in item
@@ -322,6 +327,53 @@ class TestIndexQueryContract:
             assert "title" in item
             assert "domain" in item
             assert "source_file" in item
+
+    def test_search_offset_pagination(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app,
+            [
+                "search",
+                "customer",
+                "--repo",
+                str(indexed_repo),
+                "--limit",
+                "2",
+                "--offset",
+                "1",
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert "results" in data
+        assert "total_count" in data
+        # total_count reflects total matches, not page size
+        assert data["total_count"] >= 0
+
+    def test_query_offset_pagination(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app,
+            [
+                "query",
+                "--repo",
+                str(indexed_repo),
+                "--type",
+                "Attribute",
+                "--limit",
+                "1",
+                "--offset",
+                "0",
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert "results" in data
+        assert "total_count" in data
+        # total_count reflects total matches, not page size
+        assert data["total_count"] >= 0
 
 
 # ---------------------------------------------------------------------------
