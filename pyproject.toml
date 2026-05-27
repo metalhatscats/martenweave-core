@@ -1,6 +1,6 @@
 [project]
 name = "martenweave-core"
-version = "0.1.0"
+version = "0.4.0"
 description = "Backend-first agentic data model registry core."
 requires-python = ">=3.11"
 dependencies = [

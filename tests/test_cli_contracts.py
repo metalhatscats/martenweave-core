@@ -706,3 +706,71 @@ class TestImportContract:
         assert "status" in data
         assert "operations" in data
         assert "warnings" in data
+
+
+# ---------------------------------------------------------------------------
+# Version metadata tests (#252)
+# ---------------------------------------------------------------------------
+
+
+class TestVersionMetadata:
+    def test_version_flag(self) -> None:
+        result = runner.invoke(app, ["--version"])
+        assert result.exit_code == 0
+        assert "0.4.0" in result.output
+
+    def test_scorecard_json_has_version(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app, ["scorecard", "--repo", str(indexed_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert data.get("martenweave_version") == "0.4.0"
+
+    def test_health_json_has_version(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app, ["health", "--repo", str(indexed_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert data.get("martenweave_version") == "0.4.0"
+
+    def test_gap_report_json_has_version(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app, ["gap-report", "--repo", str(indexed_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert data.get("martenweave_version") == "0.4.0"
+
+    def test_owners_json_has_version(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app, ["owners", "--repo", str(indexed_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert data.get("martenweave_version") == "0.4.0"
+
+    def test_decisions_report_json_has_version(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app, ["decisions", "report", "--repo", str(indexed_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert data.get("martenweave_version") == "0.4.0"
+
+    def test_proposal_report_json_has_version(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app, ["proposal", "report", "--repo", str(indexed_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert data.get("martenweave_version") == "0.4.0"
+
+    def test_analyze_json_has_version(self, indexed_repo: Path) -> None:
+        result = runner.invoke(
+            app, ["analyze", "--repo", str(indexed_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert data.get("martenweave_version") == "0.4.0"
