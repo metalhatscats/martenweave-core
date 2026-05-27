@@ -2765,6 +2765,9 @@ def proposal_list(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
     stale: bool = typer.Option(False, "--stale", help="Show only expired proposals."),
+    status: str | None = typer.Option(
+        None, "--status", help="Filter by status: pending_review, accepted, rejected, applied."
+    ),
 ) -> None:
     """List all PatchProposals in the repository."""
     repo_root = _resolve_repo(repo)
@@ -2803,6 +2806,8 @@ def proposal_list(
             except ValueError:
                 pass
         if stale and not is_expired:
+            continue
+        if status and fm.get("status") != status:
             continue
         proposals.append({
             "id": fm.get("id", f.stem),

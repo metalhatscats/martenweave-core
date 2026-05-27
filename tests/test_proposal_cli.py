@@ -671,3 +671,104 @@ class TestProposalAcceptRejectCli:
         )
         assert result.exit_code == 1
         assert "not found" in result.output
+
+
+class TestProposalListStatusFilter:
+    def test_proposal_list_status_accepted(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X"
+        )
+        _create_accepted_proposal(temp_model_dir, "PP-ACCEPTED-001", [op])
+
+        # Also create a pending proposal
+        proposal = build_patch_proposal("PP-PENDING-001", [op])
+        write_patch_proposal(proposal, temp_model_dir)
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "list",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--status",
+                "accepted",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "PP-ACCEPTED-001" in result.output
+        assert "PP-PENDING-001" not in result.output
+
+    def test_proposal_list_status_rejected(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X"
+        )
+        proposal = build_patch_proposal("PP-REJECTED-001", [op])
+        write_patch_proposal(proposal, temp_model_dir)
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-REJECTED-001.md"
+        transition_patch_proposal_status(proposal_path, "rejected")
+
+        # Also create an accepted proposal
+        _create_accepted_proposal(temp_model_dir, "PP-ACCEPTED-002", [op])
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "list",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--status",
+                "rejected",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "PP-REJECTED-001" in result.output
+        assert "PP-ACCEPTED-002" not in result.output
+
+    def test_proposal_list_status_json(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X"
+        )
+        _create_accepted_proposal(temp_model_dir, "PP-ACCEPTED-003", [op])
+        proposal = build_patch_proposal("PP-PENDING-003", [op])
+        write_patch_proposal(proposal, temp_model_dir)
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "list",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--status",
+                "accepted",
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert len(data) == 1
+        assert data[0]["id"] == "PP-ACCEPTED-003"
+
+    def test_proposal_list_status_no_match(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X"
+        )
+        _create_accepted_proposal(temp_model_dir, "PP-ACCEPTED-004", [op])
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "list",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--status",
+                "rejected",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "PP-ACCEPTED-004" not in result.output
+        # Empty table is rendered when no proposals match the filter
+        assert "Status" in result.output
