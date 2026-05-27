@@ -8,7 +8,7 @@ import pytest
 from typer.testing import CliRunner
 
 from modelops_core.cli import app
-from modelops_core.exports import export_model_csv, export_model_xlsx
+from modelops_core.exports import export_model_csv, export_model_jsonl, export_model_xlsx
 
 runner = CliRunner()
 
@@ -67,6 +67,38 @@ def test_cli_export_model_xlsx(temp_model_dir: Path) -> None:
     assert result.exit_code == 0
     assert "Exported" in result.output
     assert ".xlsx" in result.output
+
+
+def test_export_model_jsonl(temp_model_dir: Path) -> None:
+    result = export_model_jsonl(temp_model_dir)
+    assert len(result) > 0
+    for f in result:
+        assert f.exists()
+        assert f.suffix == ".jsonl"
+
+
+def test_export_model_jsonl_content(temp_model_dir: Path) -> None:
+    import json
+
+    export_model_jsonl(temp_model_dir)
+    jsonl_dir = temp_model_dir.parent / "generated" / "exports" / "jsonl"
+    domain_jsonl = jsonl_dir / "masterdatadomain.jsonl"
+    assert domain_jsonl.exists()
+    lines = domain_jsonl.read_text().strip().split("\n")
+    assert len(lines) >= 1
+    obj = json.loads(lines[0])
+    assert "id" in obj
+    assert "type" in obj
+    assert "status" in obj
+    assert "source_file" in obj
+
+
+def test_cli_export_model_json(temp_model_dir: Path) -> None:
+    repo = str(temp_model_dir.parent)
+    result = runner.invoke(app, ["export-model", "--repo", repo, "--format", "json"])
+    assert result.exit_code == 0
+    assert "Exported" in result.output
+    assert ".jsonl" in result.output
 
 
 def test_cli_export_model_unknown_format(temp_model_dir: Path) -> None:
@@ -196,6 +228,21 @@ def test_cli_export_model_xlsx_json(temp_model_dir: Path) -> None:
     data = json.loads(result.output)
     assert data["format"] == "xlsx"
     assert "file" in data
+    assert data["business_review"] is False
+
+
+def test_cli_export_model_json_json(temp_model_dir: Path) -> None:
+    import json
+
+    repo = str(temp_model_dir.parent)
+    result = runner.invoke(
+        app, ["export-model", "--repo", repo, "--format", "json", "--json"]
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["format"] == "json"
+    assert isinstance(data["files"], list)
+    assert len(data["files"]) > 0
     assert data["business_review"] is False
 
 

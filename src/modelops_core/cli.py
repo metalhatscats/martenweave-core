@@ -36,7 +36,7 @@ from modelops_core.connectors.google_drive import GoogleDriveConnector
 from modelops_core.diff import diff_repositories
 from modelops_core.docs.static_doc_generator import generate_static_docs
 from modelops_core.errors import ResourceLimitExceeded
-from modelops_core.exports import export_model_csv, export_model_xlsx
+from modelops_core.exports import export_model_csv, export_model_jsonl, export_model_xlsx
 from modelops_core.exports.github_publish_service import (
     publish_issue_from_draft,
     publish_pr_from_bundle,
@@ -4051,7 +4051,7 @@ def import_model_sheet(
 @with_telemetry("export-model")
 def export_model(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
-    fmt: str = typer.Option("csv", "--format", help="Export format: csv or xlsx."),
+    fmt: str = typer.Option("csv", "--format", help="Export format: csv, xlsx, or json."),
     business_review: bool = typer.Option(
         False, "--business-review", help="Styled XLSX for non-technical review."
     ),
@@ -4082,6 +4082,27 @@ def export_model(
             for f in written:
                 console.print(f"  {f}")
             path = written[0] if written else None
+        elif fmt.lower() == "json":
+            written = export_model_jsonl(
+                model_path, max_objects=limits.max_export_objects
+            )
+            if json_output:
+                print(
+                    json.dumps(
+                        {
+                            "format": "json",
+                            "files": [str(f) for f in written],
+                            "business_review": business_review,
+                        },
+                        indent=2,
+                        default=str,
+                    )
+                )
+                raise typer.Exit()
+            console.print(f"[green]Exported {len(written)} JSONL files[/green]")
+            for f in written:
+                console.print(f"  {f}")
+            path = written[0] if written else None
         elif fmt.lower() == "xlsx":
             path = export_model_xlsx(
                 model_path,
@@ -4108,7 +4129,7 @@ def export_model(
             if json_output:
                 print(json.dumps({"error": f"Unknown format: {fmt}"}))
             else:
-                console.print(f"[red]Unknown format: {fmt}. Use 'csv' or 'xlsx'.[/red]")
+                console.print(f"[red]Unknown format: {fmt}. Use 'csv', 'xlsx', or 'json'.[/red]")
             raise typer.Exit(code=1)
     except ResourceLimitExceeded as exc:
         if json_output:
@@ -4117,7 +4138,8 @@ def export_model(
             console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
-    changed_files = [str(f) for f in (written if fmt.lower() == "csv" else [path])]
+    is_list_format = fmt.lower() in ("csv", "json")
+    changed_files = [str(f) for f in (written if is_list_format else [path])]
     service = AuditEventService(repo_root)
     service.emit(
         create_audit_event(
@@ -4126,7 +4148,10 @@ def export_model(
             status="success",
             command=f"export-model --format {fmt}",
             changed_files=changed_files,
-            outputs={"format": fmt, "file_count": len(written) if fmt.lower() == "csv" else 1},
+            outputs={
+                "format": fmt,
+                "file_count": len(written) if is_list_format else 1,
+            },
         )
     )
 
