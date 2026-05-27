@@ -1787,6 +1787,7 @@ def impact(
         "--group-by",
         help="Group output by: type, direction, relationship.",
     ),
+    direction: str = typer.Option("both", "--direction", help="upstream, downstream, or both."),
 ) -> None:
     """Generate impact report for an object."""
     repo_root = _resolve_repo(repo)
@@ -1796,7 +1797,7 @@ def impact(
         console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
-    report = generate_impact_report(db_path, object_id, max_depth=depth)
+    report = generate_impact_report(db_path, object_id, max_depth=depth, direction=direction)
 
     # Legacy --json flag takes precedence
     if json_output or fmt.lower() == "json":

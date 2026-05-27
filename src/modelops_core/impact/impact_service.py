@@ -10,7 +10,7 @@ from modelops_core.impact.impact_report import AffectedObject, ImpactReport
 
 
 def generate_impact_report(
-    db_path: Path, object_id: str, max_depth: int = 2
+    db_path: Path, object_id: str, max_depth: int = 2, direction: str = "both"
 ) -> ImpactReport:
     """Perform bounded BFS impact analysis.
 
@@ -57,45 +57,47 @@ def generate_impact_report(
     affected: list[AffectedObject] = []
 
     while queue:
-        current_id, depth, direction = queue.pop(0)
+        current_id, depth, current_direction = queue.pop(0)
         if depth >= max_depth:
             continue
 
         # Outgoing = downstream
-        for next_id, rel_type, rel_class in outgoing.get(current_id, []):
-            if next_id not in visited:
-                visited.add(next_id)
-                meta = metadata.get(next_id, {})
-                affected.append(
-                    AffectedObject(
-                        object_id=next_id,
-                        object_type=meta.get("type", "Unknown"),
-                        object_name=meta.get("name"),
-                        relationship_type=rel_type,
-                        relationship_class=rel_class,
-                        direction="downstream",
-                        depth=depth + 1,
+        if direction in ("downstream", "both"):
+            for next_id, rel_type, rel_class in outgoing.get(current_id, []):
+                if next_id not in visited:
+                    visited.add(next_id)
+                    meta = metadata.get(next_id, {})
+                    affected.append(
+                        AffectedObject(
+                            object_id=next_id,
+                            object_type=meta.get("type", "Unknown"),
+                            object_name=meta.get("name"),
+                            relationship_type=rel_type,
+                            relationship_class=rel_class,
+                            direction="downstream",
+                            depth=depth + 1,
+                        )
                     )
-                )
-                queue.append((next_id, depth + 1, "downstream"))
+                    queue.append((next_id, depth + 1, "downstream"))
 
         # Incoming = upstream
-        for prev_id, rel_type, rel_class in incoming.get(current_id, []):
-            if prev_id not in visited:
-                visited.add(prev_id)
-                meta = metadata.get(prev_id, {})
-                affected.append(
-                    AffectedObject(
-                        object_id=prev_id,
-                        object_type=meta.get("type", "Unknown"),
-                        object_name=meta.get("name"),
-                        relationship_type=rel_type,
-                        relationship_class=rel_class,
-                        direction="upstream",
-                        depth=depth + 1,
+        if direction in ("upstream", "both"):
+            for prev_id, rel_type, rel_class in incoming.get(current_id, []):
+                if prev_id not in visited:
+                    visited.add(prev_id)
+                    meta = metadata.get(prev_id, {})
+                    affected.append(
+                        AffectedObject(
+                            object_id=prev_id,
+                            object_type=meta.get("type", "Unknown"),
+                            object_name=meta.get("name"),
+                            relationship_type=rel_type,
+                            relationship_class=rel_class,
+                            direction="upstream",
+                            depth=depth + 1,
+                        )
                     )
-                )
-                queue.append((prev_id, depth + 1, "upstream"))
+                    queue.append((prev_id, depth + 1, "upstream"))
 
     return ImpactReport(
         root_object_id=object_id,

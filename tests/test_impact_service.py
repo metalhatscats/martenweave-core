@@ -418,3 +418,164 @@ class TestImpactCliGrouping:
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert "grouped" in data
+
+
+class TestImpactDirectionFilter:
+    def test_impact_direction_downstream_only(self, tmp_path: Path) -> None:
+        from modelops_core.index import build_index
+
+        repo_root = tmp_path / "repo"
+        model_dir = repo_root / "model"
+        model_dir.mkdir(parents=True)
+        generated = repo_root / "generated"
+        generated.mkdir()
+
+        (model_dir / "DOMAIN-TEST.md").write_text(
+            "---\n"
+            "id: DOMAIN-TEST\n"
+            "type: MasterDataDomain\n"
+            "status: active\n"
+            "name: Test Domain\n"
+            "---\n\n# Test\n",
+            encoding="utf-8",
+        )
+        (model_dir / "ATTR-TEST.md").write_text(
+            "---\n"
+            "id: ATTR-TEST\n"
+            "type: Attribute\n"
+            "status: active\n"
+            "name: Test Attr\n"
+            "domain: DOMAIN-TEST\n"
+            "---\n\n# Test\n",
+            encoding="utf-8",
+        )
+
+        db_path = generated / "modelops.db"
+        build_index(repo_root=repo_root, db_path=db_path)
+
+        # ATTR-TEST points to DOMAIN-TEST, so from DOMAIN-TEST's perspective
+        # ATTR-TEST is upstream. Downstream-only should return nothing.
+        report = generate_impact_report(db_path, "DOMAIN-TEST", max_depth=2, direction="downstream")
+        assert report.affected_objects == []
+
+    def test_impact_direction_upstream_only(self, tmp_path: Path) -> None:
+        from modelops_core.index import build_index
+
+        repo_root = tmp_path / "repo"
+        model_dir = repo_root / "model"
+        model_dir.mkdir(parents=True)
+        generated = repo_root / "generated"
+        generated.mkdir()
+
+        (model_dir / "DOMAIN-TEST.md").write_text(
+            "---\n"
+            "id: DOMAIN-TEST\n"
+            "type: MasterDataDomain\n"
+            "status: active\n"
+            "name: Test Domain\n"
+            "---\n\n# Test\n",
+            encoding="utf-8",
+        )
+        (model_dir / "ATTR-TEST.md").write_text(
+            "---\n"
+            "id: ATTR-TEST\n"
+            "type: Attribute\n"
+            "status: active\n"
+            "name: Test Attr\n"
+            "domain: DOMAIN-TEST\n"
+            "---\n\n# Test\n",
+            encoding="utf-8",
+        )
+
+        db_path = generated / "modelops.db"
+        build_index(repo_root=repo_root, db_path=db_path)
+
+        report = generate_impact_report(db_path, "DOMAIN-TEST", max_depth=2, direction="upstream")
+        assert all(o.direction == "upstream" for o in report.affected_objects)
+        assert any(o.object_id == "ATTR-TEST" for o in report.affected_objects)
+
+    def test_impact_direction_both_default(self, tmp_path: Path) -> None:
+        from modelops_core.index import build_index
+
+        repo_root = tmp_path / "repo"
+        model_dir = repo_root / "model"
+        model_dir.mkdir(parents=True)
+        generated = repo_root / "generated"
+        generated.mkdir()
+
+        (model_dir / "DOMAIN-TEST.md").write_text(
+            "---\n"
+            "id: DOMAIN-TEST\n"
+            "type: MasterDataDomain\n"
+            "status: active\n"
+            "name: Test Domain\n"
+            "---\n\n# Test\n",
+            encoding="utf-8",
+        )
+        (model_dir / "ATTR-TEST.md").write_text(
+            "---\n"
+            "id: ATTR-TEST\n"
+            "type: Attribute\n"
+            "status: active\n"
+            "name: Test Attr\n"
+            "domain: DOMAIN-TEST\n"
+            "---\n\n# Test\n",
+            encoding="utf-8",
+        )
+
+        db_path = generated / "modelops.db"
+        build_index(repo_root=repo_root, db_path=db_path)
+
+        report = generate_impact_report(db_path, "DOMAIN-TEST", max_depth=2, direction="both")
+        directions = {o.direction for o in report.affected_objects}
+        assert "upstream" in directions
+        assert any(o.object_id == "ATTR-TEST" for o in report.affected_objects)
+
+    def test_impact_cli_direction_downstream_json(self, tmp_path: Path) -> None:
+        from modelops_core.index import build_index
+
+        repo_root = tmp_path / "repo"
+        model_dir = repo_root / "model"
+        model_dir.mkdir(parents=True)
+        generated = repo_root / "generated"
+        generated.mkdir()
+
+        (model_dir / "DOMAIN-TEST.md").write_text(
+            "---\n"
+            "id: DOMAIN-TEST\n"
+            "type: MasterDataDomain\n"
+            "status: active\n"
+            "name: Test Domain\n"
+            "---\n\n# Test\n",
+            encoding="utf-8",
+        )
+        (model_dir / "ATTR-TEST.md").write_text(
+            "---\n"
+            "id: ATTR-TEST\n"
+            "type: Attribute\n"
+            "status: active\n"
+            "name: Test Attr\n"
+            "domain: DOMAIN-TEST\n"
+            "---\n\n# Test\n",
+            encoding="utf-8",
+        )
+
+        db_path = generated / "modelops.db"
+        build_index(repo_root=repo_root, db_path=db_path)
+
+        result = runner.invoke(
+            app,
+            [
+                "impact",
+                "ATTR-TEST",
+                "--repo",
+                str(repo_root),
+                "--direction",
+                "downstream",
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert all(o["direction"] == "downstream" for o in data["affected_objects"])
+        assert any(o["object_id"] == "DOMAIN-TEST" for o in data["affected_objects"])
