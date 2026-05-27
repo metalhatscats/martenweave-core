@@ -6,6 +6,7 @@ schema_version: "1.0"
 name: Supplier Central Data
 domain: DOMAIN-SUPPLIER-VENDOR
 parent_entity: ENTITY-SUPPLIER
+data_steward: PERSON-DATA-STEWARD-VENDOR
 ---
 
 # Supplier Central Data

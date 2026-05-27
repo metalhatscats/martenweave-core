@@ -12,6 +12,7 @@ system: SYS-S4HANA
 endpoint_type: sap_table_field
 sap_table: LFA1
 sap_field: KTOKK
+data_steward: PERSON-DATA-STEWARD-VENDOR
 ---
 
 # LFA1.KTOKK
