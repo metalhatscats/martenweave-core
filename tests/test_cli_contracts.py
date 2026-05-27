@@ -627,6 +627,36 @@ class TestProposalContract:
         assert isinstance(data["affected_objects"], list)
         assert isinstance(data["operations"], list)
 
+    def test_propose_patch_dry_run_json_schema(self, sample_repo: Path) -> None:
+        note = sample_repo / "note.md"
+        note.write_text("Update CUSTOMER GROUP semantics.", encoding="utf-8")
+        proposal_path = (
+            sample_repo / "model" / "patch-proposals" / "PP-DRY-001.md"
+        )
+        assert not proposal_path.exists()
+
+        result = runner.invoke(
+            app,
+            [
+                "propose-patch",
+                "--from",
+                str(note),
+                "--repo",
+                str(sample_repo),
+                "--dry-run",
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert data.get("dry_run") is True
+        assert "is_safe" in data
+        assert "proposal" in data
+        assert "assumptions" in data
+        assert "human_checks" in data
+        assert not proposal_path.exists()
+
     def test_proposal_apply_dry_run_output(self, repo_with_proposal: Path) -> None:
         # dry-run requires the proposal to be in 'accepted' status
         proposal_path = (
@@ -682,6 +712,35 @@ class TestChangeRequestContract:
         assert "status" in data
         assert "title" in data
         assert "path" in data
+
+    def test_cr_create_dry_run_json_schema(self, sample_repo: Path) -> None:
+        cr_path = sample_repo / "model" / "change-requests" / "CR-DRY-001.md"
+        assert not cr_path.exists()
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-DRY-001",
+                "--title",
+                "Dry Run Contract Test",
+                "--repo",
+                str(sample_repo),
+                "--dry-run",
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert data.get("dry_run") is True
+        assert "id" in data
+        assert "status" in data
+        assert "title" in data
+        assert "path" in data
+        assert not cr_path.exists()
 
     def test_cr_list_json_schema(self, repo_with_cr: Path) -> None:
         result = runner.invoke(
