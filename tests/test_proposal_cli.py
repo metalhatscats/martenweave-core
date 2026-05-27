@@ -528,3 +528,146 @@ def test_proposal_list_shows_reviewer(temp_model_dir: Path) -> None:
     assert result.exit_code == 0
     assert "PP-LIST-REVIEW-001" in result.output
     assert "dave" in result.output
+
+
+class TestProposalAcceptRejectCli:
+    def test_proposal_accept_cli(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="New Name"
+        )
+        proposal = build_patch_proposal("PP-ACCEPT-CLI-001", [op])
+        write_patch_proposal(proposal, temp_model_dir)
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "accept",
+                "PP-ACCEPT-CLI-001",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--reviewer",
+                "alice",
+                "--notes",
+                "Looks good.",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "accepted" in result.output
+
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-ACCEPT-CLI-001.md"
+        parsed = parse_file(proposal_path)
+        assert parsed.frontmatter is not None
+        assert parsed.frontmatter["status"] == "accepted"
+        assert parsed.frontmatter["reviewer"] == "alice"
+        assert parsed.frontmatter["reviewer_notes"] == "Looks good."
+        assert parsed.frontmatter["reviewed_at"] is not None
+
+    def test_proposal_accept_cli_json(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="New Name"
+        )
+        proposal = build_patch_proposal("PP-ACCEPT-CLI-002", [op])
+        write_patch_proposal(proposal, temp_model_dir)
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "accept",
+                "PP-ACCEPT-CLI-002",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["proposal_id"] == "PP-ACCEPT-CLI-002"
+        assert data["status"] == "accepted"
+
+    def test_proposal_accept_cli_missing(self, temp_model_dir: Path) -> None:
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "accept",
+                "PP-MISSING",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "not found" in result.output
+
+    def test_proposal_reject_cli(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="Bad Name"
+        )
+        proposal = build_patch_proposal("PP-REJECT-CLI-001", [op])
+        write_patch_proposal(proposal, temp_model_dir)
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "reject",
+                "PP-REJECT-CLI-001",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--reviewer",
+                "bob",
+                "--reason",
+                "Naming violation.",
+                "--notes",
+                "Please fix and resubmit.",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "rejected" in result.output
+
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-REJECT-CLI-001.md"
+        parsed = parse_file(proposal_path)
+        assert parsed.frontmatter is not None
+        assert parsed.frontmatter["status"] == "rejected"
+        assert parsed.frontmatter["reviewer"] == "bob"
+        assert parsed.frontmatter["rejection_reason"] == "Naming violation."
+        assert parsed.frontmatter["reviewer_notes"] == "Please fix and resubmit."
+        assert parsed.frontmatter["reviewed_at"] is not None
+
+    def test_proposal_reject_cli_json(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="Bad Name"
+        )
+        proposal = build_patch_proposal("PP-REJECT-CLI-002", [op])
+        write_patch_proposal(proposal, temp_model_dir)
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "reject",
+                "PP-REJECT-CLI-002",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["proposal_id"] == "PP-REJECT-CLI-002"
+        assert data["status"] == "rejected"
+
+    def test_proposal_reject_cli_missing(self, temp_model_dir: Path) -> None:
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "reject",
+                "PP-MISSING",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "not found" in result.output
