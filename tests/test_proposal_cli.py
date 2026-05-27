@@ -672,6 +672,275 @@ class TestProposalAcceptRejectCli:
         assert result.exit_code == 1
         assert "not found" in result.output
 
+    # -- Safety / contract tests for state transitions ----------------------
+
+    def test_proposal_accept_already_accepted_is_idempotent(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="New Name"
+        )
+        _create_accepted_proposal(temp_model_dir, "PP-ACCEPT-IDEM-001", [op])
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "accept",
+                "PP-ACCEPT-IDEM-001",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--reviewer",
+                "alice2",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "accepted" in result.output
+
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-ACCEPT-IDEM-001.md"
+        parsed = parse_file(proposal_path)
+        assert parsed.frontmatter is not None
+        assert parsed.frontmatter["status"] == "accepted"
+        assert parsed.frontmatter["reviewer"] == "alice2"
+
+    def test_proposal_accept_rejected_is_blocked(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="Bad"
+        )
+        proposal = build_patch_proposal("PP-ACCEPT-BLOCK-001", [op])
+        write_patch_proposal(proposal, temp_model_dir)
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-ACCEPT-BLOCK-001.md"
+        transition_patch_proposal_status(proposal_path, "rejected", reviewer="bob")
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "accept",
+                "PP-ACCEPT-BLOCK-001",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "rejected" in result.output
+        assert "recreated" in result.output
+
+    def test_proposal_accept_applied_is_blocked(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X"
+        )
+        _create_accepted_proposal(temp_model_dir, "PP-ACCEPT-APP-001", [op])
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-ACCEPT-APP-001.md"
+        # Mark as applied directly in frontmatter
+        text = proposal_path.read_text(encoding="utf-8")
+        text = text.replace(
+            "status: accepted",
+            "status: accepted\napplied_at: 2024-01-01T00:00:00Z",
+        )
+        proposal_path.write_text(text, encoding="utf-8")
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "accept",
+                "PP-ACCEPT-APP-001",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "already been applied" in result.output
+
+    def test_proposal_reject_already_rejected_is_idempotent(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="Bad"
+        )
+        proposal = build_patch_proposal("PP-REJECT-IDEM-001", [op])
+        write_patch_proposal(proposal, temp_model_dir)
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-REJECT-IDEM-001.md"
+        transition_patch_proposal_status(proposal_path, "rejected", reviewer="bob")
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "reject",
+                "PP-REJECT-IDEM-001",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--reviewer",
+                "bob2",
+                "--reason",
+                "Still bad.",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "rejected" in result.output
+
+        parsed = parse_file(proposal_path)
+        assert parsed.frontmatter is not None
+        assert parsed.frontmatter["status"] == "rejected"
+        assert parsed.frontmatter["reviewer"] == "bob2"
+        assert parsed.frontmatter["rejection_reason"] == "Still bad."
+
+    def test_proposal_reject_accepted_is_blocked(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X"
+        )
+        _create_accepted_proposal(temp_model_dir, "PP-REJECT-BLOCK-001", [op])
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "reject",
+                "PP-REJECT-BLOCK-001",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "already accepted" in result.output
+
+    def test_proposal_reject_applied_is_blocked(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X"
+        )
+        _create_accepted_proposal(temp_model_dir, "PP-REJECT-APP-001", [op])
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-REJECT-APP-001.md"
+        text = proposal_path.read_text(encoding="utf-8")
+        text = text.replace(
+            "status: accepted",
+            "status: accepted\napplied_at: 2024-01-01T00:00:00Z",
+        )
+        proposal_path.write_text(text, encoding="utf-8")
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "reject",
+                "PP-REJECT-APP-001",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "already been applied" in result.output
+
+    # -- JSON contract tests for error shapes -------------------------------
+
+    def test_proposal_accept_rejected_json_contract(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="Bad"
+        )
+        proposal = build_patch_proposal("PP-ACCEPT-JSON-BLOCK-001", [op])
+        write_patch_proposal(proposal, temp_model_dir)
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-ACCEPT-JSON-BLOCK-001.md"
+        transition_patch_proposal_status(proposal_path, "rejected", reviewer="bob")
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "accept",
+                "PP-ACCEPT-JSON-BLOCK-001",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 1
+        data = json.loads(result.output)
+        assert data["proposal_id"] == "PP-ACCEPT-JSON-BLOCK-001"
+        assert data["status"] == "rejected"
+        assert "error" in data
+        assert "rejected" in data["error"]
+
+    def test_proposal_reject_accepted_json_contract(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X"
+        )
+        _create_accepted_proposal(temp_model_dir, "PP-REJECT-JSON-BLOCK-001", [op])
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "reject",
+                "PP-REJECT-JSON-BLOCK-001",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 1
+        data = json.loads(result.output)
+        assert data["proposal_id"] == "PP-REJECT-JSON-BLOCK-001"
+        assert data["status"] == "accepted"
+        assert "error" in data
+        assert "accepted" in data["error"]
+
+    def test_proposal_accept_applied_json_contract(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X"
+        )
+        _create_accepted_proposal(temp_model_dir, "PP-ACCEPT-JSON-APP-001", [op])
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-ACCEPT-JSON-APP-001.md"
+        text = proposal_path.read_text(encoding="utf-8")
+        text = text.replace(
+            "status: accepted",
+            "status: accepted\napplied_at: 2024-01-01T00:00:00Z",
+        )
+        proposal_path.write_text(text, encoding="utf-8")
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "accept",
+                "PP-ACCEPT-JSON-APP-001",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 1
+        data = json.loads(result.output)
+        assert data["proposal_id"] == "PP-ACCEPT-JSON-APP-001"
+        assert "error" in data
+        assert "applied" in data["error"]
+
+    def test_proposal_reject_applied_json_contract(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X"
+        )
+        _create_accepted_proposal(temp_model_dir, "PP-REJECT-JSON-APP-001", [op])
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-REJECT-JSON-APP-001.md"
+        text = proposal_path.read_text(encoding="utf-8")
+        text = text.replace(
+            "status: accepted",
+            "status: accepted\napplied_at: 2024-01-01T00:00:00Z",
+        )
+        proposal_path.write_text(text, encoding="utf-8")
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "reject",
+                "PP-REJECT-JSON-APP-001",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 1
+        data = json.loads(result.output)
+        assert data["proposal_id"] == "PP-REJECT-JSON-APP-001"
+        assert "error" in data
+        assert "applied" in data["error"]
+
 
 class TestProposalListStatusFilter:
     def test_proposal_list_status_accepted(self, temp_model_dir: Path) -> None:

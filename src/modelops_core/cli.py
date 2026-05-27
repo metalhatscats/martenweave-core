@@ -2915,6 +2915,37 @@ def proposal_accept(
         console.print(f"[red]PatchProposal not found: {proposal_id}[/red]")
         raise typer.Exit(code=1)
 
+    parsed = parse_file(proposal_path)
+    fm = parsed.frontmatter or {}
+    current_status = fm.get("status", "pending_review")
+    is_applied = bool(fm.get("applied_at")) or fm.get("application_status") == "applied"
+
+    if is_applied:
+        msg = f"PatchProposal '{proposal_id}' has already been applied and cannot be accepted."
+        if json_output:
+            print(
+                json.dumps(
+                    {"proposal_id": proposal_id, "status": current_status, "error": msg},
+                    indent=2,
+                )
+            )
+            raise typer.Exit(code=1)
+        console.print(f"[red]{msg}[/red]")
+        raise typer.Exit(code=1)
+
+    if current_status == "rejected":
+        msg = f"PatchProposal '{proposal_id}' is rejected. It must be recreated to be accepted."
+        if json_output:
+            print(
+                json.dumps(
+                    {"proposal_id": proposal_id, "status": current_status, "error": msg},
+                    indent=2,
+                )
+            )
+            raise typer.Exit(code=1)
+        console.print(f"[red]{msg}[/red]")
+        raise typer.Exit(code=1)
+
     transition_patch_proposal_status(
         proposal_path, "accepted", reviewer=reviewer, reviewer_notes=notes
     )
@@ -2943,6 +2974,37 @@ def proposal_reject(
 
     if not proposal_path.exists():
         console.print(f"[red]PatchProposal not found: {proposal_id}[/red]")
+        raise typer.Exit(code=1)
+
+    parsed = parse_file(proposal_path)
+    fm = parsed.frontmatter or {}
+    current_status = fm.get("status", "pending_review")
+    is_applied = bool(fm.get("applied_at")) or fm.get("application_status") == "applied"
+
+    if is_applied:
+        msg = f"PatchProposal '{proposal_id}' has already been applied and cannot be rejected."
+        if json_output:
+            print(
+                json.dumps(
+                    {"proposal_id": proposal_id, "status": current_status, "error": msg},
+                    indent=2,
+                )
+            )
+            raise typer.Exit(code=1)
+        console.print(f"[red]{msg}[/red]")
+        raise typer.Exit(code=1)
+
+    if current_status == "accepted":
+        msg = f"PatchProposal '{proposal_id}' is already accepted. It cannot be rejected."
+        if json_output:
+            print(
+                json.dumps(
+                    {"proposal_id": proposal_id, "status": current_status, "error": msg},
+                    indent=2,
+                )
+            )
+            raise typer.Exit(code=1)
+        console.print(f"[red]{msg}[/red]")
         raise typer.Exit(code=1)
 
     transition_patch_proposal_status(
