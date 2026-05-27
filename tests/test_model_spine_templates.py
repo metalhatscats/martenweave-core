@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import tempfile
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -79,7 +80,7 @@ def test_generic_template_has_expected_structure() -> None:
 
 
 def test_init_with_business_partner_template() -> None:
-    with runner.isolated_filesystem() as td:
+    with tempfile.TemporaryDirectory() as td:
         result = runner.invoke(app, ["init", td, "--template", "business_partner"])
         assert result.exit_code == 0
         model_dir = Path(td) / "model"
@@ -88,7 +89,7 @@ def test_init_with_business_partner_template() -> None:
 
 
 def test_init_with_generic_template() -> None:
-    with runner.isolated_filesystem() as td:
+    with tempfile.TemporaryDirectory() as td:
         result = runner.invoke(app, ["init", td, "--template", "generic_large_object"])
         assert result.exit_code == 0
         model_dir = Path(td) / "model"
@@ -97,7 +98,7 @@ def test_init_with_generic_template() -> None:
 
 
 def test_init_with_unknown_template_fails() -> None:
-    with runner.isolated_filesystem() as td:
+    with tempfile.TemporaryDirectory() as td:
         result = runner.invoke(app, ["init", td, "--template", "nonexistent"])
         assert result.exit_code == 1
         assert "Template not found" in result.output
