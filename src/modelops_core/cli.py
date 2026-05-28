@@ -3537,7 +3537,12 @@ def proposal_apply(
     skip_risk = skip_risk_check or force or (approved_cr is not None)
 
     try:
-        result = apply_patch_proposal(model_path, proposal_id, skip_risk_check=skip_risk)
+        result = apply_patch_proposal(
+            model_path,
+            proposal_id,
+            skip_risk_check=skip_risk,
+            approved_change_request_id=approved_cr.get("id") if approved_cr else None,
+        )
     except (ValueError, FileNotFoundError) as exc:
         if json_output:
             print(json.dumps({"error": str(exc), "proposal_id": proposal_id}))
@@ -3546,7 +3551,7 @@ def proposal_apply(
         raise typer.Exit(code=1) from exc
 
     if json_output:
-        print(json.dumps({
+        output = {
             "proposal_id": proposal_id,
             "applied": True,
             "changed_files": result.changed_files,
@@ -3554,7 +3559,10 @@ def proposal_apply(
             "index_rebuilt": result.index_rebuilt,
             "risk_level": result.risk_level,
             "risk_assessment": result.risk_assessment,
-        }, indent=2, default=str))
+        }
+        if result.approved_change_request_id:
+            output["approved_change_request_id"] = result.approved_change_request_id
+        print(json.dumps(output, indent=2, default=str))
         raise typer.Exit()
 
     console.print(f"[green]Applied {proposal_id}[/green]")
