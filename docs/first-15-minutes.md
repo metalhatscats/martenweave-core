@@ -20,6 +20,8 @@ python -m venv .venv
 | `examples/simple_product_model` | Generic onboarding — one domain, a few attributes, and a sample CSV |
 | `examples/customer_bp_model` | SAP starter — Business Partner → Customer with real SAP context |
 
+Not sure which to pick? See [What to Use First](what-to-use-first.md).
+
 The commands below use `simple_product_model`. Replace the path if you want the SAP scenario.
 
 ## 1. Validate the canonical model
