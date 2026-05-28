@@ -15,6 +15,7 @@ class ColumnMatch:
     column_name: str
     matched_endpoint_id: str
     match_type: str  # "exact" or "normalized"
+    sheet_name: str | None = None
 
 
 @dataclass
@@ -26,6 +27,7 @@ class ColumnGap:
     evidence_ids: list[str] = field(default_factory=list)
     source_dataset_metadata: dict[str, Any] = field(default_factory=dict)
     recommended_proposal_op: dict[str, Any] | None = None
+    sheet_name: str | None = None
 
 
 @dataclass

@@ -531,7 +531,39 @@ def gaps(
     else:
         profile = apply_privacy_to_profile(raw_profile, policy)
 
-    report = detect_dataset_gaps(profile, db_path)
+    # Build report(s): single profile or workbook with multiple sheets
+    from modelops_core.gaps.gap_detection import DatasetGapReport
+
+    sheet_reports: list[DatasetGapReport] = []
+    if isinstance(profile, WorkbookProfile):
+        for sheet in profile.sheets:
+            sheet_report = detect_dataset_gaps(sheet, db_path)
+            # Annotate sheet name
+            for m in sheet_report.matches:
+                m.sheet_name = sheet.sheet_name
+            for g in sheet_report.gaps:
+                g.sheet_name = sheet.sheet_name
+            sheet_reports.append(sheet_report)
+    else:
+        sheet_reports.append(detect_dataset_gaps(profile, db_path))
+
+    # Combine matches, gaps, coverage
+    all_matches: list[Any] = []
+    all_dataset_gaps: list[Any] = []
+    total_columns = 0
+    matched_columns = 0
+    unmatched_columns = 0
+    duplicate_columns = 0
+    for sr in sheet_reports:
+        all_matches.extend(sr.matches)
+        all_dataset_gaps.extend(sr.gaps)
+        if sr.coverage:
+            total_columns += sr.coverage.total_columns
+            matched_columns += sr.coverage.matched_columns
+            unmatched_columns += sr.coverage.unmatched_columns
+            duplicate_columns += sr.coverage.duplicate_columns
+
+    match_rate = round(matched_columns / total_columns, 4) if total_columns > 0 else 0.0
 
     model_gaps: list[Any] = []
     if check_model:
@@ -539,28 +571,29 @@ def gaps(
 
         model_gaps = detect_model_gaps(db_path)
 
-    all_gaps = report.gaps + model_gaps
+    all_gaps = all_dataset_gaps + model_gaps
 
     coverage_data = {
-        "total_columns": report.coverage.total_columns if report.coverage else 0,
-        "matched_columns": report.coverage.matched_columns if report.coverage else 0,
-        "unmatched_columns": report.coverage.unmatched_columns if report.coverage else 0,
-        "duplicate_columns": report.coverage.duplicate_columns if report.coverage else 0,
-        "match_rate": report.coverage.match_rate if report.coverage else 0.0,
+        "total_columns": total_columns,
+        "matched_columns": matched_columns,
+        "unmatched_columns": unmatched_columns,
+        "duplicate_columns": duplicate_columns,
+        "match_rate": match_rate,
     }
 
     if json_output:
         result = {
             "stale_index_warning": stale,
-            "dataset_id": report.dataset_id,
+            "dataset_id": dataset_id,
             "coverage": coverage_data,
             "matches": [
                 {
                     "column_name": m.column_name,
                     "matched_endpoint_id": m.matched_endpoint_id,
                     "match_type": m.match_type,
+                    "sheet_name": m.sheet_name,
                 }
-                for m in report.matches
+                for m in all_matches
             ],
             "gaps": [
                 {
@@ -571,6 +604,7 @@ def gaps(
                     "evidence_ids": g.evidence_ids,
                     "source_dataset_metadata": g.source_dataset_metadata,
                     "recommended_proposal_op": g.recommended_proposal_op,
+                    "sheet_name": g.sheet_name,
                 }
                 for g in all_gaps
             ],
@@ -578,29 +612,38 @@ def gaps(
         print(json.dumps(result, indent=2, default=str))
         raise typer.Exit()
 
-    if report.coverage:
-        cov = report.coverage
-        console.print("\n[bold]Coverage[/bold]")
-        console.print(f"  Total columns:      {cov.total_columns}")
-        console.print(f"  Matched columns:    {cov.matched_columns}")
-        console.print(f"  Unmatched columns:  {cov.unmatched_columns}")
-        console.print(f"  Duplicate columns:  {cov.duplicate_columns}")
-        console.print(f"  Match rate:         {cov.match_rate:.1%}")
+    console.print("\n[bold]Coverage[/bold]")
+    console.print(f"  Total columns:      {total_columns}")
+    console.print(f"  Matched columns:    {matched_columns}")
+    console.print(f"  Unmatched columns:  {unmatched_columns}")
+    console.print(f"  Duplicate columns:  {duplicate_columns}")
+    console.print(f"  Match rate:         {match_rate:.1%}")
 
     if all_gaps:
-        console.print(f"\n[bold]Gaps found for {report.dataset_id} ({len(all_gaps)})[/bold]")
-        table = Table("Column", "Code", "Severity", "Message")
+        console.print(f"\n[bold]Gaps found for {dataset_id} ({len(all_gaps)})[/bold]")
+        table = Table("Column", "Code", "Severity", "Message", "Sheet")
         for g in all_gaps:
-            table.add_row(g.column_name, g.gap_code, g.severity, g.message)
+            table.add_row(
+                g.column_name,
+                g.gap_code,
+                g.severity,
+                g.message,
+                g.sheet_name or "—",
+            )
         console.print(table)
     else:
-        console.print(f"[green]No gaps found for {report.dataset_id}[/green]")
+        console.print(f"[green]No gaps found for {dataset_id}[/green]")
 
-    if report.matches:
-        console.print(f"\n[bold]Matches ({len(report.matches)})[/bold]")
-        match_table = Table("Column", "Endpoint", "Match Type")
-        for m in report.matches:
-            match_table.add_row(m.column_name, m.matched_endpoint_id, m.match_type)
+    if all_matches:
+        console.print(f"\n[bold]Matches ({len(all_matches)})[/bold]")
+        match_table = Table("Column", "Endpoint", "Match Type", "Sheet")
+        for m in all_matches:
+            match_table.add_row(
+                m.column_name,
+                m.matched_endpoint_id,
+                m.match_type,
+                m.sheet_name or "—",
+            )
         console.print(match_table)
 
     if create_issues and all_gaps:
@@ -631,10 +674,18 @@ def gaps(
             )
             console.print(f"[green]Created {issue_path.name}[/green]")
 
-    if promote_to_proposal and report.gaps:
-        from modelops_core.gaps.gap_detection import promote_gaps_to_proposal
+    if promote_to_proposal and all_dataset_gaps:
+        from modelops_core.gaps.gap_detection import (
+            DatasetGapReport,
+            promote_gaps_to_proposal,
+        )
 
-        proposal_path = promote_gaps_to_proposal(report, model_path)
+        combined_report = DatasetGapReport(
+            dataset_id=dataset_id,
+            matches=all_matches,
+            gaps=all_dataset_gaps,
+        )
+        proposal_path = promote_gaps_to_proposal(combined_report, model_path)
         console.print(f"[green]Created PatchProposal {proposal_path.name}[/green]")
 
 
