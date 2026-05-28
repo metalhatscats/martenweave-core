@@ -50,6 +50,7 @@
 | [docs/developer/ADDING_VALIDATION_RULES.md](developer/ADDING_VALIDATION_RULES.md) | How to add a new validation rule |
 | [docs/developer/ADDING_DOMAIN_PACKS.md](developer/ADDING_DOMAIN_PACKS.md) | How to add a new domain pack |
 | [docs/ai/VALIDATION_LADDER.md](ai/VALIDATION_LADDER.md) | Validation ladder from static checks to e2e |
+| [docs/validation-methodology-warnings.md](validation-methodology-warnings.md) | Warning-only validation codes and fixes |
 
 ---
 
