@@ -146,6 +146,19 @@ class TestValidateContract:
         assert "results" in data
         assert isinstance(data["results"], list)
 
+    def test_validate_strict_json_schema(self, sample_repo: Path) -> None:
+        result = runner.invoke(
+            app, ["validate", "--repo", str(sample_repo), "--strict", "--json"]
+        )
+        assert result.exit_code == 2
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert "is_valid" in data
+        assert "error_count" in data
+        assert "warning_count" in data
+        assert "results" in data
+        assert isinstance(data["results"], list)
+
 
 # ---------------------------------------------------------------------------
 # build-index / health / analyze / trace / impact / search / query

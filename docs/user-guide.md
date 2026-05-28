@@ -89,9 +89,17 @@ modelops infer-model generated/dataset_profiles/customer_sample.json --repo ./my
 # Validate all canonical files
 modelops validate --repo ./my-model
 
+# Strict mode — fail on warnings (exit 2) as well as errors (exit 1)
+modelops validate --repo ./my-model --strict
+
 # Show repository health
 modelops health --repo ./my-model
 ```
+
+**Exit codes:**
+- `0` — clean (no errors, no warnings)
+- `1` — errors found
+- `2` — warnings found (only with `--strict`)
 
 ### Index and Search
 
