@@ -98,3 +98,22 @@ class TestDocsBuildCli:
         assert result.exit_code == 1
         data = json.loads(result.output)
         assert "error" in data
+
+
+def test_docs_readme_links_resolve() -> None:
+    """Every local Markdown link in docs/README.md must point to an existing file."""
+    import re
+
+    docs_dir = Path("docs")
+    readme = docs_dir / "README.md"
+    assert readme.exists()
+    text = readme.read_text(encoding="utf-8")
+    links = re.findall(r"\[([^\]]+)\]\(([^)]+)\)", text)
+    broken: list[tuple[str, str]] = []
+    for label, href in links:
+        if href.startswith("http") or href.startswith("#"):
+            continue
+        target = docs_dir / href
+        if not target.exists():
+            broken.append((label, href))
+    assert not broken, f"Broken docs/README.md links: {broken}"
