@@ -141,6 +141,8 @@ class TestValidateContract:
         assert "error_count" in data
         assert "warning_count" in data
         assert "info_count" in data
+        assert "summary_by_code" in data
+        assert isinstance(data["summary_by_code"], dict)
         assert "results" in data
         assert isinstance(data["results"], list)
 
