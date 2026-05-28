@@ -6,6 +6,7 @@ import asyncio
 import json
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -397,6 +398,104 @@ class TestMCPWriteIntentTools:
             "infer_model",
         }
         assert expected.issubset(names)
+
+
+class TestMCPInvalidRepo:
+    def test_search_model_fails_on_invalid_repo(self, tmp_path: Path):
+        """MCP tools must not silently build an index for invalid repositories."""
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        # Two objects with the same ID -> validation error
+        (model_dir / "OBJ-001.md").write_text(
+            "---\nid: DUP-ID\ntype: Attribute\nstatus: draft\nname: A\n---\n",
+            encoding="utf-8",
+        )
+        (model_dir / "OBJ-002.md").write_text(
+            "---\nid: DUP-ID\ntype: Attribute\nstatus: draft\nname: B\n---\n",
+            encoding="utf-8",
+        )
+
+        server = create_mcp_server(repo=str(tmp_path))
+        with pytest.raises(Exception) as exc_info:
+            _call_tool_sync(server, "search_model", {"query": "A", "limit": 10})
+        combined = str(exc_info.value).lower()
+        assert "cannot build index for invalid repository" in combined
+        assert "validate_model" in combined
+
+    def test_query_model_fails_on_invalid_repo(self, tmp_path: Path):
+        """query_model must fail clearly when the repo is invalid."""
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        (model_dir / "BAD.md").write_text(
+            "---\nid: bad-id-lowercase\ntype: Attribute\nstatus: draft\nname: X\n---\n",
+            encoding="utf-8",
+        )
+
+        server = create_mcp_server(repo=str(tmp_path))
+        with pytest.raises(Exception, match="(?i)cannot build index for invalid repository"):
+            _call_tool_sync(server, "query_model", {"object_type": "Attribute"})
+
+    def test_get_object_fails_on_invalid_repo(self, tmp_path: Path):
+        """get_object must fail clearly when the repo is invalid."""
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        (model_dir / "BAD.md").write_text(
+            "---\nid: BAD-ID\ntype: UnknownType\nstatus: draft\nname: X\n---\n",
+            encoding="utf-8",
+        )
+
+        server = create_mcp_server(repo=str(tmp_path))
+        with pytest.raises(Exception) as exc_info:
+            _call_tool_sync(server, "get_object", {"object_id": "BAD-ID"})
+        combined = str(exc_info.value).lower()
+        assert "cannot build index for invalid repository" in combined
+
+    def test_trace_object_fails_on_invalid_repo(self, tmp_path: Path):
+        """trace_object_tool must fail clearly when the repo is invalid."""
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        (model_dir / "BAD.md").write_text(
+            "---\nid: bad-id-lowercase\ntype: Attribute\nstatus: draft\nname: X\n---\n",
+            encoding="utf-8",
+        )
+
+        server = create_mcp_server(repo=str(tmp_path))
+        with pytest.raises(Exception, match="(?i)cannot build index for invalid repository"):
+            _call_tool_sync(
+                server, "trace_object_tool", {"object_id": "bad-id-lowercase", "direction": "both"}
+            )
+
+    def test_object_by_id_resource_fails_on_invalid_repo(self, tmp_path: Path):
+        """object_by_id resource must fail clearly when the repo is invalid."""
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        (model_dir / "BAD.md").write_text(
+            "---\nid: bad-id-lowercase\ntype: Attribute\nstatus: draft\nname: X\n---\n",
+            encoding="utf-8",
+        )
+
+        server = create_mcp_server(repo=str(tmp_path))
+        with pytest.raises(Exception, match="(?i)cannot build index for invalid repository"):
+            asyncio.run(server.read_resource("modelops://object/bad-id-lowercase"))
+
+    def test_no_index_created_for_invalid_repo(self, tmp_path: Path):
+        """No SQLite db should be written when repo validation fails."""
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        (model_dir / "DUP-A.md").write_text(
+            "---\nid: DUP\ntype: Attribute\nstatus: draft\nname: A\n---\n",
+            encoding="utf-8",
+        )
+        (model_dir / "DUP-B.md").write_text(
+            "---\nid: DUP\ntype: Attribute\nstatus: draft\nname: B\n---\n",
+            encoding="utf-8",
+        )
+
+        db_path = tmp_path / "generated" / "modelops.db"
+        server = create_mcp_server(repo=str(tmp_path))
+        with pytest.raises(Exception, match="(?i)cannot build index for invalid repository"):
+            _call_tool_sync(server, "search_model", {"query": "A"})
+        assert not db_path.exists()
 
 
 class TestMCPCLIGracefulDegradation:
