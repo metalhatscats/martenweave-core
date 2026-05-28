@@ -28,7 +28,28 @@ SAP migration and Master Data Management are the **first domain pack** and proof
 
 ## Quickstart
 
-Martenweave Core requires Python 3.11+. The examples below use the project venv directly; activate it first with `source .venv/bin/activate` if you prefer bare commands.
+Martenweave Core requires Python 3.11+.
+
+### Setup
+
+Choose one style and use it throughout:
+
+**Option A — use the venv executable directly (recommended for copy-paste):**
+```bash
+python -m venv .venv
+.venv/bin/python -m pip install -e .
+# Then use .venv/bin/modelops for every command
+```
+
+**Option B — activate the venv once:**
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+# Then use bare modelops for every command
+```
+
+The examples below use Option A. Replace `.venv/bin/modelops` with `modelops` if you chose Option B.
 
 ```bash
 # Install
