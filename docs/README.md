@@ -33,6 +33,7 @@
 | [docs/architecture/MODEL_REPOSITORY_SPEC.md](architecture/MODEL_REPOSITORY_SPEC.md) | Repository layout and file format spec |
 | [docs/architecture/ARCHITECTURE_DECISIONS.md](architecture/ARCHITECTURE_DECISIONS.md) | Key architecture decisions |
 | [docs/canonical-model.md](canonical-model.md) | Canonical model format reference |
+| [docs/canonical-status-lifecycle.md](canonical-status-lifecycle.md) | Status meanings by object kind |
 | [docs/model-metadata-taxonomy.md](model-metadata-taxonomy.md) | Metadata taxonomy and mandatory fields |
 
 ---
