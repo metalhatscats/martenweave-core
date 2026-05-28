@@ -11,6 +11,7 @@ table: KNB1
 field: VZSKZ
 business_owner: PERSON-BUSINESS-OWNER
 data_steward: PERSON-DATA-STEWARD
+schema_version: "1.0"
 ---
 
 # VZSKZ

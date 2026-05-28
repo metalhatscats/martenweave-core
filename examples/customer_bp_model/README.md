@@ -77,6 +77,20 @@ modelops change-request create \
 modelops notifications preview --change-request CR-001 --repo examples/customer_bp_model
 ```
 
+## Expected Validation Warnings
+
+This demo validates with **zero errors**, but some methodology warnings remain intentionally to illustrate the validator's coverage:
+
+| Warning class | Why it appears | How to resolve |
+|---|---|---|
+| `ATTRIBUTE_MISSING_CONTEXT` | Demo Attributes do not declare `entity_context` | Add `entity_context: <CTX-*>` to each Attribute frontmatter |
+| `FIELD_ENDPOINT_MISSING_ENRICHMENT` | Demo FieldEndpoints omit enrichment metadata (description, sample values) | Add `enrichment` block to each FieldEndpoint frontmatter |
+| `ATTRIBUTE_USAGE_MISSING_TYPE` | Demo AttributeUsages do not declare `usage_type` | Add `usage_type: display` (or `key`, `filter`, etc.) to each Usage frontmatter |
+| `LOV_EMPTY` | ValueLists use simple string values instead of structured entries | Restructure `values` as list of `{code, label}` objects |
+| `VALUE_MAPPING_EMPTY` | ValueMappings reference a list but omit explicit `mappings` | Add `mappings` array with `{from, to}` entries |
+
+These are **methodology reminders**, not blockers. The model is safe to index and explore.
+
 ## Requirements
 
 - Python 3.11+

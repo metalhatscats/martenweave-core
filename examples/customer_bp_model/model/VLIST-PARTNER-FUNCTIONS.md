@@ -8,6 +8,8 @@ values:
   - "WE: Ship-To Party"
   - "RE: Bill-To Party"
   - "RG: Payer"
+schema_version: "1.0"
+business_owner: PERSON-BUSINESS-OWNER
 ---
 
 # SAP Partner Functions

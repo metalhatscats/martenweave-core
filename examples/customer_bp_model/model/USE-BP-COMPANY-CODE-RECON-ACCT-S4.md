@@ -5,6 +5,8 @@ status: active
 attribute: ATTR-BP-COMPANY-CODE-RECON-ACCT
 entity_context: CTX-BP-COMPANY-CODE-S4
 field_endpoint: FEP-S4-KNB1-AKONT
+schema_version: "1.0"
+name: USE-BP-COMPANY-CODE-RECON-ACCT-S4
 ---
 
 # Usage: USE-BP-COMPANY-CODE-RECON-ACCT-S4

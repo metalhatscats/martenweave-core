@@ -11,6 +11,7 @@ table: KNA1
 field: BRSCH
 business_owner: PERSON-BUSINESS-OWNER
 data_steward: PERSON-DATA-STEWARD
+schema_version: "1.0"
 ---
 
 # BRSCH

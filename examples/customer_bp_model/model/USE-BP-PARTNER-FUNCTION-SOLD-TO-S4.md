@@ -5,6 +5,8 @@ status: active
 attribute: ATTR-BP-PARTNER-FUNCTION-SOLD-TO
 entity_context: CTX-BP-CUSTOMER-S4
 field_endpoint: FEP-S4-KNVP-PARVW
+schema_version: "1.0"
+name: USE-BP-PARTNER-FUNCTION-SOLD-TO-S4
 ---
 
 # Usage: USE-BP-PARTNER-FUNCTION-SOLD-TO-S4

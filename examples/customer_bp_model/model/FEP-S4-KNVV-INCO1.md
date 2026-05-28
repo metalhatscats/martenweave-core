@@ -11,6 +11,7 @@ table: KNVV
 field: INCO1
 business_owner: PERSON-BUSINESS-OWNER
 data_steward: PERSON-DATA-STEWARD
+schema_version: "1.0"
 ---
 
 # INCO1

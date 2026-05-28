@@ -11,6 +11,7 @@ table: BUT000
 field: BU-SORT1
 business_owner: PERSON-BUSINESS-OWNER
 data_steward: PERSON-DATA-STEWARD
+schema_version: "1.0"
 ---
 
 # BU_SORT1

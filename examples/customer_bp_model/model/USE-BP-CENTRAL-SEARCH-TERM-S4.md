@@ -5,6 +5,8 @@ status: active
 attribute: ATTR-BP-CENTRAL-SEARCH-TERM
 entity_context: CTX-BP-CENTRAL-S4
 field_endpoint: FEP-S4-BUT000-BU-SORT1
+schema_version: "1.0"
+name: USE-BP-CENTRAL-SEARCH-TERM-S4
 ---
 
 # Usage: USE-BP-CENTRAL-SEARCH-TERM-S4

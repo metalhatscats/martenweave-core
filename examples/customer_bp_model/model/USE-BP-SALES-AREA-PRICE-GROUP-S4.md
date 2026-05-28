@@ -5,6 +5,8 @@ status: active
 attribute: ATTR-BP-SALES-AREA-PRICE-GROUP
 entity_context: CTX-CUSTOMER-SALES-AREA-S4
 field_endpoint: FEP-S4-KNVV-PLTYP
+schema_version: "1.0"
+name: USE-BP-SALES-AREA-PRICE-GROUP-S4
 ---
 
 # Usage: USE-BP-SALES-AREA-PRICE-GROUP-S4

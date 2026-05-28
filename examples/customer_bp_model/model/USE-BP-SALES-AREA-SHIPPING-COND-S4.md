@@ -5,6 +5,8 @@ status: active
 attribute: ATTR-BP-SALES-AREA-SHIPPING-COND
 entity_context: CTX-CUSTOMER-SALES-AREA-S4
 field_endpoint: FEP-S4-KNVV-VSBED
+schema_version: "1.0"
+name: USE-BP-SALES-AREA-SHIPPING-COND-S4
 ---
 
 # Usage: USE-BP-SALES-AREA-SHIPPING-COND-S4
