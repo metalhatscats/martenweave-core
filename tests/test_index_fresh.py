@@ -265,3 +265,175 @@ class TestIndexFreshnessHash:
         assert report.stored_source_hash is None
         assert report.hash_mismatch is None
         assert report.reason == "stale sources detected"
+
+
+class TestStaleIndexWarningOnReadCommands:
+    """Verify that SQLite read commands emit stale-index warnings (#315)."""
+
+    def _make_index_stale(self, sample_repo: Path) -> None:
+        """Build index then modify a canonical file to make it stale."""
+        result = runner.invoke(app, ["build-index", "--repo", str(sample_repo)])
+        assert result.exit_code == 0
+        time.sleep(0.1)
+        model_path = resolve_model_path(sample_repo)
+        for f in model_path.iterdir():
+            if f.is_file() and f.suffix == ".md":
+                content = f.read_text(encoding="utf-8")
+                f.write_text(content + "\n", encoding="utf-8")
+                break
+
+    def test_health_json_stale_warning(self, sample_repo: Path) -> None:
+        self._make_index_stale(sample_repo)
+        result = runner.invoke(
+            app, ["health", "--repo", str(sample_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output.strip())
+        assert "stale_index_warning" in data
+        assert data["stale_index_warning"] is True
+
+    def test_health_human_stale_warning(self, sample_repo: Path) -> None:
+        self._make_index_stale(sample_repo)
+        result = runner.invoke(app, ["health", "--repo", str(sample_repo)])
+        assert result.exit_code == 0
+        assert "Warning: index may be stale" in result.output
+
+    def test_health_json_fresh_no_warning(self, sample_repo: Path) -> None:
+        runner.invoke(app, ["build-index", "--repo", str(sample_repo)])
+        result = runner.invoke(
+            app, ["health", "--repo", str(sample_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output.strip())
+        assert "stale_index_warning" in data
+        assert data["stale_index_warning"] is False
+
+    def test_health_human_fresh_no_warning(self, sample_repo: Path) -> None:
+        runner.invoke(app, ["build-index", "--repo", str(sample_repo)])
+        result = runner.invoke(app, ["health", "--repo", str(sample_repo)])
+        assert result.exit_code == 0
+        assert "Warning: index may be stale" not in result.output
+
+    def test_trace_json_stale_warning(self, sample_repo: Path) -> None:
+        self._make_index_stale(sample_repo)
+        result = runner.invoke(
+            app,
+            [
+                "trace",
+                "FEP-S4-KNVV-KDGRP",
+                "--repo",
+                str(sample_repo),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output.strip())
+        assert "stale_index_warning" in data
+        assert data["stale_index_warning"] is True
+
+    def test_trace_human_stale_warning(self, sample_repo: Path) -> None:
+        self._make_index_stale(sample_repo)
+        result = runner.invoke(
+            app,
+            ["trace", "FEP-S4-KNVV-KDGRP", "--repo", str(sample_repo)],
+        )
+        assert result.exit_code == 0
+        assert "Warning: index may be stale" in result.output
+
+    def test_impact_json_stale_warning(self, sample_repo: Path) -> None:
+        self._make_index_stale(sample_repo)
+        result = runner.invoke(
+            app,
+            [
+                "impact",
+                "FEP-S4-KNVV-KDGRP",
+                "--repo",
+                str(sample_repo),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output.strip())
+        assert "stale_index_warning" in data
+        assert data["stale_index_warning"] is True
+
+    def test_impact_human_stale_warning(self, sample_repo: Path) -> None:
+        self._make_index_stale(sample_repo)
+        result = runner.invoke(
+            app,
+            ["impact", "FEP-S4-KNVV-KDGRP", "--repo", str(sample_repo)],
+        )
+        assert result.exit_code == 0
+        assert "Warning: index may be stale" in result.output
+
+    def test_search_json_stale_warning(self, sample_repo: Path) -> None:
+        self._make_index_stale(sample_repo)
+        result = runner.invoke(
+            app, ["search", "customer", "--repo", str(sample_repo), "--json"]
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output.strip())
+        assert "stale_index_warning" in data
+        assert data["stale_index_warning"] is True
+
+    def test_search_human_stale_warning(self, sample_repo: Path) -> None:
+        self._make_index_stale(sample_repo)
+        result = runner.invoke(
+            app, ["search", "customer", "--repo", str(sample_repo)]
+        )
+        assert result.exit_code == 0
+        assert "Warning: index may be stale" in result.output
+
+    def test_query_json_stale_warning(self, sample_repo: Path) -> None:
+        self._make_index_stale(sample_repo)
+        result = runner.invoke(
+            app,
+            [
+                "query",
+                "--repo",
+                str(sample_repo),
+                "--type",
+                "Attribute",
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output.strip())
+        assert "stale_index_warning" in data
+        assert data["stale_index_warning"] is True
+
+    def test_query_human_stale_warning(self, sample_repo: Path) -> None:
+        self._make_index_stale(sample_repo)
+        result = runner.invoke(
+            app,
+            ["query", "--repo", str(sample_repo), "--type", "Attribute"],
+        )
+        assert result.exit_code == 0
+        assert "Warning: index may be stale" in result.output
+
+    def test_gaps_json_stale_warning(self, sample_repo: Path) -> None:
+        csv_file = sample_repo / "data" / "samples" / "customer_sales_area_sample.csv"
+        self._make_index_stale(sample_repo)
+        result = runner.invoke(
+            app,
+            [
+                "gaps",
+                str(csv_file),
+                "--repo",
+                str(sample_repo),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output.strip())
+        assert "stale_index_warning" in data
+        assert data["stale_index_warning"] is True
+
+    def test_gaps_human_stale_warning(self, sample_repo: Path) -> None:
+        csv_file = sample_repo / "data" / "samples" / "customer_sales_area_sample.csv"
+        self._make_index_stale(sample_repo)
+        result = runner.invoke(
+            app, ["gaps", str(csv_file), "--repo", str(sample_repo)]
+        )
+        assert result.exit_code == 0
+        assert "Warning: index may be stale" in result.output

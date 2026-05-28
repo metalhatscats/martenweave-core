@@ -159,6 +159,23 @@ def _resolve_repo(repo: str | None) -> Path:
     return Path(repo).resolve()
 
 
+def _check_and_warn_stale_index(repo_root: Path, json_output: bool = False) -> bool:
+    """Check index freshness and emit a warning when stale.
+
+    Returns True if the index is stale, False if fresh.
+    For human output, prints a yellow warning when stale.
+    For JSON output, callers should include the returned value.
+    """
+    freshness = check_index_freshness(repo_root)
+    is_stale = not freshness.fresh
+    if is_stale and not json_output:
+        console.print(
+            "[yellow]Warning: index may be stale. "
+            "Run `modelops build-index` to refresh.[/yellow]"
+        )
+    return is_stale
+
+
 def _build_impact_grouping(
     report: Any, group_by: str
 ) -> dict[str, Any]:
@@ -476,6 +493,8 @@ def gaps(
         console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
+    stale = _check_and_warn_stale_index(repo_root, json_output)
+
     if not dataset.exists():
         console.print(f"[red]Dataset not found: {dataset}[/red]")
         raise typer.Exit(code=1)
@@ -524,6 +543,7 @@ def gaps(
 
     if json_output:
         result = {
+            "stale_index_warning": stale,
             "dataset_id": report.dataset_id,
             "matches": [
                 {
@@ -1219,10 +1239,13 @@ def health(
         console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
+    stale = _check_and_warn_stale_index(repo_root, json_output)
+
     report = generate_repository_health(db_path)
 
     if json_output:
         result = {
+            "stale_index_warning": stale,
             "martenweave_version": __version__,
             "object_count": report.object_count,
             "index_fresh": report.index_fresh,
@@ -1727,12 +1750,15 @@ def trace(
         console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
+    stale = _check_and_warn_stale_index(repo_root, json_output)
+
     result = trace_object(db_path, object_id, max_depth=max_depth, direction=direction)
 
     if json_output:
         import json
 
         data = {
+            "stale_index_warning": stale,
             "root_object_id": result.root_object_id,
             "root_object_type": result.root_object_type,
             "root_object_name": result.root_object_name,
@@ -1810,11 +1836,14 @@ def impact(
         console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
+    stale = _check_and_warn_stale_index(repo_root, json_output or fmt.lower() == "json")
+
     report = generate_impact_report(db_path, object_id, max_depth=depth, direction=direction)
 
     # Legacy --json flag takes precedence
     if json_output or fmt.lower() == "json":
         result: dict[str, Any] = {
+            "stale_index_warning": stale,
             "root_object_id": report.root_object_id,
             "root_object_type": report.root_object_type,
             "affected_objects": [
@@ -4802,6 +4831,8 @@ def search(
         console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
+    stale = _check_and_warn_stale_index(repo_root, json_output)
+
     paginated = search_objects(
         db_path=db_path,
         query=query,
@@ -4816,6 +4847,7 @@ def search(
 
     if json_output:
         output = {
+            "stale_index_warning": stale,
             "results": [
                 {
                     "object_id": r.object_id,
@@ -4889,6 +4921,8 @@ def query(
         console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
+    stale = _check_and_warn_stale_index(repo_root, json_output)
+
     paginated = query_objects(
         db_path=db_path,
         object_type=object_type,
@@ -4905,6 +4939,7 @@ def query(
 
     if json_output:
         output = {
+            "stale_index_warning": stale,
             "results": [
                 {
                     "object_id": r.object_id,
