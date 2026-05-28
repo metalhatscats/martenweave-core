@@ -1072,3 +1072,138 @@ class TestGapsPromoteCliRepeated:
 
         # First must still exist
         assert proposal_1.exists()
+
+
+class TestGapsMultiSheetXlsx:
+    def test_gaps_multi_sheet_xlsx_json(self, tmp_path: Path) -> None:
+        """Multi-sheet XLSX gaps include sheet_name in JSON output."""
+        repo = tmp_path / "repo"
+        model_dir = repo / "model"
+        model_dir.mkdir(parents=True)
+        generated = repo / "generated"
+        generated.mkdir()
+        db = generated / "modelops.db"
+
+        import sqlite3
+
+        conn = sqlite3.connect(str(db))
+        conn.executescript(
+            """
+            CREATE TABLE objects (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                name TEXT,
+                title TEXT,
+                domain TEXT,
+                description TEXT,
+                source_file TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                frontmatter_json TEXT NOT NULL,
+                body TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            );
+            """
+        )
+        # Match customer_id on both sheets
+        conn.execute(
+            "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "FEP-CUSTOMER-ID",
+                "FieldEndpoint",
+                "active",
+                "Customer ID",
+                None,
+                None,
+                None,
+                "model/FEP-CUSTOMER-ID.md",
+                "abc",
+                '{"id": "FEP-CUSTOMER-ID", "column_name": "customer_id"}',
+                None,
+                None,
+                None,
+            ),
+        )
+        conn.commit()
+        conn.close()
+
+        xlsx_path = (
+            Path(__file__).parent / "fixtures" / "customer_sample_multi.xlsx"
+        )
+        result = runner.invoke(
+            app,
+            [
+                "gaps",
+                str(xlsx_path),
+                "--repo",
+                str(repo),
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert "coverage" in data
+        assert data["coverage"]["total_columns"] == 6  # 3 per sheet
+
+        # Matches should include sheet_name
+        matches = data["matches"]
+        assert len(matches) >= 2
+        sheet_names = {m["sheet_name"] for m in matches}
+        assert "customers" in sheet_names
+
+        # Gaps should include sheet_name
+        gaps = data["gaps"]
+        assert len(gaps) > 0
+        gap_sheets = {g["sheet_name"] for g in gaps if g["sheet_name"]}
+        assert len(gap_sheets) >= 1
+
+    def test_gaps_multi_sheet_xlsx_human(self, tmp_path: Path) -> None:
+        """Multi-sheet XLSX gaps show sheet context in human output."""
+        repo = tmp_path / "repo"
+        model_dir = repo / "model"
+        model_dir.mkdir(parents=True)
+        generated = repo / "generated"
+        generated.mkdir()
+        db = generated / "modelops.db"
+
+        import sqlite3
+
+        conn = sqlite3.connect(str(db))
+        conn.executescript(
+            """
+            CREATE TABLE objects (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                name TEXT,
+                title TEXT,
+                domain TEXT,
+                description TEXT,
+                source_file TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                frontmatter_json TEXT NOT NULL,
+                body TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            );
+            """
+        )
+        conn.commit()
+        conn.close()
+
+        xlsx_path = (
+            Path(__file__).parent / "fixtures" / "customer_sample_multi.xlsx"
+        )
+        result = runner.invoke(
+            app,
+            [
+                "gaps",
+                str(xlsx_path),
+                "--repo",
+                str(repo),
+            ],
+        )
+        assert result.exit_code == 0
+        assert "Coverage" in result.output
+        assert "Sheet" in result.output
