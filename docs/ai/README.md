@@ -8,7 +8,8 @@ Start here:
 2. `AGENT_CONTEXT_LOADING.md` for what to read before changing files.
 3. `VALIDATION_LADDER.md` for exact commands.
 4. `KIMI_GITHUB_ISSUE_LOOP.md` for issue-by-issue implementation.
-5. `AGENT_SAFETY_RULES.md` before touching canonical model files, generated files, data, or credentials.
+5. `ONE_ISSUE_AGENT_PROMPT.md` for a copyable prompt template to execute one issue safely.
+6. `AGENT_SAFETY_RULES.md` before touching canonical model files, generated files, data, or credentials.
 
 Agent roles:
 

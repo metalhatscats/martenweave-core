@@ -79,6 +79,7 @@
 | [docs/ai/VALIDATION_LADDER.md](ai/VALIDATION_LADDER.md) | Validation ladder for agents |
 | [docs/ai/CLOSEOUT_REPORT_TEMPLATE.md](ai/CLOSEOUT_REPORT_TEMPLATE.md) | Closeout report template |
 | [docs/ai/AGENT_SAFETY_RULES.md](ai/AGENT_SAFETY_RULES.md) | Agent safety rules |
+| [docs/ai/ONE_ISSUE_AGENT_PROMPT.md](ai/ONE_ISSUE_AGENT_PROMPT.md) | Copyable one-issue execution prompt |
 | [docs/ai/AI_DEVELOPMENT_OPERATING_SYSTEM.md](ai/AI_DEVELOPMENT_OPERATING_SYSTEM.md) | AI development operating model |
 
 ---
