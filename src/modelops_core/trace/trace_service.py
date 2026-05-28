@@ -26,6 +26,7 @@ class TraceEdge:
     to_object_id: str
     relationship_type: str
     direction: str  # "upstream" or "downstream"
+    relationship_class: str | None = None
 
 
 @dataclass
@@ -63,6 +64,7 @@ def trace_object(
     object_id: str,
     max_depth: int = 5,
     direction: str = "both",
+    relationship_class: str | None = None,
 ) -> TraceResult:
     """Trace upstream and/or downstream relationships for an object.
 
@@ -96,14 +98,15 @@ def trace_object(
 
     # Load all relationships
     rel_rows = conn.execute(
-        "SELECT from_object_id, to_object_id, relationship_type FROM object_relationships"
+        "SELECT from_object_id, to_object_id, relationship_type, "
+        "relationship_class FROM object_relationships"
     ).fetchall()
 
-    outgoing: dict[str, list[tuple[str, str]]] = {}
-    incoming: dict[str, list[tuple[str, str]]] = {}
-    for from_id, to_id, rel_type in rel_rows:
-        outgoing.setdefault(from_id, []).append((to_id, rel_type))
-        incoming.setdefault(to_id, []).append((from_id, rel_type))
+    outgoing: dict[str, list[tuple[str, str, str | None]]] = {}
+    incoming: dict[str, list[tuple[str, str, str | None]]] = {}
+    for from_id, to_id, rel_type, rel_class in rel_rows:
+        outgoing.setdefault(from_id, []).append((to_id, rel_type, rel_class))
+        incoming.setdefault(to_id, []).append((from_id, rel_type, rel_class))
 
     conn.close()
 
@@ -124,7 +127,9 @@ def trace_object(
             continue
 
         if direction in ("downstream", "both"):
-            for next_id, rel_type in outgoing.get(current_id, []):
+            for next_id, rel_type, rel_class in outgoing.get(current_id, []):
+                if relationship_class and rel_class != relationship_class:
+                    continue
                 if next_id not in visited:
                     visited.add(next_id)
                     info = obj_info.get(next_id, {})
@@ -147,11 +152,14 @@ def trace_object(
                             to_object_id=next_id,
                             relationship_type=rel_type,
                             direction="downstream",
+                            relationship_class=rel_class,
                         )
                     )
 
         if direction in ("upstream", "both"):
-            for prev_id, rel_type in incoming.get(current_id, []):
+            for prev_id, rel_type, rel_class in incoming.get(current_id, []):
+                if relationship_class and rel_class != relationship_class:
+                    continue
                 if prev_id not in visited:
                     visited.add(prev_id)
                     info = obj_info.get(prev_id, {})
@@ -174,6 +182,7 @@ def trace_object(
                             to_object_id=current_id,
                             relationship_type=rel_type,
                             direction="upstream",
+                            relationship_class=rel_class,
                         )
                     )
 
