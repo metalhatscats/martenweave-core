@@ -1,5 +1,5 @@
-schema_version: 0.1.0
-workspace_name: Business Partner Spine
+schema_version: "1.0"
+name: Business Partner Spine
 description: Model spine template for Business Partner large object.
 enabled_domain_packs:
   - sap
