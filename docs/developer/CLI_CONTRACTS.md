@@ -19,7 +19,8 @@ modelops infer-model <profile-json> --repo <repo> [--json]
 modelops propose-patch --from <note> --repo <repo>
 modelops proposal validate <proposal-id> --repo <repo> [--json]
 modelops proposal impact <proposal-id> --repo <repo> [--json]
-modelops proposal apply <proposal-id> --repo <repo> [--dry-run]
+modelops proposal apply <proposal-id> --repo <repo> --dry-run
+modelops proposal apply <proposal-id> --repo <repo> --apply
 modelops change-request create ...
 modelops export-model --repo <repo> --format csv|xlsx --output <path>
 modelops config-guard --repo <repo> [--json]

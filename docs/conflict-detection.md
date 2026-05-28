@@ -177,7 +177,7 @@ modelops proposal conflicts --all --repo ./my-model
 ### 5.3 Apply with conflict guard
 
 ```bash
-modelops proposal apply <proposal-id> --repo ./my-model
+modelops proposal apply <proposal-id> --repo ./my-model --apply
 ```
 
 **Behavior:**

@@ -122,7 +122,7 @@ The UI is a thin client. All heavy logic lives in `modelops_core` and is exposed
 | Proposal list/detail | `patch_proposal_service` | `modelops proposal list/show` |
 | Proposal validation | `patch_validator` | `modelops proposal validate` |
 | Proposal dry-run | `dry_run_patch_proposal` | `modelops proposal apply --dry-run` |
-| Proposal apply | `apply_patch_proposal` | `modelops proposal apply` |
+| Proposal apply | `apply_patch_proposal` | `modelops proposal apply --apply` |
 | Export model | `export_service` (planned) | `modelops export-model` |
 | Audit log query | `audit_service` (planned) | `modelops audit-log` |
 | Traceability | `lineage_service` (planned) | `modelops trace` |

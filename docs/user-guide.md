@@ -123,7 +123,7 @@ modelops proposal validate PP-001 --repo ./my-model
 modelops proposal apply PP-001 --repo ./my-model --dry-run
 
 # Apply an accepted proposal
-modelops proposal apply PP-001 --repo ./my-model
+modelops proposal apply PP-001 --repo ./my-model --apply
 ```
 
 ### Export and Import
@@ -162,7 +162,7 @@ Starting from a dataset:
    - `Mapping`
 4. Review the proposal in `model/patch-proposals/PP-INFER-...md`.
 5. Transition status to `accepted` when ready.
-6. Apply with `modelops proposal apply`.
+6. Apply with `modelops proposal apply --apply`.
 
 The inferred proposal includes:
 - **Assumptions** the agent made (e.g., "all columns treated as strings")
@@ -240,7 +240,7 @@ Invalid objects are blocked from the index by default. Use `--allow-invalid` to 
 | Build index | `modelops build-index --repo <path> --jsonl` |
 | List proposals | `modelops proposal list --repo <path>` |
 | Dry-run apply | `modelops proposal apply <id> --repo <path> --dry-run` |
-| Apply proposal | `modelops proposal apply <id> --repo <path>` |
+| Apply proposal | `modelops proposal apply <id> --repo <path> --apply` |
 | Export CSV | `modelops export-model --repo <path> --format csv` |
 | Export XLSX | `modelops export-model --repo <path> --format xlsx` |
 | Import sheet | `modelops import-model-sheet <path> --repo <path> --json` |
