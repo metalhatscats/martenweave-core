@@ -291,7 +291,7 @@ def test_cli_proposal_apply_blocks_high_risk_without_cr(tmp_path: Path) -> None:
     proposal = build_patch_proposal("PP-HIGH-001", [op])
     write_patch_proposal(proposal, model_dir)
     proposal_path = model_dir / "patch-proposals" / "PP-HIGH-001.md"
-    transition_patch_proposal_status(proposal_path, "accepted")
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
 
     result = runner.invoke(
         app,
@@ -327,7 +327,7 @@ def test_cli_proposal_apply_allows_with_approved_cr(tmp_path: Path) -> None:
     proposal = build_patch_proposal("PP-HIGH-002", [op])
     write_patch_proposal(proposal, model_dir)
     proposal_path = model_dir / "patch-proposals" / "PP-HIGH-002.md"
-    transition_patch_proposal_status(proposal_path, "accepted")
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
 
     # Create and approve CR linking to proposal
     create_change_request(
@@ -373,7 +373,7 @@ def test_cli_proposal_apply_force_bypasses_gate(tmp_path: Path) -> None:
     proposal = build_patch_proposal("PP-HIGH-003", [op])
     write_patch_proposal(proposal, model_dir)
     proposal_path = model_dir / "patch-proposals" / "PP-HIGH-003.md"
-    transition_patch_proposal_status(proposal_path, "accepted")
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
 
     result = runner.invoke(
         app,
@@ -499,7 +499,7 @@ def test_service_apply_blocks_high_risk_by_default(tmp_path: Path) -> None:
     proposal = build_patch_proposal("PP-SVC-HIGH-001", [op])
     write_patch_proposal(proposal, model_dir)
     proposal_path = model_dir / "patch-proposals" / "PP-SVC-HIGH-001.md"
-    transition_patch_proposal_status(proposal_path, "accepted")
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
 
     with pytest.raises(ValueError, match="High-risk proposal blocked"):
         apply_patch_proposal(model_dir, "PP-SVC-HIGH-001")
@@ -525,7 +525,7 @@ def test_service_apply_allows_high_risk_with_skip(tmp_path: Path) -> None:
     proposal = build_patch_proposal("PP-SVC-HIGH-002", [op])
     write_patch_proposal(proposal, model_dir)
     proposal_path = model_dir / "patch-proposals" / "PP-SVC-HIGH-002.md"
-    transition_patch_proposal_status(proposal_path, "accepted")
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
 
     result = apply_patch_proposal(model_dir, "PP-SVC-HIGH-002", skip_risk_check=True)
     assert result.application_status == "applied"
@@ -614,7 +614,7 @@ def test_cli_proposal_apply_skip_risk_check(tmp_path: Path) -> None:
     proposal = build_patch_proposal("PP-SKIP-001", [op])
     write_patch_proposal(proposal, model_dir)
     proposal_path = model_dir / "patch-proposals" / "PP-SKIP-001.md"
-    transition_patch_proposal_status(proposal_path, "accepted")
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
 
     result = runner.invoke(
         app,
@@ -658,7 +658,7 @@ def test_cli_proposal_apply_json_includes_risk(tmp_path: Path) -> None:
     proposal = build_patch_proposal("PP-JSON-RISK-001", [op])
     write_patch_proposal(proposal, model_dir)
     proposal_path = model_dir / "patch-proposals" / "PP-JSON-RISK-001.md"
-    transition_patch_proposal_status(proposal_path, "accepted")
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
 
     result = runner.invoke(
         app,

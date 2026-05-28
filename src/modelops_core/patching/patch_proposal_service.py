@@ -89,10 +89,13 @@ def transition_patch_proposal_status(
     if parsed.frontmatter is None:
         raise ValueError("PatchProposal file has no frontmatter")
 
+    if not reviewer:
+        raise ValueError("reviewer is required to transition proposal status")
+
     frontmatter = dict(parsed.frontmatter)
     old_status = frontmatter.get("status", "unknown")
     frontmatter["status"] = new_status
-    frontmatter["reviewer"] = reviewer or frontmatter.get("reviewer")
+    frontmatter["reviewer"] = reviewer
     frontmatter["reviewed_at"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     if reviewer_notes:
         frontmatter["reviewer_notes"] = reviewer_notes

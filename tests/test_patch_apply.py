@@ -28,7 +28,7 @@ def test_apply_update_object(temp_model_dir: Path) -> None:
     from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
 
     proposal_path = temp_model_dir / "patch-proposals" / "PP-APPLY-001.md"
-    transition_patch_proposal_status(proposal_path, "accepted")
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
 
     result = apply_patch_proposal(temp_model_dir, "PP-APPLY-001")
     assert result.application_status == "applied"
@@ -55,7 +55,7 @@ def test_apply_creates_object(temp_model_dir: Path) -> None:
     from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
 
     proposal_path = temp_model_dir / "patch-proposals" / "PP-APPLY-002.md"
-    transition_patch_proposal_status(proposal_path, "accepted")
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
 
     result = apply_patch_proposal(temp_model_dir, "PP-APPLY-002")
     assert result.application_status == "applied"
@@ -84,7 +84,7 @@ def test_apply_rejects_invalid_proposal_empty_operations(temp_model_dir: Path) -
     from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
 
     proposal_path = temp_model_dir / "patch-proposals" / "PP-APPLY-EMPTY.md"
-    transition_patch_proposal_status(proposal_path, "accepted")
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
 
     with pytest.raises(ValueError, match="PATCH_OPERATIONS_EMPTY"):
         apply_patch_proposal(temp_model_dir, "PP-APPLY-EMPTY")
@@ -104,7 +104,7 @@ def test_apply_rejects_invalid_proposal_disallowed_operation(temp_model_dir: Pat
     from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
 
     proposal_path = temp_model_dir / "patch-proposals" / "PP-APPLY-BAD-OP.md"
-    transition_patch_proposal_status(proposal_path, "accepted")
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
 
     with pytest.raises(ValueError, match="PATCH_OPERATION_DISALLOWED"):
         apply_patch_proposal(temp_model_dir, "PP-APPLY-BAD-OP")

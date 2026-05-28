@@ -2936,7 +2936,7 @@ def proposal_show(
 def proposal_accept(
     proposal_id: str = typer.Argument(..., help="PatchProposal ID (e.g. PP-001)."),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
-    reviewer: str | None = typer.Option(None, "--reviewer", help="Identity of the reviewer."),
+    reviewer: str = typer.Option(..., "--reviewer", help="Identity of the reviewer."),
     notes: str | None = typer.Option(None, "--notes", help="Reviewer notes."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
@@ -2996,7 +2996,7 @@ def proposal_accept(
 def proposal_reject(
     proposal_id: str = typer.Argument(..., help="PatchProposal ID (e.g. PP-001)."),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
-    reviewer: str | None = typer.Option(None, "--reviewer", help="Identity of the reviewer."),
+    reviewer: str = typer.Option(..., "--reviewer", help="Identity of the reviewer."),
     reason: str | None = typer.Option(None, "--reason", help="Reason for rejection."),
     notes: str | None = typer.Option(None, "--notes", help="Reviewer notes."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
