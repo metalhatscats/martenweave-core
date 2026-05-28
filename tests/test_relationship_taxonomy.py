@@ -7,9 +7,16 @@ from pathlib import Path
 
 from modelops_core.index import build_index
 from modelops_core.index.lineage_edges import export_lineage_jsonl
+from modelops_core.schemas.common import ObjectType
 from modelops_core.schemas.registry import (
+    get_all_types,
+    get_entry,
+    get_expected_target_types,
+    get_reference_fields,
     get_relationship_classes,
     get_relationship_fields,
+    get_search_fields,
+    get_ui_label,
 )
 
 SIMPLE_REPO = Path(__file__).parent.parent / "examples" / "simple_product_model"
@@ -109,3 +116,75 @@ def test_trace_ignores_governance_edges_when_filtered() -> None:
         assert "core_dependency" in classes
     finally:
         conn.close()
+
+
+# Registry coverage tests (issue #331) ----------------------------------------
+
+
+def test_every_object_type_has_registry_entry() -> None:
+    """Every ObjectType enum member must have a corresponding registry entry."""
+    registered_types = set(get_all_types())
+    for member in ObjectType:
+        assert member.value in registered_types, (
+            f"ObjectType '{member.value}' lacks a registry entry"
+        )
+
+
+def test_every_registry_entry_has_non_empty_labels() -> None:
+    """Each registry entry must have non-empty singular and plural labels."""
+    for member in ObjectType:
+        entry = get_entry(member.value)
+        assert entry is not None, f"Missing registry entry for {member.value}"
+        assert entry.ui_label_singular and entry.ui_label_singular.strip(), (
+            f"Empty ui_label_singular for {member.value}"
+        )
+        assert entry.ui_label_plural and entry.ui_label_plural.strip(), (
+            f"Empty ui_label_plural for {member.value}"
+        )
+
+
+def test_registry_helpers_return_sane_defaults_for_all_types() -> None:
+    """Registry helper APIs must return sensible defaults for every ObjectType."""
+    for member in ObjectType:
+        type_id = member.value
+
+        # get_ui_label should return a non-empty string for registered types
+        singular = get_ui_label(type_id, plural=False)
+        plural = get_ui_label(type_id, plural=True)
+        assert singular and singular.strip()
+        assert plural and plural.strip()
+
+        # get_reference_fields should return a dict (may be empty)
+        refs = get_reference_fields(type_id)
+        assert isinstance(refs, dict)
+
+        # get_relationship_fields should return a dict (may be empty)
+        rels = get_relationship_fields(type_id)
+        assert isinstance(rels, dict)
+        for field_name, rel_type in rels.items():
+            assert rel_type and rel_type.strip(), (
+                f"Empty relationship_type for field '{field_name}' in {type_id}"
+            )
+
+        # get_relationship_classes should return a dict (may be empty)
+        classes = get_relationship_classes(type_id)
+        assert isinstance(classes, dict)
+        for _field_name, rel_class in classes.items():
+            assert rel_class in {
+                "core_dependency",
+                "context",
+                "mapping",
+                "validation",
+                "governance",
+                "evidence",
+                "reference",
+            }, f"Unexpected relationship_class '{rel_class}' for {type_id}"
+
+        # get_expected_target_types should return a dict (may be empty)
+        targets = get_expected_target_types(type_id)
+        assert isinstance(targets, dict)
+
+        # get_search_fields should return a non-empty tuple
+        search_fields = get_search_fields(type_id)
+        assert isinstance(search_fields, tuple)
+        assert len(search_fields) > 0, f"Empty search_fields for {type_id}"
