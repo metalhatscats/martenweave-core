@@ -121,6 +121,13 @@ def test_detect_dataset_gaps_unmodeled_column(tmp_path: Path) -> None:
     assert len(report.matches) == 1
     assert report.matches[0].column_name == "CUSTOMER_ID"
 
+    assert report.coverage is not None
+    assert report.coverage.total_columns == 2
+    assert report.coverage.matched_columns == 1
+    assert report.coverage.unmatched_columns == 1
+    assert report.coverage.duplicate_columns == 0
+    assert report.coverage.match_rate == 0.5
+
 
 def test_detect_dataset_gaps_multiple_matches(tmp_path: Path) -> None:
     db = tmp_path / "modelops.db"
@@ -280,6 +287,12 @@ class TestGapsCli:
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert data["dataset_id"] == "data"
+        assert "coverage" in data
+        assert data["coverage"]["total_columns"] == 2
+        assert data["coverage"]["matched_columns"] == 1
+        assert data["coverage"]["unmatched_columns"] == 1
+        assert data["coverage"]["duplicate_columns"] == 0
+        assert data["coverage"]["match_rate"] == 0.5
         assert len(data["gaps"]) == 1
         assert data["gaps"][0]["column_name"] == "UNKNOWN"
         assert len(data["matches"]) == 1
@@ -454,6 +467,13 @@ def test_detect_dataset_gaps_duplicate_columns(tmp_path: Path) -> None:
     assert dup_gaps[0].column_name == "COL_A"
     assert dup_gaps[0].severity == "warning"
 
+    assert report.coverage is not None
+    assert report.coverage.total_columns == 3
+    assert report.coverage.matched_columns == 0
+    assert report.coverage.unmatched_columns == 3
+    assert report.coverage.duplicate_columns == 1
+    assert report.coverage.match_rate == 0.0
+
 
 def test_promote_gaps_to_proposal(tmp_path: Path) -> None:
     from modelops_core.gaps.gap_detection import promote_gaps_to_proposal
@@ -584,6 +604,13 @@ def test_detect_dataset_gaps_empty_dataset(tmp_path: Path) -> None:
     assert report.gaps[0].severity == "info"
     assert len(report.matches) == 0
 
+    assert report.coverage is not None
+    assert report.coverage.total_columns == 0
+    assert report.coverage.matched_columns == 0
+    assert report.coverage.unmatched_columns == 0
+    assert report.coverage.duplicate_columns == 0
+    assert report.coverage.match_rate == 0.0
+
 
 def test_detect_dataset_gaps_no_matching_endpoints(tmp_path: Path) -> None:
     db = tmp_path / "modelops.db"
@@ -636,6 +663,13 @@ def test_detect_dataset_gaps_no_matching_endpoints(tmp_path: Path) -> None:
     no_match_gap = [g for g in report.gaps if g.gap_code == "NO_MATCHING_ENDPOINTS"]
     assert len(no_match_gap) == 1
     assert no_match_gap[0].severity == "warning"
+
+    assert report.coverage is not None
+    assert report.coverage.total_columns == 2
+    assert report.coverage.matched_columns == 0
+    assert report.coverage.unmatched_columns == 2
+    assert report.coverage.duplicate_columns == 0
+    assert report.coverage.match_rate == 0.0
 
 
 def test_detect_dataset_gaps_case_sensitivity(tmp_path: Path) -> None:

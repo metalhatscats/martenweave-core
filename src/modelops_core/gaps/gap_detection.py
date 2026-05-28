@@ -29,10 +29,20 @@ class ColumnGap:
 
 
 @dataclass
+class DatasetCoverageMetrics:
+    total_columns: int
+    matched_columns: int
+    unmatched_columns: int
+    duplicate_columns: int
+    match_rate: float
+
+
+@dataclass
 class DatasetGapReport:
     dataset_id: str
     matches: list[ColumnMatch] = field(default_factory=list)
     gaps: list[ColumnGap] = field(default_factory=list)
+    coverage: DatasetCoverageMetrics | None = None
 
 
 def _normalize(name: str) -> str:
@@ -153,6 +163,13 @@ def detect_dataset_gaps(profile: DatasetProfile, db_path: Path) -> DatasetGapRep
             dataset_id=profile.dataset_id,
             matches=matches,
             gaps=gaps,
+            coverage=DatasetCoverageMetrics(
+                total_columns=0,
+                matched_columns=0,
+                unmatched_columns=0,
+                duplicate_columns=0,
+                match_rate=0.0,
+            ),
         )
 
     # Detect duplicate column names
@@ -218,10 +235,25 @@ def detect_dataset_gaps(profile: DatasetProfile, db_path: Path) -> DatasetGapRep
             )
         )
 
+    total_columns = len(profile.columns)
+    matched_columns = len({m.column_name for m in matches})
+    unmatched_columns = len([g for g in gaps if g.gap_code == "UNMODELED_DATASET_COLUMN"])
+    duplicate_columns = len([g for g in gaps if g.gap_code == "DUPLICATE_COLUMN_NAME"])
+    match_rate = round(matched_columns / total_columns, 4) if total_columns > 0 else 0.0
+
+    coverage = DatasetCoverageMetrics(
+        total_columns=total_columns,
+        matched_columns=matched_columns,
+        unmatched_columns=unmatched_columns,
+        duplicate_columns=duplicate_columns,
+        match_rate=match_rate,
+    )
+
     return DatasetGapReport(
         dataset_id=profile.dataset_id,
         matches=matches,
         gaps=gaps,
+        coverage=coverage,
     )
 
 
