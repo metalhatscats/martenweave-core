@@ -3564,6 +3564,23 @@ def proposal_diff(
         print(json.dumps({"proposal_id": proposal_id, "diffs": diffs}, indent=2, default=str))
         raise typer.Exit()
 
+    def _fmt_value(value: Any) -> str:
+        if value is None:
+            return "[dim]—[/dim]"
+        if isinstance(value, dict):
+            # Compact inline dict: show first 3 keys max
+            items = list(value.items())[:3]
+            inner = ", ".join(f"{k}={v!r}" for k, v in items)
+            suffix = "…" if len(value) > 3 else ""
+            return f"{{{inner}{suffix}}}"
+        if isinstance(value, list):
+            if not value:
+                return "[]"
+            inner = ", ".join(repr(v) for v in value[:3])
+            suffix = "…" if len(value) > 3 else ""
+            return f"[{inner}{suffix}]"
+        return str(value)
+
     console.print(f"[bold]Diff for {proposal_id}[/bold]")
     if not diffs:
         console.print("  No operations to diff.")
@@ -3574,13 +3591,44 @@ def proposal_diff(
         obj_id = d.get("object_id", "—")
         if op_type in ("create_object", "add_object"):
             console.print(f"\n  [green]{op_type}[/green] → {obj_id}")
-            console.print(f"    New object: {d.get('after')}")
+            after = d.get("after") or {}
+            if isinstance(after, dict):
+                # Prioritise key fields, then remaining keys
+                key_order = ["id", "type", "name", "title", "status"]
+                seen: set[str] = set()
+                rows: list[tuple[str, str]] = []
+                for key in key_order:
+                    if key in after:
+                        rows.append((key, _fmt_value(after[key])))
+                        seen.add(key)
+                for key, val in after.items():
+                    if key not in seen:
+                        rows.append((key, _fmt_value(val)))
+                table = Table(show_header=False, box=None, padding=(0, 2))
+                table.add_column("Field", style="cyan", no_wrap=True)
+                table.add_column("Value")
+                for field, value in rows:
+                    table.add_row(field, value)
+                console.print(table)
+            else:
+                console.print(f"    Value: {_fmt_value(after)}")
         elif op_type == "update_object":
             console.print(f"\n  [yellow]{op_type}[/yellow] → {obj_id}")
-            console.print(f"    {d.get('target_path', '')}: {d.get('before')} → {d.get('after')}")
+            path = d.get("target_path", "")
+            before = d.get("before")
+            after = d.get("after")
+            if "." in path:
+                parts = path.split(".")
+                console.print(f"    [dim]path:[/dim]   {' → '.join(parts)}")
+                console.print(f"    [dim]before:[/dim] {_fmt_value(before)}")
+                console.print(f"    [dim]after:[/dim]  {_fmt_value(after)}")
+            else:
+                console.print(f"    [dim]{path}[/dim]: {_fmt_value(before)} → {_fmt_value(after)}")
         elif op_type == "delete_object":
             console.print(f"\n  [red]{op_type}[/red] → {obj_id}")
-            console.print(f"    Would remove: {d.get('before', {}).get('type', 'object')}")
+            before = d.get("before") or {}
+            obj_type = before.get("type", "object") if isinstance(before, dict) else "object"
+            console.print(f"    Would remove: {obj_type}")
         else:
             console.print(f"\n  [dim]{op_type}[/dim] → {obj_id}")
             console.print(f"    {d.get('reason')}")
