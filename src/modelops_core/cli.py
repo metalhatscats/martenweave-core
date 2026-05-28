@@ -225,6 +225,12 @@ def _print_validation_summary(summary: Any) -> None:
     target.print(f"  Warnings: {summary.warning_count}")
     target.print(f"  Info:     {summary.info_count}")
     target.print(f"  Valid:    {summary.is_valid}")
+    if summary.summary_by_code:
+        target.print("\n[bold]By code:[/bold]")
+        code_table = Table("Code", "Severity", "Count")
+        for code, info in summary.summary_by_code.items():
+            code_table.add_row(code, info["severity"], str(info["count"]))
+        target.print(code_table)
     if summary.results:
         table = Table("Severity", "Code", "Object", "Message", "Fix")
         for r in summary.results:
@@ -1047,6 +1053,7 @@ def validate(
             "error_count": summary.error_count,
             "warning_count": summary.warning_count,
             "info_count": summary.info_count,
+            "summary_by_code": summary.summary_by_code,
             "results": [r.model_dump() for r in summary.results],
         }
         print(json.dumps(result, indent=2, default=str))
