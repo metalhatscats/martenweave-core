@@ -49,7 +49,7 @@
 | [docs/developer/ADDING_OBJECT_TYPES.md](developer/ADDING_OBJECT_TYPES.md) | How to add a new canonical object type |
 | [docs/developer/ADDING_VALIDATION_RULES.md](developer/ADDING_VALIDATION_RULES.md) | How to add a new validation rule |
 | [docs/developer/ADDING_DOMAIN_PACKS.md](developer/ADDING_DOMAIN_PACKS.md) | How to add a new domain pack |
-| [docs/validation-ladder.md](validation-ladder.md) | Validation ladder from static checks to e2e |
+| [docs/ai/VALIDATION_LADDER.md](ai/VALIDATION_LADDER.md) | Validation ladder from static checks to e2e |
 
 ---
 
