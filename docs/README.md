@@ -9,6 +9,7 @@
 | Document | What you will learn |
 |---|---|
 | [README.md](../README.md) | Install, quickstart, command reference, core principles |
+| [docs/what-to-use-first.md](what-to-use-first.md) | Choose your first example or template |
 | [docs/first-15-minutes.md](first-15-minutes.md) | Step-by-step first workflow from clone to insight |
 | [docs/user-guide.md](user-guide.md) | Day-to-day CLI usage patterns and examples |
 | [docs/martenweave-data-model-book.md](martenweave-data-model-book.md) | How to create, maintain, and govern models correctly |
