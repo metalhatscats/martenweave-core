@@ -154,6 +154,6 @@ class TestInferModelFromProfile:
         # The proposal itself should not touch the filesystem
         assert isinstance(proposal, dict)
         assert all(
-            op.get("op") in {"add_object", "add_relationship"}
+            op.get("op") in {"create_object", "add_relationship"}
             for op in proposal["operations"]
         )

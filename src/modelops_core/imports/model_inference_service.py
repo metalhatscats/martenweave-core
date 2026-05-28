@@ -62,7 +62,7 @@ def _infer_objects_from_sheet(
     if sheet_index == 0:
         operations.append(
             {
-                "op": "add_object",
+                "op": "create_object",
                 "object_id": domain_obj_id,
                 "object_type": "MasterDataDomain",
                 "after": {
@@ -81,7 +81,7 @@ def _infer_objects_from_sheet(
     if sheet_index == 0:
         operations.append(
             {
-                "op": "add_object",
+                "op": "create_object",
                 "object_id": dataset_obj_id,
                 "object_type": "Dataset",
                 "after": {
@@ -100,7 +100,7 @@ def _infer_objects_from_sheet(
     entity_obj_id = f"ENTITY-{stem}-{sheet_stem}"
     operations.append(
         {
-            "op": "add_object",
+            "op": "create_object",
             "object_id": entity_obj_id,
             "object_type": "BusinessEntity",
             "after": {
@@ -134,7 +134,7 @@ def _infer_objects_from_sheet(
 
         operations.append(
             {
-                "op": "add_object",
+                "op": "create_object",
                 "object_id": attr_obj_id,
                 "object_type": "Attribute",
                 "after": {
@@ -152,7 +152,7 @@ def _infer_objects_from_sheet(
 
         operations.append(
             {
-                "op": "add_object",
+                "op": "create_object",
                 "object_id": fep_obj_id,
                 "object_type": "FieldEndpoint",
                 "after": {
@@ -182,7 +182,7 @@ def _infer_objects_from_sheet(
 
         operations.append(
             {
-                "op": "add_object",
+                "op": "create_object",
                 "object_id": map_obj_id,
                 "object_type": "Mapping",
                 "after": {
