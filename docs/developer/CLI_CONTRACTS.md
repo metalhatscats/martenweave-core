@@ -1,30 +1,22 @@
 # CLI Contracts
 
-## Stable Commands
+Stable command contracts grouped by capability. Agents and future UI layers may rely on these JSON shapes.
 
-Agents and future UI layers may rely on these commands:
+---
 
-```bash
-modelops init <path>
-modelops validate --repo <repo> [--json]
-modelops build-index --repo <repo> [--jsonl]
-modelops health --repo <repo> [--json]
-modelops analyze --repo <repo> [--json]
-modelops search <query> --repo <repo> [--json]
-modelops query --repo <repo> [--json]
-modelops trace <object-id> --repo <repo> [--json]
-modelops impact <object-id> --repo <repo>
-modelops profile-dataset <file> --repo <repo> [--json]
-modelops infer-model <profile-json> --repo <repo> [--json]
-modelops propose-patch --from <note> --repo <repo>
-modelops proposal validate <proposal-id> --repo <repo> [--json]
-modelops proposal impact <proposal-id> --repo <repo> [--json]
-modelops proposal apply <proposal-id> --repo <repo> --dry-run
-modelops proposal apply <proposal-id> --repo <repo> --apply
-modelops change-request create ...
-modelops export-model --repo <repo> --format csv|xlsx --output <path>
-modelops config-guard --repo <repo> [--json]
-```
+## Command Groups
+
+| Group | File | Commands |
+|---|---|---|
+| Validation and Index | [cli-contracts/validation-index.md](cli-contracts/validation-index.md) | `init`, `validate`, `build-index`, `health`, `analyze` |
+| Search, Query, and Trace | [cli-contracts/search-query-trace.md](cli-contracts/search-query-trace.md) | `search`, `query`, `trace`, `impact` |
+| Dataset and Gap Analysis | [cli-contracts/dataset-gaps.md](cli-contracts/dataset-gaps.md) | `profile-dataset`, `infer-model`, `gaps` |
+| Proposals and Approval | [cli-contracts/proposals-approval.md](cli-contracts/proposals-approval.md) | `propose-patch`, `proposal *`, `change-request *` |
+| Export and Import | [cli-contracts/export-import.md](cli-contracts/export-import.md) | `export-model`, `import-model-sheet` |
+| Reports and Governance | [cli-contracts/reports-governance.md](cli-contracts/reports-governance.md) | `config-guard`, `scorecard`, `gap-report`, `owners`, `decisions`, `audit-log`, `usage-report` |
+| System and Server | [cli-contracts/system-server.md](cli-contracts/system-server.md) | `clean`, `diff`, `migrate`, `serve`, `mcp`, `sources` |
+
+---
 
 ## Contract Rules
 
