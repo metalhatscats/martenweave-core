@@ -48,13 +48,10 @@ class TraceResult:
         return [n for n in self.nodes if n.depth > 0 and not self._is_upstream(n)]
 
     def _is_upstream(self, node: TraceNode) -> bool:
-        # A node is upstream if there's an edge from it toward the root
+        # A node is upstream if it is the source of an upstream edge
+        # (i.e., it was discovered by traversing backward toward the root)
         return any(
-            e.to_object_id == self.root_object_id and e.from_object_id == node.object_id
-            for e in self.edges
-            if e.depth == 1
-        ) or any(
-            e.direction == "upstream" and e.to_object_id == node.object_id
+            e.direction == "upstream" and e.from_object_id == node.object_id
             for e in self.edges
         )
 
