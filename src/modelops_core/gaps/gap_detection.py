@@ -330,6 +330,22 @@ def _sanitize_id_part(value: str) -> str:
     return cleaned.strip("-")
 
 
+def _next_available_proposal_id(
+    proposals_dir: Path, safe_dataset_id: str
+) -> str:
+    """Find the next non-colliding proposal ID for a dataset.
+
+    Tries PP-GAP-{safe_dataset_id}-001, then 002, etc.
+    """
+    for seq in range(1, 1000):
+        candidate = f"PP-GAP-{safe_dataset_id}-{seq:03d}"
+        if not (proposals_dir / f"{candidate}.md").exists():
+            return candidate
+    raise ValueError(
+        f"Could not find an available proposal ID for dataset '{safe_dataset_id}'"
+    )
+
+
 def promote_gaps_to_proposal(
     report: DatasetGapReport,
     repo_model_path: Path,
@@ -339,6 +355,9 @@ def promote_gaps_to_proposal(
     Creates a PatchProposal with operations derived from gap
     ``recommended_proposal_op`` values. The proposal is written to
     ``model/patch-proposals/`` and remains in ``pending_review`` status.
+
+    If a proposal for the same dataset already exists, the next available
+    sequence number is used to avoid overwriting.
     """
     from modelops_core.patching.patch_model import PatchOperation
     from modelops_core.patching.patch_proposal_service import (
@@ -347,7 +366,10 @@ def promote_gaps_to_proposal(
     )
 
     safe_dataset_id = _sanitize_id_part(report.dataset_id)
-    proposal_id = f"PP-GAP-{safe_dataset_id}-001"
+    proposals_dir = repo_model_path / "patch-proposals"
+    proposals_dir.mkdir(parents=True, exist_ok=True)
+    proposal_id = _next_available_proposal_id(proposals_dir, safe_dataset_id)
+
     ops: list[PatchOperation] = []
     for gap in report.gaps:
         if gap.recommended_proposal_op:
