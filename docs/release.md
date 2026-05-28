@@ -26,6 +26,8 @@ Both must match before a release commit.
 - [ ] Version is updated in `pyproject.toml` and `src/modelops_core/__version__.py`
 - [ ] `CHANGELOG.md` is updated for this release
 - [ ] `docs/release.md` is still accurate
+- [ ] Config guard passes: `modelops config-guard --repo . --json`
+- [ ] No secrets or raw sensitive data in commits
 - [ ] Package builds locally:
   ```bash
   python -m build
