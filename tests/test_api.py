@@ -99,3 +99,23 @@ def test_api_export_invalid_format(temp_model_dir: Path) -> None:
     repo = str(temp_model_dir.parent)
     response = client.post("/export", params={"repo": repo, "format": "pdf"})
     assert response.status_code == 400
+
+
+def test_api_impact_success(sample_repo: Path) -> None:
+    response = client.get("/impact/DOMAIN-CUSTOMER-BP", params={"repo": str(sample_repo)})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["object_id"] == "DOMAIN-CUSTOMER-BP"
+    assert "root_object_type" in data
+    assert "upstream" in data
+    assert "downstream" in data
+    assert "total_affected" in data
+    assert isinstance(data["upstream"], list)
+    assert isinstance(data["downstream"], list)
+
+
+def test_api_impact_missing_index(temp_model_dir: Path) -> None:
+    repo = str(temp_model_dir.parent)
+    response = client.get("/impact/DOMAIN-TEST", params={"repo": repo})
+    assert response.status_code == 400
+    assert "Index not found" in response.json()["detail"]

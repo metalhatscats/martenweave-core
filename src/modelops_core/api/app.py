@@ -176,10 +176,30 @@ def impact(
 
     report = generate_impact_report(db_path, obj_id)
     return {
-        "object_id": obj_id,
-        "upstream": report.upstream,
-        "downstream": report.downstream,
-        "total_affected": len(report.upstream) + len(report.downstream),
+        "object_id": report.root_object_id,
+        "root_object_type": report.root_object_type,
+        "root_object_name": report.root_object_name,
+        "upstream": [
+            {
+                "object_id": o.object_id,
+                "object_type": o.object_type,
+                "object_name": o.object_name,
+                "relationship_type": o.relationship_type,
+                "depth": o.depth,
+            }
+            for o in report.upstream_objects
+        ],
+        "downstream": [
+            {
+                "object_id": o.object_id,
+                "object_type": o.object_type,
+                "object_name": o.object_name,
+                "relationship_type": o.relationship_type,
+                "depth": o.depth,
+            }
+            for o in report.downstream_objects
+        ],
+        "total_affected": len(report.affected_objects),
     }
 
 
