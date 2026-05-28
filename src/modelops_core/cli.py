@@ -541,10 +541,19 @@ def gaps(
 
     all_gaps = report.gaps + model_gaps
 
+    coverage_data = {
+        "total_columns": report.coverage.total_columns if report.coverage else 0,
+        "matched_columns": report.coverage.matched_columns if report.coverage else 0,
+        "unmatched_columns": report.coverage.unmatched_columns if report.coverage else 0,
+        "duplicate_columns": report.coverage.duplicate_columns if report.coverage else 0,
+        "match_rate": report.coverage.match_rate if report.coverage else 0.0,
+    }
+
     if json_output:
         result = {
             "stale_index_warning": stale,
             "dataset_id": report.dataset_id,
+            "coverage": coverage_data,
             "matches": [
                 {
                     "column_name": m.column_name,
@@ -569,8 +578,17 @@ def gaps(
         print(json.dumps(result, indent=2, default=str))
         raise typer.Exit()
 
+    if report.coverage:
+        cov = report.coverage
+        console.print("\n[bold]Coverage[/bold]")
+        console.print(f"  Total columns:      {cov.total_columns}")
+        console.print(f"  Matched columns:    {cov.matched_columns}")
+        console.print(f"  Unmatched columns:  {cov.unmatched_columns}")
+        console.print(f"  Duplicate columns:  {cov.duplicate_columns}")
+        console.print(f"  Match rate:         {cov.match_rate:.1%}")
+
     if all_gaps:
-        console.print(f"[bold]Gaps found for {report.dataset_id} ({len(all_gaps)})[/bold]")
+        console.print(f"\n[bold]Gaps found for {report.dataset_id} ({len(all_gaps)})[/bold]")
         table = Table("Column", "Code", "Severity", "Message")
         for g in all_gaps:
             table.add_row(g.column_name, g.gap_code, g.severity, g.message)
