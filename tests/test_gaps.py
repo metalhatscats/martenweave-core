@@ -952,3 +952,123 @@ class TestGapsCheckModelCli:
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert len(data["gaps"]) >= 1
+
+
+def test_promote_gaps_to_proposal_avoids_collision(tmp_path: Path) -> None:
+    """Repeated promotion on the same dataset must not overwrite."""
+    from modelops_core.gaps.gap_detection import promote_gaps_to_proposal
+
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+
+    report = DatasetGapReport(
+        dataset_id="test-dataset",
+        gaps=[
+            ColumnGap(
+                column_name="UNKNOWN_COL",
+                gap_code="UNMODELED_DATASET_COLUMN",
+                severity="warning",
+                message="No matching endpoint.",
+                recommended_proposal_op={
+                    "op": "create_object",
+                    "object_type": "FieldEndpoint",
+                    "after": "UNKNOWN_COL",
+                },
+            )
+        ],
+    )
+
+    # First promotion
+    proposal_path_1 = promote_gaps_to_proposal(report, model_dir)
+    assert proposal_path_1.exists()
+    assert proposal_path_1.name == "PP-GAP-TEST-DATASET-001.md"
+    text_1 = proposal_path_1.read_text(encoding="utf-8")
+    assert "PP-GAP-TEST-DATASET-001" in text_1
+
+    # Second promotion must create a distinct file
+    proposal_path_2 = promote_gaps_to_proposal(report, model_dir)
+    assert proposal_path_2.exists()
+    assert proposal_path_2.name == "PP-GAP-TEST-DATASET-002.md"
+    text_2 = proposal_path_2.read_text(encoding="utf-8")
+    assert "PP-GAP-TEST-DATASET-002" in text_2
+
+    # First file must still exist and be unchanged
+    assert proposal_path_1.exists()
+    assert proposal_path_1.read_text(encoding="utf-8") == text_1
+
+    # Third promotion
+    proposal_path_3 = promote_gaps_to_proposal(report, model_dir)
+    assert proposal_path_3.name == "PP-GAP-TEST-DATASET-003.md"
+    assert len(list((model_dir / "patch-proposals").glob("PP-GAP-TEST-DATASET-*.md"))) == 3
+
+
+class TestGapsPromoteCliRepeated:
+    def test_gaps_promote_to_proposal_twice(self, tmp_path: Path) -> None:
+        """CLI repeated --promote-to-proposal creates distinct proposals."""
+        repo = tmp_path / "repo"
+        model_dir = repo / "model"
+        model_dir.mkdir(parents=True)
+        generated = repo / "generated"
+        generated.mkdir()
+        db = generated / "modelops.db"
+
+        import sqlite3
+
+        conn = sqlite3.connect(str(db))
+        conn.executescript(
+            """
+            CREATE TABLE objects (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                name TEXT,
+                title TEXT,
+                domain TEXT,
+                description TEXT,
+                source_file TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                frontmatter_json TEXT NOT NULL,
+                body TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            );
+            """
+        )
+        conn.commit()
+        conn.close()
+
+        csv_path = tmp_path / "data.csv"
+        csv_path.write_text("UNKNOWN_COL\n1\n", encoding="utf-8")
+
+        # First promotion
+        result = runner.invoke(
+            app,
+            [
+                "gaps",
+                str(csv_path),
+                "--repo",
+                str(repo),
+                "--promote-to-proposal",
+            ],
+        )
+        assert result.exit_code == 0
+        proposal_1 = model_dir / "patch-proposals" / "PP-GAP-DATA-001.md"
+        assert proposal_1.exists()
+
+        # Second promotion
+        result = runner.invoke(
+            app,
+            [
+                "gaps",
+                str(csv_path),
+                "--repo",
+                str(repo),
+                "--promote-to-proposal",
+            ],
+        )
+        assert result.exit_code == 0
+        proposal_2 = model_dir / "patch-proposals" / "PP-GAP-DATA-002.md"
+        assert proposal_2.exists()
+
+        # First must still exist
+        assert proposal_1.exists()
