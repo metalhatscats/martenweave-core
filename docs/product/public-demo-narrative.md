@@ -45,7 +45,7 @@ Acme Corp is migrating customer master data to a new system. They have:
 6. **Review and apply**
    ```bash
    modelops proposal show PROP-2026-001 --repo ./acme-model
-   modelops proposal apply PROP-2026-001 --repo ./acme-model
+   modelops proposal apply PROP-2026-001 --repo ./acme-model --apply
    ```
    → Human review, validation, atomic apply with audit log.
 

@@ -243,12 +243,12 @@ def create_draft_from_proposal(
             "1. Review operations and impact.\n"
             "2. Create a ChangeRequest linking to this proposal.\n"
             "3. Obtain approval before applying.\n"
-            "4. Run `modelops proposal apply {proposal_id}`."
+            "4. Run `modelops proposal apply {proposal_id} --apply`."
         )
     else:
         lines.append(
             "1. Validate the proposal.\n"
-            "2. Run `modelops proposal apply {proposal_id}` if acceptable."
+            "2. Run `modelops proposal apply {proposal_id} --apply` if acceptable."
         )
     lines.append("")
 
