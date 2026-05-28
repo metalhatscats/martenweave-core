@@ -10,7 +10,11 @@ from modelops_core.impact.impact_report import AffectedObject, ImpactReport
 
 
 def generate_impact_report(
-    db_path: Path, object_id: str, max_depth: int = 2, direction: str = "both"
+    db_path: Path,
+    object_id: str,
+    max_depth: int = 2,
+    direction: str = "both",
+    relationship_class: str | None = None,
 ) -> ImpactReport:
     """Perform bounded BFS impact analysis.
 
@@ -64,6 +68,8 @@ def generate_impact_report(
         # Outgoing = downstream
         if direction in ("downstream", "both"):
             for next_id, rel_type, rel_class in outgoing.get(current_id, []):
+                if relationship_class and rel_class != relationship_class:
+                    continue
                 if next_id not in visited:
                     visited.add(next_id)
                     meta = metadata.get(next_id, {})
@@ -83,6 +89,8 @@ def generate_impact_report(
         # Incoming = upstream
         if direction in ("upstream", "both"):
             for prev_id, rel_type, rel_class in incoming.get(current_id, []):
+                if relationship_class and rel_class != relationship_class:
+                    continue
                 if prev_id not in visited:
                     visited.add(prev_id)
                     meta = metadata.get(prev_id, {})

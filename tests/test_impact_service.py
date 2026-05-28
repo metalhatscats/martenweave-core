@@ -579,3 +579,31 @@ class TestImpactDirectionFilter:
         data = json.loads(result.output)
         assert all(o["direction"] == "downstream" for o in data["affected_objects"])
         assert any(o["object_id"] == "DOMAIN-TEST" for o in data["affected_objects"])
+
+
+def test_impact_report_filters_by_relationship_class(temp_model_dir: Path) -> None:
+    repo_root = temp_model_dir.parent
+    db_path = repo_root / "generated" / "modelops.db"
+    build_index(repo_root=repo_root, db_path=db_path)
+
+    # Without filter: should find ATTR-TEST downstream
+    report_all = generate_impact_report(db_path, "DOMAIN-TEST", max_depth=2)
+    assert any(o.object_id == "ATTR-TEST" for o in report_all.affected_objects)
+
+    # With core_dependency filter: should still find ATTR-TEST
+    report_core = generate_impact_report(
+        db_path,
+        "DOMAIN-TEST",
+        max_depth=2,
+        relationship_class="core_dependency",
+    )
+    assert any(o.object_id == "ATTR-TEST" for o in report_core.affected_objects)
+
+    # With non-matching class: should find nothing
+    report_none = generate_impact_report(
+        db_path,
+        "DOMAIN-TEST",
+        max_depth=2,
+        relationship_class="nonexistent",
+    )
+    assert report_none.affected_objects == []

@@ -1810,6 +1810,11 @@ def trace(
     direction: str = typer.Option("both", "--direction", help="upstream, downstream, or both."),
     max_depth: int = typer.Option(5, "--max-depth", help="Maximum traversal depth."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+    relationship_class: str | None = typer.Option(
+        None,
+        "--relationship-class",
+        help="Filter by relationship class (e.g. core_dependency, mapping, governance).",
+    ),
 ) -> None:
     """Trace upstream and downstream relationships for an object."""
     repo_root = _resolve_repo(repo)
@@ -1821,7 +1826,13 @@ def trace(
 
     stale = _check_and_warn_stale_index(repo_root, json_output)
 
-    result = trace_object(db_path, object_id, max_depth=max_depth, direction=direction)
+    result = trace_object(
+        db_path,
+        object_id,
+        max_depth=max_depth,
+        direction=direction,
+        relationship_class=relationship_class,
+    )
 
     if json_output:
         import json
@@ -1847,6 +1858,7 @@ def trace(
                     "to_object_id": e.to_object_id,
                     "relationship_type": e.relationship_type,
                     "direction": e.direction,
+                    "relationship_class": e.relationship_class,
                 }
                 for e in result.edges
             ],
@@ -1896,6 +1908,11 @@ def impact(
         help="Group output by: type, direction, relationship.",
     ),
     direction: str = typer.Option("both", "--direction", help="upstream, downstream, or both."),
+    relationship_class: str | None = typer.Option(
+        None,
+        "--relationship-class",
+        help="Filter by relationship class (e.g. core_dependency, mapping, governance).",
+    ),
 ) -> None:
     """Generate impact report for an object."""
     repo_root = _resolve_repo(repo)
@@ -1907,7 +1924,13 @@ def impact(
 
     stale = _check_and_warn_stale_index(repo_root, json_output or fmt.lower() == "json")
 
-    report = generate_impact_report(db_path, object_id, max_depth=depth, direction=direction)
+    report = generate_impact_report(
+        db_path,
+        object_id,
+        max_depth=depth,
+        direction=direction,
+        relationship_class=relationship_class,
+    )
 
     # Legacy --json flag takes precedence
     if json_output or fmt.lower() == "json":
