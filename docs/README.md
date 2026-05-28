@@ -9,6 +9,7 @@
 | Document | What you will learn |
 |---|---|
 | [README.md](../README.md) | Install, quickstart, command reference, core principles |
+| [docs/first-15-minutes.md](first-15-minutes.md) | Step-by-step first workflow from clone to insight |
 | [docs/user-guide.md](user-guide.md) | Day-to-day CLI usage patterns and examples |
 | [docs/martenweave-data-model-book.md](martenweave-data-model-book.md) | How to create, maintain, and govern models correctly |
 | [docs/pilot-package.md](pilot-package.md) | 1–2 week pilot workflow for new teams |

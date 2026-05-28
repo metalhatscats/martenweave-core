@@ -68,6 +68,10 @@ Martenweave Core requires Python 3.11+. The examples below use the project venv 
 .venv/bin/modelops clean --repo ./my-model --dry-run
 ```
 
+## First 15 Minutes
+
+For a step-by-step walkthrough using the included examples, see [docs/first-15-minutes.md](docs/first-15-minutes.md).
+
 ## Command Reference
 
 | Command | Purpose |
