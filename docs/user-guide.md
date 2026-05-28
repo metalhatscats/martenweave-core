@@ -119,6 +119,9 @@ modelops proposal show PP-001 --repo ./my-model
 # Validate a proposal
 modelops proposal validate PP-001 --repo ./my-model
 
+# Review bundle: report + impact + validation in one view
+modelops proposal review-bundle PP-001 --repo ./my-model
+
 # Preview changes without writing files
 modelops proposal apply PP-001 --repo ./my-model --dry-run
 
@@ -184,6 +187,28 @@ Every model edit goes through the same safe path:
 - Has validation errors
 - Has status other than `accepted`
 - Has already been applied
+
+### Review Bundle
+
+The `proposal review-bundle` command combines three review steps into a single output:
+
+```bash
+modelops proposal review-bundle PP-001 --repo ./my-model
+```
+
+It prints:
+
+1. **Report** — proposal identity, risk level, staleness, and operation count.
+2. **Impact** — affected objects and relationships (requires a built index).
+3. **Validation** — deterministic safety check with error/warning counts.
+
+Use `--json` to consume the bundle programmatically:
+
+```bash
+modelops proposal review-bundle PP-001 --repo ./my-model --json
+```
+
+The review bundle is read-only and does not modify any files. Run it before approval to confirm a proposal is safe and its scope is understood.
 
 ---
 
