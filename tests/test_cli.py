@@ -322,3 +322,51 @@ def test_cli_validate_strict_json_output(sample_repo: Path) -> None:
     data = json.loads(result.output)
     assert data["is_valid"] is True
     assert data["warning_count"] > 0
+
+
+# ---------------------------------------------------------------------------
+# doctor
+# ---------------------------------------------------------------------------
+
+
+def test_cli_doctor_human_output(sample_repo: Path) -> None:
+    result = runner.invoke(app, ["doctor", "--repo", str(sample_repo)])
+    assert result.exit_code == 0
+    assert "Doctor Report" in result.output
+    assert "Package version" in result.output
+    assert "Config present" in result.output
+    assert "Model path exists" in result.output
+    assert "Index exists" in result.output
+
+
+def test_cli_doctor_json_output(sample_repo: Path) -> None:
+    result = runner.invoke(app, ["doctor", "--repo", str(sample_repo), "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert "martenweave_version" in data
+    assert "repo_root" in data
+    assert "config_present" in data
+    assert "model_path_exists" in data
+    assert "generated_path_exists" in data
+    assert "index_exists" in data
+    assert "index_fresh" in data
+    assert "validation" in data
+    assert data["validation"]["ran"] is True
+    assert "is_valid" in data["validation"]
+    assert "error_count" in data["validation"]
+    assert "warning_count" in data["validation"]
+
+
+def test_cli_doctor_missing_model_path(tmp_path: Path) -> None:
+    result = runner.invoke(app, ["doctor", "--repo", str(tmp_path)])
+    assert result.exit_code == 0
+    assert "Model path exists:   False" in result.output
+    assert "Validation skipped" in result.output
+
+
+def test_cli_doctor_json_missing_model_path(tmp_path: Path) -> None:
+    result = runner.invoke(app, ["doctor", "--repo", str(tmp_path), "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["model_path_exists"] is False
+    assert data["validation"]["ran"] is False

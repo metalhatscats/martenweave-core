@@ -1191,3 +1191,29 @@ class TestGovernanceContract:
         assert data.get("type") == "Decision"
         assert "status" in data
         assert "title" in data
+
+
+    def test_doctor_json_schema(self, sample_repo: Path) -> None:
+        result = runner.invoke(
+            app, ["doctor", "--repo", str(sample_repo), "--json"]
+        )
+        assert result.exit_code == 0, result.output
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert "martenweave_version" in data
+        assert "repo_root" in data
+        assert "config_present" in data
+        assert isinstance(data["config_present"], bool)
+        assert "model_path_exists" in data
+        assert isinstance(data["model_path_exists"], bool)
+        assert "generated_path_exists" in data
+        assert isinstance(data["generated_path_exists"], bool)
+        assert "index_exists" in data
+        assert isinstance(data["index_exists"], bool)
+        assert "index_fresh" in data
+        assert "validation" in data
+        assert isinstance(data["validation"], dict)
+        assert "ran" in data["validation"]
+        assert "is_valid" in data["validation"]
+        assert "error_count" in data["validation"]
+        assert "warning_count" in data["validation"]

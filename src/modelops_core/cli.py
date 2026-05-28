@@ -1406,6 +1406,87 @@ def health(
         console.print(table)
 
 
+@app.command("doctor")
+@with_telemetry("doctor")
+def doctor(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Run diagnostics: version, config, paths, index freshness, validation."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    generated_path = resolve_generated_path(repo_root)
+    db_path = generated_path / "modelops.db"
+    config_path = repo_root / "modelops.config.yaml"
+
+    config = load_repo_config(repo_root)
+    config_present = config_path.exists()
+    model_path_exists = model_path.exists()
+    generated_path_exists = generated_path.exists()
+    index_exists = db_path.exists()
+
+    freshness = check_index_freshness(repo_root)
+    index_fresh = freshness.fresh if index_exists else None
+    index_stale_reason = freshness.reason if index_exists else None
+
+    validation_summary: dict[str, Any] = {
+        "ran": False,
+        "is_valid": None,
+        "error_count": None,
+        "warning_count": None,
+    }
+    if model_path_exists:
+        files = scan_repository(model_path)
+        parsed_objects = [parse_file(f) for f in files]
+        enabled_packs = config.enabled_domain_packs if config else None
+        summary = validate_objects(parsed_objects, enabled_packs)
+        validation_summary = {
+            "ran": True,
+            "is_valid": summary.is_valid,
+            "error_count": summary.error_count,
+            "warning_count": summary.warning_count,
+        }
+
+    if json_output:
+        result = {
+            "martenweave_version": __version__,
+            "repo_root": str(repo_root),
+            "config_present": config_present,
+            "model_path_exists": model_path_exists,
+            "generated_path_exists": generated_path_exists,
+            "index_exists": index_exists,
+            "index_fresh": index_fresh,
+            "index_stale_reason": index_stale_reason,
+            "validation": validation_summary,
+        }
+        print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print("[bold]Doctor Report[/bold]")
+    console.print(f"  Package version:     {__version__}")
+    console.print(f"  Repository:          {repo_root}")
+    console.print(f"  Config present:      {config_present}")
+    console.print(f"  Model path exists:   {model_path_exists}")
+    console.print(f"  Generated path exists: {generated_path_exists}")
+    console.print(f"  Index exists:        {index_exists}")
+    if index_exists:
+        fresh_label = "[green]fresh[/green]" if index_fresh else "[red]stale[/red]"
+        console.print(f"  Index freshness:     {fresh_label}")
+        if index_stale_reason:
+            console.print(f"  Stale reason:        {index_stale_reason}")
+    if validation_summary["ran"]:
+        valid_label = (
+            "[green]valid[/green]"
+            if validation_summary["is_valid"]
+            else "[red]invalid[/red]"
+        )
+        console.print(f"  Validation:          {valid_label}")
+        console.print(f"  Errors:              {validation_summary['error_count']}")
+        console.print(f"  Warnings:            {validation_summary['warning_count']}")
+    else:
+        console.print("  [yellow]Validation skipped (no model path)[/yellow]")
+
+
 @app.command()
 @with_telemetry("scorecard")
 def scorecard(
