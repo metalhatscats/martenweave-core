@@ -83,6 +83,16 @@ modelops profile-dataset customer_sample.csv --repo ./my-model
 modelops infer-model generated/dataset_profiles/customer_sample.json --repo ./my-model
 ```
 
+### Model-Side Gaps
+
+Detect missing source links and ownership gaps inside the model itself:
+
+```bash
+modelops gaps --check-model --repo ./my-model
+```
+
+This reports `MODEL_ATTRIBUTE_MISSING_SOURCE` (critical) and `MISSING_OWNER` (warning) without requiring a dataset file. See [Model-Side Gap Detection](model-side-gaps.md) for details and fix examples.
+
 ### Validation
 
 ```bash

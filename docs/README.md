@@ -53,6 +53,7 @@
 | [docs/developer/ADDING_DOMAIN_PACKS.md](developer/ADDING_DOMAIN_PACKS.md) | How to add a new domain pack |
 | [docs/ai/VALIDATION_LADDER.md](ai/VALIDATION_LADDER.md) | Validation ladder from static checks to e2e |
 | [docs/validation-methodology-warnings.md](validation-methodology-warnings.md) | Warning-only validation codes and fixes |
+| [docs/model-side-gaps.md](model-side-gaps.md) | Model-side gap detection with `--check-model` |
 
 ---
 
