@@ -14,7 +14,7 @@ from modelops_core.config import load_repo_config, resolve_generated_path
 from modelops_core.index import build_index
 from modelops_core.repository import parse_file, scan_repository
 from modelops_core.validation import validate_objects
-from modelops_core.validation.result import ValidationSummary
+from modelops_core.validation.result import ValidationSeverity, ValidationSummary
 
 
 @dataclass
@@ -449,6 +449,25 @@ def apply_patch_proposal(
     operations_raw = fm.get("operations", [])
     if not isinstance(operations_raw, list):
         raise ValueError("PatchProposal operations must be a list")
+
+    # Pre-apply proposal validation
+    from modelops_core.patching.patch_validator import validate_patch_proposal
+
+    proposal_dict = dict(fm)
+    proposal_dict.setdefault("id", proposal_id)
+    proposal_dict.setdefault("type", "PatchProposal")
+    validation_results = validate_patch_proposal(proposal_dict)
+    proposal_errors = [
+        r for r in validation_results if r.severity == ValidationSeverity.ERROR
+    ]
+    if proposal_errors:
+        error_details = "; ".join(
+            f"{r.code}: {r.message}" for r in proposal_errors
+        )
+        raise ValueError(
+            f"Proposal validation failed for '{proposal_id}'. "
+            f"Errors: {error_details}"
+        )
 
     class _Op:
         def __init__(self, data: dict[str, Any]) -> None:

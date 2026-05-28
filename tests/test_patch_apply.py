@@ -74,3 +74,44 @@ def test_apply_rejects_unaccepted_proposal(temp_model_dir: Path) -> None:
 
     with pytest.raises(ValueError, match="Only 'accepted' proposals can be applied"):
         apply_patch_proposal(temp_model_dir, "PP-APPLY-003")
+
+
+def test_apply_rejects_invalid_proposal_empty_operations(temp_model_dir: Path) -> None:
+    """Accepted proposals with empty operations cannot apply."""
+    proposal = build_patch_proposal("PP-APPLY-EMPTY", [])
+    write_patch_proposal(proposal, temp_model_dir)
+
+    from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
+
+    proposal_path = temp_model_dir / "patch-proposals" / "PP-APPLY-EMPTY.md"
+    transition_patch_proposal_status(proposal_path, "accepted")
+
+    with pytest.raises(ValueError, match="PATCH_OPERATIONS_EMPTY"):
+        apply_patch_proposal(temp_model_dir, "PP-APPLY-EMPTY")
+
+    # No files should have been mutated
+    assert not (temp_model_dir / "systems" / "SYS-NEW.md").exists()
+
+
+def test_apply_rejects_invalid_proposal_disallowed_operation(temp_model_dir: Path) -> None:
+    """Accepted proposals with disallowed operations cannot apply."""
+    op = PatchOperation(
+        op="delete_object", object_id="DOMAIN-TEST", target_path="name", after="X"
+    )
+    proposal = build_patch_proposal("PP-APPLY-BAD-OP", [op])
+    write_patch_proposal(proposal, temp_model_dir)
+
+    from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
+
+    proposal_path = temp_model_dir / "patch-proposals" / "PP-APPLY-BAD-OP.md"
+    transition_patch_proposal_status(proposal_path, "accepted")
+
+    with pytest.raises(ValueError, match="PATCH_OPERATION_DISALLOWED"):
+        apply_patch_proposal(temp_model_dir, "PP-APPLY-BAD-OP")
+
+    # No files should have been mutated
+    from modelops_core.repository import parse_file
+
+    updated = parse_file(temp_model_dir / "DOMAIN-TEST.md")
+    assert updated.frontmatter is not None
+    assert updated.frontmatter["name"] != "X"
