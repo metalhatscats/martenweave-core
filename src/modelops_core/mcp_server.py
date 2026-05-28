@@ -53,10 +53,22 @@ def _compact_object(obj: dict[str, Any]) -> dict[str, Any]:
 
 
 def _ensure_index(repo_root: Path) -> Path:
-    """Return the path to the SQLite index, building it if necessary."""
+    """Return the path to the SQLite index, building it if necessary.
+
+    Raises:
+        ValueError: if the repository has validation errors and cannot be
+            indexed safely. The agent should run ``validate_model`` to
+            diagnose and fix issues before retrying.
+    """
     db_path = resolve_generated_path(repo_root) / "modelops.db"
     if not db_path.exists():
-        _build_index(repo_root=repo_root, db_path=db_path, allow_invalid=True)
+        try:
+            _build_index(repo_root=repo_root, db_path=db_path, allow_invalid=False)
+        except ValueError as exc:
+            raise ValueError(
+                f"Cannot build index for invalid repository: {exc} "
+                "Run validate_model to see errors, fix them, then retry."
+            ) from exc
     return db_path
 
 
