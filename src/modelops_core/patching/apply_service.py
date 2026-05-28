@@ -32,6 +32,7 @@ class ApplyResult:
     error: str | None = None
     risk_level: str | None = None
     risk_assessment: dict[str, Any] = field(default_factory=dict)
+    approved_change_request_id: str | None = None
 
 
 @dataclass
@@ -232,6 +233,7 @@ def _write_audit_event(
     status: str | None = None,
     risk_level: str | None = None,
     risk_assessment: dict[str, Any] | None = None,
+    approved_change_request_id: str | None = None,
 ) -> str:
     from modelops_core.reports.audit_service import AuditEventService, create_audit_event
 
@@ -249,6 +251,8 @@ def _write_audit_event(
         outputs["risk_level"] = risk_level
     if risk_assessment is not None:
         outputs["risk_assessment"] = risk_assessment
+    if approved_change_request_id is not None:
+        outputs["approved_change_request_id"] = approved_change_request_id
     event = create_audit_event(
         event_type=event_type,
         actor="system",
@@ -421,7 +425,10 @@ def dry_run_patch_proposal(
 
 
 def apply_patch_proposal(
-    repo_model_path: Path, proposal_id: str, skip_risk_check: bool = False
+    repo_model_path: Path,
+    proposal_id: str,
+    skip_risk_check: bool = False,
+    approved_change_request_id: str | None = None,
 ) -> ApplyResult:
     """Apply an accepted PatchProposal to canonical model files."""
     if not repo_model_path.exists():
@@ -538,6 +545,7 @@ def apply_patch_proposal(
                 "affected_object_count": risk.affected_object_count,
                 "max_impact_depth": risk.max_impact_depth,
             },
+            approved_change_request_id=approved_change_request_id,
         )
 
         _update_proposal_metadata(proposal_path, changed_files, audit_event_id)
@@ -565,6 +573,7 @@ def apply_patch_proposal(
             index_rebuilt=index_rebuilt,
             db_path=str(db_path.resolve()) if index_rebuilt else None,
             risk_level=risk.risk_level,
+            approved_change_request_id=approved_change_request_id,
             risk_assessment={
                 "requires_approval": risk.requires_approval,
                 "risk_level": risk.risk_level,

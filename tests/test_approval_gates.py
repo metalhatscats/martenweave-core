@@ -795,3 +795,57 @@ def test_cli_cr_approve_json_includes_risk(tmp_path: Path) -> None:
     assert data["risk_level"] == "high"
     assert "risk_reasons" in data
     assert "risk_triggering_rules" in data
+
+
+def test_apply_records_approved_cr_in_audit(tmp_path: Path) -> None:
+    from modelops_core.reports.audit_service import AuditEventService
+
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    generated_dir = tmp_path / "generated"
+    generated_dir.mkdir()
+
+    (model_dir / "MAP-001.md").write_text(
+        "---\n"
+        "id: MAP-001\n"
+        "type: Mapping\n"
+        "status: active\n"
+        "name: Test Mapping\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    db_path = generated_dir / "modelops.db"
+    build_index(repo_root=tmp_path, db_path=db_path)
+
+    op = PatchOperation(
+        op="update_object", object_id="MAP-001", target_path="name", after="New"
+    )
+    proposal = build_patch_proposal("PP-AUDIT-CR-001", [op])
+    write_patch_proposal(proposal, model_dir)
+    proposal_path = model_dir / "patch-proposals" / "PP-AUDIT-CR-001.md"
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+    create_change_request(
+        model_path=model_dir,
+        cr_id="CR-AUDIT-001",
+        title="Approve PP",
+        status="pending",
+        linked_proposals=["PP-AUDIT-CR-001"],
+    )
+    approve_change_request(model_dir, "CR-AUDIT-001", "alice")
+
+    result = apply_patch_proposal(
+        model_dir,
+        "PP-AUDIT-CR-001",
+        skip_risk_check=True,
+        approved_change_request_id="CR-AUDIT-001",
+    )
+    assert result.approved_change_request_id == "CR-AUDIT-001"
+    assert result.audit_event_written
+
+    service = AuditEventService(tmp_path)
+    events = service.read_events()
+    apply_events = [e for e in events if e.event_type == "patch_apply"]
+    assert len(apply_events) == 1
+    assert apply_events[0].outputs.get("approved_change_request_id") == "CR-AUDIT-001"
