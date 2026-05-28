@@ -5,6 +5,8 @@ status: active
 attribute: ATTR-BP-CENTRAL-FOUNDATION-DATE
 entity_context: CTX-BP-CENTRAL-S4
 field_endpoint: FEP-S4-BUT000-FOUND-DAT
+schema_version: "1.0"
+name: USE-BP-CENTRAL-FOUNDATION-DATE-S4
 ---
 
 # Usage: USE-BP-CENTRAL-FOUNDATION-DATE-S4

@@ -6,6 +6,7 @@ name: Industry
 domain: DOMAIN-CUSTOMER-BP
 business_owner: PERSON-BUSINESS-OWNER
 data_steward: PERSON-DATA-STEWARD
+schema_version: "1.0"
 ---
 
 # Industry

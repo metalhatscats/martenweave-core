@@ -5,6 +5,8 @@ status: active
 attribute: ATTR-BP-SALES-AREA-INCOTERMS
 entity_context: CTX-CUSTOMER-SALES-AREA-S4
 field_endpoint: FEP-S4-KNVV-INCO1
+schema_version: "1.0"
+name: USE-BP-SALES-AREA-INCOTERMS-S4
 ---
 
 # Usage: USE-BP-SALES-AREA-INCOTERMS-S4

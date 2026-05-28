@@ -6,6 +6,7 @@ schema_version: "1.0"
 name: Customer BP Mapping Set
 description: >
   Collection of field-level mappings for the Customer BP migration.
+business_owner: PERSON-BUSINESS-OWNER
 ---
 
 # Customer BP Mapping Set

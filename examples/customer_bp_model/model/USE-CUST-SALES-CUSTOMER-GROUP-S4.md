@@ -14,6 +14,7 @@ description: >
   AttributeUsage placing the Customer Group Attribute into the
   S/4HANA Customer Sales Area context. Requiredness may be conditional
   on sales area configuration.
+display_name: Customer Group in S/4 Customer Sales Area
 ---
 
 # Customer Group Attribute Usage

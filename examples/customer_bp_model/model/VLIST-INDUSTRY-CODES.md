@@ -9,6 +9,8 @@ values:
   - "00003: Finance"
   - "00004: Healthcare"
   - "00005: Technology"
+schema_version: "1.0"
+business_owner: PERSON-BUSINESS-OWNER
 ---
 
 # SAP Industry Codes

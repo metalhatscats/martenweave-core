@@ -10,6 +10,7 @@ target_endpoint: FEP-S4-KNVV-KDGRP
 mapping_set: MAPSET-CUSTOMER-BP
 description: >
   Maps legacy CRM customer group values to the S/4HANA KNVV-KDGRP field.
+business_owner: PERSON-BUSINESS-OWNER
 ---
 
 # Legacy Customer Group to KNVV-KDGRP Mapping
