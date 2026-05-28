@@ -33,3 +33,13 @@ Direct edits to canonical example models are allowed only for explicit repositor
 ## Secret Handling
 
 Run `modelops config-guard --repo . --json` when touching config, AI providers, generated artifacts, or docs that mention credentials. If it fails because local ignored `.env` contains secrets, report that fact without printing secret values.
+
+### Validation ladder
+
+Include config-guard in agent workflows that modify or validate repositories:
+
+1. Before proposing changes that touch `modelops.config.yaml`, `.env`, or provider settings.
+2. Before committing docs that include example credentials or connection strings.
+3. Before publishing releases or generated artifacts.
+
+Never print secret values in reports, prompts, or commit messages.
