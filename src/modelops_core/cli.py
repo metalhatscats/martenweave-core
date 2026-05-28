@@ -1176,6 +1176,9 @@ def index_fresh(
             ),
             "reason": report.reason,
             "stale_sources": report.stale_sources,
+            "stored_source_hash": report.stored_source_hash,
+            "current_source_hash": report.current_source_hash,
+            "hash_mismatch": report.hash_mismatch,
         }
         print(json.dumps(result, indent=2, default=str))
         raise typer.Exit()
@@ -1189,6 +1192,9 @@ def index_fresh(
         console.print(
             f"  Newest source: {report.newest_source_mtime.strftime('%Y-%m-%d %H:%M:%S')}"
         )
+    if report.stored_source_hash and report.current_source_hash:
+        console.print(f"  Stored hash:   {report.stored_source_hash}")
+        console.print(f"  Current hash:  {report.current_source_hash}")
     if report.reason:
         console.print(f"  Reason: {report.reason}")
     if report.stale_sources:
