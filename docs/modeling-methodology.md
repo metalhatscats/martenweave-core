@@ -84,7 +84,7 @@ A simple model still validates and indexes correctly. The validation pipeline tr
 
 ## 4. Practical example: simple Product table
 
-A `products.csv` with columns `product_id`, `name`, `category`, `unit_price`, `active`.
+A `product_sample.csv` with columns `product_id`, `name`, `category`, `unit_price`, `active`.
 
 ### Canonical files
 
@@ -147,7 +147,7 @@ dataset: DS-PRODUCT-CSV
 
 # name column
 
-Source: products.csv
+Source: product_sample.csv
 ```
 
 Repeat for `category`, `unit_price`, and `active`. Add a `Dataset` object `DS-PRODUCT-CSV` and a `ValueList` for `category` if the set is closed.

@@ -67,7 +67,7 @@ This creates:
 
 ```bash
 .venv/bin/modelops profile-dataset \
-  examples/simple_product_model/data/samples/products.csv \
+  examples/simple_product_model/data/samples/product_sample.csv \
   --repo examples/simple_product_model
 ```
 
@@ -75,7 +75,7 @@ This creates:
 
 ```bash
 .venv/bin/modelops gaps \
-  examples/simple_product_model/data/samples/products.csv \
+  examples/simple_product_model/data/samples/product_sample.csv \
   --repo examples/simple_product_model
 ```
 
