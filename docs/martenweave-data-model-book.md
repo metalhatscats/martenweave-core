@@ -115,7 +115,7 @@ target: FEP-S4-KNVV-KDGRP
 | Attribute | `ATTR-{AREA}-{CONCEPT}-{PROPERTY}` | `ATTR-CUST-SALES-CUSTOMER-GROUP` |
 | Field Endpoint | `FEP-{SYSTEM}-{TABLE}-{FIELD}` | `FEP-S4-KNVV-KDGRP` |
 | Mapping | `MAP-{AREA}-{SOURCE}-TO-{TARGET}` | `MAP-CUST-GROUP-S4-TO-LEGACY` |
-| Value List | `VL-{AREA}-{CONCEPT}` | `VL-CUST-GROUP-CODES` |
+| Value List | `VLIST-{AREA}-{CONCEPT}` | `VLIST-CUST-GROUP-CODES` |
 | Change Request | `CR-{NNN}` | `CR-001` |
 | Patch Proposal | `PP-{NNN}` | `PP-001` |
 
@@ -183,7 +183,7 @@ Define allowed values for fields that use codes.
 
 ```yaml
 ---
-id: VL-CUST-GROUP-CODES
+id: VLIST-CUST-GROUP-CODES
 type: ValueList
 status: active
 name: Customer Group Codes
@@ -207,7 +207,7 @@ type: ValueMapping
 status: active
 name: Customer Group Legacy to S/4
 domain: DOMAIN-CUSTOMER-BP
-value_list: VL-CUST-GROUP-CODES
+value_list: VLIST-CUST-GROUP-CODES
 mappings:
   - from: "KA"
     to: "01"
@@ -315,14 +315,14 @@ description: "15 active attributes lack business_owner"
    ```
 3. Review the proposal
    ```bash
-   modelops proposal-impact PP-001 --repo ./my-model
-   modelops proposal-validate PP-001 --repo ./my-model
+   modelops proposal impact PP-001 --repo ./my-model
+   modelops proposal validate PP-001 --repo ./my-model
    ```
 
 ### Creating a ChangeRequest
 
 ```bash
-modelops cr-create \
+modelops change-request create \
   --id CR-001 \
   --title "Update Customer Group descriptions" \
   --reason "Business terminology changed in Q1" \
@@ -334,11 +334,11 @@ modelops cr-create \
 
 ```bash
 # Approve
-modelops cr-approve CR-001 --repo ./my-model
+modelops change-request approve CR-001 --repo ./my-model
 
 # Apply (dry-run first)
-modelops proposal-apply PP-001 --dry-run --repo ./my-model
-modelops proposal-apply PP-001 --repo ./my-model
+modelops proposal apply PP-001 --dry-run --repo ./my-model
+modelops proposal apply PP-001 --repo ./my-model
 ```
 
 ---
@@ -427,7 +427,7 @@ modelops import-sheet --from ./updated_sheet.xlsx --repo ./my-model
 1. Human writes a clear, scoped note
 2. AI generates a PatchProposal
 3. Human reviews operations, assumptions, and human_checks
-4. Human runs `proposal-impact` and `proposal-validate`
+4. Human runs `proposal impact` and `proposal validate`
 5. Human creates a ChangeRequest
 6. Approver reviews and approves
 7. Human applies the proposal

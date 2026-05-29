@@ -147,3 +147,26 @@ def test_docs_first_15_minutes_filenames_match_disk() -> None:
                         broken.append(clean)
 
     assert not broken, f"Referenced paths in first-15-minutes.md do not exist: {broken}"
+
+
+def test_docs_cli_commands_are_current() -> None:
+    """Docs must not contain obsolete hyphenated CLI commands or wrong package names."""
+    import re
+
+    docs_dir = Path("docs")
+    stale_patterns = [
+        r"modelops\s+proposal-impact",
+        r"modelops\s+proposal-validate",
+        r"modelops\s+proposal-apply",
+        r"modelops\s+cr-create",
+        r"modelops\s+cr-approve",
+        r"modelops\s+api\b",
+        r"pip\s+install\s+modelops-core",
+    ]
+    found: list[tuple[str, str]] = []
+    for doc in docs_dir.rglob("*.md"):
+        text = doc.read_text(encoding="utf-8")
+        for pattern in stale_patterns:
+            for match in re.finditer(pattern, text):
+                found.append((str(doc.relative_to(docs_dir)), match.group(0)))
+    assert not found, f"Stale CLI commands or package names found in docs: {found}"
