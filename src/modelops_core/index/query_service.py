@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from modelops_core.schemas.registry import get_search_fields
+
 
 @dataclass
 class SearchResult:
@@ -63,7 +65,8 @@ def _row_to_result(row: sqlite3.Row) -> SearchResult:
 
 
 def _build_search_sql(query: str) -> tuple[str, list[Any]]:
-    """Build a LIKE-based search query across name, title, description, body.
+    """Build a LIKE-based search query across name, title, description, body,
+    and registry search_fields (via json_extract on frontmatter_json).
 
     Returns (sql, params).
     """
@@ -71,14 +74,19 @@ def _build_search_sql(query: str) -> tuple[str, list[Any]]:
     if not terms:
         return "SELECT * FROM objects WHERE 1=1", []
 
+    search_fields = get_search_fields()
     conditions: list[str] = []
     params: list[Any] = []
     for term in terms:
         pattern = f"%{term}%"
-        conditions.append(
-            "(name LIKE ? OR title LIKE ? OR description LIKE ? OR body LIKE ?)"
-        )
-        params.extend([pattern] * 4)
+        base_cols = ["name", "title", "description", "body"]
+        json_cols = [
+            f"json_extract(frontmatter_json, '$.{field}') LIKE ?"
+            for field in search_fields
+        ]
+        cond = " OR ".join([f"{c} LIKE ?" for c in base_cols] + json_cols)
+        conditions.append(f"({cond})")
+        params.extend([pattern] * (len(base_cols) + len(search_fields)))
 
     sql = "SELECT * FROM objects WHERE " + " AND ".join(conditions)
     return sql, params
@@ -96,7 +104,8 @@ def search_objects(
 ) -> PaginatedResult:
     """Keyword search over indexed objects.
 
-    Searches across ``name``, ``title``, ``description``, and ``body``
+    Searches across ``name``, ``title``, ``description``, ``body``, and
+    registry ``search_fields`` (e.g. ``technical_name``, ``column_name``)
     using case-insensitive LIKE patterns. Results are scored by the
     number of matched fields.
     """
@@ -130,6 +139,7 @@ def search_objects(
 
     results: list[SearchResult] = []
     terms = [t.lower() for t in query.split() if t.strip()]
+    search_fields = get_search_fields()
     for row in rows:
         result = _row_to_result(row)
         score = 0
@@ -139,6 +149,12 @@ def search_objects(
             if any(term in value for term in terms):
                 score += 1
                 matched.append(col)
+        frontmatter = json.loads(row["frontmatter_json"] or "{}")
+        for sf in search_fields:
+            value = str(frontmatter.get(sf) or "").lower()
+            if any(term in value for term in terms):
+                score += 1
+                matched.append(sf)
         result.score = score
         result.matched_fields = matched
         results.append(result)
