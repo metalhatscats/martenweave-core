@@ -104,7 +104,10 @@ def _build_index(db_path: Path) -> None:
             "SAP field for name",
             "model/FEP-002.md",
             "def",
-            '{"id": "FEP-002", "type": "FieldEndpoint", "sap_table": "BUT000"}',
+            (
+                '{"id": "FEP-002", "type": "FieldEndpoint", "sap_table": "BUT000", '
+                '"technical_name": "NAME", "column_name": "NAME_FIRST"}'
+            ),
             "# BUT000 NAME",
             None,
             None,
@@ -124,6 +127,24 @@ def _build_index(db_path: Path) -> None:
             "ghi",
             '{"id": "VLIST-002", "type": "ValueList", "business_owner": "PERSON-001"}',
             None,
+            None,
+            None,
+        ),
+    )
+    conn.execute(
+        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "EC-001",
+            "EntityContext",
+            "active",
+            "Customer Sales Area",
+            None,
+            "DOMAIN-A",
+            "Sales area context",
+            "model/EC-001.md",
+            "jkl",
+            '{"id": "EC-001", "type": "EntityContext", "context_category": "customer_sales_area"}',
+            "# Customer Sales Area",
             None,
             None,
         ),
@@ -204,19 +225,20 @@ class TestSearchObjects:
     def test_search_offset(self, tmp_path: Path) -> None:
         db = tmp_path / "modelops.db"
         _build_index(db)
-        # "Customer" matches ATTR-001, FEP-001, FEP-002 (3 results)
-        # Score order: ATTR-001 (name+description), FEP-001 (description), FEP-002 (description)
+        # "Customer" matches ATTR-001, FEP-001, FEP-002, EC-001 (4 results)
+        # Score order: ATTR-001 (name+description), EC-001 (name),
+        #              FEP-001 (description), FEP-002 (description)
         all_results = search_objects(db, "Customer")
-        assert len(all_results) == 3
+        assert len(all_results) == 4
         offset_results = search_objects(db, "Customer", offset=1)
-        assert len(offset_results) == 2
+        assert len(offset_results) == 3
         assert offset_results[0].object_id == all_results[1].object_id
 
     def test_search_limit_offset(self, tmp_path: Path) -> None:
         db = tmp_path / "modelops.db"
         _build_index(db)
         all_results = search_objects(db, "Customer")
-        assert len(all_results) == 3
+        assert len(all_results) == 4
         results = search_objects(db, "Customer", limit=1, offset=1)
         assert len(results) == 1
         assert results[0].object_id == all_results[1].object_id
@@ -253,6 +275,40 @@ class TestSearchObjects:
         results = search_objects(db, "Customer", tags=["nonexistent"])
         assert results == []
 
+    def test_search_by_technical_name(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = search_objects(db, "NAME")
+        assert len(results) >= 1
+        ids = [r.object_id for r in results]
+        assert "FEP-002" in ids
+        fep = next(r for r in results if r.object_id == "FEP-002")
+        assert "technical_name" in fep.matched_fields
+
+    def test_search_by_column_name(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = search_objects(db, "NAME_FIRST")
+        assert len(results) == 1
+        assert results[0].object_id == "FEP-002"
+        assert "column_name" in results[0].matched_fields
+
+    def test_search_by_context_category(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = search_objects(db, "customer_sales_area")
+        assert len(results) == 1
+        assert results[0].object_id == "EC-001"
+        assert "context_category" in results[0].matched_fields
+
+    def test_search_matched_fields_includes_frontmatter(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        _build_index(db)
+        results = search_objects(db, "NAME")
+        fep = next(r for r in results if r.object_id == "FEP-002")
+        assert "technical_name" in fep.matched_fields
+        assert "column_name" in fep.matched_fields
+
 
 class TestQueryObjects:
     def test_query_by_type(self, tmp_path: Path) -> None:
@@ -273,7 +329,7 @@ class TestQueryObjects:
         db = tmp_path / "modelops.db"
         _build_index(db)
         results = query_objects(db, domain="DOMAIN-A")
-        assert len(results) == 3
+        assert len(results) == 4
 
     def test_query_name_like(self, tmp_path: Path) -> None:
         db = tmp_path / "modelops.db"
@@ -312,7 +368,7 @@ class TestQueryObjects:
         db = tmp_path / "modelops.db"
         _build_index(db)
         all_results = query_objects(db, domain="DOMAIN-A")
-        assert len(all_results) == 3
+        assert len(all_results) == 4
         results = query_objects(db, domain="DOMAIN-A", limit=1, offset=1)
         assert len(results) == 1
         assert results[0].object_id in {r.object_id for r in all_results}
