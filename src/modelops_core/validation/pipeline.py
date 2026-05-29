@@ -9,6 +9,12 @@ from typing import Any
 from modelops_core.domain_packs import get_domain_packs
 from modelops_core.repository import ParsedObject
 from modelops_core.schemas import ObjectType, get_expected_target_types
+from modelops_core.schemas.common import (
+    ChangeRequestStatus,
+    GeneralStatus,
+    IssueStatus,
+    PatchProposalStatus,
+)
 from modelops_core.schemas.versioning import validate_object_schema_version
 from modelops_core.validation.result import ValidationResult, ValidationSeverity, ValidationSummary
 
@@ -82,6 +88,20 @@ def _check_type(frontmatter: dict[str, Any] | None, source_file: str) -> list[Va
     return results
 
 
+_OBJECT_TYPE_ALLOWED_STATUSES: dict[str, set[str]] = {
+    "Issue": {s.value for s in IssueStatus},
+    "PatchProposal": {s.value for s in PatchProposalStatus},
+    "ChangeRequest": {s.value for s in ChangeRequestStatus},
+}
+
+
+def _get_allowed_statuses(object_type: str | None) -> set[str]:
+    """Return the set of valid status strings for an object type."""
+    if object_type in _OBJECT_TYPE_ALLOWED_STATUSES:
+        return _OBJECT_TYPE_ALLOWED_STATUSES[object_type]
+    return {s.value for s in GeneralStatus}
+
+
 def _check_status(frontmatter: dict[str, Any] | None, source_file: str) -> list[ValidationResult]:
     results: list[ValidationResult] = []
     raw_status = _fm_value(frontmatter, "status")
@@ -96,6 +116,25 @@ def _check_status(frontmatter: dict[str, Any] | None, source_file: str) -> list[
                 suggested_fix="Add a non-empty lifecycle status (e.g., draft, active).",
             )
         )
+        return results
+
+    if isinstance(raw_status, str):
+        obj_type = _fm_value(frontmatter, "type")
+        allowed = _get_allowed_statuses(obj_type)
+        if raw_status not in allowed:
+            obj_id = _fm_value(frontmatter, "id")
+            results.append(
+                ValidationResult(
+                    severity=ValidationSeverity.ERROR,
+                    code="STATUS_INVALID",
+                    message=f"Status '{raw_status}' is not valid for type '{obj_type}'. "
+                    f"Allowed: {', '.join(sorted(allowed))}.",
+                    object_id=str(obj_id) if obj_id is not None else None,
+                    source_file=source_file,
+                    field_path="status",
+                    suggested_fix=f"Use one of: {', '.join(sorted(allowed))}.",
+                )
+            )
     return results
 
 
@@ -138,8 +177,7 @@ def _check_timestamps(
                 source_file=source_file,
                 field_path="created_at",
                 suggested_fix=(
-                    "Add a 'created_at' ISO 8601 timestamp "
-                    "(e.g. 2024-01-15T10:30:00+00:00)."
+                    "Add a 'created_at' ISO 8601 timestamp (e.g. 2024-01-15T10:30:00+00:00)."
                 ),
             )
         )
@@ -150,9 +188,7 @@ _MAX_TAG_LENGTH = 32
 _MAX_TAGS = 10
 
 
-def _check_tags(
-    frontmatter: dict[str, Any] | None, source_file: str
-) -> list[ValidationResult]:
+def _check_tags(frontmatter: dict[str, Any] | None, source_file: str) -> list[ValidationResult]:
     """Validate tag format: lowercase, no spaces, max length, max count."""
     results: list[ValidationResult] = []
     tags = _fm_value(frontmatter, "tags")
@@ -392,8 +428,7 @@ def _validate_references(
                                 source_file=obj.source_path,
                                 field_path=field,
                                 suggested_fix=(
-                                    f"Point '{field}' to an object of type "
-                                    f"'{expected_type}'."
+                                    f"Point '{field}' to an object of type '{expected_type}'."
                                 ),
                             )
                         )
@@ -639,15 +674,13 @@ def _validate_lifecycle(
                         severity=ValidationSeverity.ERROR,
                         code="DEPRECATED_OBJECT_INCOMPLETE",
                         message=(
-                            f"Object '{obj_id}' is deprecated but "
-                            f"missing 'deprecated_reason'."
+                            f"Object '{obj_id}' is deprecated but missing 'deprecated_reason'."
                         ),
                         object_id=obj_id,
                         source_file=obj.source_path,
                         field_path="deprecated_reason",
                         suggested_fix=(
-                            "Add 'deprecated_reason' to explain why "
-                            "this object was deprecated."
+                            "Add 'deprecated_reason' to explain why this object was deprecated."
                         ),
                     )
                 )
@@ -662,15 +695,13 @@ def _validate_lifecycle(
                         severity=ValidationSeverity.WARNING,
                         code="INVALID_STATUS_TRANSITION",
                         message=(
-                            f"Suspicious status transition: "
-                            f"'{previous_status}' → '{status}'."
+                            f"Suspicious status transition: '{previous_status}' → '{status}'."
                         ),
                         object_id=obj_id,
                         source_file=obj.source_path,
                         field_path="status",
                         suggested_fix=(
-                            "Verify the status transition is intentional "
-                            "and documented."
+                            "Verify the status transition is intentional and documented."
                         ),
                     )
                 )
@@ -789,10 +820,7 @@ def _validate_decision_evidence(
                     ValidationResult(
                         severity=ValidationSeverity.ERROR,
                         code="DECISION_BROKEN_EVIDENCE",
-                        message=(
-                            f"Decision '{obj_id}' references missing "
-                            f"Evidence '{ref_id}'."
-                        ),
+                        message=(f"Decision '{obj_id}' references missing Evidence '{ref_id}'."),
                         object_id=obj_id,
                         source_file=obj.source_path,
                         field_path="evidence",
@@ -819,9 +847,7 @@ def _validate_decision_evidence(
                         source_file=obj.source_path,
                         field_path="evidence",
                         related_objects=[ref_id],
-                        suggested_fix=(
-                            "Point 'evidence' to an object of type 'Evidence'."
-                        ),
+                        suggested_fix=("Point 'evidence' to an object of type 'Evidence'."),
                     )
                 )
 
@@ -863,8 +889,7 @@ def _validate_decision_evidence_advanced(
                         severity=ValidationSeverity.WARNING,
                         code="DECISION_DEPRECATED_EVIDENCE",
                         message=(
-                            f"Decision '{obj_id}' evidence '{ref_id}' "
-                            f"has status '{ref_status}'."
+                            f"Decision '{obj_id}' evidence '{ref_id}' has status '{ref_status}'."
                         ),
                         object_id=obj_id,
                         source_file=obj.source_path,
@@ -1056,14 +1081,12 @@ def _validate_methodology(
                         severity=ValidationSeverity.WARNING,
                         code="FIELD_ENDPOINT_MISSING_ENRICHMENT",
                         message=(
-                            f"FieldEndpoint '{obj_id}' lacks enrichment: "
-                            f"no {', '.join(missing)}."
+                            f"FieldEndpoint '{obj_id}' lacks enrichment: no {', '.join(missing)}."
                         ),
                         object_id=obj_id,
                         source_file=obj.source_path,
                         suggested_fix=(
-                            "Add value_list, mapping, or validation rule "
-                            "coverage where relevant."
+                            "Add value_list, mapping, or validation rule coverage where relevant."
                         ),
                     )
                 )

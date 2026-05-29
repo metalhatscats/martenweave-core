@@ -490,3 +490,89 @@ def test_no_previous_status_no_transition_warning() -> None:
     )
     summary = validate_objects([obj])
     assert not any(r.code == "INVALID_STATUS_TRANSITION" for r in summary.results)
+
+
+def test_invalid_status_for_attribute() -> None:
+    from modelops_core.repository.parser import ParsedObject
+
+    obj = ParsedObject(
+        source_path="test.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "ATTR-001",
+            "type": "Attribute",
+            "status": "random_gibberish",
+            "name": "Test",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([obj])
+    assert not summary.is_valid
+    assert any(
+        r.code == "STATUS_INVALID" and r.severity == ValidationSeverity.ERROR
+        for r in summary.results
+    )
+
+
+def test_invalid_status_for_issue() -> None:
+    from modelops_core.repository.parser import ParsedObject
+
+    obj = ParsedObject(
+        source_path="test.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "ISS-001",
+            "type": "Issue",
+            "status": "active",
+            "name": "Test",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([obj])
+    assert not summary.is_valid
+    invalid = [r for r in summary.results if r.code == "STATUS_INVALID"]
+    assert len(invalid) == 1
+    assert "closed" in invalid[0].message
+    assert "open" in invalid[0].message
+
+
+def test_valid_general_status_passes() -> None:
+    from modelops_core.repository.parser import ParsedObject
+
+    for status in ("proposed", "draft", "active", "under_review", "deprecated"):
+        obj = ParsedObject(
+            source_path="test.md",
+            content_hash="abc",
+            frontmatter={
+                "id": "ATTR-001",
+                "type": "Attribute",
+                "status": status,
+                "name": "Test",
+            },
+            body=None,
+            parser_error=None,
+        )
+        summary = validate_objects([obj])
+        assert not any(r.code == "STATUS_INVALID" for r in summary.results)
+
+
+def test_empty_status_still_triggers_status_missing() -> None:
+    from modelops_core.repository.parser import ParsedObject
+
+    obj = ParsedObject(
+        source_path="test.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "ATTR-001",
+            "type": "Attribute",
+            "status": "",
+            "name": "Test",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([obj])
+    assert any(r.code == "STATUS_MISSING" for r in summary.results)
+    assert not any(r.code == "STATUS_INVALID" for r in summary.results)
