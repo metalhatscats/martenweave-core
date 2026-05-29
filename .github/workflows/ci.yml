@@ -32,6 +32,12 @@ jobs:
       - name: Build index for supplier_vendor_model example
         run: modelops build-index --repo examples/supplier_vendor_model --jsonl
 
+      - name: Build index for simple_product_model example
+        run: modelops build-index --repo examples/simple_product_model --jsonl
+
+      - name: Build index for generic_product_model example
+        run: modelops build-index --repo examples/generic_product_model --jsonl
+
       - name: Test
         run: python -m pytest
 
@@ -40,3 +46,9 @@ jobs:
 
       - name: Validate supplier_vendor_model example
         run: modelops validate --repo examples/supplier_vendor_model
+
+      - name: Validate simple_product_model example
+        run: modelops validate --repo examples/simple_product_model
+
+      - name: Validate generic_product_model example
+        run: modelops validate --repo examples/generic_product_model
