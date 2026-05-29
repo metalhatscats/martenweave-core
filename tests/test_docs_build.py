@@ -117,3 +117,33 @@ def test_docs_readme_links_resolve() -> None:
         if not target.exists():
             broken.append((label, href))
     assert not broken, f"Broken docs/README.md links: {broken}"
+
+
+def test_docs_first_15_minutes_filenames_match_disk() -> None:
+    """Every file path referenced in docs/first-15-minutes.md code blocks must exist."""
+    import re
+
+    repo_root = Path(".").resolve()
+    doc = repo_root / "docs" / "first-15-minutes.md"
+    assert doc.exists()
+    text = doc.read_text(encoding="utf-8")
+
+    # Find all code blocks
+    code_blocks = re.findall(r"```bash\n(.*?)\n```", text, re.DOTALL)
+
+    broken: list[str] = []
+    for block in code_blocks:
+        for line in block.splitlines():
+            # Look for path-like tokens (contain / and don't start with - or --)
+            tokens = line.strip().split()
+            for token in tokens:
+                if token.startswith(("-", "--", "$") ):
+                    continue
+                if "/" in token and not token.startswith("http"):
+                    # Strip any trailing backslash for line continuations
+                    clean = token.rstrip("\\")
+                    path = repo_root / clean
+                    if not path.exists():
+                        broken.append(clean)
+
+    assert not broken, f"Referenced paths in first-15-minutes.md do not exist: {broken}"
