@@ -68,6 +68,28 @@ def test_build_index_creates_relationship_indexes(temp_model_dir: Path) -> None:
     conn.close()
     assert "idx_rel_from" in indexes
     assert "idx_rel_to" in indexes
+    assert "idx_rel_to_type" in indexes
+
+
+def test_build_index_creates_object_filter_indexes(temp_model_dir: Path) -> None:
+    repo_root = temp_model_dir.parent
+    db_path = repo_root / "generated" / "modelops.db"
+    build_index(repo_root=repo_root, db_path=db_path)
+
+    import sqlite3
+
+    conn = sqlite3.connect(db_path)
+    indexes = {
+        row[0]
+        for row in conn.execute(
+            "SELECT name FROM sqlite_master "
+            "WHERE type = 'index' AND tbl_name = 'objects'"
+        )
+    }
+    conn.close()
+    assert "idx_objects_type" in indexes
+    assert "idx_objects_status" in indexes
+    assert "idx_objects_domain" in indexes
 
 
 def test_build_index_creates_tag_index(temp_model_dir: Path) -> None:
