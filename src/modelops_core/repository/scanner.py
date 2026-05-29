@@ -50,6 +50,9 @@ def scan_repository(root: str | Path) -> list[str]:
             # Skip if any parent directory is in the skip list
             if any(part in _SKIP_DIRS for part in rel_parts):
                 continue
+            # Skip files inside hidden directories
+            if any(part.startswith(".") for part in rel_parts):
+                continue
             files.append(str(path.resolve()))
 
     return sorted(files)
