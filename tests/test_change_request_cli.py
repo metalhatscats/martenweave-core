@@ -920,9 +920,7 @@ class TestChangeRequestApproveRejectCli:
         service = AuditEventService(repo_root)
         events = service.read_events()
         assert any(e.event_type == "change_request_approved" for e in events)
-        approve_event = next(
-            e for e in events if e.event_type == "change_request_approved"
-        )
+        approve_event = next(e for e in events if e.event_type == "change_request_approved")
         assert approve_event.actor == "alice"
         assert approve_event.status == "success"
         assert approve_event.command == "change-request approve"
@@ -965,9 +963,7 @@ class TestChangeRequestApproveRejectCli:
         service = AuditEventService(repo_root)
         events = service.read_events()
         assert any(e.event_type == "change_request_rejected" for e in events)
-        reject_event = next(
-            e for e in events if e.event_type == "change_request_rejected"
-        )
+        reject_event = next(e for e in events if e.event_type == "change_request_rejected")
         assert reject_event.actor == "bob"
         assert reject_event.status == "success"
         assert reject_event.command == "change-request reject"
@@ -1023,9 +1019,7 @@ class TestChangeRequestApproveRejectCli:
 
         events = read_notification_events(repo_root)
         assert len(events) >= 1
-        approve_events = [
-            e for e in events if e.event_type == "change_request_approved"
-        ]
+        approve_events = [e for e in events if e.event_type == "change_request_approved"]
         assert len(approve_events) >= 1
         assert any(e.recipient_id == "alice" for e in approve_events)
 
@@ -1082,8 +1076,6 @@ class TestChangeRequestApproveRejectCli:
 
         events = read_notification_events(repo_root)
         assert len(events) >= 1
-        reject_events = [
-            e for e in events if e.event_type == "change_request_rejected"
-        ]
+        reject_events = [e for e in events if e.event_type == "change_request_rejected"]
         assert len(reject_events) >= 1
         assert any(e.recipient_id == "alice" for e in reject_events)

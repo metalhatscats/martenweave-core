@@ -63,26 +63,20 @@ class TestStaticDocGenerator:
 
 class TestDocsBuildCli:
     def test_cli_success(self, indexed_repo: Path) -> None:
-        result = runner.invoke(
-            app, ["docs-build", "--repo", str(indexed_repo)]
-        )
+        result = runner.invoke(app, ["docs-build", "--repo", str(indexed_repo)])
         assert result.exit_code == 0
         assert "Documentation generated" in result.output
         assert "index.md" in result.output
 
     def test_cli_no_index(self, tmp_path: Path) -> None:
-        result = runner.invoke(
-            app, ["docs-build", "--repo", str(tmp_path)]
-        )
+        result = runner.invoke(app, ["docs-build", "--repo", str(tmp_path)])
         assert result.exit_code == 1
         assert "build-index" in result.output
 
     def test_cli_docs_build_json(self, indexed_repo: Path) -> None:
         import json
 
-        result = runner.invoke(
-            app, ["docs-build", "--repo", str(indexed_repo), "--json"]
-        )
+        result = runner.invoke(app, ["docs-build", "--repo", str(indexed_repo), "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert "output_dir" in data
@@ -92,9 +86,7 @@ class TestDocsBuildCli:
     def test_cli_docs_build_no_index_json(self, tmp_path: Path) -> None:
         import json
 
-        result = runner.invoke(
-            app, ["docs-build", "--repo", str(tmp_path), "--json"]
-        )
+        result = runner.invoke(app, ["docs-build", "--repo", str(tmp_path), "--json"])
         assert result.exit_code == 1
         data = json.loads(result.output)
         assert "error" in data
@@ -137,7 +129,7 @@ def test_docs_first_15_minutes_filenames_match_disk() -> None:
             # Look for path-like tokens (contain / and don't start with - or --)
             tokens = line.strip().split()
             for token in tokens:
-                if token.startswith(("-", "--", "$") ):
+                if token.startswith(("-", "--", "$")):
                     continue
                 if "/" in token and not token.startswith("http"):
                     # Strip any trailing backslash for line continuations

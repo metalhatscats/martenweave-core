@@ -205,9 +205,7 @@ def test_cli_export_model_csv_json(temp_model_dir: Path) -> None:
     import json
 
     repo = str(temp_model_dir.parent)
-    result = runner.invoke(
-        app, ["export-model", "--repo", repo, "--format", "csv", "--json"]
-    )
+    result = runner.invoke(app, ["export-model", "--repo", repo, "--format", "csv", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["format"] == "csv"
@@ -221,9 +219,7 @@ def test_cli_export_model_xlsx_json(temp_model_dir: Path) -> None:
     import json
 
     repo = str(temp_model_dir.parent)
-    result = runner.invoke(
-        app, ["export-model", "--repo", repo, "--format", "xlsx", "--json"]
-    )
+    result = runner.invoke(app, ["export-model", "--repo", repo, "--format", "xlsx", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["format"] == "xlsx"
@@ -235,9 +231,7 @@ def test_cli_export_model_json_json(temp_model_dir: Path) -> None:
     import json
 
     repo = str(temp_model_dir.parent)
-    result = runner.invoke(
-        app, ["export-model", "--repo", repo, "--format", "json", "--json"]
-    )
+    result = runner.invoke(app, ["export-model", "--repo", repo, "--format", "json", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["format"] == "json"
@@ -250,9 +244,7 @@ def test_cli_export_model_unknown_format_json(temp_model_dir: Path) -> None:
     import json
 
     repo = str(temp_model_dir.parent)
-    result = runner.invoke(
-        app, ["export-model", "--repo", repo, "--format", "pdf", "--json"]
-    )
+    result = runner.invoke(app, ["export-model", "--repo", repo, "--format", "pdf", "--json"])
     assert result.exit_code == 1
     data = json.loads(result.output)
     assert "error" in data

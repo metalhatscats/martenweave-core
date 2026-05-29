@@ -240,9 +240,7 @@ class TestMCPPrompts:
     def test_explain_trace_prompt(self, sample_repo):
         """explain_trace should return a guidance message."""
         server = create_mcp_server(repo=str(sample_repo))
-        result = asyncio.run(
-            server.get_prompt("explain_trace", {"object_id": "FEP-S4-KNVV-KDGRP"})
-        )
+        result = asyncio.run(server.get_prompt("explain_trace", {"object_id": "FEP-S4-KNVV-KDGRP"}))
         messages = result.messages
         assert len(messages) == 1
         assert "FEP-S4-KNVV-KDGRP" in messages[0].content.text

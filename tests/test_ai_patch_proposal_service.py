@@ -61,9 +61,7 @@ class TestBuildPatchProposalFromNote:
                 received.append(context)
                 return []
 
-        build_patch_proposal_from_note(
-            "test note", include_raw_samples=False, adapter=SpyAdapter()
-        )
+        build_patch_proposal_from_note("test note", include_raw_samples=False, adapter=SpyAdapter())
         assert len(received) == 1
         assert received[0].include_raw_samples is False
 
@@ -75,9 +73,7 @@ class TestBuildPatchProposalFromNote:
                 received.append(context)
                 return []
 
-        build_patch_proposal_from_note(
-            "test note", include_raw_samples=True, adapter=SpyAdapter()
-        )
+        build_patch_proposal_from_note("test note", include_raw_samples=True, adapter=SpyAdapter())
         assert len(received) == 1
         assert received[0].include_raw_samples is True
 

@@ -140,21 +140,15 @@ def _post_chat_completion(
     except urllib.error.HTTPError as exc:
         if exc.code == 429:
             raise AIRateLimitError("Moonshot API rate limited") from exc
-        raise AIOutputValidationError(
-            f"Moonshot API error: {exc.code} {exc.reason}"
-        ) from exc
+        raise AIOutputValidationError(f"Moonshot API error: {exc.code} {exc.reason}") from exc
     except urllib.error.URLError as exc:
         if isinstance(exc.reason, TimeoutError):
             raise AITimeoutError("Moonshot API timed out") from exc
-        raise AIOutputValidationError(
-            f"Moonshot API request failed: {exc.reason}"
-        ) from exc
+        raise AIOutputValidationError(f"Moonshot API request failed: {exc.reason}") from exc
     except TimeoutError as exc:
         raise AITimeoutError("Moonshot API timed out") from exc
     except json.JSONDecodeError as exc:
-        raise AIOutputValidationError(
-            "Invalid JSON in Moonshot API response"
-        ) from exc
+        raise AIOutputValidationError("Invalid JSON in Moonshot API response") from exc
 
 
 class KimiAdapter:
@@ -168,20 +162,15 @@ class KimiAdapter:
         timeout: int | None = None,
     ) -> None:
         self.api_key = api_key or os.getenv("MOONSHOT_API_KEY", "")
-        self.base_url = base_url or os.getenv(
-            "MOONSHOT_BASE_URL", _DEFAULT_BASE_URL
-        )
+        self.base_url = base_url or os.getenv("MOONSHOT_BASE_URL", _DEFAULT_BASE_URL)
         self.model = model or os.getenv("MOONSHOT_MODEL", _DEFAULT_MODEL)
-        self.timeout = timeout or int(
-            os.getenv("MARTENWEAVE_AI_TIMEOUT", str(_DEFAULT_TIMEOUT))
-        )
+        self.timeout = timeout or int(os.getenv("MARTENWEAVE_AI_TIMEOUT", str(_DEFAULT_TIMEOUT)))
 
     def generate_candidates(self, context: AIContextBundle) -> list[AICandidateOutput]:
         """Generate candidate patch proposals from context."""
         if not self.api_key:
             raise AIOutputValidationError(
-                "MOONSHOT_API_KEY is not set. "
-                "Configure it in your environment or .env file."
+                "MOONSHOT_API_KEY is not set. Configure it in your environment or .env file."
             )
 
         prompt = _build_prompt(context)
@@ -209,9 +198,7 @@ class KimiAdapter:
         try:
             parsed = json.loads(content)
         except json.JSONDecodeError as exc:
-            raise AIOutputValidationError(
-                "Moonshot response is not valid JSON"
-            ) from exc
+            raise AIOutputValidationError("Moonshot response is not valid JSON") from exc
 
         candidate = _parse_candidate(parsed)
         return [candidate]

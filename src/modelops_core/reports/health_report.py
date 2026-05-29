@@ -109,10 +109,16 @@ class RepositoryHealthReport:
 
 
 def _has_owner(fm: dict[str, Any]) -> bool:
-    return any(fm.get(f) for f in (
-        "business_owner", "technical_owner", "data_steward",
-        "accountable_team", "approver",
-    ))
+    return any(
+        fm.get(f)
+        for f in (
+            "business_owner",
+            "technical_owner",
+            "data_steward",
+            "accountable_team",
+            "approver",
+        )
+    )
 
 
 def _is_active(status: str | None) -> bool:
@@ -125,9 +131,7 @@ def generate_repository_health(
     """Generate a health report from the SQLite index."""
     conn = sqlite3.connect(str(db_path))
     try:
-        manifest_rows = conn.execute(
-            "SELECT key, value FROM index_manifest"
-        ).fetchall()
+        manifest_rows = conn.execute("SELECT key, value FROM index_manifest").fetchall()
         manifest = {k: v for k, v in manifest_rows}
 
         type_counts = get_object_counts_by_type(db_path)
@@ -152,9 +156,16 @@ def generate_repository_health(
         ).fetchall()
 
         _OWNERSHIP_TYPES = {
-            "Attribute", "FieldEndpoint", "Dataset", "Mapping",
-            "ValidationRule", "Issue", "Decision", "BusinessEntity",
-            "ValueList", "ValueMapping",
+            "Attribute",
+            "FieldEndpoint",
+            "Dataset",
+            "Mapping",
+            "ValidationRule",
+            "Issue",
+            "Decision",
+            "BusinessEntity",
+            "ValueList",
+            "ValueMapping",
         }
 
         total_eligible = 0
@@ -289,9 +300,7 @@ def generate_repository_health(
             total_eligible=total_eligible,
             with_owner=with_owner,
             without_owner=total_eligible - with_owner,
-            percentage=round(with_owner / total_eligible * 100, 1)
-            if total_eligible
-            else 0.0,
+            percentage=round(with_owner / total_eligible * 100, 1) if total_eligible else 0.0,
         )
 
         index_fresh = manifest.get("validation_status") == "valid"

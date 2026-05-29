@@ -109,10 +109,7 @@ def _count_pending_changes(model_path: Path) -> tuple[int, int]:
         for f in crs_dir.glob("*.md"):
             parsed = parse_file(f)
             fm = parsed.frontmatter or {}
-            if (
-                fm.get("status") == "pending"
-                and fm.get("approval_status") == "pending"
-            ):
+            if fm.get("status") == "pending" and fm.get("approval_status") == "pending":
                 pending_crs += 1
                 affected = fm.get("affected_objects") or []
                 if len(affected) > 5:
@@ -158,16 +155,12 @@ def generate_scorecard(
 
     try:
         # Manifest
-        manifest_rows = conn.execute(
-            "SELECT key, value FROM index_manifest"
-        ).fetchall()
+        manifest_rows = conn.execute("SELECT key, value FROM index_manifest").fetchall()
         manifest = {k: v for k, v in manifest_rows}
         build_ts = _parse_timestamp(manifest.get("build_timestamp"))
 
         # Object counts
-        total_objects = conn.execute(
-            "SELECT COUNT(*) FROM objects"
-        ).fetchone()[0]
+        total_objects = conn.execute("SELECT COUNT(*) FROM objects").fetchone()[0]
 
         type_counts: dict[str, int] = {}
         for row in conn.execute("SELECT type, COUNT(*) FROM objects GROUP BY type"):
@@ -190,9 +183,16 @@ def generate_scorecard(
         ).fetchall()
 
         _OWNERSHIP_TYPES = {
-            "Attribute", "FieldEndpoint", "Dataset", "Mapping",
-            "ValidationRule", "Issue", "Decision", "BusinessEntity",
-            "ValueList", "ValueMapping",
+            "Attribute",
+            "FieldEndpoint",
+            "Dataset",
+            "Mapping",
+            "ValidationRule",
+            "Issue",
+            "Decision",
+            "BusinessEntity",
+            "ValueList",
+            "ValueMapping",
         }
 
         total_eligible = 0
@@ -256,10 +256,16 @@ def generate_scorecard(
 
             if obj_type in _OWNERSHIP_TYPES and active:
                 total_eligible += 1
-                if any(fm.get(f) for f in (
-                    "business_owner", "technical_owner", "data_steward",
-                    "accountable_team", "approver",
-                )):
+                if any(
+                    fm.get(f)
+                    for f in (
+                        "business_owner",
+                        "technical_owner",
+                        "data_steward",
+                        "accountable_team",
+                        "approver",
+                    )
+                ):
                     with_owner += 1
                 else:
                     gaps.append(
@@ -329,10 +335,16 @@ def generate_scorecard(
 
             if active and obj_type in _OWNERSHIP_TYPES:
                 active_objects += 1
-                if any(fm.get(f) for f in (
-                    "business_owner", "technical_owner", "data_steward",
-                    "accountable_team", "approver",
-                )):
+                if any(
+                    fm.get(f)
+                    for f in (
+                        "business_owner",
+                        "technical_owner",
+                        "data_steward",
+                        "accountable_team",
+                        "approver",
+                    )
+                ):
                     objects_with_owner += 1
 
             # Evidence coverage
@@ -361,9 +373,7 @@ def generate_scorecard(
 
         model_path = repo_root / (config.model_path if config else "model")
         open_issues = _count_open_issues(model_path)
-        pending_proposals, pending_crs, high_risk_changes = _count_pending_changes(
-            model_path
-        )
+        pending_proposals, pending_crs, high_risk_changes = _count_pending_changes(model_path)
 
         # Build metrics
         metrics: list[ScorecardMetric] = []
@@ -385,8 +395,7 @@ def generate_scorecard(
                 target=95.0,
                 status=_status(_pct(name_complete + desc_complete, total_objects * 2), 80.0, 50.0),
                 explanation=(
-                    f"{name_missing} objects missing name, "
-                    f"{desc_missing} missing description."
+                    f"{name_missing} objects missing name, {desc_missing} missing description."
                 ),
                 suggested_action="Add names and descriptions to all objects.",
             )
@@ -441,8 +450,7 @@ def generate_scorecard(
                 target=90.0,
                 status=_status(_pct(mappings_with_vm, active_mappings), 70.0, 40.0),
                 explanation=(
-                    f"{active_mappings - mappings_with_vm} "
-                    f"active mappings lack a value mapping."
+                    f"{active_mappings - mappings_with_vm} active mappings lack a value mapping."
                 ),
                 suggested_action="Link ValueMapping references to mappings.",
             )
@@ -455,8 +463,7 @@ def generate_scorecard(
                 target=80.0,
                 status=_status(_pct(datasets_with_profile, active_datasets), 60.0, 30.0),
                 explanation=(
-                    f"{active_datasets - datasets_with_profile} "
-                    f"active datasets lack a profile."
+                    f"{active_datasets - datasets_with_profile} active datasets lack a profile."
                 ),
                 suggested_action="Run profile-dataset on uncovered datasets.",
             )
@@ -478,22 +485,14 @@ def generate_scorecard(
                 name="source_freshness_hours",
                 value=hours_old,
                 target=24,
-                status=(
-                    "pass"
-                    if hours_old <= 24
-                    else "warning"
-                    if hours_old <= 72
-                    else "fail"
-                ),
+                status=("pass" if hours_old <= 24 else "warning" if hours_old <= 72 else "fail"),
                 explanation=(
                     f"Index was built {hours_old} hour(s) ago."
                     if build_ts
                     else "Index build timestamp unknown."
                 ),
                 suggested_action=(
-                    "Run `modelops build-index` to refresh the index."
-                    if hours_old > 24
-                    else None
+                    "Run `modelops build-index` to refresh the index." if hours_old > 24 else None
                 ),
             )
         )
@@ -514,11 +513,7 @@ def generate_scorecard(
                 name="pending_change_count",
                 value=pending_proposals + pending_crs,
                 target=0,
-                status=(
-                    "pass"
-                    if pending_proposals + pending_crs == 0
-                    else "warning"
-                ),
+                status=("pass" if pending_proposals + pending_crs == 0 else "warning"),
                 explanation=(
                     f"{pending_proposals} pending proposal(s), "
                     f"{pending_crs} pending change request(s)."
@@ -557,8 +552,7 @@ def generate_scorecard(
             ev_value = _pct(decisions_with_evidence, decisions_total)
             ev_status = _status(ev_value, 80.0, 50.0)
             ev_explanation = (
-                f"{decisions_with_evidence} of {decisions_total} "
-                f"decisions have evidence."
+                f"{decisions_with_evidence} of {decisions_total} decisions have evidence."
             )
         else:
             ev_value = 0.0

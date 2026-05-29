@@ -78,9 +78,7 @@ def _compare_values(old: Any, new: Any) -> bool:
     if isinstance(old, list):
         if len(old) != len(new):
             return False
-        return all(
-            _compare_values(a, b) for a, b in zip(old, new, strict=True)
-        )
+        return all(_compare_values(a, b) for a, b in zip(old, new, strict=True))
     return old == new
 
 
@@ -97,17 +95,11 @@ def _diff_object(
         old_val = base_fm.get(field_name)
         new_val = head_fm.get(field_name)
         if field_name not in base_fm:
-            changes.append(
-                FieldChange(field=field_name, old_value=None, new_value=new_val)
-            )
+            changes.append(FieldChange(field=field_name, old_value=None, new_value=new_val))
         elif field_name not in head_fm:
-            changes.append(
-                FieldChange(field=field_name, old_value=old_val, new_value=None)
-            )
+            changes.append(FieldChange(field=field_name, old_value=old_val, new_value=None))
         elif not _compare_values(old_val, new_val):
-            changes.append(
-                FieldChange(field=field_name, old_value=old_val, new_value=new_val)
-            )
+            changes.append(FieldChange(field=field_name, old_value=old_val, new_value=new_val))
     return changes
 
 

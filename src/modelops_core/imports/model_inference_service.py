@@ -195,9 +195,7 @@ def _infer_objects_from_sheet(
                 "reason": f"Mapping inferred from foreign-key-like column {fk_name}.",
             }
         )
-        assumptions.append(
-            f"Column {fk_name} looks like a foreign key. Verify the target entity."
-        )
+        assumptions.append(f"Column {fk_name} looks like a foreign key. Verify the target entity.")
 
     human_checks.append(f"Review inferred entity {entity_obj_id} and its attributes.")
     human_checks.append("Verify semantic categories and endpoint types match your domain.")
@@ -232,17 +230,13 @@ def infer_model_from_profile(
                     f"Sheet {sheet.get('sheet_name')} was skipped due to errors."
                 )
                 continue
-            ops, assump, checks = _infer_objects_from_sheet(
-                sheet, dataset_id, file_name, idx
-            )
+            ops, assump, checks = _infer_objects_from_sheet(sheet, dataset_id, file_name, idx)
             all_operations.extend(ops)
             all_assumptions.extend(assump)
             all_human_checks.extend(checks)
     else:
         # CSV single-profile
-        ops, assump, checks = _infer_objects_from_sheet(
-            profile, dataset_id, file_name, 0
-        )
+        ops, assump, checks = _infer_objects_from_sheet(profile, dataset_id, file_name, 0)
         all_operations.extend(ops)
         all_assumptions.extend(assump)
         all_human_checks.extend(checks)

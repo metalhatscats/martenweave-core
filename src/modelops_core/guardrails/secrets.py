@@ -75,14 +75,15 @@ _SENSITIVE_PATTERNS: list[tuple[str, re.Pattern[str], str]] = [
     # Google API key (AIza...)
     (
         "google_api_key",
-        re.compile(r"(AIza[0-9A-Za-z_\-]{35})",),
+        re.compile(
+            r"(AIza[0-9A-Za-z_\-]{35})",
+        ),
         r"***REDACTED***",
     ),
     # Moonshot / OpenAI keys (sk-...)
     (
         "sk_api_key",
-        re.compile(
-            r"(sk-[a-zA-Z0-9]{20,})"),
+        re.compile(r"(sk-[a-zA-Z0-9]{20,})"),
         r"***REDACTED***",
     ),
 ]
@@ -122,9 +123,7 @@ _SCAN_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ),
     (
         "private_key_block",
-        re.compile(
-            r"(-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----)"
-        ),
+        re.compile(r"(-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----)"),
     ),
     (
         "google_api_key",
@@ -151,10 +150,26 @@ _SKIP_PATHS: set[str] = {
 
 # Extensions to skip (binary or known safe).
 _SKIP_EXTENSIONS: set[str] = {
-    ".pyc", ".pyo", ".so", ".dylib", ".dll", ".exe",
-    ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico",
-    ".db", ".sqlite", ".sqlite3",
-    ".zip", ".tar", ".gz", ".bz2", ".7z",
+    ".pyc",
+    ".pyo",
+    ".so",
+    ".dylib",
+    ".dll",
+    ".exe",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".svg",
+    ".ico",
+    ".db",
+    ".sqlite",
+    ".sqlite3",
+    ".zip",
+    ".tar",
+    ".gz",
+    ".bz2",
+    ".7z",
 }
 
 # Maximum file size to scan (1 MB).
@@ -198,9 +213,7 @@ def redact_dict(data: Any, placeholder: str = "***REDACTED***") -> Any:
     :func:`redact`.
     """
     if isinstance(data, dict):
-        return {
-            k: redact_dict(v, placeholder=placeholder) for k, v in data.items()
-        }
+        return {k: redact_dict(v, placeholder=placeholder) for k, v in data.items()}
     if isinstance(data, list):
         return [redact_dict(item, placeholder=placeholder) for item in data]
     if isinstance(data, str):

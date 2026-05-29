@@ -56,9 +56,7 @@ def test_connector_fetch_metadata() -> None:
     }
     mock_service.files().get.return_value = mock_get
 
-    with patch(
-        "modelops_core.connectors.google_drive._check_dependencies"
-    ) as mock_check:
+    with patch("modelops_core.connectors.google_drive._check_dependencies") as mock_check:
         mock_check.return_value = (MagicMock(), MagicMock())
         conn = GoogleDriveConnector(credentials=MagicMock())
         conn._service = mock_service
@@ -100,9 +98,7 @@ def test_connector_fetch_content() -> None:
     sys.modules["googleapiclient.http"] = fake_googleapiclient.http
 
     try:
-        with patch(
-            "modelops_core.connectors.google_drive._check_dependencies"
-        ) as mock_check:
+        with patch("modelops_core.connectors.google_drive._check_dependencies") as mock_check:
             mock_check.return_value = (MagicMock(), MagicMock())
             conn = GoogleDriveConnector(credentials=MagicMock())
             conn._service = mock_service
@@ -119,9 +115,7 @@ def test_connector_fetch_content() -> None:
 
 def test_connector_write_content_not_supported() -> None:
     """write_content raises an error in read-only mode."""
-    with patch(
-        "modelops_core.connectors.google_drive._check_dependencies"
-    ) as mock_check:
+    with patch("modelops_core.connectors.google_drive._check_dependencies") as mock_check:
         mock_check.return_value = (MagicMock(), MagicMock())
         conn = GoogleDriveConnector(credentials=MagicMock())
 
@@ -145,9 +139,7 @@ def test_connector_to_source_entry() -> None:
     }
     mock_service.files().get.return_value = mock_get
 
-    with patch(
-        "modelops_core.connectors.google_drive._check_dependencies"
-    ) as mock_check:
+    with patch("modelops_core.connectors.google_drive._check_dependencies") as mock_check:
         mock_check.return_value = (MagicMock(), MagicMock())
         conn = GoogleDriveConnector(credentials=MagicMock())
         conn._service = mock_service
@@ -177,9 +169,7 @@ def test_connector_list_sources() -> None:
             {
                 "id": "file-2",
                 "name": "report.xlsx",
-                "mimeType": (
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                ),
+                "mimeType": ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
                 "size": "2048",
                 "modifiedTime": "2026-05-21T12:00:00Z",
             },
@@ -187,9 +177,7 @@ def test_connector_list_sources() -> None:
     }
     mock_service.files().list.return_value = mock_list
 
-    with patch(
-        "modelops_core.connectors.google_drive._check_dependencies"
-    ) as mock_check:
+    with patch("modelops_core.connectors.google_drive._check_dependencies") as mock_check:
         mock_check.return_value = (MagicMock(), MagicMock())
         conn = GoogleDriveConnector(credentials=MagicMock())
         conn._service = mock_service
@@ -231,12 +219,7 @@ def test_cli_import_drive_csv(tmp_path: Path) -> None:
     model_dir = tmp_path / "model"
     model_dir.mkdir(parents=True)
     (model_dir / "DOMAIN-TEST.md").write_text(
-        "---\n"
-        "id: DOMAIN-TEST\n"
-        "type: MasterDataDomain\n"
-        "status: draft\n"
-        "name: Test Domain\n"
-        "---\n"
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n"
     )
 
     runner = CliRunner()
@@ -246,9 +229,7 @@ def test_cli_import_drive_csv(tmp_path: Path) -> None:
     mock_meta.display_name = "test_data.csv"
     mock_meta.mime_type = "text/csv"
 
-    with patch(
-        "modelops_core.cli.GoogleDriveConnector"
-    ) as mock_conn_cls:
+    with patch("modelops_core.cli.GoogleDriveConnector") as mock_conn_cls:
         mock_conn = MagicMock()
         mock_conn.fetch_metadata.return_value = mock_meta
         mock_conn.fetch_content.return_value = csv_content
@@ -290,12 +271,7 @@ def test_cli_import_drive_xlsx(tmp_path: Path) -> None:
     model_dir = tmp_path / "model"
     model_dir.mkdir(parents=True)
     (model_dir / "DOMAIN-TEST.md").write_text(
-        "---\n"
-        "id: DOMAIN-TEST\n"
-        "type: MasterDataDomain\n"
-        "status: draft\n"
-        "name: Test Domain\n"
-        "---\n"
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n"
     )
 
     runner = CliRunner()
@@ -304,9 +280,7 @@ def test_cli_import_drive_xlsx(tmp_path: Path) -> None:
 
     mock_meta = MagicMock()
     mock_meta.display_name = "test_data.xlsx"
-    mock_meta.mime_type = (
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+    mock_meta.mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
     wb_profile = WorkbookProfile(
         dataset_id="drive_test_data",
@@ -327,9 +301,7 @@ def test_cli_import_drive_xlsx(tmp_path: Path) -> None:
         status=ProfilingStatus(success=True, sampled=False),
     )
 
-    with patch(
-        "modelops_core.cli.GoogleDriveConnector"
-    ) as mock_conn_cls:
+    with patch("modelops_core.cli.GoogleDriveConnector") as mock_conn_cls:
         mock_conn = MagicMock()
         mock_conn.fetch_metadata.return_value = mock_meta
         mock_conn.fetch_content.return_value = xlsx_content
@@ -359,12 +331,7 @@ def test_cli_import_drive_missing_dependency(tmp_path: Path) -> None:
     model_dir = tmp_path / "model"
     model_dir.mkdir(parents=True)
     (model_dir / "DOMAIN-TEST.md").write_text(
-        "---\n"
-        "id: DOMAIN-TEST\n"
-        "type: MasterDataDomain\n"
-        "status: draft\n"
-        "name: Test Domain\n"
-        "---\n"
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n"
     )
 
     runner = CliRunner()

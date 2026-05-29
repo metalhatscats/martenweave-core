@@ -122,11 +122,7 @@ def generate_ownership_report(db_path: Path, _repo_root: Path) -> OwnershipRepor
 
     owners = sorted(owner_map.values(), key=lambda o: o.object_count, reverse=True)
 
-    coverage_percent = (
-        round(total_with_owner / total_eligible * 100, 1)
-        if total_eligible
-        else 0.0
-    )
+    coverage_percent = round(total_with_owner / total_eligible * 100, 1) if total_eligible else 0.0
 
     return OwnershipReport(
         owners=owners,

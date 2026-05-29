@@ -103,9 +103,7 @@ def test_review_bundle_human_readable(tmp_path: Path) -> None:
     proposal = build_patch_proposal("PP-RB-003", [op])
     write_patch_proposal(proposal, model_dir)
 
-    result = runner.invoke(
-        app, ["proposal", "review-bundle", "PP-RB-003", "--repo", str(tmp_path)]
-    )
+    result = runner.invoke(app, ["proposal", "review-bundle", "PP-RB-003", "--repo", str(tmp_path)])
     assert result.exit_code == 0
     assert "Proposal Review Bundle: PP-RB-003" in result.output
     assert "Report" in result.output

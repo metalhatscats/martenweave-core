@@ -21,9 +21,7 @@ def test_clean_dry_run_lists_files(sample_repo: Path) -> None:
 
 def test_clean_dry_run_json(sample_repo: Path) -> None:
     """Dry-run with --json should return parseable JSON."""
-    result = runner.invoke(
-        app, ["clean", "--repo", str(sample_repo), "--dry-run", "--json"]
-    )
+    result = runner.invoke(app, ["clean", "--repo", str(sample_repo), "--dry-run", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["dry_run"] is True
@@ -108,9 +106,7 @@ def test_build_index_dry_run_does_not_write_db(sample_repo: Path) -> None:
     if db_path.exists():
         db_path.unlink()
 
-    result = runner.invoke(
-        app, ["build-index", "--repo", str(sample_repo), "--dry-run"]
-    )
+    result = runner.invoke(app, ["build-index", "--repo", str(sample_repo), "--dry-run"])
     assert result.exit_code == 0
     assert "Dry-run" in result.output
     assert not db_path.exists()
@@ -126,9 +122,7 @@ def test_build_index_dry_run_with_jsonl(sample_repo: Path) -> None:
     if lineage_jsonl.exists():
         lineage_jsonl.unlink()
 
-    result = runner.invoke(
-        app, ["build-index", "--repo", str(sample_repo), "--dry-run", "--jsonl"]
-    )
+    result = runner.invoke(app, ["build-index", "--repo", str(sample_repo), "--dry-run", "--jsonl"])
     assert result.exit_code == 0
     assert not search_jsonl.exists()
     assert not lineage_jsonl.exists()
@@ -136,8 +130,6 @@ def test_build_index_dry_run_with_jsonl(sample_repo: Path) -> None:
 
 def test_build_index_dry_run_reports_validation(sample_repo: Path) -> None:
     """build-index --dry-run should still report validation results."""
-    result = runner.invoke(
-        app, ["build-index", "--repo", str(sample_repo), "--dry-run"]
-    )
+    result = runner.invoke(app, ["build-index", "--repo", str(sample_repo), "--dry-run"])
     assert result.exit_code == 0
     assert "Valid:" in result.output

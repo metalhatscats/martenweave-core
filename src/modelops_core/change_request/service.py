@@ -22,9 +22,7 @@ _VALID_TRANSITIONS: dict[str, set[str]] = {
 }
 
 
-def _record_approval(
-    frontmatter: dict[str, Any], approver: str, decision: str
-) -> None:
+def _record_approval(frontmatter: dict[str, Any], approver: str, decision: str) -> None:
     """Append an approval record to the ChangeRequest frontmatter."""
     if "approvals" not in frontmatter:
         frontmatter["approvals"] = []
@@ -92,13 +90,10 @@ def create_change_request(
 ) -> Path:
     """Create a new ChangeRequest canonical file."""
     if not _ID_PATTERN.match(cr_id):
-        raise ValueError(
-            f"Invalid ChangeRequest ID: '{cr_id}'. Must match {_ID_PATTERN.pattern}"
-        )
+        raise ValueError(f"Invalid ChangeRequest ID: '{cr_id}'. Must match {_ID_PATTERN.pattern}")
     if status not in _VALID_TRANSITIONS:
         raise ValueError(
-            f"Invalid status: '{status}'. Must be one of: "
-            f"{', '.join(_VALID_TRANSITIONS)}"
+            f"Invalid status: '{status}'. Must be one of: {', '.join(_VALID_TRANSITIONS)}"
         )
 
     data: dict[str, Any] = {
@@ -172,14 +167,11 @@ def load_change_request(model_path: Path, cr_id: str) -> dict[str, Any] | None:
     return parsed.frontmatter or {}
 
 
-def update_change_request_status(
-    model_path: Path, cr_id: str, new_status: str
-) -> dict[str, Any]:
+def update_change_request_status(model_path: Path, cr_id: str, new_status: str) -> dict[str, Any]:
     """Transition a ChangeRequest to a new status."""
     if new_status not in _VALID_TRANSITIONS:
         raise ValueError(
-            f"Invalid status: '{new_status}'. Must be one of: "
-            f"{', '.join(_VALID_TRANSITIONS)}"
+            f"Invalid status: '{new_status}'. Must be one of: {', '.join(_VALID_TRANSITIONS)}"
         )
 
     cr_dir = model_path / "change-requests"

@@ -64,8 +64,7 @@ def validate_object_schema_version(
                 object_id=obj_id_str,
                 source_file=source_file,
                 current_version=CURRENT_SCHEMA_VERSION,
-                suggested_fix=f'Add schema_version: "{CURRENT_SCHEMA_VERSION}" '
-                "to the frontmatter.",
+                suggested_fix=f'Add schema_version: "{CURRENT_SCHEMA_VERSION}" to the frontmatter.',
             )
         )
         return issues
@@ -157,10 +156,7 @@ def validate_repo_schema_version(
             SchemaVersionIssue(
                 severity="ERROR",
                 code="REPO_SCHEMA_VERSION_UNSUPPORTED",
-                message=(
-                    f"Repository uses unsupported schema_version "
-                    f"'{version_str}'."
-                ),
+                message=(f"Repository uses unsupported schema_version '{version_str}'."),
                 source_file=source_file,
                 current_version=CURRENT_SCHEMA_VERSION,
                 suggested_fix=f"Migrate to schema_version {CURRENT_SCHEMA_VERSION}.",
@@ -171,10 +167,7 @@ def validate_repo_schema_version(
             SchemaVersionIssue(
                 severity="WARNING",
                 code="REPO_SCHEMA_VERSION_DEPRECATED",
-                message=(
-                    f"Repository uses deprecated schema_version "
-                    f"'{version_str}'."
-                ),
+                message=(f"Repository uses deprecated schema_version '{version_str}'."),
                 source_file=source_file,
                 current_version=CURRENT_SCHEMA_VERSION,
                 suggested_fix=f"Update to schema_version {CURRENT_SCHEMA_VERSION}.",

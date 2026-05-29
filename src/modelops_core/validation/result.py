@@ -55,8 +55,6 @@ class ValidationSummary(BaseModel):
         """Group results by validation code with severity and count."""
         groups: dict[str, dict[str, Any]] = {}
         for r in self.results:
-            entry = groups.setdefault(
-                r.code, {"severity": str(r.severity), "count": 0}
-            )
+            entry = groups.setdefault(r.code, {"severity": str(r.severity), "count": 0})
             entry["count"] += 1
         return dict(sorted(groups.items()))

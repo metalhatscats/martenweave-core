@@ -51,9 +51,7 @@ def test_connector_create_issue() -> None:
     mock_session = MagicMock()
     mock_session.request.return_value = mock_response
 
-    with patch(
-        "modelops_core.connectors.github._check_dependencies"
-    ) as mock_check:
+    with patch("modelops_core.connectors.github._check_dependencies") as mock_check:
         mock_check.return_value = MagicMock(Session=lambda: mock_session)
         conn = GitHubConnector(token="fake_token")
         result = conn.create_issue(
@@ -85,9 +83,7 @@ def test_connector_create_pull_request() -> None:
     mock_session = MagicMock()
     mock_session.request.return_value = mock_response
 
-    with patch(
-        "modelops_core.connectors.github._check_dependencies"
-    ) as mock_check:
+    with patch("modelops_core.connectors.github._check_dependencies") as mock_check:
         mock_check.return_value = MagicMock(Session=lambda: mock_session)
         conn = GitHubConnector(token="fake_token")
         result = conn.create_pull_request(
@@ -121,9 +117,7 @@ def test_connector_fetch_metadata() -> None:
     mock_session = MagicMock()
     mock_session.request.return_value = mock_response
 
-    with patch(
-        "modelops_core.connectors.github._check_dependencies"
-    ) as mock_check:
+    with patch("modelops_core.connectors.github._check_dependencies") as mock_check:
         mock_check.return_value = MagicMock(Session=lambda: mock_session)
         conn = GitHubConnector(token="fake_token")
         meta = conn.fetch_metadata("owner/repo")
@@ -135,9 +129,7 @@ def test_connector_fetch_metadata() -> None:
 
 def test_connector_no_token() -> None:
     """Connector raises error when no token is available."""
-    with patch(
-        "modelops_core.connectors.github._check_dependencies"
-    ) as mock_check:
+    with patch("modelops_core.connectors.github._check_dependencies") as mock_check:
         mock_check.return_value = MagicMock(Session=MagicMock)
         with patch.dict("os.environ", {}, clear=True):
             conn = GitHubConnector()
@@ -179,9 +171,7 @@ def test_publish_issue_from_draft_real(tmp_path: Path) -> None:
     mock_issue_result.issue_url = "https://github.com/owner/repo/issues/99"
     mock_issue_result.title = "Real Issue"
 
-    with patch(
-        "modelops_core.exports.github_publish_service.GitHubConnector"
-    ) as mock_conn_cls:
+    with patch("modelops_core.exports.github_publish_service.GitHubConnector") as mock_conn_cls:
         mock_conn = MagicMock()
         mock_conn.create_issue.return_value = mock_issue_result
         mock_conn_cls.return_value = mock_conn
@@ -203,17 +193,10 @@ def test_publish_pr_from_bundle_dry_run(tmp_path: Path) -> None:
     model_dir = tmp_path / "model"
     model_dir.mkdir(parents=True)
     (model_dir / "DOMAIN-TEST.md").write_text(
-        "---\n"
-        "id: DOMAIN-TEST\n"
-        "type: MasterDataDomain\n"
-        "status: draft\n"
-        "name: Test Domain\n"
-        "---\n"
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n"
     )
 
-    with patch(
-        "modelops_core.exports.github_publish_service.create_git_bundle"
-    ) as mock_bundle:
+    with patch("modelops_core.exports.github_publish_service.create_git_bundle") as mock_bundle:
         mock_result = MagicMock()
         mock_result.pr_body_path = tmp_path / "PR_BODY.md"
         mock_result.pr_body_path.write_text("PR body here")
@@ -304,19 +287,12 @@ def test_cli_publish_pr_dry_run(tmp_path: Path) -> None:
     model_dir = tmp_path / "model"
     model_dir.mkdir(parents=True)
     (model_dir / "DOMAIN-TEST.md").write_text(
-        "---\n"
-        "id: DOMAIN-TEST\n"
-        "type: MasterDataDomain\n"
-        "status: draft\n"
-        "name: Test Domain\n"
-        "---\n"
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n"
     )
 
     runner = CliRunner()
 
-    with patch(
-        "modelops_core.cli.publish_pr_from_bundle"
-    ) as mock_publish:
+    with patch("modelops_core.cli.publish_pr_from_bundle") as mock_publish:
         mock_publish.return_value = {
             "dry_run": True,
             "title": "feat: test",

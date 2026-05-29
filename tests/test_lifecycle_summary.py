@@ -76,12 +76,12 @@ class TestLifecycleSummary:
         )
         (model_dir / "ATTR-TEST-01.md").write_text(
             "---\n"
-            'id: ATTR-TEST-01\n'
+            "id: ATTR-TEST-01\n"
             "type: Attribute\n"
             "status: draft\n"
-            'name: Test Attribute\n'
+            "name: Test Attribute\n"
             'target_release: "v1.0"\n'
-            'roadmap_priority: high\n'
+            "roadmap_priority: high\n"
             "---\n\n"
             "# Test\n",
             encoding="utf-8",

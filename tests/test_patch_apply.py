@@ -95,9 +95,7 @@ def test_apply_rejects_invalid_proposal_empty_operations(temp_model_dir: Path) -
 
 def test_apply_rejects_invalid_proposal_disallowed_operation(temp_model_dir: Path) -> None:
     """Accepted proposals with disallowed operations cannot apply."""
-    op = PatchOperation(
-        op="delete_object", object_id="DOMAIN-TEST", target_path="name", after="X"
-    )
+    op = PatchOperation(op="delete_object", object_id="DOMAIN-TEST", target_path="name", after="X")
     proposal = build_patch_proposal("PP-APPLY-BAD-OP", [op])
     write_patch_proposal(proposal, temp_model_dir)
 

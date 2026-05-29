@@ -127,9 +127,7 @@ def test_cli_impact_table_output_requires_format(sample_repo: Path, tmp_path: Pa
 
 def test_cli_profile_dataset_csv(sample_repo: Path) -> None:
     csv_file = FIXTURES_DIR / "customer_sample.csv"
-    result = runner.invoke(
-        app, ["profile-dataset", str(csv_file), "--repo", str(sample_repo)]
-    )
+    result = runner.invoke(app, ["profile-dataset", str(csv_file), "--repo", str(sample_repo)])
     assert result.exit_code == 0
     assert "Profile saved" in result.output
     assert "Rows: 5" in result.output
@@ -141,9 +139,7 @@ def test_cli_profile_dataset_csv(sample_repo: Path) -> None:
 
 def test_cli_profile_dataset_xlsx(sample_repo: Path) -> None:
     xlsx_file = FIXTURES_DIR / "customer_sample.xlsx"
-    result = runner.invoke(
-        app, ["profile-dataset", str(xlsx_file), "--repo", str(sample_repo)]
-    )
+    result = runner.invoke(app, ["profile-dataset", str(xlsx_file), "--repo", str(sample_repo)])
     assert result.exit_code == 0
     assert "Profile saved" in result.output
     assert "Sheets: 1" in result.output
@@ -168,9 +164,7 @@ def test_cli_profile_dataset_privacy_warning(sample_repo: Path, tmp_path: Path) 
         "email,phone,customer_group\nalice@example.com,555-1234,A\n",
         encoding="utf-8",
     )
-    result = runner.invoke(
-        app, ["profile-dataset", str(csv_file), "--repo", str(sample_repo)]
-    )
+    result = runner.invoke(app, ["profile-dataset", str(csv_file), "--repo", str(sample_repo)])
     assert result.exit_code == 0
     assert "Privacy warning" in result.output
     assert "email" in result.output
@@ -189,13 +183,14 @@ def test_cli_profile_dataset_include_raw_samples(sample_repo: Path, tmp_path: Pa
     csv_file = tmp_path / "sensitive.csv"
     csv_file.write_text("email,customer_group\nalice@example.com,A\n", encoding="utf-8")
     result = runner.invoke(
-        app, [
+        app,
+        [
             "profile-dataset",
             str(csv_file),
             "--repo",
             str(sample_repo),
             "--include-raw-samples",
-        ]
+        ],
     )
     assert result.exit_code == 0
     profile_path = sample_repo / "generated" / "dataset_profiles" / "sensitive.json"
@@ -212,9 +207,7 @@ def test_cli_infer_model(sample_repo: Path) -> None:
 
     # Then infer model from the profile
     profile_path = sample_repo / "generated" / "dataset_profiles" / "customer_sample.json"
-    result = runner.invoke(
-        app, ["infer-model", str(profile_path), "--repo", str(sample_repo)]
-    )
+    result = runner.invoke(app, ["infer-model", str(profile_path), "--repo", str(sample_repo)])
     assert result.exit_code == 0
     assert "PatchProposal written" in result.output
     assert "PP-INFER-CUSTOMER-SAMPLE" in result.output
@@ -227,9 +220,7 @@ def test_cli_infer_model(sample_repo: Path) -> None:
 
 
 def test_cli_quiet_validate_no_output_on_success(sample_repo: Path) -> None:
-    result = runner.invoke(
-        app, ["--quiet", "validate", "--repo", str(sample_repo)]
-    )
+    result = runner.invoke(app, ["--quiet", "validate", "--repo", str(sample_repo)])
     assert result.exit_code == 0
     assert result.output == ""
 
@@ -241,26 +232,20 @@ def test_cli_quiet_validate_shows_errors(sample_repo: Path) -> None:
         "---\nid: bad-id-lower\ntype: Attribute\nstatus: draft\n---\n",
         encoding="utf-8",
     )
-    result = runner.invoke(
-        app, ["--quiet", "validate", "--repo", str(sample_repo)]
-    )
+    result = runner.invoke(app, ["--quiet", "validate", "--repo", str(sample_repo)])
     assert result.exit_code == 1
     assert "bad-id-lower" in result.output
 
 
 def test_cli_no_color_health_no_ansi_codes(sample_repo: Path) -> None:
     runner.invoke(app, ["build-index", "--repo", str(sample_repo)])
-    result = runner.invoke(
-        app, ["--no-color", "health", "--repo", str(sample_repo)]
-    )
+    result = runner.invoke(app, ["--no-color", "health", "--repo", str(sample_repo)])
     assert result.exit_code == 0
     assert "\033[" not in result.output
 
 
 def test_cli_json_output_unaffected_by_quiet(sample_repo: Path) -> None:
-    result = runner.invoke(
-        app, ["--quiet", "validate", "--repo", str(sample_repo), "--json"]
-    )
+    result = runner.invoke(app, ["--quiet", "validate", "--repo", str(sample_repo), "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["is_valid"] is True
@@ -268,9 +253,7 @@ def test_cli_json_output_unaffected_by_quiet(sample_repo: Path) -> None:
 
 def test_cli_quiet_and_no_color_together(sample_repo: Path) -> None:
     runner.invoke(app, ["build-index", "--repo", str(sample_repo)])
-    result = runner.invoke(
-        app, ["--quiet", "--no-color", "health", "--repo", str(sample_repo)]
-    )
+    result = runner.invoke(app, ["--quiet", "--no-color", "health", "--repo", str(sample_repo)])
     assert result.exit_code == 0
     assert result.output == ""
     assert "\033[" not in result.output
@@ -293,7 +276,7 @@ def test_cli_validate_strict_exits_0_on_clean(tmp_path: Path) -> None:
         "type: MasterDataDomain\n"
         "status: active\n"
         "name: Test Domain\n"
-        "schema_version: \"1.0\"\n"
+        'schema_version: "1.0"\n'
         "---\n",
         encoding="utf-8",
     )
@@ -315,9 +298,7 @@ def test_cli_validate_strict_exits_1_on_errors(sample_repo: Path) -> None:
 
 def test_cli_validate_strict_json_output(sample_repo: Path) -> None:
     """--strict with --json should still output JSON and exit 2 on warnings."""
-    result = runner.invoke(
-        app, ["validate", "--repo", str(sample_repo), "--strict", "--json"]
-    )
+    result = runner.invoke(app, ["validate", "--repo", str(sample_repo), "--strict", "--json"])
     assert result.exit_code == 2
     data = json.loads(result.output)
     assert data["is_valid"] is True

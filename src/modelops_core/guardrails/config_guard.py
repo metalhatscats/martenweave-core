@@ -263,8 +263,7 @@ def run_all_checks(repo_root: Path) -> dict[str, list[GuardrailIssue]]:
             GuardrailIssue(
                 code="REPO_SECRET_DETECTED",
                 message=(
-                    f"Potential {finding.pattern_name} in "
-                    f"{finding.file_path}:{finding.line_number}"
+                    f"Potential {finding.pattern_name} in {finding.file_path}:{finding.line_number}"
                 ),
                 file_path=finding.file_path,
                 line_number=finding.line_number,

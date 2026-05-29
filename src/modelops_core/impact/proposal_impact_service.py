@@ -111,9 +111,7 @@ def generate_proposal_impact_report(
             # If updating a reference field, add synthetic impact for the new value
             target_path = op.get("target_path", "")
             after = op.get("after")
-            rel_fields = get_relationship_fields(
-                baseline.root_object_type or obj_type or ""
-            )
+            rel_fields = get_relationship_fields(baseline.root_object_type or obj_type or "")
             if target_path in rel_fields and after is not None:
                 values = [after] if isinstance(after, str) else []
                 if isinstance(after, list):

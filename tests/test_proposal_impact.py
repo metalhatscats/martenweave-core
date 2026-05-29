@@ -113,12 +113,7 @@ def test_proposal_impact_high_risk_for_mapping(tmp_path: Path) -> None:
     generated_dir.mkdir()
 
     (model_dir / "MAP-001.md").write_text(
-        "---\n"
-        "id: MAP-001\n"
-        "type: Mapping\n"
-        "status: active\n"
-        "name: Test Mapping\n"
-        "---\n",
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
         encoding="utf-8",
     )
 
@@ -224,9 +219,7 @@ def test_cli_proposal_impact_json(tmp_path: Path) -> None:
     db_path = generated_dir / "modelops.db"
     build_index(repo_root=tmp_path, db_path=db_path)
 
-    result = runner.invoke(
-        app, ["proposal", "impact", "PP-001", "--repo", str(tmp_path), "--json"]
-    )
+    result = runner.invoke(app, ["proposal", "impact", "PP-001", "--repo", str(tmp_path), "--json"])
     assert result.exit_code == 0
     assert "proposal_id" in result.output
     assert "PP-001" in result.output

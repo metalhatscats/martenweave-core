@@ -63,9 +63,7 @@ class GoogleDriveConnector:
             try:
                 from google.auth import default  # type: ignore[import-untyped]
 
-                creds, _ = default(
-                    scopes=["https://www.googleapis.com/auth/drive.readonly"]
-                )
+                creds, _ = default(scopes=["https://www.googleapis.com/auth/drive.readonly"])
                 self.credentials = creds
             except Exception as exc:
                 raise ConnectorError(

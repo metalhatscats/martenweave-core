@@ -103,10 +103,7 @@ def compute_proposal_risk(
         affected_ids = set(impact_report.affected_object_ids)
         for op_report in impact_report.operation_reports:
             depth = max(
-                (
-                    obj.depth
-                    for obj in op_report.impact_report.affected_objects
-                ),
+                (obj.depth for obj in op_report.impact_report.affected_objects),
                 default=0,
             )
             if depth > max_depth:
@@ -124,36 +121,25 @@ def compute_proposal_risk(
 
         # Rule: high-risk object type
         if obj_type in _HIGH_RISK_OBJECT_TYPES:
-            reasons.append(
-                f"Operation touches high-risk object type '{obj_type}' ({obj_id})"
-            )
+            reasons.append(f"Operation touches high-risk object type '{obj_type}' ({obj_id})")
             rules.append("high_risk_object_type")
 
         # Rule: active object being modified
         status = _get_object_status(registry, obj_id)
         if status == "active":
-            reasons.append(
-                f"Operation modifies active object '{obj_id}'"
-            )
+            reasons.append(f"Operation modifies active object '{obj_id}'")
             rules.append("active_object_modified")
 
         # Rule: ownership field changes
         if target_path in _HIGH_RISK_FIELDS or (
             target_path and any(target_path.startswith(f) for f in _HIGH_RISK_FIELDS)
         ):
-            reasons.append(
-                f"Operation changes governance field '{target_path}' on '{obj_id}'"
-            )
+            reasons.append(f"Operation changes governance field '{target_path}' on '{obj_id}'")
             rules.append("governance_field_changed")
 
         # Rule: object without owner (only for types expected to have owners)
-        if (
-            obj_type in _OWNER_EXPECTED_TYPES
-            and not _has_owner(registry, obj_id)
-        ):
-            reasons.append(
-                f"Object '{obj_id}' has no assigned owner"
-            )
+        if obj_type in _OWNER_EXPECTED_TYPES and not _has_owner(registry, obj_id):
+            reasons.append(f"Object '{obj_id}' has no assigned owner")
             rules.append("missing_owner")
 
     # Rule: many affected objects

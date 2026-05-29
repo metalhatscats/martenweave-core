@@ -35,8 +35,7 @@ def test_lov_empty_warning() -> None:
     codes = {r.code for r in summary.results}
     assert "LOV_EMPTY" in codes
     assert any(
-        r.code == "LOV_EMPTY" and r.severity == ValidationSeverity.WARNING
-        for r in summary.results
+        r.code == "LOV_EMPTY" and r.severity == ValidationSeverity.WARNING for r in summary.results
     )
 
 
@@ -119,8 +118,7 @@ def test_value_mapping_invalid_source_code() -> None:
     assert "VALUE_MAPPING_SOURCE_CODE_INVALID" in codes
     assert "VALUE_MAPPING_TARGET_CODE_INVALID" in codes
     assert any(
-        r.code == "VALUE_MAPPING_SOURCE_CODE_INVALID"
-        and r.severity == ValidationSeverity.ERROR
+        r.code == "VALUE_MAPPING_SOURCE_CODE_INVALID" and r.severity == ValidationSeverity.ERROR
         for r in summary.results
     )
 

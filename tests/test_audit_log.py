@@ -73,9 +73,7 @@ def test_filter_by_proposal_id() -> None:
 
 def test_filter_by_object_id() -> None:
     events = [
-        create_audit_event(
-            event_type="patch_apply", changed_object_ids=["OBJ-A", "OBJ-B"]
-        ),
+        create_audit_event(event_type="patch_apply", changed_object_ids=["OBJ-A", "OBJ-B"]),
         create_audit_event(event_type="patch_apply", changed_object_ids=["OBJ-C"]),
     ]
     filtered = filter_audit_events(events, object_id="OBJ-A")
@@ -231,9 +229,7 @@ def test_cli_audit_log_filter_by_proposal_id(tmp_path: Path) -> None:
     service.emit(create_audit_event(event_type="patch_apply", proposal_id="PP-001"))
     service.emit(create_audit_event(event_type="patch_apply", proposal_id="PP-002"))
 
-    result = runner.invoke(
-        app, ["audit-log", "--repo", str(tmp_path), "--proposal-id", "PP-001"]
-    )
+    result = runner.invoke(app, ["audit-log", "--repo", str(tmp_path), "--proposal-id", "PP-001"])
     assert result.exit_code == 0
     assert "PP-001" in result.output
     assert "PP-002" not in result.output

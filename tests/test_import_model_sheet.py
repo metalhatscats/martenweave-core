@@ -102,9 +102,7 @@ def test_cli_import_model_sheet_csv(temp_model_dir: Path) -> None:
     export_model_csv(temp_model_dir)
     csv_dir = temp_model_dir.parent / "generated" / "exports" / "csv"
     repo = str(temp_model_dir.parent)
-    result = runner.invoke(
-        app, ["import-model-sheet", str(csv_dir), "--repo", repo]
-    )
+    result = runner.invoke(app, ["import-model-sheet", str(csv_dir), "--repo", repo])
     assert result.exit_code == 0
     assert "PatchProposal" in result.output
 
@@ -114,9 +112,7 @@ def test_cli_import_model_sheet_xlsx(temp_model_dir: Path) -> None:
     export_model_xlsx(temp_model_dir)
     xlsx_path = temp_model_dir.parent / "generated" / "exports" / "model.xlsx"
     repo = str(temp_model_dir.parent)
-    result = runner.invoke(
-        app, ["import-model-sheet", str(xlsx_path), "--repo", repo]
-    )
+    result = runner.invoke(app, ["import-model-sheet", str(xlsx_path), "--repo", repo])
     assert result.exit_code == 0
     assert "PatchProposal" in result.output
 
@@ -125,9 +121,7 @@ def test_cli_import_model_sheet_invalid_input(temp_model_dir: Path) -> None:
     repo = str(temp_model_dir.parent)
     bad_path = temp_model_dir.parent / "not_a_file.txt"
     bad_path.write_text("nope")
-    result = runner.invoke(
-        app, ["import-model-sheet", str(bad_path), "--repo", repo]
-    )
+    result = runner.invoke(app, ["import-model-sheet", str(bad_path), "--repo", repo])
     assert result.exit_code == 1
     assert "must be a CSV directory or an .xlsx workbook" in result.output
 
@@ -153,12 +147,10 @@ def test_import_xlsx_broken_reference_warning(sample_repo: Path) -> None:
     xlsx_path = FIXTURES_DIR / "product_model_broken_refs.xlsx"
     proposal = import_model_sheet_xlsx(xlsx_path, sample_repo / "model")
     assert any(
-        "Broken reference" in w and "DOMAIN-NONEXISTENT" in w
-        for w in proposal.get("warnings", [])
+        "Broken reference" in w and "DOMAIN-NONEXISTENT" in w for w in proposal.get("warnings", [])
     )
     assert any(
-        "Broken reference" in w and "ENTITY-NONEXISTENT" in w
-        for w in proposal.get("warnings", [])
+        "Broken reference" in w and "ENTITY-NONEXISTENT" in w for w in proposal.get("warnings", [])
     )
 
 
@@ -190,10 +182,7 @@ def test_import_xlsx_unknown_sheet_type_warning(sample_repo: Path) -> None:
     wb.close()
 
     proposal = import_model_sheet_xlsx(xlsx_path, sample_repo / "model")
-    assert any(
-        "does not match a known object type" in w
-        for w in proposal.get("warnings", [])
-    )
+    assert any("does not match a known object type" in w for w in proposal.get("warnings", []))
 
 
 # ---------------------------------------------------------------------------

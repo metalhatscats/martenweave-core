@@ -93,13 +93,7 @@ def test_preview_notifications_tool(tmp_path: Path) -> None:
 
     (model_dir / "change-requests").mkdir()
     (model_dir / "change-requests" / "CR-001.md").write_text(
-        "---\n"
-        "id: CR-001\n"
-        "type: ChangeRequest\n"
-        "status: pending\n"
-        "name: Test\n"
-        "title: Test\n"
-        "---\n",
+        "---\nid: CR-001\ntype: ChangeRequest\nstatus: pending\nname: Test\ntitle: Test\n---\n",
         encoding="utf-8",
     )
 

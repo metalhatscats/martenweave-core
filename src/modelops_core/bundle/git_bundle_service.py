@@ -123,9 +123,7 @@ def _build_pr_body(
                 f"— {obj.direction} depth {obj.depth}"
             )
         if len(impact.all_affected_objects) > 15:
-            lines.append(
-                f"- ... and {len(impact.all_affected_objects) - 15} more"
-            )
+            lines.append(f"- ... and {len(impact.all_affected_objects) - 15} more")
         lines.append("")
 
     lines.append("### Validation")
@@ -226,9 +224,7 @@ def create_git_bundle(
     impact = None
     if db_path.exists():
         try:
-            impact = generate_proposal_impact_report(
-                db_path, proposal_id, ops, max_depth=2
-            )
+            impact = generate_proposal_impact_report(db_path, proposal_id, ops, max_depth=2)
         except Exception:
             pass
 
@@ -258,9 +254,7 @@ def create_git_bundle(
     # Write bundle.json
     bundle_json = _build_bundle_json(proposal, risk, impact, validation_summary, copied_files)
     bundle_json_path = output_dir / "bundle.json"
-    bundle_json_path.write_text(
-        json.dumps(bundle_json, indent=2, default=str), encoding="utf-8"
-    )
+    bundle_json_path.write_text(json.dumps(bundle_json, indent=2, default=str), encoding="utf-8")
 
     # Write README.md (human-readable review doc)
     readme_path = output_dir / "README.md"

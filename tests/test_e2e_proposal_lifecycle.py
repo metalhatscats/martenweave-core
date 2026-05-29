@@ -28,13 +28,11 @@ def _init_repo(tmp_path: Path) -> Path:
     generated_dir.mkdir()
 
     (model_dir / "DOMAIN-TEST.md").write_text(
-        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\n"
-        "name: Test Domain\n---\n",
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n",
         encoding="utf-8",
     )
     (model_dir / "PERSON-OWNER.md").write_text(
-        "---\nid: TEST-OWNER\ntype: Person\nstatus: active\n"
-        "name: Test Owner\n---\n",
+        "---\nid: TEST-OWNER\ntype: Person\nstatus: active\nname: Test Owner\n---\n",
         encoding="utf-8",
     )
     (model_dir / "ATTR-TEST.md").write_text(
@@ -95,9 +93,7 @@ class TestHappyPathLifecycle:
     def test_proposal_impact(self, tmp_path: Path) -> None:
         repo = _init_repo(tmp_path)
         _create_proposal(repo)
-        result = runner.invoke(
-            app, ["proposal", "impact", "PP-001", "--repo", str(repo), "--json"]
-        )
+        result = runner.invoke(app, ["proposal", "impact", "PP-001", "--repo", str(repo), "--json"])
         assert result.exit_code == 0, result.output
         data = json.loads(result.output)
         assert data["proposal_id"] == "PP-001"
@@ -210,9 +206,7 @@ class TestRejectionPath:
             rejection_reason="insufficient_evidence",
         )
 
-        result = runner.invoke(
-            app, ["proposal", "show", "PP-001", "--repo", str(repo), "--json"]
-        )
+        result = runner.invoke(app, ["proposal", "show", "PP-001", "--repo", str(repo), "--json"])
         assert result.exit_code == 0, result.output
         data = json.loads(result.output)
         assert data["status"] == "rejected"
@@ -232,9 +226,7 @@ class TestRejectionPath:
             rejection_reason="insufficient_evidence",
         )
 
-        result = runner.invoke(
-            app, ["proposal", "report", "--repo", str(repo), "--json"]
-        )
+        result = runner.invoke(app, ["proposal", "report", "--repo", str(repo), "--json"])
         assert result.exit_code == 0, result.output
         data = json.loads(result.output)
         assert data["by_status"]["rejected"] == 1
@@ -258,9 +250,7 @@ class TestRejectionPath:
 
         service = AuditEventService(repo)
         events = service.read_events()
-        reject_event = next(
-            (e for e in events if e.event_type == "proposal_status_changed"), None
-        )
+        reject_event = next((e for e in events if e.event_type == "proposal_status_changed"), None)
         assert reject_event is not None
         assert reject_event.metadata.get("old_status") == "pending_review"
         assert reject_event.metadata.get("new_status") == "rejected"

@@ -169,9 +169,7 @@ class MockCloudConnector:
 
 
 def test_mock_cloud_connector_implements_protocol() -> None:
-    conn: ConnectorAdapter = MockCloudConnector(
-        fixtures={"doc1.csv": b"a,b\n1,2\n"}
-    )
+    conn: ConnectorAdapter = MockCloudConnector(fixtures={"doc1.csv": b"a,b\n1,2\n"})
     assert conn.connector_type == "mock_cloud"
     sources = conn.list_sources()
     assert len(sources) == 1

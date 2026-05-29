@@ -263,4 +263,4 @@ class TestTelemetryPrivacy:
         assert len(events) == 1
         assert events[0].error_type == "ValueError"
         assert "Traceback" not in str(events[0].to_dict())
-        assert "File \"" not in str(events[0].to_dict())
+        assert 'File "' not in str(events[0].to_dict())

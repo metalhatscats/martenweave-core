@@ -80,8 +80,7 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
     """
     if not _MCP_AVAILABLE or FastMCP is None:
         raise RuntimeError(
-            "The 'mcp' package is required for the MCP server. "
-            "Install it with: pip install mcp"
+            "The 'mcp' package is required for the MCP server. Install it with: pip install mcp"
         )
 
     repo_root = _resolve_repo(repo)
@@ -208,9 +207,7 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
         """Run deterministic validation on all canonical files."""
         model_path = resolve_model_path(repo_root)
         if not model_path.exists():
-            return json.dumps(
-                {"error": f"Model path does not exist: {model_path}"}
-            )
+            return json.dumps({"error": f"Model path does not exist: {model_path}"})
 
         files = scan_repository(model_path)
         parsed_objects = [parse_file(f) for f in files]
@@ -245,9 +242,7 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
 
         db_path = resolve_generated_path(repo_root) / "modelops.db"
         if not db_path.exists():
-            return json.dumps(
-                {"error": "No index found. Run validate_model or build_index first."}
-            )
+            return json.dumps({"error": "No index found. Run validate_model or build_index first."})
 
         report = generate_repository_health(db_path)
         output = {
@@ -338,9 +333,7 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
 
         db_path = resolve_generated_path(repo_root) / "modelops.db"
         if not db_path.exists():
-            return json.dumps(
-                {"error": "No index found. Run validate_model or build_index first."}
-            )
+            return json.dumps({"error": "No index found. Run validate_model or build_index first."})
         report = generate_repository_health(db_path)
         return json.dumps(
             {
@@ -374,9 +367,7 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
 
         db_path = resolve_generated_path(repo_root) / "modelops.db"
         if not db_path.exists():
-            return json.dumps(
-                {"error": "No index found. Run validate_model or build_index first."}
-            )
+            return json.dumps({"error": "No index found. Run validate_model or build_index first."})
         report = generate_scorecard(db_path, repo_root)
         return json.dumps(
             {
@@ -663,8 +654,7 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
 
         validation_results = validate_patch_proposal(proposal)
         proposal["validation_status"] = (
-            "valid" if not any(v.severity == "ERROR" for v in validation_results)
-            else "invalid"
+            "valid" if not any(v.severity == "ERROR" for v in validation_results) else "invalid"
         )
 
         model_path = resolve_model_path(repo_root)
@@ -821,9 +811,7 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
                 default=str,
             )
         if fmt.lower() == "xlsx":
-            path = export_model_xlsx(
-                model_path, business_review=business_review
-            )
+            path = export_model_xlsx(model_path, business_review=business_review)
             return json.dumps(
                 {
                     "format": "xlsx",

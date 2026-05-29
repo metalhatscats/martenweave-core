@@ -144,9 +144,7 @@ def generate_decisions_report(db_path: Path, _repo_root: Path) -> DecisionsRepor
     total_decisions = len(decisions)
     total_with_evidence = sum(1 for d in decisions if d.has_evidence)
     overall_coverage_percent = (
-        round(total_with_evidence / total_decisions * 100, 1)
-        if total_decisions
-        else 0.0
+        round(total_with_evidence / total_decisions * 100, 1) if total_decisions else 0.0
     )
 
     return DecisionsReport(

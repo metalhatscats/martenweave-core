@@ -71,8 +71,7 @@ def _read_xlsx(xlsx_path: Path, max_rows: int | None = None) -> dict[str, list[d
                 break
             row_count += 1
             row_dict = {
-                h: str(v) if v is not None else ""
-                for h, v in zip(headers, row, strict=False)
+                h: str(v) if v is not None else "" for h, v in zip(headers, row, strict=False)
             }
             if row_dict.get("id"):
                 rows.append(row_dict)
@@ -134,8 +133,7 @@ def _validate_import(
 
         if rows and "id" not in rows[0]:
             warnings.append(
-                f"Sheet '{obj_type}' is missing required 'id' column. "
-                f"All rows will be skipped."
+                f"Sheet '{obj_type}' is missing required 'id' column. All rows will be skipped."
             )
             continue
 
@@ -210,9 +208,7 @@ def _diff_row(row: dict[str, str], existing: dict[str, Any]) -> list[PatchOperat
             old_val_str = str(old_val)
 
         new_val_str = (
-            "; ".join(str(v) for v in new_val)
-            if isinstance(new_val, list)
-            else str(new_val)
+            "; ".join(str(v) for v in new_val) if isinstance(new_val, list) else str(new_val)
         )
 
         if old_val_str != new_val_str:

@@ -302,9 +302,7 @@ def _write_dry_run_audit_event(
 
     service = AuditEventService(repo_root)
     changed_object_ids = [
-        p.get("object_id", "")
-        for p in result.operations_preview
-        if p.get("object_id")
+        p.get("object_id", "") for p in result.operations_preview if p.get("object_id")
     ]
     event = create_audit_event(
         event_type="patch_dry_run",
@@ -322,9 +320,7 @@ def _write_dry_run_audit_event(
     service.emit(event)
 
 
-def dry_run_patch_proposal(
-    repo_model_path: Path, proposal_id: str
-) -> DryRunResult:
+def dry_run_patch_proposal(repo_model_path: Path, proposal_id: str) -> DryRunResult:
     """Preview what apply_patch_proposal would do without writing any files."""
     proposal_path = repo_model_path / "patch-proposals" / f"{proposal_id}.md"
     if not proposal_path.exists():
@@ -449,8 +445,7 @@ def apply_patch_proposal(
 
     if fm.get("application_status") == "applied" or fm.get("applied_at"):
         raise ValueError(
-            f"PatchProposal '{proposal_id}' has already been applied"
-            f" at {fm.get('applied_at')}."
+            f"PatchProposal '{proposal_id}' has already been applied at {fm.get('applied_at')}."
         )
 
     operations_raw = fm.get("operations", [])
@@ -464,17 +459,10 @@ def apply_patch_proposal(
     proposal_dict.setdefault("id", proposal_id)
     proposal_dict.setdefault("type", "PatchProposal")
     validation_results = validate_patch_proposal(proposal_dict)
-    proposal_errors = [
-        r for r in validation_results if r.severity == ValidationSeverity.ERROR
-    ]
+    proposal_errors = [r for r in validation_results if r.severity == ValidationSeverity.ERROR]
     if proposal_errors:
-        error_details = "; ".join(
-            f"{r.code}: {r.message}" for r in proposal_errors
-        )
-        raise ValueError(
-            f"Proposal validation failed for '{proposal_id}'. "
-            f"Errors: {error_details}"
-        )
+        error_details = "; ".join(f"{r.code}: {r.message}" for r in proposal_errors)
+        raise ValueError(f"Proposal validation failed for '{proposal_id}'. Errors: {error_details}")
 
     class _Op:
         def __init__(self, data: dict[str, Any]) -> None:
@@ -489,9 +477,7 @@ def apply_patch_proposal(
     operations = [_Op(op) for op in operations_raw if isinstance(op, dict)]
 
     # Risk assessment
-    risk = compute_proposal_risk(
-        [op.__dict__ for op in operations], repo_model_path
-    )
+    risk = compute_proposal_risk([op.__dict__ for op in operations], repo_model_path)
     if risk.risk_level == "high" and not skip_risk_check:
         raise ValueError(
             f"High-risk proposal blocked (level: {risk.risk_level}). "

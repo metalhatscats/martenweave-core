@@ -170,23 +170,19 @@ def _check_and_warn_stale_index(repo_root: Path, json_output: bool = False) -> b
     is_stale = not freshness.fresh
     if is_stale and not json_output:
         console.print(
-            "[yellow]Warning: index may be stale. "
-            "Run `modelops build-index` to refresh.[/yellow]"
+            "[yellow]Warning: index may be stale. Run `modelops build-index` to refresh.[/yellow]"
         )
     return is_stale
 
 
-def _build_impact_grouping(
-    report: Any, group_by: str
-) -> dict[str, Any]:
+def _build_impact_grouping(report: Any, group_by: str) -> dict[str, Any]:
     from modelops_core.impact.impact_report import ImpactReport
 
     assert isinstance(report, ImpactReport)
     if group_by == "type":
         return {
             obj_type: [
-                {"object_id": o.object_id, "direction": o.direction, "depth": o.depth}
-                for o in objs
+                {"object_id": o.object_id, "direction": o.direction, "depth": o.depth} for o in objs
             ]
             for obj_type, objs in report.grouped_by_type.items()
         }
@@ -316,9 +312,7 @@ def init(
     config = RepoConfig(name=name)
     config_path = target / "modelops.config.yaml"
     config_path.write_text(
-        yaml.safe_dump(
-            config.model_dump(), default_flow_style=False, sort_keys=False
-        ),
+        yaml.safe_dump(config.model_dump(), default_flow_style=False, sort_keys=False),
         encoding="utf-8",
     )
 
@@ -341,8 +335,7 @@ def init(
             shutil.copy2(template_config, config_path)
 
         console.print(
-            f"[green]Initialized model repository at {target} "
-            f"from template '{template}'[/green]"
+            f"[green]Initialized model repository at {target} from template '{template}'[/green]"
         )
     else:
         # Create a minimal example domain object
@@ -352,7 +345,7 @@ def init(
             "id: DOMAIN-EXAMPLE\n"
             "type: MasterDataDomain\n"
             "status: draft\n"
-            "schema_version: \"1.0\"\n"
+            'schema_version: "1.0"\n'
             "name: Example Domain\n"
             "---\n\n"
             "# Example Domain\n\n"
@@ -451,8 +444,7 @@ def profile_dataset(
             console.print(f"  Sheets: {len(profile.sheets)}")
             for sheet in profile.sheets:
                 console.print(
-                    f"    {sheet.sheet_name}: {sheet.row_count} rows, "
-                    f"{sheet.column_count} cols"
+                    f"    {sheet.sheet_name}: {sheet.row_count} rows, {sheet.column_count} cols"
                 )
         else:
             console.print(f"  Rows: {profile.row_count}")
@@ -486,9 +478,7 @@ def gaps(
     promote_to_proposal: bool = typer.Option(
         False, "--promote-to-proposal", help="Promote gaps to a draft PatchProposal."
     ),
-    check_model: bool = typer.Option(
-        False, "--check-model", help="Also check model-side gaps."
-    ),
+    check_model: bool = typer.Option(False, "--check-model", help="Also check model-side gaps."),
 ) -> None:
     """Detect dataset-to-model gaps by comparing dataset columns against FieldEndpoints."""
     repo_root = _resolve_repo(repo)
@@ -812,8 +802,7 @@ def import_drive(
             console.print(f"  Sheets: {len(profile.sheets)}")
             for sheet in profile.sheets:
                 console.print(
-                    f"    {sheet.sheet_name}: {sheet.row_count} rows, "
-                    f"{sheet.column_count} cols"
+                    f"    {sheet.sheet_name}: {sheet.row_count} rows, {sheet.column_count} cols"
                 )
         else:
             console.print(f"  Rows: {profile.row_count}")
@@ -866,9 +855,7 @@ def import_sheet(
         for w in proposal.get("warnings", [])[:5]:
             console.print(f"    [yellow]{w}[/yellow]")
         if len(proposal.get("warnings", [])) > 5:
-            console.print(
-                f"    ... and {len(proposal['warnings']) - 5} more warnings"
-            )
+            console.print(f"    ... and {len(proposal['warnings']) - 5} more warnings")
         if proposal["operations"]:
             table = Table("Op", "Object", "Type", "Target")
             for op in proposal["operations"][:20]:
@@ -976,8 +963,10 @@ def infer_model(
         "valid" if not any(v.severity == "ERROR" for v in validation_results) else "invalid"
     )
     proposal["validation_results"] = [
-        {k: (str(v) if not isinstance(v, (str, int, float, bool, type(None))) else v)
-         for k, v in r.model_dump().items()}
+        {
+            k: (str(v) if not isinstance(v, (str, int, float, bool, type(None))) else v)
+            for k, v in r.model_dump().items()
+        }
         for r in validation_results
     ]
 
@@ -1010,9 +999,7 @@ def validate(
     check_decisions: bool = typer.Option(
         False, "--check-decisions", help="Run extended Decision evidence validation."
     ),
-    strict: bool = typer.Option(
-        False, "--strict", help="Exit with code 2 if any warnings exist."
-    ),
+    strict: bool = typer.Option(False, "--strict", help="Exit with code 2 if any warnings exist."),
 ) -> None:
     """Run deterministic validation on canonical files."""
     repo_root = _resolve_repo(repo)
@@ -1139,11 +1126,7 @@ def build_index(
             "valid": summary.is_valid,
             "dry_run": dry_run,
             "jsonl_paths": jsonl_paths,
-            "errors": [
-                r.model_dump(mode="json")
-                for r in summary.results
-                if r.severity == "ERROR"
-            ],
+            "errors": [r.model_dump(mode="json") for r in summary.results if r.severity == "ERROR"],
         }
         print(json.dumps(result, indent=2, default=str))
         raise typer.Exit()
@@ -1266,9 +1249,7 @@ def index_fresh(
             "db_path": str(report.db_path),
             "db_mtime": report.db_mtime.isoformat() if report.db_mtime else None,
             "newest_source_mtime": (
-                report.newest_source_mtime.isoformat()
-                if report.newest_source_mtime
-                else None
+                report.newest_source_mtime.isoformat() if report.newest_source_mtime else None
             ),
             "reason": report.reason,
             "stale_sources": report.stale_sources,
@@ -1363,8 +1344,7 @@ def health(
     if report.ownership_coverage:
         oc = report.ownership_coverage
         console.print(
-            f"  Ownership coverage:  {oc.with_owner}/{oc.total_eligible} "
-            f"({oc.percentage}%)"
+            f"  Ownership coverage:  {oc.with_owner}/{oc.total_eligible} ({oc.percentage}%)"
         )
     if report.data_quality_coverage:
         dq = report.data_quality_coverage
@@ -1483,9 +1463,7 @@ def doctor(
             console.print(f"  Stale reason:        {index_stale_reason}")
     if validation_summary["ran"]:
         valid_label = (
-            "[green]valid[/green]"
-            if validation_summary["is_valid"]
-            else "[red]invalid[/red]"
+            "[green]valid[/green]" if validation_summary["is_valid"] else "[red]invalid[/red]"
         )
         console.print(f"  Validation:          {valid_label}")
         console.print(f"  Errors:              {validation_summary['error_count']}")
@@ -1505,9 +1483,7 @@ def scorecard(
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
     if not db_path.exists():
-        console.print(
-            "[yellow]No index found. Run `modelops build-index` first.[/yellow]"
-        )
+        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
     report = generate_scorecard(db_path, repo_root)
@@ -1594,9 +1570,7 @@ def owners(
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
     if not db_path.exists():
-        console.print(
-            "[yellow]No index found. Run `modelops build-index` first.[/yellow]"
-        )
+        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
     report = generate_ownership_report(db_path, repo_root)
@@ -1638,9 +1612,7 @@ def owners(
     if report.owners:
         table = Table("Owner", "Role", "Objects", "Type Breakdown")
         for o in report.owners:
-            type_breakdown = ", ".join(
-                f"{k}: {v}" for k, v in o.object_types.items()
-            )
+            type_breakdown = ", ".join(f"{k}: {v}" for k, v in o.object_types.items())
             table.add_row(o.owner_id, o.role, str(o.object_count), type_breakdown)
         console.print(table)
     else:
@@ -1693,20 +1665,12 @@ def analyze(
             "lov_coverage": report.lov_coverage,
             "mapping_coverage": report.mapping_coverage,
             "risk_report": {
-                "issue_count": report.risk_report.issue_count
-                if report.risk_report
-                else 0,
-                "risk_count": report.risk_report.risk_count
-                if report.risk_report
-                else 0,
-                "open_issues": report.risk_report.open_issues
-                if report.risk_report
-                else [],
+                "issue_count": report.risk_report.issue_count if report.risk_report else 0,
+                "risk_count": report.risk_report.risk_count if report.risk_report else 0,
+                "open_issues": report.risk_report.open_issues if report.risk_report else [],
             },
             "change_activity": {
-                "event_count": report.change_activity.event_count
-                if report.change_activity
-                else 0,
+                "event_count": report.change_activity.event_count if report.change_activity else 0,
                 "recent_events": report.change_activity.recent_events
                 if report.change_activity
                 else [],
@@ -1963,10 +1927,14 @@ def trace(
     if result.nodes:
         table = Table("ID", "Type", "Name", "Depth", "Direction")
         for n in result.nodes:
-            dir_label = "upstream" if any(
-                e.direction == "upstream" and e.to_object_id == n.object_id
-                for e in result.edges
-            ) else "downstream"
+            dir_label = (
+                "upstream"
+                if any(
+                    e.direction == "upstream" and e.to_object_id == n.object_id
+                    for e in result.edges
+                )
+                else "downstream"
+            )
             table.add_row(
                 n.object_id,
                 n.object_type,
@@ -2048,9 +2016,7 @@ def impact(
     else:
         # Default table output via Rich (not serialisable to string)
         if output is not None:
-            console.print(
-                "[yellow]--output requires --format markdown or --format json.[/yellow]"
-            )
+            console.print("[yellow]--output requires --format markdown or --format json.[/yellow]")
             raise typer.Exit(code=1)
         console.print(f"[bold]Impact Report for {object_id}[/bold]")
         console.print(f"  Type: {report.root_object_type or 'Unknown'}")
@@ -2065,9 +2031,7 @@ def impact(
                     console.print(table)
             elif group_by == "direction":
                 for direction in ("downstream", "upstream"):
-                    objs = [
-                        o for o in report.affected_objects if o.direction == direction
-                    ]
+                    objs = [o for o in report.affected_objects if o.direction == direction]
                     if not objs:
                         continue
                     console.print(f"\n[bold]{direction.capitalize()} ({len(objs)})[/bold]")
@@ -2171,9 +2135,7 @@ def propose_patch(
 
     if not dry_run:
         service = AuditEventService(repo_root)
-        changed_object_ids = [
-            op.get("object_id", "") for op in proposal.get("operations", [])
-        ]
+        changed_object_ids = [op.get("object_id", "") for op in proposal.get("operations", [])]
         service.emit(
             create_audit_event(
                 event_type="proposal_created",
@@ -2208,9 +2170,7 @@ def draft_create(
     change_request: str | None = typer.Option(
         None, "--change-request", help="ChangeRequest ID to draft from."
     ),
-    proposal: str | None = typer.Option(
-        None, "--proposal", help="PatchProposal ID to draft from."
-    ),
+    proposal: str | None = typer.Option(None, "--proposal", help="PatchProposal ID to draft from."),
     from_validation: bool = typer.Option(
         False, "--from-validation", help="Draft from current validation results."
     ),
@@ -2224,9 +2184,7 @@ def draft_create(
     model_path = resolve_model_path(repo_root)
     generated_path = resolve_generated_path(repo_root)
 
-    sources_selected = sum(
-        bool(x) for x in (change_request, proposal, from_validation)
-    )
+    sources_selected = sum(bool(x) for x in (change_request, proposal, from_validation))
     if sources_selected == 0:
         console.print(
             "[red]Specify one source: --change-request, --proposal, or --from-validation[/red]"
@@ -2317,9 +2275,7 @@ def cr_create(
         None, "--source-evidence", help="Source evidence reference."
     ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
-    dry_run: bool = typer.Option(
-        False, "--dry-run", help="Preview CR without writing files."
-    ),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Preview CR without writing files."),
 ) -> None:
     """Create a new ChangeRequest canonical file."""
     repo_root = _resolve_repo(repo)
@@ -2653,9 +2609,7 @@ def notifications_preview(
     change_request: str | None = typer.Option(
         None, "--change-request", help="ChangeRequest ID to preview."
     ),
-    proposal: str | None = typer.Option(
-        None, "--proposal", help="PatchProposal ID to preview."
-    ),
+    proposal: str | None = typer.Option(None, "--proposal", help="PatchProposal ID to preview."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Preview who would be notified for a ChangeRequest or PatchProposal."""
@@ -2786,14 +2740,16 @@ def decisions_list(
 
     decisions = []
     for row in rows:
-        decisions.append({
-            "id": row[0],
-            "status": row[1],
-            "name": row[2],
-            "title": row[3],
-            "domain": row[4],
-            "source_file": row[5],
-        })
+        decisions.append(
+            {
+                "id": row[0],
+                "status": row[1],
+                "name": row[2],
+                "title": row[3],
+                "domain": row[4],
+                "source_file": row[5],
+            }
+        )
 
     if json_output:
         print(json.dumps(decisions, indent=2, default=str))
@@ -2896,9 +2852,7 @@ def decisions_report(
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
     if not db_path.exists():
-        console.print(
-            "[yellow]No index found. Run `modelops build-index` first.[/yellow]"
-        )
+        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
     report = generate_decisions_report(db_path, repo_root)
@@ -2934,8 +2888,7 @@ def decisions_report(
                 for d in report.deprecated_evidence_decisions
             ],
             "category_breakdown": [
-                {"category": c.category, "count": c.count}
-                for c in report.category_breakdown
+                {"category": c.category, "count": c.count} for c in report.category_breakdown
             ],
             "total_decisions": report.total_decisions,
             "total_with_evidence": report.total_with_evidence,
@@ -3017,9 +2970,7 @@ def proposal_list(
     status: str | None = typer.Option(
         None, "--status", help="Filter by status: pending_review, accepted, rejected, applied."
     ),
-    reviewer: str | None = typer.Option(
-        None, "--reviewer", help="Filter by reviewer identity."
-    ),
+    reviewer: str | None = typer.Option(None, "--reviewer", help="Filter by reviewer identity."),
 ) -> None:
     """List all PatchProposals in the repository."""
     repo_root = _resolve_repo(repo)
@@ -3063,15 +3014,17 @@ def proposal_list(
             continue
         if reviewer and fm.get("reviewer") != reviewer:
             continue
-        proposals.append({
-            "id": fm.get("id", f.stem),
-            "status": fm.get("status", ""),
-            "applied": bool(fm.get("applied_at")),
-            "expires_at": expires_at,
-            "expired": is_expired,
-            "reviewer": fm.get("reviewer"),
-            "reviewed_at": fm.get("reviewed_at"),
-        })
+        proposals.append(
+            {
+                "id": fm.get("id", f.stem),
+                "status": fm.get("status", ""),
+                "applied": bool(fm.get("applied_at")),
+                "expires_at": expires_at,
+                "expired": is_expired,
+                "reviewer": fm.get("reviewer"),
+                "reviewed_at": fm.get("reviewed_at"),
+            }
+        )
 
     if json_output:
         print(json.dumps(proposals, indent=2, default=str))
@@ -3403,9 +3356,7 @@ def proposal_impact(
     fm = parsed.frontmatter or {}
     operations = fm.get("operations", [])
 
-    report = generate_proposal_impact_report(
-        db_path, proposal_id, operations, max_depth=max_depth
-    )
+    report = generate_proposal_impact_report(db_path, proposal_id, operations, max_depth=max_depth)
 
     # Risk assessment
     risk = compute_proposal_risk(operations, model_path, impact_report=report)
@@ -3521,10 +3472,7 @@ def proposal_diff(
             current_value: Any = None
             for file_path in scan_repository(model_path):
                 file_parsed = parse_file(file_path)
-                if (
-                    file_parsed.frontmatter
-                    and file_parsed.frontmatter.get("id") == object_id
-                ):
+                if file_parsed.frontmatter and file_parsed.frontmatter.get("id") == object_id:
                     frontmatter = dict(file_parsed.frontmatter)
                     if "." in target_path:
                         parts = target_path.split(".")
@@ -3546,10 +3494,7 @@ def proposal_diff(
             current_obj: Any = None
             for file_path in scan_repository(model_path):
                 file_parsed = parse_file(file_path)
-                if (
-                    file_parsed.frontmatter
-                    and file_parsed.frontmatter.get("id") == object_id
-                ):
+                if file_parsed.frontmatter and file_parsed.frontmatter.get("id") == object_id:
                     current_obj = dict(file_parsed.frontmatter)
                     break
             diff_entry["before"] = current_obj
@@ -3639,15 +3584,9 @@ def proposal_diff(
 def proposal_apply(
     proposal_id: str = typer.Argument(..., help="PatchProposal ID (e.g. PP-001)."),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
-    dry_run: bool = typer.Option(
-        False, "--dry-run", help="Preview changes without applying."
-    ),
-    apply: bool = typer.Option(
-        False, "--apply", help="Apply the proposal to canonical files."
-    ),
-    force: bool = typer.Option(
-        False, "--force", help="Skip approval gate (not recommended)."
-    ),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Preview changes without applying."),
+    apply: bool = typer.Option(False, "--apply", help="Apply the proposal to canonical files."),
+    force: bool = typer.Option(False, "--force", help="Skip approval gate (not recommended)."),
     skip_risk_check: bool = typer.Option(
         False, "--skip-risk-check", help="Skip high-risk proposal blocking."
     ),
@@ -3774,16 +3713,19 @@ def proposal_apply(
         approved_cr = find_approved_cr_for_proposal(model_path, proposal_id)
         if approved_cr is None:
             if json_output:
-                print(json.dumps({
-                    "error": "Approval required",
-                    "proposal_id": proposal_id,
-                    "risk_level": risk.risk_level,
-                    "risk_reasons": risk.risk_reasons,
-                }))
+                print(
+                    json.dumps(
+                        {
+                            "error": "Approval required",
+                            "proposal_id": proposal_id,
+                            "risk_level": risk.risk_level,
+                            "risk_reasons": risk.risk_reasons,
+                        }
+                    )
+                )
             else:
                 console.print(
-                    f"[red]Approval required for {proposal_id}. "
-                    f"Risk level: {risk.risk_level}[/red]"
+                    f"[red]Approval required for {proposal_id}. Risk level: {risk.risk_level}[/red]"
                 )
                 for reason in risk.risk_reasons:
                     console.print(f"  • {reason}")
@@ -3793,9 +3735,7 @@ def proposal_apply(
                 )
             raise typer.Exit(code=1)
         if not json_output:
-            console.print(
-                f"[green]Approved via ChangeRequest {approved_cr.get('id')}[/green]"
-            )
+            console.print(f"[green]Approved via ChangeRequest {approved_cr.get('id')}[/green]")
 
     skip_risk = skip_risk_check or force or (approved_cr is not None)
 
@@ -3912,22 +3852,24 @@ def proposal_report(
             operations = fm.get("operations") or []
             risk = compute_proposal_risk(operations, model_path)
 
-            proposals.append({
-                "id": fm.get("id", f.stem),
-                "status": status,
-                "effective_status": effective_status,
-                "created_at": fm.get("created_at"),
-                "expires_at": expires_at,
-                "is_stale": is_stale,
-                "reviewer": fm.get("reviewer"),
-                "reviewed_at": fm.get("reviewed_at"),
-                "rejection_reason": fm.get("rejection_reason"),
-                "risk_level": risk.risk_level,
-                "requires_approval": risk.requires_approval,
-                "affected_object_count": risk.affected_object_count,
-                "operations_count": len(operations),
-                "validation_status": fm.get("validation_status"),
-            })
+            proposals.append(
+                {
+                    "id": fm.get("id", f.stem),
+                    "status": status,
+                    "effective_status": effective_status,
+                    "created_at": fm.get("created_at"),
+                    "expires_at": expires_at,
+                    "is_stale": is_stale,
+                    "reviewer": fm.get("reviewer"),
+                    "reviewed_at": fm.get("reviewed_at"),
+                    "rejection_reason": fm.get("rejection_reason"),
+                    "risk_level": risk.risk_level,
+                    "requires_approval": risk.requires_approval,
+                    "affected_object_count": risk.affected_object_count,
+                    "operations_count": len(operations),
+                    "validation_status": fm.get("validation_status"),
+                }
+            )
 
     # Audit trail
     service = AuditEventService(repo_root)
@@ -4024,8 +3966,7 @@ def proposal_report(
         console.print(f"[yellow]Stale proposals: {len(stale_proposals)}[/yellow]")
         if oldest_stale:
             console.print(
-                f"  Oldest stale: {oldest_stale['id']} "
-                f"(expires_at: {oldest_stale['expires_at']})"
+                f"  Oldest stale: {oldest_stale['id']} (expires_at: {oldest_stale['expires_at']})"
             )
 
     if by_status.get("rejected", 0) > 0:
@@ -4043,9 +3984,7 @@ def proposal_report(
 
     if proposals:
         console.print("")
-        table = Table(
-            "ID", "Status", "Risk", "Ops", "Affected", "Stale", "Reviewer"
-        )
+        table = Table("ID", "Status", "Risk", "Ops", "Affected", "Stale", "Reviewer")
         for p in proposals:
             risk_label = p["risk_level"]
             if risk_label == "high":
@@ -4167,9 +4106,7 @@ def proposal_review_bundle(
         impact_report = generate_proposal_impact_report(
             db_path, proposal_id, operations, max_depth=2
         )
-        impact_risk = compute_proposal_risk(
-            operations, model_path, impact_report=impact_report
-        )
+        impact_risk = compute_proposal_risk(operations, model_path, impact_report=impact_report)
         impact_section = {
             "proposal_id": impact_report.proposal_id,
             "high_risk": impact_report.high_risk,
@@ -4262,12 +4199,8 @@ def proposal_review_bundle(
     else:
         if impact_section.get("high_risk"):
             console.print("  [red]⚠ High-risk proposal[/red]")
-        console.print(
-            f"  Affected objects: {len(impact_section.get('affected_objects', []))}"
-        )
-        console.print(
-            f"  Operations analyzed: {len(impact_section.get('operations', []))}"
-        )
+        console.print(f"  Affected objects: {len(impact_section.get('affected_objects', []))}")
+        console.print(f"  Operations analyzed: {len(impact_section.get('operations', []))}")
     console.print("")
 
     # Validation section
@@ -4326,8 +4259,7 @@ def mcp_server_cmd(
         from modelops_core.mcp_server import create_mcp_server
     except ImportError as exc:
         console.print(
-            "[red]The MCP server requires the 'mcp' package. "
-            "Install it with: pip install mcp[/red]"
+            "[red]The MCP server requires the 'mcp' package. Install it with: pip install mcp[/red]"
         )
         raise typer.Exit(code=1) from exc
 
@@ -4365,13 +4297,9 @@ def import_model_sheet(
     if input_path.is_dir():
         proposal = import_model_sheet_csv(input_path, model_path)
     elif input_path.suffix.lower() == ".xlsx":
-        proposal = import_model_sheet_xlsx(
-            input_path, model_path, max_rows=limits.max_import_rows
-        )
+        proposal = import_model_sheet_xlsx(input_path, model_path, max_rows=limits.max_import_rows)
     else:
-        console.print(
-            "[red]Input must be a CSV directory or an .xlsx workbook.[/red]"
-        )
+        console.print("[red]Input must be a CSV directory or an .xlsx workbook.[/red]")
         raise typer.Exit(code=1)
 
     service = AuditEventService(repo_root)
@@ -4460,9 +4388,7 @@ def export_model(
                 console.print(f"  {f}")
             path = written[0] if written else None
         elif fmt.lower() == "json":
-            written = export_model_jsonl(
-                model_path, max_objects=limits.max_export_objects
-            )
+            written = export_model_jsonl(model_path, max_objects=limits.max_export_objects)
             if json_output:
                 print(
                     json.dumps(
@@ -4796,9 +4722,7 @@ def usage_report(
     console.print(f"  Total events: {report.total_events}")
 
     if report.date_range.get("from"):
-        console.print(
-            f"  Period: {report.date_range['from']} to {report.date_range['to']}"
-        )
+        console.print(f"  Period: {report.date_range['from']} to {report.date_range['to']}")
 
     if report.event_type_counts:
         console.print("\n[bold]Event Types[/bold]")
@@ -4903,12 +4827,8 @@ def config_guard(
         raise typer.Exit()
 
     total_issues = sum(len(v) for v in results.values())
-    error_count = sum(
-        1 for issues in results.values() for i in issues if i.severity == "ERROR"
-    )
-    warning_count = sum(
-        1 for issues in results.values() for i in issues if i.severity == "WARNING"
-    )
+    error_count = sum(1 for issues in results.values() for i in issues if i.severity == "ERROR")
+    warning_count = sum(1 for issues in results.values() for i in issues if i.severity == "WARNING")
 
     console.print("[bold]Configuration Guardrails[/bold]")
     console.print(f"  Checks: {len(results)}")
@@ -5020,9 +4940,7 @@ def diff(
     if result.changed:
         console.print(f"\n[bold yellow]Changed ({len(result.changed)})[/bold yellow]")
         for obj in result.changed:
-            console.print(
-                f"  {obj.object_id} ({obj.object_type})"
-            )
+            console.print(f"  {obj.object_id} ({obj.object_type})")
             table = Table("Field", "Old Value", "New Value")
             for fc in obj.field_changes:
                 old_str = str(fc.old_value) if fc.old_value is not None else "—"
@@ -5035,15 +4953,9 @@ def diff(
 def search(
     query: str = typer.Argument(..., help="Search query (keywords)."),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
-    object_type: str | None = typer.Option(
-        None, "--type", help="Filter by object type."
-    ),
-    status: str | None = typer.Option(
-        None, "--status", help="Filter by status."
-    ),
-    domain: str | None = typer.Option(
-        None, "--domain", help="Filter by domain ID."
-    ),
+    object_type: str | None = typer.Option(None, "--type", help="Filter by object type."),
+    status: str | None = typer.Option(None, "--status", help="Filter by status."),
+    domain: str | None = typer.Option(None, "--domain", help="Filter by domain ID."),
     tags: list[str] | None = typer.Option(  # noqa: B008
         None, "--tag", help="Filter by tag (repeatable)."
     ),
@@ -5116,27 +5028,15 @@ def search(
 @app.command("query")
 def query(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
-    object_type: str | None = typer.Option(
-        None, "--type", help="Filter by object type."
-    ),
-    status: str | None = typer.Option(
-        None, "--status", help="Filter by status."
-    ),
-    domain: str | None = typer.Option(
-        None, "--domain", help="Filter by domain ID."
-    ),
-    name_like: str | None = typer.Option(
-        None, "--name-like", help="Substring match on name."
-    ),
+    object_type: str | None = typer.Option(None, "--type", help="Filter by object type."),
+    status: str | None = typer.Option(None, "--status", help="Filter by status."),
+    domain: str | None = typer.Option(None, "--domain", help="Filter by domain ID."),
+    name_like: str | None = typer.Option(None, "--name-like", help="Substring match on name."),
     tags: list[str] | None = typer.Option(  # noqa: B008
         None, "--tag", help="Filter by tag (repeatable)."
     ),
-    owner: str | None = typer.Option(
-        None, "--owner", help="Filter by owner/steward/approver ID."
-    ),
-    sap_table: str | None = typer.Option(
-        None, "--sap-table", help="Filter by SAP table name."
-    ),
+    owner: str | None = typer.Option(None, "--owner", help="Filter by owner/steward/approver ID."),
+    sap_table: str | None = typer.Option(None, "--sap-table", help="Filter by SAP table name."),
     limit: int = typer.Option(50, "--limit", help="Maximum results."),
     offset: int = typer.Option(0, "--offset", help="Skip first N results."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
@@ -5205,9 +5105,7 @@ def query(
 @app.command("migrate")
 def migrate(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
-    dry_run: bool = typer.Option(
-        False, "--dry-run", help="Preview changes without writing files."
-    ),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Preview changes without writing files."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Migrate canonical objects to the current schema version."""
@@ -5245,11 +5143,13 @@ def migrate(
 
         migrated_count += 1
         old_version = fm.get("schema_version", "none")
-        migrated_files.append({
-            "file": file_path.name,
-            "old_version": old_version,
-            "new_version": CURRENT_SCHEMA_VERSION,
-        })
+        migrated_files.append(
+            {
+                "file": file_path.name,
+                "old_version": old_version,
+                "new_version": CURRENT_SCHEMA_VERSION,
+            }
+        )
         if dry_run:
             if not json_output:
                 console.print(
@@ -5315,8 +5215,7 @@ def migrate(
         raise typer.Exit()
 
     console.print(
-        f"\n[bold]Migration complete[/bold] — "
-        f"{migrated_count} migrated, {skipped_count} skipped"
+        f"\n[bold]Migration complete[/bold] — {migrated_count} migrated, {skipped_count} skipped"
     )
 
 

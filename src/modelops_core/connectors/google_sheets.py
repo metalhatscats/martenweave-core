@@ -270,9 +270,7 @@ class GoogleSheetsConnector:
         """Create the sheet tab if it does not already exist."""
         service = self._get_service()
         try:
-            spreadsheet = (
-                service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
-            )
+            spreadsheet = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
         except Exception as exc:
             raise ConnectorError(
                 f"Failed to get spreadsheet {spreadsheet_id}: {exc}",
@@ -280,25 +278,14 @@ class GoogleSheetsConnector:
                 action="fetch_metadata",
             ) from exc
 
-        existing = {
-            s["properties"]["title"]
-            for s in spreadsheet.get("sheets", [])
-        }
+        existing = {s["properties"]["title"] for s in spreadsheet.get("sheets", [])}
         if sheet_name in existing:
             return
 
         try:
             service.spreadsheets().batchUpdate(
                 spreadsheetId=spreadsheet_id,
-                body={
-                    "requests": [
-                        {
-                            "addSheet": {
-                                "properties": {"title": sheet_name}
-                            }
-                        }
-                    ]
-                },
+                body={"requests": [{"addSheet": {"properties": {"title": sheet_name}}}]},
             ).execute()
         except Exception as exc:
             raise ConnectorError(

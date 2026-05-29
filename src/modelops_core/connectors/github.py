@@ -114,9 +114,7 @@ class GitHubConnector:
         session = self._get_session()
         url = f"{self.base_url}{endpoint}"
         try:
-            response = session.request(
-                method, url, json=payload, timeout=30
-            )
+            response = session.request(method, url, json=payload, timeout=30)
             response.raise_for_status()
             return response.json()
         except Exception as exc:
@@ -184,9 +182,7 @@ class GitHubConnector:
                 action="fetch_content",
             )
         owner, repo, path = parts
-        data = self._request(
-            "GET", f"/repos/{owner}/{repo}/contents/{path}"
-        )
+        data = self._request("GET", f"/repos/{owner}/{repo}/contents/{path}")
         import base64
 
         content = data.get("content", "")
@@ -216,9 +212,7 @@ class GitHubConnector:
             last_seen_at=datetime.now(UTC).isoformat(),
             status="ok",
             metadata={
-                "default_branch": meta.metadata.get("default_branch")
-                if meta.metadata
-                else None,
+                "default_branch": meta.metadata.get("default_branch") if meta.metadata else None,
             },
         )
 

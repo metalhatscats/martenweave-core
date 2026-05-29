@@ -39,15 +39,11 @@ def generate_impact_report(
         ).fetchall()
 
         # Load all object metadata for caching
-        obj_rows = conn.execute(
-            "SELECT id, type, name FROM objects"
-        ).fetchall()
+        obj_rows = conn.execute("SELECT id, type, name FROM objects").fetchall()
     finally:
         conn.close()
 
-    metadata: dict[str, dict[str, Any]] = {
-        r[0]: {"type": r[1], "name": r[2]} for r in obj_rows
-    }
+    metadata: dict[str, dict[str, Any]] = {r[0]: {"type": r[1], "name": r[2]} for r in obj_rows}
 
     # Build adjacency (bidirectional)
     outgoing: dict[str, list[tuple[str, str, str | None]]] = {}

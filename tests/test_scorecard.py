@@ -105,7 +105,8 @@ class TestScorecardEvidenceCoverage:
             "model_dir: model\ngenerated_dir: generated\n", encoding="utf-8"
         )
         build_index(
-            repo_root=tmp_path, db_path=generated_dir / "modelops.db",
+            repo_root=tmp_path,
+            db_path=generated_dir / "modelops.db",
             allow_invalid=True,
         )
         report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
@@ -135,7 +136,8 @@ class TestScorecardEvidenceCoverage:
             "model_dir: model\ngenerated_dir: generated\n", encoding="utf-8"
         )
         build_index(
-            repo_root=tmp_path, db_path=generated_dir / "modelops.db",
+            repo_root=tmp_path,
+            db_path=generated_dir / "modelops.db",
             allow_invalid=True,
         )
         report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
@@ -159,7 +161,8 @@ class TestScorecardEvidenceCoverage:
             "model_dir: model\ngenerated_dir: generated\n", encoding="utf-8"
         )
         build_index(
-            repo_root=tmp_path, db_path=generated_dir / "modelops.db",
+            repo_root=tmp_path,
+            db_path=generated_dir / "modelops.db",
             allow_invalid=True,
         )
         report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
@@ -192,7 +195,8 @@ class TestScorecardSapTableCoverage:
             "model_dir: model\ngenerated_dir: generated\n", encoding="utf-8"
         )
         build_index(
-            repo_root=tmp_path, db_path=generated_dir / "modelops.db",
+            repo_root=tmp_path,
+            db_path=generated_dir / "modelops.db",
             allow_invalid=True,
         )
         report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
@@ -222,7 +226,8 @@ class TestScorecardSapTableCoverage:
             "model_dir: model\ngenerated_dir: generated\n", encoding="utf-8"
         )
         build_index(
-            repo_root=tmp_path, db_path=generated_dir / "modelops.db",
+            repo_root=tmp_path,
+            db_path=generated_dir / "modelops.db",
             allow_invalid=True,
         )
         report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
@@ -246,7 +251,8 @@ class TestScorecardSapTableCoverage:
             "model_dir: model\ngenerated_dir: generated\n", encoding="utf-8"
         )
         build_index(
-            repo_root=tmp_path, db_path=generated_dir / "modelops.db",
+            repo_root=tmp_path,
+            db_path=generated_dir / "modelops.db",
             allow_invalid=True,
         )
         report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
@@ -271,7 +277,8 @@ class TestScorecardSapTableCoverage:
             "model_dir: model\ngenerated_dir: generated\n", encoding="utf-8"
         )
         build_index(
-            repo_root=tmp_path, db_path=generated_dir / "modelops.db",
+            repo_root=tmp_path,
+            db_path=generated_dir / "modelops.db",
             allow_invalid=True,
         )
         report = generate_scorecard(generated_dir / "modelops.db", tmp_path)

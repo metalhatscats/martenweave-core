@@ -331,8 +331,7 @@ def _add_readme_sheet(
         ("", normal_font),
         ("Review column:", heading_font),
         (
-            "  - reviewer_notes: free-text comments that are NOT imported "
-            "into canonical files.",
+            "  - reviewer_notes: free-text comments that are NOT imported into canonical files.",
             normal_font,
         ),
         ("", normal_font),

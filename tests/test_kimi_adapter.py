@@ -82,9 +82,7 @@ def test_kimi_adapter_invalid_json_in_content_raises() -> None:
 
     with mock.patch(
         "modelops_core.ai.kimi_adapter._post_chat_completion",
-        return_value={
-            "choices": [{"message": {"content": "not valid json"}}]
-        },
+        return_value={"choices": [{"message": {"content": "not valid json"}}]},
     ):
         with pytest.raises(AIOutputValidationError, match="not valid JSON"):
             adapter.generate_candidates(AIContextBundle(note="test"))
@@ -152,9 +150,7 @@ def test_post_chat_completion_http_error_rate_limit() -> None:
         fp=None,
     )
 
-    with mock.patch(
-        "urllib.request.urlopen", side_effect=http_error
-    ):
+    with mock.patch("urllib.request.urlopen", side_effect=http_error):
         with pytest.raises(AIRateLimitError, match="rate limited"):
             _post_chat_completion(
                 api_key="fake-key",

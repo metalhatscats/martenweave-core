@@ -51,8 +51,7 @@ class TraceResult:
         # A node is upstream if it is the source of an upstream edge
         # (i.e., it was discovered by traversing backward toward the root)
         return any(
-            e.direction == "upstream" and e.from_object_id == node.object_id
-            for e in self.edges
+            e.direction == "upstream" and e.from_object_id == node.object_id for e in self.edges
         )
 
 
@@ -81,9 +80,7 @@ def trace_object(
     conn.row_factory = sqlite3.Row
 
     # Load all objects for name/type lookup
-    obj_rows = conn.execute(
-        "SELECT id, type, name, source_file FROM objects"
-    ).fetchall()
+    obj_rows = conn.execute("SELECT id, type, name, source_file FROM objects").fetchall()
     obj_info: dict[str, dict[str, str | None]] = {
         row["id"]: {
             "type": row["type"],

@@ -48,9 +48,7 @@ def build_patch_proposal_from_note(
     if repo_root is not None:
         from modelops_core.telemetry.ai_usage import wrap_ai_adapter
 
-        adapter = wrap_ai_adapter(
-            adapter, repo_root=repo_root, command="propose-patch"
-        )
+        adapter = wrap_ai_adapter(adapter, repo_root=repo_root, command="propose-patch")
 
     candidates = adapter.generate_candidates(context)
     if not candidates:

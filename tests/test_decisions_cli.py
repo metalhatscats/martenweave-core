@@ -14,6 +14,7 @@ runner = CliRunner()
 
 def test_decisions_list_no_index(sample_repo: Path) -> None:
     import shutil
+
     generated = sample_repo / "generated"
     if generated.exists():
         shutil.rmtree(generated)
@@ -24,6 +25,7 @@ def test_decisions_list_no_index(sample_repo: Path) -> None:
 
 def test_decisions_list_no_index_json(sample_repo: Path) -> None:
     import shutil
+
     generated = sample_repo / "generated"
     if generated.exists():
         shutil.rmtree(generated)
@@ -90,6 +92,7 @@ def test_decisions_show_json(sample_repo: Path) -> None:
 
 def test_decisions_show_no_index(sample_repo: Path) -> None:
     import shutil
+
     generated = sample_repo / "generated"
     if generated.exists():
         shutil.rmtree(generated)

@@ -82,8 +82,7 @@ def test_build_index_creates_object_filter_indexes(temp_model_dir: Path) -> None
     indexes = {
         row[0]
         for row in conn.execute(
-            "SELECT name FROM sqlite_master "
-            "WHERE type = 'index' AND tbl_name = 'objects'"
+            "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'objects'"
         )
     }
     conn.close()
@@ -103,8 +102,7 @@ def test_build_index_creates_tag_index(temp_model_dir: Path) -> None:
     indexes = {
         row[0]
         for row in conn.execute(
-            "SELECT name FROM sqlite_master "
-            "WHERE type = 'index' AND tbl_name = 'tags'"
+            "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'tags'"
         )
     }
     conn.close()

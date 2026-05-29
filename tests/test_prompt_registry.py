@@ -97,7 +97,7 @@ def test_registry_from_custom_dir(tmp_path: Path) -> None:
     prompts_dir = tmp_path / "prompts"
     prompts_dir.mkdir()
     (prompts_dir / "custom_v1.yaml").write_text(
-        "prompt_id: custom\nversion: \"1.0.0\"\n"
+        'prompt_id: custom\nversion: "1.0.0"\n'
         "workflow: custom-workflow\n"
         "system_instructions: Do something.\n",
         encoding="utf-8",

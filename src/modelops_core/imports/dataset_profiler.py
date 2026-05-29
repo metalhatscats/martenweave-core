@@ -187,7 +187,7 @@ def profile_csv(
 
         for i, col in enumerate(columns):
             col.distinct_count = len(distinct_sets[i])
-            col.inferred_type = _infer_type(list(distinct_sets[i])[:SAMPLE_SIZE * 2])
+            col.inferred_type = _infer_type(list(distinct_sets[i])[: SAMPLE_SIZE * 2])
 
     status = ProfilingStatus(
         success=True,
@@ -331,7 +331,7 @@ def profile_xlsx(
 
         for i, col in enumerate(columns):
             col.distinct_count = len(distinct_sets[i])
-            col.inferred_type = _infer_type(list(distinct_sets[i])[:SAMPLE_SIZE * 2])
+            col.inferred_type = _infer_type(list(distinct_sets[i])[: SAMPLE_SIZE * 2])
 
         status = ProfilingStatus(
             success=True,
