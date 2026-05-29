@@ -33,7 +33,7 @@ Teams collaborate by editing Markdown/YAML files, opening GitHub PRs, and review
 - **Responsibility**: Owns the business meaning of a domain or entity
 - **Actions**: Approves ChangeRequests that affect their domain; provides context for mappings
 - **Maps to**: `OwnershipRole.business_owner` on `MasterDataDomain`, `BusinessEntity`
-- **Tooling**: CLI (`cr-approve`), exported review workbook, GitHub notifications
+- **Tooling**: CLI (`change-request approve`), exported review workbook, GitHub notifications
 
 ### Technical Owner
 
@@ -45,16 +45,16 @@ Teams collaborate by editing Markdown/YAML files, opening GitHub PRs, and review
 ### Reviewer
 
 - **Responsibility**: Provides a second pair of eyes on PatchProposals and ChangeRequests
-- **Actions**: Reads proposals, runs `proposal-impact`, comments on PRs
+- **Actions**: Reads proposals, runs `proposal impact`, comments on PRs
 - **Maps to**: `Watcher` object or PR reviewer assignment
 - **Tooling**: CLI, GitHub PR review, exported workbook
 
 ### Approver
 
 - **Responsibility**: Formal sign-off on changes before apply
-- **Actions**: Runs `cr-approve` or merges the PR that applies the proposal
+- **Actions**: Runs `change-request approve` or merges the PR that applies the proposal
 - **Maps to**: `ChangeRequest.approvers` list
-- **Tooling**: CLI (`cr-approve`), GitHub PR merge
+- **Tooling**: CLI (`change-request approve`), GitHub PR merge
 
 ### Integration Owner
 
@@ -68,7 +68,7 @@ Teams collaborate by editing Markdown/YAML files, opening GitHub PRs, and review
 - **Responsibility**: Supervises AI-assisted modelling; validates AI output
 - **Actions**: Runs `propose-patch`, reviews AI-generated PatchProposals, adjusts assumptions
 - **Maps to**: `PatchProposal.created_by = "ai"`, human approver on `ChangeRequest`
-- **Tooling**: CLI (`propose-patch`, `proposal-validate`), MCP server
+- **Tooling**: CLI (`propose-patch`, `proposal validate`), MCP server
 
 ---
 
@@ -81,17 +81,17 @@ Teams collaborate by editing Markdown/YAML files, opening GitHub PRs, and review
    └─ modelops propose-patch --from note.md
 
 2. Reviewer inspects the proposal
-   └─ modelops proposal-impact PP-001
-   └─ modelops proposal-validate PP-001
+   └─ modelops proposal impact PP-001
+   └─ modelops proposal validate PP-001
 
 3. Reviewer creates a ChangeRequest for governance
-   └─ modelops cr-create --id CR-001 --title "Update Customer Group"
+   └─ modelops change-request create --id CR-001 --title "Update Customer Group"
 
 4. Approver reviews and approves
-   └─ modelops cr-approve CR-001
+   └─ modelops change-request approve CR-001
 
 5. Maintainer applies the proposal
-   └─ modelops proposal-apply PP-001
+   └─ modelops proposal apply PP-001
 
 6. System emits audit events and rebuilds index
    └─ generated/audit_events.jsonl

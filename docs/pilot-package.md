@@ -35,7 +35,7 @@ Validate Martenweave with minimal commitment:
 
 1. **Clone or install Martenweave**
    ```bash
-   pip install modelops-core
+   pip install martenweave-core
    modelops init ./pilot-model --name "Pilot Customer Domain"
    ```
 

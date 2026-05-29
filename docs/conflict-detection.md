@@ -90,8 +90,8 @@ Proposal A: create MAP-1 linking ATTR-OLD -> FEP-1
 ### 3.5 Relationship / LoV / rule conflicts
 
 ```text
-Proposal A: attach ValueList VL-1 to ATTR-TEST
-Proposal B: attach ValueList VL-2 to ATTR-TEST
+Proposal A: attach ValueList VLIST-1 to ATTR-TEST
+Proposal B: attach ValueList VLIST-2 to ATTR-TEST
 ```
 
 **Detection:** Both proposals modify the same relationship field.

@@ -34,7 +34,7 @@ These issues are **closed and merged**. They form the v0.1 foundation.
 | #5 | Proposal review and apply workflow | `modelops proposal list/dry-run/apply` |
 | #8 | Export to Excel / CSV | `modelops export-model` |
 | #9 | Import spreadsheet as PatchProposal | `modelops import-model-sheet` |
-| #10 | Local API | `modelops api` |
+| #10 | Local API | `modelops serve` |
 | #12 | Domain packs (SAP + generic) | `modelops validate --repo examples/customer_bp_model` |
 | #13 | Traceability graph | `modelops trace <id>` |
 | #14 | Field / attribute ownership | validation layer 2 |
