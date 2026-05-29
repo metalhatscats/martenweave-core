@@ -71,8 +71,12 @@ CREATE TABLE tags (
     PRIMARY KEY (object_id, tag)
 );
 
+CREATE INDEX idx_objects_type ON objects(type);
+CREATE INDEX idx_objects_status ON objects(status);
+CREATE INDEX idx_objects_domain ON objects(domain);
 CREATE INDEX idx_rel_from ON object_relationships(from_object_id);
 CREATE INDEX idx_rel_to ON object_relationships(to_object_id);
+CREATE INDEX idx_rel_to_type ON object_relationships(to_object_id, relationship_type);
 CREATE INDEX idx_tag_tag ON tags(tag);
 """
 
