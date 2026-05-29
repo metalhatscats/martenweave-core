@@ -6,7 +6,6 @@ status: active
 name: Transform Product Data
 domain: DOMAIN-PRODUCT
 integration_flow: FLOW-PRODUCT-TO-ECOMMERCE
-source_step: STEP-PRODUCT-EXTRACT
 target_step: STEP-PRODUCT-LOAD
 transformation_rule: TRULE-PRODUCT-PRICE-FORMAT
 step_type: transform

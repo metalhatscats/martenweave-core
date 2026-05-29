@@ -6,7 +6,6 @@ status: active
 name: Load Product Data
 domain: DOMAIN-PRODUCT
 integration_flow: FLOW-PRODUCT-TO-ECOMMERCE
-source_step: STEP-PRODUCT-TRANSFORM
 step_type: load
 ---
 

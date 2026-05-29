@@ -8,6 +8,10 @@ with value lists and value mappings (e.g., product colors and sizes).
 | Object ID | Type | Description |
 |---|---|---|
 | `DOMAIN-PRODUCT` | MasterDataDomain | Product domain |
+| `ENTITY-PRODUCT` | BusinessEntity | Product entity |
+| `ATTR-PRODUCT-SKU` | Attribute | Product SKU attribute |
+| `FEP-PRODUCT-SKU` | FieldEndpoint | SKU file column |
+| `DS-PRODUCT-CSV` | Dataset | Sample product dataset |
 | `VLIST-PRODUCT-COLOR` | ValueList | Allowed product colors |
 | `VLIST-PRODUCT-COLOR-LEGACY` | ValueList | Legacy color codes |
 | `VLIST-PRODUCT-SIZE` | ValueList | Allowed product sizes |
