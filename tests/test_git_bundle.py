@@ -137,9 +137,7 @@ def test_cli_git_bundle_json(temp_model_dir: Path) -> None:
     write_patch_proposal(proposal, temp_model_dir)
 
     repo = str(temp_model_dir.parent)
-    result = runner.invoke(
-        app, ["git-bundle", "PP-BUNDLE-JSON", "--repo", repo, "--json"]
-    )
+    result = runner.invoke(app, ["git-bundle", "PP-BUNDLE-JSON", "--repo", repo, "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["proposal_id"] == "PP-BUNDLE-JSON"

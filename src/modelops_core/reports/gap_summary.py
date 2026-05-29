@@ -43,13 +43,15 @@ def _collect_validation_gaps(db_path: Path) -> list[dict[str, Any]]:
             "FROM validation_results WHERE severity IN ('ERROR', 'WARNING')"
         ).fetchall()
         for severity, code, message, object_id, object_type in rows:
-            gaps.append({
-                "object_id": object_id or "",
-                "object_type": object_type or "",
-                "gap_type": f"validation_{code.lower()}",
-                "severity": severity,
-                "message": message,
-            })
+            gaps.append(
+                {
+                    "object_id": object_id or "",
+                    "object_type": object_type or "",
+                    "gap_type": f"validation_{code.lower()}",
+                    "severity": severity,
+                    "message": message,
+                }
+            )
     finally:
         conn.close()
     return gaps
@@ -78,9 +80,7 @@ def _add_gaps(
             object_gap_types[obj_id] = set()
         object_gap_types[obj_id].add(key)
 
-    report.total_gap_count = sum(
-        summary.count for summary in report.gaps_by_type.values()
-    )
+    report.total_gap_count = sum(summary.count for summary in report.gaps_by_type.values())
 
     # top_objects = objects with the most gap types
     sorted_objs = sorted(
@@ -178,17 +178,11 @@ def generate_gap_summary_report(
         if risk:
             _add_gaps(
                 report,
-                [
-                    {"object_id": i["object_id"], "gap_type": "open_issue"}
-                    for i in risk.open_issues
-                ],
+                [{"object_id": i["object_id"], "gap_type": "open_issue"} for i in risk.open_issues],
             )
             _add_gaps(
                 report,
-                [
-                    {"object_id": r["object_id"], "gap_type": "open_risk"}
-                    for r in risk.open_risks
-                ],
+                [{"object_id": r["object_id"], "gap_type": "open_risk"} for r in risk.open_risks],
             )
 
         sources_checked.append("analysis_report")
@@ -235,9 +229,7 @@ def generate_gap_summary_report(
 
     # Gap score = total gaps / total objects (capped at 1.0)
     if report.total_objects > 0:
-        report.gap_score = round(
-            min(report.total_gap_count / report.total_objects, 1.0), 3
-        )
+        report.gap_score = round(min(report.total_gap_count / report.total_objects, 1.0), 3)
     else:
         report.gap_score = 0.0
 

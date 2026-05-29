@@ -32,10 +32,7 @@ def _read_google_sheet(
         # Fallback: read the spreadsheet to get sheet names
         service = connector._get_service()
         spreadsheet = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
-        sheet_titles = [
-            s["properties"]["title"]
-            for s in spreadsheet.get("sheets", [])
-        ]
+        sheet_titles = [s["properties"]["title"] for s in spreadsheet.get("sheets", [])]
 
     rows_by_type: dict[str, list[dict[str, str]]] = {}
     for title in sheet_titles:
@@ -50,8 +47,7 @@ def _read_google_sheet(
         rows: list[dict[str, str]] = []
         for row in values[1:]:
             row_dict = {
-                h: str(v) if v is not None else ""
-                for h, v in zip(headers, row, strict=False)
+                h: str(v) if v is not None else "" for h, v in zip(headers, row, strict=False)
             }
             if row_dict.get("id"):
                 rows.append(row_dict)

@@ -207,7 +207,6 @@ def test_nested_cycle() -> None:
     assert set(cycle_result.related_objects) == {"A", "B", "C"}
 
 
-
 def test_decision_with_valid_evidence() -> None:
     evidence = ParsedObject(
         source_path="evidence.md",

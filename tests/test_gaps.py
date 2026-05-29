@@ -201,9 +201,7 @@ def test_detect_dataset_gaps_multiple_matches(tmp_path: Path) -> None:
 
 class TestGapsCli:
     def test_gaps_no_index(self, tmp_path: Path) -> None:
-        result = runner.invoke(
-            app, ["gaps", str(tmp_path / "data.csv"), "--repo", str(tmp_path)]
-        )
+        result = runner.invoke(app, ["gaps", str(tmp_path / "data.csv"), "--repo", str(tmp_path)])
         assert result.exit_code == 1
         assert "build-index" in result.output or "No index found" in result.output
 
@@ -281,9 +279,7 @@ class TestGapsCli:
         csv_path = tmp_path / "data.csv"
         csv_path.write_text("CUSTOMER_ID,UNKNOWN\n1,a\n", encoding="utf-8")
 
-        result = runner.invoke(
-            app, ["gaps", str(csv_path), "--repo", str(repo), "--json"]
-        )
+        result = runner.invoke(app, ["gaps", str(csv_path), "--repo", str(repo), "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert data["dataset_id"] == "data"
@@ -349,7 +345,6 @@ class TestGapsCli:
         text = issue_file.read_text(encoding="utf-8")
         assert "Issue" in text
         assert "UNKNOWN_COL" in text
-
 
 
 def test_gap_severity_assignment() -> None:
@@ -559,7 +554,6 @@ class TestGapsPromoteCli:
         text = proposal_file.read_text(encoding="utf-8")
         assert "PatchProposal" in text
         assert "pending_review" in text
-
 
 
 def test_detect_dataset_gaps_empty_dataset(tmp_path: Path) -> None:
@@ -1128,9 +1122,7 @@ class TestGapsMultiSheetXlsx:
         conn.commit()
         conn.close()
 
-        xlsx_path = (
-            Path(__file__).parent / "fixtures" / "customer_sample_multi.xlsx"
-        )
+        xlsx_path = Path(__file__).parent / "fixtures" / "customer_sample_multi.xlsx"
         result = runner.invoke(
             app,
             [
@@ -1192,9 +1184,7 @@ class TestGapsMultiSheetXlsx:
         conn.commit()
         conn.close()
 
-        xlsx_path = (
-            Path(__file__).parent / "fixtures" / "customer_sample_multi.xlsx"
-        )
+        xlsx_path = Path(__file__).parent / "fixtures" / "customer_sample_multi.xlsx"
         result = runner.invoke(
             app,
             [

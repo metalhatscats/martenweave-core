@@ -54,9 +54,7 @@ def _read_stored_source_hash(db_path: Path) -> str | None:
     """Read the source_content_hash from the index manifest."""
     try:
         conn = sqlite3.connect(str(db_path))
-        cursor = conn.execute(
-            "SELECT value FROM index_manifest WHERE key = 'source_content_hash'"
-        )
+        cursor = conn.execute("SELECT value FROM index_manifest WHERE key = 'source_content_hash'")
         row = cursor.fetchone()
         conn.close()
         if row:
@@ -127,9 +125,7 @@ def check_index_freshness(
     stale_sources: list[str] = []
 
     for source_file in canonical_files:
-        source_mtime = datetime.fromtimestamp(
-            source_file.stat().st_mtime, tz=UTC
-        )
+        source_mtime = datetime.fromtimestamp(source_file.stat().st_mtime, tz=UTC)
         if newest_source_mtime is None or source_mtime > newest_source_mtime:
             newest_source_mtime = source_mtime
 

@@ -18,9 +18,7 @@ def generate_lineage_path(db_path: Path, object_id: str) -> LineagePath:
     """
     conn = sqlite3.connect(str(db_path))
     try:
-        rows = conn.execute(
-            "SELECT id, type, name, frontmatter_json FROM objects"
-        ).fetchall()
+        rows = conn.execute("SELECT id, type, name, frontmatter_json FROM objects").fetchall()
     finally:
         conn.close()
 

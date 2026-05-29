@@ -38,9 +38,7 @@ def generate_usage_report(repo_root: Path) -> UsageReport:
         return report
 
     report.event_type_counts = dict(Counter(e.event_type for e in events))
-    report.command_counts = dict(
-        Counter(e.command for e in events if e.command)
-    )
+    report.command_counts = dict(Counter(e.command for e in events if e.command))
     report.status_counts = dict(Counter(e.status for e in events))
 
     timestamps = [e.timestamp for e in events if e.timestamp]
@@ -53,9 +51,7 @@ def generate_usage_report(repo_root: Path) -> UsageReport:
     # AI usage placeholder: inspect metadata for token counts if present
     ai_events = [e for e in events if e.metadata and "tokens" in e.metadata]
     if ai_events:
-        total_tokens = sum(
-            int(e.metadata.get("tokens", 0) or 0) for e in ai_events
-        )
+        total_tokens = sum(int(e.metadata.get("tokens", 0) or 0) for e in ai_events)
         report.ai_usage_summary = {
             "ai_calls": len(ai_events),
             "total_tokens": total_tokens,

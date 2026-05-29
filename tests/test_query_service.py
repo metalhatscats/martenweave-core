@@ -443,7 +443,6 @@ class TestListRelatedObjects:
         rels = list_related_objects(db, "ATTR-001")
         assert rels == []
 
-
     def test_query_by_owner(self, tmp_path: Path) -> None:
         db = tmp_path / "modelops.db"
         _build_index(db)
@@ -544,9 +543,7 @@ class TestJsonContract:
         db = generated / "modelops.db"
         _build_index(db)
 
-        result = runner.invoke(
-            app, ["query", "--repo", str(repo), "--type", "Attribute", "--json"]
-        )
+        result = runner.invoke(app, ["query", "--repo", str(repo), "--type", "Attribute", "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert isinstance(data, dict)
@@ -566,9 +563,7 @@ class TestJsonContract:
         db = generated / "modelops.db"
         _build_index(db)
 
-        result = runner.invoke(
-            app, ["search", "Customer", "--repo", str(repo), "--json"]
-        )
+        result = runner.invoke(app, ["search", "Customer", "--repo", str(repo), "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert isinstance(data, dict)

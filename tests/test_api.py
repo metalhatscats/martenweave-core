@@ -33,9 +33,7 @@ def test_api_list_objects(sample_repo: Path) -> None:
 
 
 def test_api_list_objects_by_type(sample_repo: Path) -> None:
-    response = client.get(
-        "/objects", params={"repo": str(sample_repo), "type": "MasterDataDomain"}
-    )
+    response = client.get("/objects", params={"repo": str(sample_repo), "type": "MasterDataDomain"})
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
@@ -43,9 +41,7 @@ def test_api_list_objects_by_type(sample_repo: Path) -> None:
 
 
 def test_api_get_object(sample_repo: Path) -> None:
-    response = client.get(
-        "/objects/DOMAIN-CUSTOMER-BP", params={"repo": str(sample_repo)}
-    )
+    response = client.get("/objects/DOMAIN-CUSTOMER-BP", params={"repo": str(sample_repo)})
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == "DOMAIN-CUSTOMER-BP"
@@ -130,9 +126,7 @@ def test_api_impact_missing_index(temp_model_dir: Path) -> None:
 
 
 def test_api_trace_success(sample_repo: Path) -> None:
-    response = client.get(
-        "/trace/FEP-S4-KNVV-KDGRP", params={"repo": str(sample_repo)}
-    )
+    response = client.get("/trace/FEP-S4-KNVV-KDGRP", params={"repo": str(sample_repo)})
     assert response.status_code == 200
     data = response.json()
     assert data["root_object_id"] == "FEP-S4-KNVV-KDGRP"

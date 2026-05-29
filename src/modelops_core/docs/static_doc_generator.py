@@ -43,9 +43,7 @@ def generate_static_docs(
         db_path = repo_root / "generated" / "modelops.db"
 
     if not db_path.exists():
-        raise FileNotFoundError(
-            f"No index found at {db_path}. Run `modelops build-index` first."
-        )
+        raise FileNotFoundError(f"No index found at {db_path}. Run `modelops build-index` first.")
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -119,12 +117,14 @@ def _write_index_md(
         anchor = _anchor(obj_type)
         lines.append(f"  - [{obj_type}]({anchor}.md): {count}")
 
-    lines.extend([
-        "",
-        "## Browse",
-        "",
-        "- [All objects](objects.md)",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Browse",
+            "",
+            "- [All objects](objects.md)",
+        ]
+    )
 
     for obj_type in sorted(objects_by_type.keys()):
         anchor = _anchor(obj_type)
@@ -186,9 +186,19 @@ def _write_type_md(
 
         # Show a few meaningful frontmatter fields
         fm = obj["frontmatter"]
-        for key in ("semantic_category", "data_classification", "endpoint_type",
-                    "sap_table", "sap_field", "system_type", "usage_type", "scope",
-                    "business_owner", "technical_owner", "data_steward"):
+        for key in (
+            "semantic_category",
+            "data_classification",
+            "endpoint_type",
+            "sap_table",
+            "sap_field",
+            "system_type",
+            "usage_type",
+            "scope",
+            "business_owner",
+            "technical_owner",
+            "data_steward",
+        ):
             val = _fm_field(fm, key)
             if val:
                 lines.append(f"- **{key.replace('_', ' ').title()}**: {val}")

@@ -26,10 +26,7 @@ def test_trace_object_downstream_only(sample_repo: Path) -> None:
     db_path = sample_repo / "generated" / "modelops.db"
 
     result = trace_object(db_path, "DOMAIN-CUSTOMER-BP", max_depth=3, direction="downstream")
-    assert all(
-        e.direction == "downstream"
-        for e in result.edges
-    )
+    assert all(e.direction == "downstream" for e in result.edges)
 
 
 def test_trace_object_upstream_only(sample_repo: Path) -> None:
@@ -37,10 +34,7 @@ def test_trace_object_upstream_only(sample_repo: Path) -> None:
     db_path = sample_repo / "generated" / "modelops.db"
 
     result = trace_object(db_path, "FEP-S4-KNVV-KDGRP", max_depth=3, direction="upstream")
-    assert all(
-        e.direction == "upstream"
-        for e in result.edges
-    )
+    assert all(e.direction == "upstream" for e in result.edges)
 
 
 def test_trace_object_no_index(temp_model_dir: Path) -> None:
@@ -117,10 +111,7 @@ def test_trace_upstream_property(sample_repo: Path) -> None:
     # Every upstream node must be the source of at least one upstream edge
     upstream_ids = {n.object_id for n in upstream_nodes}
     for node_id in upstream_ids:
-        assert any(
-            e.direction == "upstream" and e.from_object_id == node_id
-            for e in result.edges
-        )
+        assert any(e.direction == "upstream" and e.from_object_id == node_id for e in result.edges)
 
 
 def test_trace_downstream_property(sample_repo: Path) -> None:
@@ -138,10 +129,7 @@ def test_trace_downstream_property(sample_repo: Path) -> None:
     # Every downstream node must have at least one downstream edge pointing to it
     downstream_ids = {n.object_id for n in downstream_nodes}
     for node_id in downstream_ids:
-        assert any(
-            e.direction == "downstream" and e.to_object_id == node_id
-            for e in result.edges
-        )
+        assert any(e.direction == "downstream" and e.to_object_id == node_id for e in result.edges)
 
 
 def test_trace_upstream_downstream_partition(sample_repo: Path) -> None:

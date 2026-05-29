@@ -76,9 +76,7 @@ def test_proposal_report_rejected_proposal(tmp_path: Path) -> None:
     assert data["proposals_total"] == 1
     assert data["by_status"]["rejected"] == 1
     assert data["rejected_analysis"]["total_rejected"] == 1
-    assert data["rejected_analysis"]["rejection_reason_frequencies"] == {
-        "insufficient_evidence": 1
-    }
+    assert data["rejected_analysis"]["rejection_reason_frequencies"] == {"insufficient_evidence": 1}
     assert data["rejected_analysis"]["rejected_by_reviewer"] == {"alice": 1}
 
 

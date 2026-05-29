@@ -95,12 +95,7 @@ def test_import_google_sheet_as_proposal(tmp_path: Path) -> None:
     model_dir = tmp_path / "model"
     model_dir.mkdir(parents=True)
     (model_dir / "DOMAIN-TEST.md").write_text(
-        "---\n"
-        "id: DOMAIN-TEST\n"
-        "type: MasterDataDomain\n"
-        "status: draft\n"
-        "name: Test Domain\n"
-        "---\n"
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n"
     )
     (model_dir / "ATTR-TEST.md").write_text(
         "---\n"
@@ -153,12 +148,7 @@ def test_import_google_sheet_as_proposal_new_object(tmp_path: Path) -> None:
     model_dir = tmp_path / "model"
     model_dir.mkdir(parents=True)
     (model_dir / "DOMAIN-TEST.md").write_text(
-        "---\n"
-        "id: DOMAIN-TEST\n"
-        "type: MasterDataDomain\n"
-        "status: draft\n"
-        "name: Test Domain\n"
-        "---\n"
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n"
     )
 
     mock_connector = MagicMock()
@@ -211,19 +201,12 @@ def test_cli_import_sheet_success(tmp_path: Path) -> None:
     model_dir = tmp_path / "model"
     model_dir.mkdir(parents=True)
     (model_dir / "DOMAIN-TEST.md").write_text(
-        "---\n"
-        "id: DOMAIN-TEST\n"
-        "type: MasterDataDomain\n"
-        "status: draft\n"
-        "name: Test Domain\n"
-        "---\n"
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n"
     )
 
     runner = CliRunner()
 
-    with patch(
-        "modelops_core.cli.import_google_sheet_as_proposal"
-    ) as mock_import:
+    with patch("modelops_core.cli.import_google_sheet_as_proposal") as mock_import:
         mock_import.return_value = {
             "id": "PP-IMPORT-TEST",
             "type": "PatchProposal",
@@ -257,12 +240,7 @@ def test_cli_import_sheet_missing_dependency(tmp_path: Path) -> None:
     model_dir = tmp_path / "model"
     model_dir.mkdir(parents=True)
     (model_dir / "DOMAIN-TEST.md").write_text(
-        "---\n"
-        "id: DOMAIN-TEST\n"
-        "type: MasterDataDomain\n"
-        "status: draft\n"
-        "name: Test Domain\n"
-        "---\n"
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n"
     )
 
     runner = CliRunner()

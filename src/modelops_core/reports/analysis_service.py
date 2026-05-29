@@ -79,9 +79,7 @@ class AnalysisReport:
 
 
 def _load_objects(conn: sqlite3.Connection) -> list[dict[str, Any]]:
-    rows = conn.execute(
-        "SELECT id, type, name, status, frontmatter_json FROM objects"
-    ).fetchall()
+    rows = conn.execute("SELECT id, type, name, status, frontmatter_json FROM objects").fetchall()
     result = []
     for obj_id, obj_type, name, status, fm_json in rows:
         fm = json.loads(fm_json or "{}")
@@ -102,10 +100,16 @@ def _is_active(status: str | None) -> bool:
 
 
 def _has_owner(fm: dict[str, Any]) -> bool:
-    return any(fm.get(f) for f in (
-        "business_owner", "technical_owner", "data_steward",
-        "accountable_team", "approver",
-    ))
+    return any(
+        fm.get(f)
+        for f in (
+            "business_owner",
+            "technical_owner",
+            "data_steward",
+            "accountable_team",
+            "approver",
+        )
+    )
 
 
 def generate_analysis_report(
@@ -158,9 +162,16 @@ def generate_analysis_report(
         # Ownership gaps
         ownership_gaps: list[dict[str, Any]] = []
         _OWNERSHIP_TYPES = {
-            "Attribute", "FieldEndpoint", "Dataset", "Mapping",
-            "ValidationRule", "Issue", "Decision", "BusinessEntity",
-            "ValueList", "ValueMapping",
+            "Attribute",
+            "FieldEndpoint",
+            "Dataset",
+            "Mapping",
+            "ValidationRule",
+            "Issue",
+            "Decision",
+            "BusinessEntity",
+            "ValueList",
+            "ValueMapping",
         }
         for obj in objects:
             if obj["type"] in _OWNERSHIP_TYPES and _is_active(obj["status"]):

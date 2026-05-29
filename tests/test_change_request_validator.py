@@ -71,9 +71,7 @@ class TestValidateChangeRequest:
                 "implementation_status": "foo",
             }
         )
-        error = next(
-            r for r in results if r.code == "CHANGE_REQUEST_IMPLEMENTATION_STATUS_INVALID"
-        )
+        error = next(r for r in results if r.code == "CHANGE_REQUEST_IMPLEMENTATION_STATUS_INVALID")
         assert error.severity == ValidationSeverity.ERROR
 
     def test_valid_proposal_list_passes(self) -> None:

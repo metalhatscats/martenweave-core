@@ -20,9 +20,7 @@ from typing import Any, TypeVar
 F = TypeVar("F", bound=Callable[..., Any])
 
 # Thread-safe / async-safe context variable for the active telemetry session.
-_active_session: ContextVar[_TelemetrySession | None] = ContextVar(
-    "_active_session", default=None
-)
+_active_session: ContextVar[_TelemetrySession | None] = ContextVar("_active_session", default=None)
 
 
 @dataclass
@@ -175,9 +173,7 @@ class _TelemetrySession:
         self.export_format = fmt
 
     def finalize(self, status: str, error: BaseException | None = None) -> None:
-        duration_ms = int(
-            (datetime.now(UTC) - self.start_time).total_seconds() * 1000
-        )
+        duration_ms = int((datetime.now(UTC) - self.start_time).total_seconds() * 1000)
         error_type = type(error).__name__ if error else None
         event = UsageEvent(
             event_id=_generate_event_id(),
@@ -261,11 +257,7 @@ def with_telemetry(
             repo_val = kwargs.get(repo_arg)
             repo_root: Path | None = None
             if repo_val is not None:
-                repo_root = (
-                    Path(repo_val).resolve()
-                    if isinstance(repo_val, str)
-                    else repo_val
-                )
+                repo_root = Path(repo_val).resolve() if isinstance(repo_val, str) else repo_val
 
             session = _TelemetrySession(cmd_name, repo_root, None)
             token = _active_session.set(session)

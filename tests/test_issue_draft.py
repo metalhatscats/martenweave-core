@@ -285,5 +285,3 @@ def test_cli_draft_json_output(tmp_path: Path) -> None:
     assert "title" in data
     assert "body" in data
     assert data["source_id"] == "PP-JSON-001"
-
-

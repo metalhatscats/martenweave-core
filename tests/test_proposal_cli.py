@@ -234,9 +234,7 @@ def test_proposal_list_stale_filters_expired(temp_model_dir: Path) -> None:
     proposal_path = temp_model_dir / "patch-proposals" / "PP-EXPIRED-001.md"
     text = proposal_path.read_text(encoding="utf-8")
     past = datetime(2020, 1, 1, tzinfo=UTC).isoformat()
-    text = text.replace(
-        "status: accepted", f"status: accepted\nexpires_at: {past}"
-    )
+    text = text.replace("status: accepted", f"status: accepted\nexpires_at: {past}")
     proposal_path.write_text(text, encoding="utf-8")
 
     # Create a non-expired proposal
@@ -276,9 +274,7 @@ def test_proposal_validate_warns_on_expired(temp_model_dir: Path) -> None:
     proposal_path = temp_model_dir / "patch-proposals" / "PP-EXP-VAL-001.md"
     text = proposal_path.read_text(encoding="utf-8")
     past = datetime(2020, 1, 1, tzinfo=UTC).isoformat()
-    text = text.replace(
-        "status: accepted", f"status: accepted\nexpires_at: {past}"
-    )
+    text = text.replace("status: accepted", f"status: accepted\nexpires_at: {past}")
     proposal_path.write_text(text, encoding="utf-8")
 
     result = runner.invoke(
@@ -532,9 +528,7 @@ def test_proposal_show_reviewer_metadata(temp_model_dir: Path) -> None:
 
 
 def test_proposal_list_shows_reviewer(temp_model_dir: Path) -> None:
-    op = PatchOperation(
-        op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X"
-    )
+    op = PatchOperation(op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X")
     proposal = build_patch_proposal("PP-LIST-REVIEW-001", [op])
     write_patch_proposal(proposal, temp_model_dir)
     proposal_path = temp_model_dir / "patch-proposals" / "PP-LIST-REVIEW-001.md"
@@ -595,8 +589,8 @@ class TestProposalAcceptRejectCli:
                 "--repo",
                 _repo_from_model(temp_model_dir),
                 "--json",
-            "--reviewer",
-            "alice",
+                "--reviewer",
+                "alice",
             ],
         )
         assert result.exit_code == 0
@@ -613,8 +607,8 @@ class TestProposalAcceptRejectCli:
                 "PP-MISSING",
                 "--repo",
                 _repo_from_model(temp_model_dir),
-            "--reviewer",
-            "alice",
+                "--reviewer",
+                "alice",
             ],
         )
         assert result.exit_code == 1
@@ -671,8 +665,8 @@ class TestProposalAcceptRejectCli:
                 "--repo",
                 _repo_from_model(temp_model_dir),
                 "--json",
-            "--reviewer",
-            "alice",
+                "--reviewer",
+                "alice",
             ],
         )
         assert result.exit_code == 0
@@ -689,8 +683,8 @@ class TestProposalAcceptRejectCli:
                 "PP-MISSING",
                 "--repo",
                 _repo_from_model(temp_model_dir),
-            "--reviewer",
-            "alice",
+                "--reviewer",
+                "alice",
             ],
         )
         assert result.exit_code == 1
@@ -742,8 +736,8 @@ class TestProposalAcceptRejectCli:
                 "PP-ACCEPT-BLOCK-001",
                 "--repo",
                 _repo_from_model(temp_model_dir),
-            "--reviewer",
-            "alice",
+                "--reviewer",
+                "alice",
             ],
         )
         assert result.exit_code == 1
@@ -772,8 +766,8 @@ class TestProposalAcceptRejectCli:
                 "PP-ACCEPT-APP-001",
                 "--repo",
                 _repo_from_model(temp_model_dir),
-            "--reviewer",
-            "alice",
+                "--reviewer",
+                "alice",
             ],
         )
         assert result.exit_code == 1
@@ -825,8 +819,8 @@ class TestProposalAcceptRejectCli:
                 "PP-REJECT-BLOCK-001",
                 "--repo",
                 _repo_from_model(temp_model_dir),
-            "--reviewer",
-            "alice",
+                "--reviewer",
+                "alice",
             ],
         )
         assert result.exit_code == 1
@@ -853,8 +847,8 @@ class TestProposalAcceptRejectCli:
                 "PP-REJECT-APP-001",
                 "--repo",
                 _repo_from_model(temp_model_dir),
-            "--reviewer",
-            "alice",
+                "--reviewer",
+                "alice",
             ],
         )
         assert result.exit_code == 1
@@ -880,8 +874,8 @@ class TestProposalAcceptRejectCli:
                 "--repo",
                 _repo_from_model(temp_model_dir),
                 "--json",
-            "--reviewer",
-            "alice",
+                "--reviewer",
+                "alice",
             ],
         )
         assert result.exit_code == 1
@@ -906,8 +900,8 @@ class TestProposalAcceptRejectCli:
                 "--repo",
                 _repo_from_model(temp_model_dir),
                 "--json",
-            "--reviewer",
-            "alice",
+                "--reviewer",
+                "alice",
             ],
         )
         assert result.exit_code == 1
@@ -939,8 +933,8 @@ class TestProposalAcceptRejectCli:
                 "--repo",
                 _repo_from_model(temp_model_dir),
                 "--json",
-            "--reviewer",
-            "alice",
+                "--reviewer",
+                "alice",
             ],
         )
         assert result.exit_code == 1
@@ -971,8 +965,8 @@ class TestProposalAcceptRejectCli:
                 "--repo",
                 _repo_from_model(temp_model_dir),
                 "--json",
-            "--reviewer",
-            "alice",
+                "--reviewer",
+                "alice",
             ],
         )
         assert result.exit_code == 1

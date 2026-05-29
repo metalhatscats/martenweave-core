@@ -132,8 +132,7 @@ class TestDecisionsReport:
                 for d in report.deprecated_evidence_decisions
             ],
             "category_breakdown": [
-                {"category": c.category, "count": c.count}
-                for c in report.category_breakdown
+                {"category": c.category, "count": c.count} for c in report.category_breakdown
             ],
             "total_decisions": report.total_decisions,
             "total_with_evidence": report.total_with_evidence,

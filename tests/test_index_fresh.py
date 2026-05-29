@@ -99,9 +99,7 @@ class TestIndexFreshCLI:
         db_path = resolve_generated_path(sample_repo) / "modelops.db"
         if db_path.exists():
             db_path.unlink()
-        result = runner.invoke(
-            app, ["index-fresh", "--repo", str(sample_repo), "--json"]
-        )
+        result = runner.invoke(app, ["index-fresh", "--repo", str(sample_repo), "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output.strip())
         assert "fresh" in data
@@ -114,9 +112,7 @@ class TestIndexFreshCLI:
 
     def test_cli_json_fresh(self, sample_repo: Path) -> None:
         runner.invoke(app, ["build-index", "--repo", str(sample_repo)])
-        result = runner.invoke(
-            app, ["index-fresh", "--repo", str(sample_repo), "--json"]
-        )
+        result = runner.invoke(app, ["index-fresh", "--repo", str(sample_repo), "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output.strip())
         assert data["fresh"] is True
@@ -151,9 +147,7 @@ class TestIndexFreshCLI:
                 f.write_text(content + "\n", encoding="utf-8")
                 break
 
-        result = runner.invoke(
-            app, ["index-fresh", "--repo", str(sample_repo), "--json"]
-        )
+        result = runner.invoke(app, ["index-fresh", "--repo", str(sample_repo), "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output.strip())
         assert data["fresh"] is False
@@ -188,6 +182,7 @@ class TestIndexFreshnessHash:
         )
         # Restore original mtime to simulate edge case
         import os
+
         os.utime(obj_path, (original_mtime, original_mtime))
 
         report = check_index_freshness(tmp_path)
@@ -246,9 +241,7 @@ class TestIndexFreshnessHash:
         db_path = gen_dir / "modelops.db"
         # Create a minimal DB without the manifest hash
         conn = sqlite3.connect(str(db_path))
-        conn.execute(
-            "CREATE TABLE index_manifest (key TEXT PRIMARY KEY, value TEXT NOT NULL)"
-        )
+        conn.execute("CREATE TABLE index_manifest (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
         conn.execute(
             "INSERT INTO index_manifest (key, value) VALUES (?, ?)",
             ("build_timestamp", "2024-01-01T00:00:00Z"),
@@ -284,9 +277,7 @@ class TestStaleIndexWarningOnReadCommands:
 
     def test_health_json_stale_warning(self, sample_repo: Path) -> None:
         self._make_index_stale(sample_repo)
-        result = runner.invoke(
-            app, ["health", "--repo", str(sample_repo), "--json"]
-        )
+        result = runner.invoke(app, ["health", "--repo", str(sample_repo), "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output.strip())
         assert "stale_index_warning" in data
@@ -300,9 +291,7 @@ class TestStaleIndexWarningOnReadCommands:
 
     def test_health_json_fresh_no_warning(self, sample_repo: Path) -> None:
         runner.invoke(app, ["build-index", "--repo", str(sample_repo)])
-        result = runner.invoke(
-            app, ["health", "--repo", str(sample_repo), "--json"]
-        )
+        result = runner.invoke(app, ["health", "--repo", str(sample_repo), "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output.strip())
         assert "stale_index_warning" in data
@@ -368,9 +357,7 @@ class TestStaleIndexWarningOnReadCommands:
 
     def test_search_json_stale_warning(self, sample_repo: Path) -> None:
         self._make_index_stale(sample_repo)
-        result = runner.invoke(
-            app, ["search", "customer", "--repo", str(sample_repo), "--json"]
-        )
+        result = runner.invoke(app, ["search", "customer", "--repo", str(sample_repo), "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output.strip())
         assert "stale_index_warning" in data
@@ -378,9 +365,7 @@ class TestStaleIndexWarningOnReadCommands:
 
     def test_search_human_stale_warning(self, sample_repo: Path) -> None:
         self._make_index_stale(sample_repo)
-        result = runner.invoke(
-            app, ["search", "customer", "--repo", str(sample_repo)]
-        )
+        result = runner.invoke(app, ["search", "customer", "--repo", str(sample_repo)])
         assert result.exit_code == 0
         assert "Warning: index may be stale" in result.output
 
@@ -432,8 +417,6 @@ class TestStaleIndexWarningOnReadCommands:
     def test_gaps_human_stale_warning(self, sample_repo: Path) -> None:
         csv_file = sample_repo / "data" / "samples" / "customer_sales_area_sample.csv"
         self._make_index_stale(sample_repo)
-        result = runner.invoke(
-            app, ["gaps", str(csv_file), "--repo", str(sample_repo)]
-        )
+        result = runner.invoke(app, ["gaps", str(csv_file), "--repo", str(sample_repo)])
         assert result.exit_code == 0
         assert "Warning: index may be stale" in result.output

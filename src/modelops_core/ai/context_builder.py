@@ -66,9 +66,7 @@ class ContextBundle:
         )
 
 
-def _fetch_object(
-    conn: sqlite3.Connection, object_id: str
-) -> dict[str, Any] | None:
+def _fetch_object(conn: sqlite3.Connection, object_id: str) -> dict[str, Any] | None:
     row = conn.execute(
         "SELECT id, type, status, name, title, domain, description, "
         "source_file, frontmatter_json FROM objects WHERE id = ?",
@@ -88,9 +86,7 @@ def _fetch_object(
     }
 
 
-def _fetch_validation_summary(
-    conn: sqlite3.Connection, object_ids: list[str]
-) -> dict[str, Any]:
+def _fetch_validation_summary(conn: sqlite3.Connection, object_ids: list[str]) -> dict[str, Any]:
     if not object_ids:
         return {"errors": 0, "warnings": 0, "details": []}
     placeholders = ",".join("?" * len(object_ids))

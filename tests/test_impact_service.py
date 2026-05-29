@@ -159,7 +159,6 @@ def test_render_markdown_downstream_upstream_counts() -> None:
     assert "**Total affected objects**: 2" in md
 
 
-
 def test_impact_report_grouped_by_direction_and_type() -> None:
     report = ImpactReport(
         root_object_id="DOMAIN-TEST",

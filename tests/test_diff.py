@@ -14,6 +14,7 @@ from modelops_core.diff.diff_service import (
 # _compare_values
 # ---------------------------------------------------------------------------
 
+
 class TestCompareValues:
     def test_primitives_equal(self) -> None:
         assert _compare_values("a", "a") is True
@@ -48,6 +49,7 @@ class TestCompareValues:
 # ---------------------------------------------------------------------------
 # _diff_object
 # ---------------------------------------------------------------------------
+
 
 class TestDiffObject:
     def test_no_changes(self) -> None:
@@ -91,6 +93,7 @@ class TestDiffObject:
 # ---------------------------------------------------------------------------
 # diff_repositories
 # ---------------------------------------------------------------------------
+
 
 class TestDiffRepositories:
     def test_empty_repos(self, tmp_path: Path) -> None:
@@ -192,9 +195,7 @@ class TestDiffRepositories:
         result = diff_repositories(base, head)
         assert len(result.changed) == 1
         assert any(
-            fc.field == "domain"
-            and fc.old_value == "DOMAIN-A"
-            and fc.new_value == "DOMAIN-B"
+            fc.field == "domain" and fc.old_value == "DOMAIN-A" and fc.new_value == "DOMAIN-B"
             for fc in result.changed[0].field_changes
         )
 

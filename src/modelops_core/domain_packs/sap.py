@@ -18,12 +18,8 @@ class SAPContextRule:
 
 
 _SAP_CONTEXT_RULES: tuple[SAPContextRule, ...] = (
-    SAPContextRule(
-        "KNVV", "customer_sales_area", "SAP_CONTEXT_KNVV_REQUIRES_SALES_AREA"
-    ),
-    SAPContextRule(
-        "KNB1", "customer_company_code", "SAP_CONTEXT_KNB1_REQUIRES_COMPANY_CODE"
-    ),
+    SAPContextRule("KNVV", "customer_sales_area", "SAP_CONTEXT_KNVV_REQUIRES_SALES_AREA"),
+    SAPContextRule("KNB1", "customer_company_code", "SAP_CONTEXT_KNB1_REQUIRES_COMPANY_CODE"),
     SAPContextRule(
         "KNVP",
         "customer_partner_function",
@@ -38,8 +34,7 @@ class SAPDomainPack(DomainPack):
 
     name = "sap"
     description = (
-        "SAP context validation for FieldEndpoint objects with "
-        "endpoint_type=sap_table_field."
+        "SAP context validation for FieldEndpoint objects with endpoint_type=sap_table_field."
     )
 
     def validate(
@@ -104,8 +99,7 @@ class SAPDomainPack(DomainPack):
                         ),
                         "object_id": frontmatter.get("id"),
                         "suggested_fix": (
-                            f"Change context_category to "
-                            f"'{rule.required_context_category}'."
+                            f"Change context_category to '{rule.required_context_category}'."
                         ),
                     }
                 )

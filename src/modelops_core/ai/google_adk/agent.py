@@ -16,8 +16,7 @@ def _build_agent(repo_root: str | None = None) -> Any:
         from google.adk.agents import Agent  # type: ignore[import-untyped,import-not-found]
     except ImportError as exc:
         raise ImportError(
-            "google-adk is not installed. "
-            "Install with: pip install martenweave-core[google_adk]"
+            "google-adk is not installed. Install with: pip install martenweave-core[google_adk]"
         ) from exc
 
     # Wrap each tool in a callable that ADK can use

@@ -24,6 +24,7 @@ from modelops_core.guardrails.secrets import (
 # redact
 # ---------------------------------------------------------------------------
 
+
 class TestRedact:
     def test_redacts_api_key(self) -> None:
         text = "API_KEY=sk-abc123def456ghi789"
@@ -85,6 +86,7 @@ class TestRedact:
 # redact_dict
 # ---------------------------------------------------------------------------
 
+
 class TestRedactDict:
     def test_redacts_nested_dict(self) -> None:
         data = {
@@ -113,6 +115,7 @@ class TestRedactDict:
 # ---------------------------------------------------------------------------
 # scan_text
 # ---------------------------------------------------------------------------
+
 
 class TestScanText:
     def test_finds_api_key(self) -> None:
@@ -148,9 +151,7 @@ class TestScanText:
         assert not findings
 
     def test_returns_file_path(self) -> None:
-        findings = scan_text(
-            "API_KEY=sk-abcdefghijklmnopqrstuvwxyz", file_path="/tmp/.env"
-        )
+        findings = scan_text("API_KEY=sk-abcdefghijklmnopqrstuvwxyz", file_path="/tmp/.env")
         assert findings[0].file_path == "/tmp/.env"
 
 
@@ -158,12 +159,11 @@ class TestScanText:
 # scan_file
 # ---------------------------------------------------------------------------
 
+
 class TestScanFile:
     def test_scans_file_with_secret(self, tmp_path: Path) -> None:
         path = tmp_path / "config.txt"
-        path.write_text(
-            "API_KEY=sk-abcdefghijklmnopqrstuvwxyz\n", encoding="utf-8"
-        )
+        path.write_text("API_KEY=sk-abcdefghijklmnopqrstuvwxyz\n", encoding="utf-8")
         findings = scan_file(path)
         assert len(findings) == 1
         assert findings[0].pattern_name == "api_key"
@@ -182,6 +182,7 @@ class TestScanFile:
 # ---------------------------------------------------------------------------
 # scan_repo
 # ---------------------------------------------------------------------------
+
 
 class TestScanRepo:
     def test_scans_repo_and_finds_secret(self, tmp_path: Path) -> None:
@@ -210,20 +211,17 @@ class TestScanRepo:
 # validate_env_file
 # ---------------------------------------------------------------------------
 
+
 class TestValidateEnvFile:
     def test_no_issues_for_example_env(self, tmp_path: Path) -> None:
         env = tmp_path / ".env"
-        env.write_text(
-            "MODELOPS_ENVIRONMENT=local\nMODELOPS_LOG_LEVEL=INFO\n", encoding="utf-8"
-        )
+        env.write_text("MODELOPS_ENVIRONMENT=local\nMODELOPS_LOG_LEVEL=INFO\n", encoding="utf-8")
         issues = validate_env_file(env)
         assert not issues
 
     def test_detects_secret_in_env(self, tmp_path: Path) -> None:
         env = tmp_path / ".env"
-        env.write_text(
-            "API_KEY=sk-abcdefghijklmnopqrstuvwxyz\n", encoding="utf-8"
-        )
+        env.write_text("API_KEY=sk-abcdefghijklmnopqrstuvwxyz\n", encoding="utf-8")
         issues = validate_env_file(env)
         assert any(i.code == "ENV_SECRET_DETECTED" for i in issues)
 
@@ -260,6 +258,7 @@ class TestValidateEnvFile:
 # validate_repo_config
 # ---------------------------------------------------------------------------
 
+
 class TestValidateRepoConfig:
     def test_no_issues_for_clean_config(self, tmp_path: Path) -> None:
         config = tmp_path / "modelops.config.yaml"
@@ -281,9 +280,7 @@ class TestValidateRepoConfig:
 
     def test_warns_credential_key(self, tmp_path: Path) -> None:
         config = tmp_path / "modelops.config.yaml"
-        config.write_text(
-            "name: Test\ndb_password: hunter2\n", encoding="utf-8"
-        )
+        config.write_text("name: Test\ndb_password: hunter2\n", encoding="utf-8")
         issues = validate_repo_config(config)
         assert any(i.code == "CONFIG_CREDENTIAL_KEY" for i in issues)
 
@@ -296,12 +293,11 @@ class TestValidateRepoConfig:
 # validate_gitignore
 # ---------------------------------------------------------------------------
 
+
 class TestValidateGitignore:
     def test_no_issues_for_complete_gitignore(self, tmp_path: Path) -> None:
         gitignore = tmp_path / ".gitignore"
-        gitignore.write_text(
-            ".env\n*.pem\n*.key\nid_rsa\nid_ed25519\n", encoding="utf-8"
-        )
+        gitignore.write_text(".env\n*.pem\n*.key\nid_rsa\nid_ed25519\n", encoding="utf-8")
         issues = validate_gitignore(tmp_path)
         assert not issues
 
@@ -320,6 +316,7 @@ class TestValidateGitignore:
 # run_all_checks
 # ---------------------------------------------------------------------------
 
+
 class TestRunAllChecks:
     def test_runs_all_checks(self, tmp_path: Path) -> None:
         # Create a minimal repo
@@ -335,41 +332,26 @@ class TestRunAllChecks:
 
     def test_finds_secret_in_repo(self, tmp_path: Path) -> None:
         (tmp_path / ".gitignore").write_text(".env\n*.pem\n*.key\n", encoding="utf-8")
-        (tmp_path / "modelops.config.yaml").write_text(
-            "name: Test\n", encoding="utf-8"
-        )
+        (tmp_path / "modelops.config.yaml").write_text("name: Test\n", encoding="utf-8")
         (tmp_path / "leaked.txt").write_text(
             "API_KEY=sk-abcdefghijklmnopqrstuvwxyz\n", encoding="utf-8"
         )
         results = run_all_checks(tmp_path)
-        assert any(
-            i.code == "REPO_SECRET_DETECTED" for i in results["repo_secrets"]
-        )
+        assert any(i.code == "REPO_SECRET_DETECTED" for i in results["repo_secrets"])
 
 
 # ---------------------------------------------------------------------------
 # has_blocking_issues
 # ---------------------------------------------------------------------------
 
+
 class TestHasBlockingIssues:
     def test_true_when_error_present(self) -> None:
-        results = {
-            "check": [
-                GuardrailIssue(
-                    code="X", message="bad", severity="ERROR"
-                )
-            ]
-        }
+        results = {"check": [GuardrailIssue(code="X", message="bad", severity="ERROR")]}
         assert has_blocking_issues(results) is True
 
     def test_false_when_only_warnings(self) -> None:
-        results = {
-            "check": [
-                GuardrailIssue(
-                    code="X", message="warn", severity="WARNING"
-                )
-            ]
-        }
+        results = {"check": [GuardrailIssue(code="X", message="warn", severity="WARNING")]}
         assert has_blocking_issues(results) is False
 
     def test_false_when_empty(self) -> None:

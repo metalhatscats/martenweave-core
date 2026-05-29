@@ -61,12 +61,7 @@ def test_high_risk_for_active_mapping_update(tmp_path: Path) -> None:
     model_dir.mkdir()
 
     (model_dir / "MAP-001.md").write_text(
-        "---\n"
-        "id: MAP-001\n"
-        "type: Mapping\n"
-        "status: active\n"
-        "name: Test Mapping\n"
-        "---\n",
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
         encoding="utf-8",
     )
 
@@ -86,12 +81,7 @@ def test_risk_for_ownership_field_change(tmp_path: Path) -> None:
     model_dir.mkdir()
 
     (model_dir / "ATTR-001.md").write_text(
-        "---\n"
-        "id: ATTR-001\n"
-        "type: Attribute\n"
-        "status: draft\n"
-        "name: Test\n"
-        "---\n",
+        "---\nid: ATTR-001\ntype: Attribute\nstatus: draft\nname: Test\n---\n",
         encoding="utf-8",
     )
 
@@ -129,12 +119,7 @@ def test_assess_change_request(tmp_path: Path) -> None:
     model_dir.mkdir()
 
     (model_dir / "MAP-001.md").write_text(
-        "---\n"
-        "id: MAP-001\n"
-        "type: Mapping\n"
-        "status: active\n"
-        "name: Test\n"
-        "---\n",
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test\n---\n",
         encoding="utf-8",
     )
 
@@ -273,21 +258,14 @@ def test_cli_proposal_apply_blocks_high_risk_without_cr(tmp_path: Path) -> None:
     repo_root = tmp_path
 
     (model_dir / "MAP-001.md").write_text(
-        "---\n"
-        "id: MAP-001\n"
-        "type: Mapping\n"
-        "status: active\n"
-        "name: Test Mapping\n"
-        "---\n",
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
         encoding="utf-8",
     )
 
     db_path = generated_dir / "modelops.db"
     build_index(repo_root=tmp_path, db_path=db_path)
 
-    op = PatchOperation(
-        op="update_object", object_id="MAP-001", target_path="name", after="New"
-    )
+    op = PatchOperation(op="update_object", object_id="MAP-001", target_path="name", after="New")
     proposal = build_patch_proposal("PP-HIGH-001", [op])
     write_patch_proposal(proposal, model_dir)
     proposal_path = model_dir / "patch-proposals" / "PP-HIGH-001.md"
@@ -309,21 +287,14 @@ def test_cli_proposal_apply_allows_with_approved_cr(tmp_path: Path) -> None:
     repo_root = tmp_path
 
     (model_dir / "MAP-001.md").write_text(
-        "---\n"
-        "id: MAP-001\n"
-        "type: Mapping\n"
-        "status: active\n"
-        "name: Test Mapping\n"
-        "---\n",
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
         encoding="utf-8",
     )
 
     db_path = generated_dir / "modelops.db"
     build_index(repo_root=tmp_path, db_path=db_path)
 
-    op = PatchOperation(
-        op="update_object", object_id="MAP-001", target_path="name", after="New"
-    )
+    op = PatchOperation(op="update_object", object_id="MAP-001", target_path="name", after="New")
     proposal = build_patch_proposal("PP-HIGH-002", [op])
     write_patch_proposal(proposal, model_dir)
     proposal_path = model_dir / "patch-proposals" / "PP-HIGH-002.md"
@@ -355,21 +326,14 @@ def test_cli_proposal_apply_force_bypasses_gate(tmp_path: Path) -> None:
     repo_root = tmp_path
 
     (model_dir / "MAP-001.md").write_text(
-        "---\n"
-        "id: MAP-001\n"
-        "type: Mapping\n"
-        "status: active\n"
-        "name: Test Mapping\n"
-        "---\n",
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
         encoding="utf-8",
     )
 
     db_path = generated_dir / "modelops.db"
     build_index(repo_root=tmp_path, db_path=db_path)
 
-    op = PatchOperation(
-        op="update_object", object_id="MAP-001", target_path="name", after="New"
-    )
+    op = PatchOperation(op="update_object", object_id="MAP-001", target_path="name", after="New")
     proposal = build_patch_proposal("PP-HIGH-003", [op])
     write_patch_proposal(proposal, model_dir)
     proposal_path = model_dir / "patch-proposals" / "PP-HIGH-003.md"
@@ -399,12 +363,7 @@ def test_cli_proposal_impact_shows_risk(tmp_path: Path) -> None:
     repo_root = tmp_path
 
     (model_dir / "MAP-001.md").write_text(
-        "---\n"
-        "id: MAP-001\n"
-        "type: Mapping\n"
-        "status: active\n"
-        "name: Test Mapping\n"
-        "---\n",
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
         encoding="utf-8",
     )
 
@@ -484,18 +443,11 @@ def test_service_apply_blocks_high_risk_by_default(tmp_path: Path) -> None:
     model_dir.mkdir()
 
     (model_dir / "MAP-001.md").write_text(
-        "---\n"
-        "id: MAP-001\n"
-        "type: Mapping\n"
-        "status: active\n"
-        "name: Test Mapping\n"
-        "---\n",
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
         encoding="utf-8",
     )
 
-    op = PatchOperation(
-        op="update_object", object_id="MAP-001", target_path="name", after="New"
-    )
+    op = PatchOperation(op="update_object", object_id="MAP-001", target_path="name", after="New")
     proposal = build_patch_proposal("PP-SVC-HIGH-001", [op])
     write_patch_proposal(proposal, model_dir)
     proposal_path = model_dir / "patch-proposals" / "PP-SVC-HIGH-001.md"
@@ -510,18 +462,11 @@ def test_service_apply_allows_high_risk_with_skip(tmp_path: Path) -> None:
     model_dir.mkdir()
 
     (model_dir / "MAP-001.md").write_text(
-        "---\n"
-        "id: MAP-001\n"
-        "type: Mapping\n"
-        "status: active\n"
-        "name: Test Mapping\n"
-        "---\n",
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
         encoding="utf-8",
     )
 
-    op = PatchOperation(
-        op="update_object", object_id="MAP-001", target_path="name", after="New"
-    )
+    op = PatchOperation(op="update_object", object_id="MAP-001", target_path="name", after="New")
     proposal = build_patch_proposal("PP-SVC-HIGH-002", [op])
     write_patch_proposal(proposal, model_dir)
     proposal_path = model_dir / "patch-proposals" / "PP-SVC-HIGH-002.md"
@@ -538,12 +483,7 @@ def test_service_approve_cr_blocks_high_risk_by_default(tmp_path: Path) -> None:
     model_dir.mkdir()
 
     (model_dir / "MAP-001.md").write_text(
-        "---\n"
-        "id: MAP-001\n"
-        "type: Mapping\n"
-        "status: active\n"
-        "name: Test Mapping\n"
-        "---\n",
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
         encoding="utf-8",
     )
 
@@ -564,12 +504,7 @@ def test_service_approve_cr_allows_high_risk_with_skip(tmp_path: Path) -> None:
     model_dir.mkdir()
 
     (model_dir / "MAP-001.md").write_text(
-        "---\n"
-        "id: MAP-001\n"
-        "type: Mapping\n"
-        "status: active\n"
-        "name: Test Mapping\n"
-        "---\n",
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
         encoding="utf-8",
     )
 
@@ -581,9 +516,7 @@ def test_service_approve_cr_allows_high_risk_with_skip(tmp_path: Path) -> None:
         affected_objects=["MAP-001"],
     )
 
-    cr = approve_change_request(
-        model_dir, "CR-SVC-HIGH-002", "alice", skip_risk_check=True
-    )
+    cr = approve_change_request(model_dir, "CR-SVC-HIGH-002", "alice", skip_risk_check=True)
     assert cr["status"] == "approved"
     assert cr["risk_level"] == "high"
 
@@ -596,21 +529,14 @@ def test_cli_proposal_apply_skip_risk_check(tmp_path: Path) -> None:
     repo_root = tmp_path
 
     (model_dir / "MAP-001.md").write_text(
-        "---\n"
-        "id: MAP-001\n"
-        "type: Mapping\n"
-        "status: active\n"
-        "name: Test Mapping\n"
-        "---\n",
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
         encoding="utf-8",
     )
 
     db_path = generated_dir / "modelops.db"
     build_index(repo_root=tmp_path, db_path=db_path)
 
-    op = PatchOperation(
-        op="update_object", object_id="MAP-001", target_path="name", after="New"
-    )
+    op = PatchOperation(op="update_object", object_id="MAP-001", target_path="name", after="New")
     proposal = build_patch_proposal("PP-SKIP-001", [op])
     write_patch_proposal(proposal, model_dir)
     proposal_path = model_dir / "patch-proposals" / "PP-SKIP-001.md"
@@ -640,12 +566,7 @@ def test_cli_proposal_apply_json_includes_risk(tmp_path: Path) -> None:
     repo_root = tmp_path
 
     (model_dir / "DOMAIN-TEST.md").write_text(
-        "---\n"
-        "id: DOMAIN-TEST\n"
-        "type: MasterDataDomain\n"
-        "status: draft\n"
-        "name: Test\n"
-        "---\n",
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test\n---\n",
         encoding="utf-8",
     )
 
@@ -686,12 +607,7 @@ def test_cli_cr_approve_skip_risk_check(tmp_path: Path) -> None:
     repo_root = tmp_path
 
     (model_dir / "MAP-001.md").write_text(
-        "---\n"
-        "id: MAP-001\n"
-        "type: Mapping\n"
-        "status: active\n"
-        "name: Test Mapping\n"
-        "---\n",
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
         encoding="utf-8",
     )
 
@@ -750,12 +666,7 @@ def test_cli_cr_approve_json_includes_risk(tmp_path: Path) -> None:
     repo_root = tmp_path
 
     (model_dir / "MAP-001.md").write_text(
-        "---\n"
-        "id: MAP-001\n"
-        "type: Mapping\n"
-        "status: active\n"
-        "name: Test Mapping\n"
-        "---\n",
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
         encoding="utf-8",
     )
 
@@ -806,21 +717,14 @@ def test_apply_records_approved_cr_in_audit(tmp_path: Path) -> None:
     generated_dir.mkdir()
 
     (model_dir / "MAP-001.md").write_text(
-        "---\n"
-        "id: MAP-001\n"
-        "type: Mapping\n"
-        "status: active\n"
-        "name: Test Mapping\n"
-        "---\n",
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
         encoding="utf-8",
     )
 
     db_path = generated_dir / "modelops.db"
     build_index(repo_root=tmp_path, db_path=db_path)
 
-    op = PatchOperation(
-        op="update_object", object_id="MAP-001", target_path="name", after="New"
-    )
+    op = PatchOperation(op="update_object", object_id="MAP-001", target_path="name", after="New")
     proposal = build_patch_proposal("PP-AUDIT-CR-001", [op])
     write_patch_proposal(proposal, model_dir)
     proposal_path = model_dir / "patch-proposals" / "PP-AUDIT-CR-001.md"

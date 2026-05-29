@@ -76,28 +76,18 @@ _ATTRIBUTE_REF = ReferenceField("attribute", "has_attribute", "Attribute", "core
 _FIELD_ENDPOINT_REF = ReferenceField(
     "field_endpoint", "implemented_by_field", "FieldEndpoint", "core_dependency"
 )
-_SOURCE_ENDPOINT_REF = ReferenceField(
-    "source_endpoint", "mapped_from", "FieldEndpoint", "mapping"
-)
-_TARGET_ENDPOINT_REF = ReferenceField(
-    "target_endpoint", "mapped_to", "FieldEndpoint", "mapping"
-)
+_SOURCE_ENDPOINT_REF = ReferenceField("source_endpoint", "mapped_from", "FieldEndpoint", "mapping")
+_TARGET_ENDPOINT_REF = ReferenceField("target_endpoint", "mapped_to", "FieldEndpoint", "mapping")
 _SOURCE_ENDPOINTS_REF = ReferenceField(
     "source_endpoints", "mapped_from", "FieldEndpoint", "mapping"
 )
-_TARGET_ENDPOINTS_REF = ReferenceField(
-    "target_endpoints", "mapped_to", "FieldEndpoint", "mapping"
-)
+_TARGET_ENDPOINTS_REF = ReferenceField("target_endpoints", "mapped_to", "FieldEndpoint", "mapping")
 _RELATED_ISSUE_REF = ReferenceField("related_issue", "affected_by_issue", "Issue", "governance")
-_RELATED_ISSUES_REF = ReferenceField(
-    "related_issues", "affected_by_issue", "Issue", "governance"
-)
+_RELATED_ISSUES_REF = ReferenceField("related_issues", "affected_by_issue", "Issue", "governance")
 _RELATED_DECISIONS_REF = ReferenceField(
     "related_decisions", "explained_by_decision", "Decision", "governance"
 )
-_VALUE_LIST_REF = ReferenceField(
-    "value_list", "has_allowed_values", "ValueList", "validation"
-)
+_VALUE_LIST_REF = ReferenceField("value_list", "has_allowed_values", "ValueList", "validation")
 _SOURCE_VALUE_LIST_REF = ReferenceField(
     "source_value_list", "maps_from_values", "ValueList", "mapping"
 )
@@ -111,9 +101,7 @@ _PARENT_VALUE_LIST_REF = ReferenceField(
     "parent_value_list", "part_of_value_list", "ValueList", "reference"
 )
 _MAPPING_REF = ReferenceField("mapping", "uses_mapping", "Mapping", "mapping")
-_MAPPING_SET_REF = ReferenceField(
-    "mapping_set", "part_of_mapping_set", "MappingSet", "mapping"
-)
+_MAPPING_SET_REF = ReferenceField("mapping_set", "part_of_mapping_set", "MappingSet", "mapping")
 _VALIDATION_RULES_REF = ReferenceField(
     "validation_rules", "validated_by", "ValidationRule", "validation"
 )
@@ -129,9 +117,7 @@ _TECHNICAL_OWNER_REF = ReferenceField(
 )
 _DATA_STEWARD_REF = ReferenceField("data_steward", "stewarded_by", "Person", "governance")
 _APPROVER_REF = ReferenceField("approver", "approved_by", "Person", "governance")
-_ACCOUNTABLE_TEAM_REF = ReferenceField(
-    "accountable_team", "accountable_to", "Team", "governance"
-)
+_ACCOUNTABLE_TEAM_REF = ReferenceField("accountable_team", "accountable_to", "Team", "governance")
 
 # Common search-relevant frontmatter fields.
 _COMMON_SEARCH_FIELDS: tuple[str, ...] = (
@@ -536,8 +522,6 @@ def get_search_fields(type_id: str | None = None) -> tuple[str, ...]:
     if entry is None or not entry.search_fields:
         return _COMMON_SEARCH_FIELDS
     return entry.search_fields
-
-
 
 
 def register_type(entry: ObjectTypeEntry) -> None:

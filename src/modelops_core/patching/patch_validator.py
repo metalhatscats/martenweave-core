@@ -80,8 +80,7 @@ def validate_patch_proposal(proposal: dict[str, Any]) -> list[ValidationResult]:
                         object_id=str(proposal_id) if proposal_id else None,
                         field_path=f"operations[{idx}].op",
                         suggested_fix=(
-                            f"Allowed operations:"
-                            f" {', '.join(sorted(_ALLOWED_OPERATIONS))}."
+                            f"Allowed operations: {', '.join(sorted(_ALLOWED_OPERATIONS))}."
                         ),
                     )
                 )

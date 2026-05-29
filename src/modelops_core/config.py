@@ -19,21 +19,15 @@ class ResourceLimits(BaseModel):
     max_file_size_bytes: int = Field(
         default=50 * 1024 * 1024, description="Maximum dataset file size (50 MB)"
     )
-    max_profile_rows: int = Field(
-        default=500_000, description="Maximum rows to profile per file"
-    )
+    max_profile_rows: int = Field(default=500_000, description="Maximum rows to profile per file")
     max_profile_columns: int = Field(
         default=1_000, description="Maximum columns to profile per file"
     )
-    max_trace_depth: int = Field(
-        default=5, description="Maximum graph traversal depth"
-    )
+    max_trace_depth: int = Field(default=5, description="Maximum graph traversal depth")
     max_index_objects: int = Field(
         default=10_000, description="Maximum canonical objects in a single index build"
     )
-    max_export_objects: int = Field(
-        default=10_000, description="Maximum objects per export type"
-    )
+    max_export_objects: int = Field(default=10_000, description="Maximum objects per export type")
     max_import_rows: int = Field(
         default=100_000, description="Maximum rows to import per spreadsheet sheet"
     )
@@ -48,10 +42,7 @@ class ResourceLimits(BaseModel):
     )
     profile_sample_interval: int | None = Field(
         default=None,
-        description=(
-            "If set, profile every Nth row for large files "
-            "instead of a full scan."
-        ),
+        description=("If set, profile every Nth row for large files instead of a full scan."),
     )
 
 

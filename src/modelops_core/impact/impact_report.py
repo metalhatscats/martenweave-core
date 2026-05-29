@@ -52,9 +52,7 @@ class ImpactReport:
 
     @property
     def affected_mappings(self) -> list[AffectedObject]:
-        return [
-            o for o in self.affected_objects if o.object_type in ("Mapping", "MappingSet")
-        ]
+        return [o for o in self.affected_objects if o.object_type in ("Mapping", "MappingSet")]
 
     @property
     def affected_rules(self) -> list[AffectedObject]:

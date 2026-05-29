@@ -61,9 +61,7 @@ def write_change_request(change_request: dict[str, Any], repo_model_path: Path) 
     return path
 
 
-def approve_change_request(
-    repo_model_path: Path, change_request_id: str
-) -> dict[str, Any]:
+def approve_change_request(repo_model_path: Path, change_request_id: str) -> dict[str, Any]:
     cr_path = repo_model_path / "change-requests" / f"{change_request_id}.md"
     if not cr_path.exists():
         raise FileNotFoundError(f"ChangeRequest not found: {cr_path}")

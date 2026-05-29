@@ -33,8 +33,7 @@ except ImportError:
 def _require_adk() -> None:
     if not _HAS_ADK:
         raise ImportError(
-            "Google ADK is not installed. "
-            "Install with: pip install martenweave-core[google_adk]"
+            "Google ADK is not installed. Install with: pip install martenweave-core[google_adk]"
         )
 
 

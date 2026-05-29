@@ -60,9 +60,7 @@ HIGH_RISK_COLUMN_PATTERNS = [
     r"remarks",
 ]
 
-_HIGH_RISK_RE = re.compile(
-    "|".join(f"(?:{p})" for p in HIGH_RISK_COLUMN_PATTERNS), re.IGNORECASE
-)
+_HIGH_RISK_RE = re.compile("|".join(f"(?:{p})" for p in HIGH_RISK_COLUMN_PATTERNS), re.IGNORECASE)
 
 
 @dataclass
@@ -119,9 +117,7 @@ def apply_privacy_to_profile(
         # Even when raw samples are allowed, redact high-risk columns
         for col in new_profile.columns:
             if is_high_risk_column(col.name) and col.sample_values:
-                col.sample_values = [
-                    redact_sensitive_value(v) for v in col.sample_values
-                ]
+                col.sample_values = [redact_sensitive_value(v) for v in col.sample_values]
 
     return new_profile
 
@@ -136,7 +132,5 @@ def apply_privacy_to_workbook(
     if policy.redact_file_path:
         new_profile.file_path = redact_file_path(profile.file_path)
 
-    new_profile.sheets = [
-        apply_privacy_to_profile(sheet, policy) for sheet in new_profile.sheets
-    ]
+    new_profile.sheets = [apply_privacy_to_profile(sheet, policy) for sheet in new_profile.sheets]
     return new_profile

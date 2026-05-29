@@ -13,13 +13,13 @@ class TestAttributeUsageSchema:
         obj_file = tmp_path / "USE-TEST-01.md"
         obj_file.write_text(
             "---\n"
-            'id: USE-TEST-01\n'
+            "id: USE-TEST-01\n"
             "type: AttributeUsage\n"
             "status: draft\n"
-            'name: Test Usage\n'
-            'attribute: ATTR-TEST-01\n'
-            'usage_type: primary\n'
-            'scope: global\n'
+            "name: Test Usage\n"
+            "attribute: ATTR-TEST-01\n"
+            "usage_type: primary\n"
+            "scope: global\n"
             "---\n\n"
             "# Test\n",
             encoding="utf-8",
@@ -35,11 +35,11 @@ class TestAttributeUsageValidation:
         obj_file = tmp_path / "USE-TEST-02.md"
         obj_file.write_text(
             "---\n"
-            'id: USE-TEST-02\n'
+            "id: USE-TEST-02\n"
             "type: AttributeUsage\n"
             "status: active\n"
-            'name: Test Usage Missing Type\n'
-            'attribute: ATTR-TEST-01\n'
+            "name: Test Usage Missing Type\n"
+            "attribute: ATTR-TEST-01\n"
             "---\n\n"
             "# Test\n",
             encoding="utf-8",
@@ -53,12 +53,12 @@ class TestAttributeUsageValidation:
         obj_file = tmp_path / "USE-TEST-03.md"
         obj_file.write_text(
             "---\n"
-            'id: USE-TEST-03\n'
+            "id: USE-TEST-03\n"
             "type: AttributeUsage\n"
             "status: active\n"
-            'name: Test Usage With Type\n'
-            'attribute: ATTR-TEST-01\n'
-            'usage_type: secondary\n'
+            "name: Test Usage With Type\n"
+            "attribute: ATTR-TEST-01\n"
+            "usage_type: secondary\n"
             "---\n\n"
             "# Test\n",
             encoding="utf-8",
@@ -72,11 +72,11 @@ class TestAttributeUsageValidation:
         obj_file = tmp_path / "USE-TEST-04.md"
         obj_file.write_text(
             "---\n"
-            'id: USE-TEST-04\n'
+            "id: USE-TEST-04\n"
             "type: AttributeUsage\n"
             "status: retired\n"
-            'name: Retired Usage\n'
-            'attribute: ATTR-TEST-01\n'
+            "name: Retired Usage\n"
+            "attribute: ATTR-TEST-01\n"
             "---\n\n"
             "# Test\n",
             encoding="utf-8",

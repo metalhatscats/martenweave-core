@@ -9,6 +9,9 @@ on:
 jobs:
   test-and-lint:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -16,15 +19,27 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+            ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install -e ".[dev,google_adk,mcp]"
 
       - name: Lint
         run: ruff check src tests
+
+      - name: Format check
+        run: ruff format --check src tests
 
       - name: Build index for customer_bp_model example
         run: modelops build-index --repo examples/customer_bp_model --jsonl
@@ -38,8 +53,8 @@ jobs:
       - name: Build index for generic_product_model example
         run: modelops build-index --repo examples/generic_product_model --jsonl
 
-      - name: Test
-        run: python -m pytest
+      - name: Test with coverage
+        run: python -m pytest --cov=modelops_core --cov-report=term-missing --cov-fail-under=70
 
       - name: Validate customer_bp_model example
         run: modelops validate --repo examples/customer_bp_model

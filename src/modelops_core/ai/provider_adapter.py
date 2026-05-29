@@ -81,9 +81,7 @@ class NoProviderAdapter:
         assumptions: list[str] = [
             "No AI provider is configured. This is a deterministic scaffold proposal."
         ]
-        human_checks: list[str] = [
-            "Verify the proposed objects and fields match your intent."
-        ]
+        human_checks: list[str] = ["Verify the proposed objects and fields match your intent."]
 
         if "CUSTOMER GROUP" in note or "KNVV-KDGRP" in note:
             affected_objects = ["ATTR-CUST-SALES-CUSTOMER-GROUP", "FEP-S4-KNVV-KDGRP"]

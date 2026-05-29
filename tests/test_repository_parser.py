@@ -50,13 +50,9 @@ def test_parse_preserves_existing_timestamps(tmp_path: Path) -> None:
     assert result.frontmatter is not None
     # PyYAML parses ISO timestamps into datetime objects
     assert isinstance(result.frontmatter["created_at"], datetime)
-    assert result.frontmatter["created_at"] == datetime(
-        2024, 1, 15, 10, 30, tzinfo=UTC
-    )
+    assert result.frontmatter["created_at"] == datetime(2024, 1, 15, 10, 30, tzinfo=UTC)
     assert isinstance(result.frontmatter["updated_at"], datetime)
-    assert result.frontmatter["updated_at"] == datetime(
-        2024, 6, 20, 14, 0, tzinfo=UTC
-    )
+    assert result.frontmatter["updated_at"] == datetime(2024, 6, 20, 14, 0, tzinfo=UTC)
 
 
 def test_parse_unsupported_extension(tmp_path: Path) -> None:

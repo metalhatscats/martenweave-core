@@ -287,9 +287,7 @@ def detect_model_gaps(db_path: Path) -> list[ColumnGap]:
                         column_name=attr_id,
                         gap_code="MODEL_ATTRIBUTE_MISSING_SOURCE",
                         severity=_severity_for_gap("MODEL_ATTRIBUTE_MISSING_SOURCE"),
-                        message=(
-                            f"Attribute '{attr_id}' has no linked FieldEndpoint."
-                        ),
+                        message=(f"Attribute '{attr_id}' has no linked FieldEndpoint."),
                     )
                 )
 
@@ -332,9 +330,7 @@ def _sanitize_id_part(value: str) -> str:
     return cleaned.strip("-")
 
 
-def _next_available_proposal_id(
-    proposals_dir: Path, safe_dataset_id: str
-) -> str:
+def _next_available_proposal_id(proposals_dir: Path, safe_dataset_id: str) -> str:
     """Find the next non-colliding proposal ID for a dataset.
 
     Tries PP-GAP-{safe_dataset_id}-001, then 002, etc.
@@ -343,9 +339,7 @@ def _next_available_proposal_id(
         candidate = f"PP-GAP-{safe_dataset_id}-{seq:03d}"
         if not (proposals_dir / f"{candidate}.md").exists():
             return candidate
-    raise ValueError(
-        f"Could not find an available proposal ID for dataset '{safe_dataset_id}'"
-    )
+    raise ValueError(f"Could not find an available proposal ID for dataset '{safe_dataset_id}'")
 
 
 def promote_gaps_to_proposal(

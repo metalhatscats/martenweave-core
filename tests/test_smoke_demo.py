@@ -91,9 +91,7 @@ def test_smoke_demo_full_workflow(tmp_path: Path) -> None:
     _assert_json_key(analyze_data, "lifecycle_summary", dict)
 
     # 7. trace --json
-    result = runner.invoke(
-        app, ["trace", "DOMAIN-EXAMPLE", "--repo", str(repo), "--json"]
-    )
+    result = runner.invoke(app, ["trace", "DOMAIN-EXAMPLE", "--repo", str(repo), "--json"])
     assert result.exit_code == 0
     trace_data = json.loads(result.output)
     _assert_json_key(trace_data, "root_object_id", str)
@@ -102,9 +100,7 @@ def test_smoke_demo_full_workflow(tmp_path: Path) -> None:
     _assert_json_key(trace_data, "edges", list)
 
     # 8. impact --json
-    result = runner.invoke(
-        app, ["impact", "DOMAIN-EXAMPLE", "--repo", str(repo), "--json"]
-    )
+    result = runner.invoke(app, ["impact", "DOMAIN-EXAMPLE", "--repo", str(repo), "--json"])
     assert result.exit_code == 0
     impact_data = json.loads(result.output)
     _assert_json_key(impact_data, "root_object_id", str)
@@ -117,9 +113,7 @@ def test_smoke_demo_full_workflow(tmp_path: Path) -> None:
     assert isinstance(audit_data, list)
 
     # 10. clean --dry-run --json
-    result = runner.invoke(
-        app, ["clean", "--repo", str(repo), "--dry-run", "--json"]
-    )
+    result = runner.invoke(app, ["clean", "--repo", str(repo), "--dry-run", "--json"])
     assert result.exit_code == 0
     clean_data = json.loads(result.output)
     _assert_json_key(clean_data, "dry_run", bool)
@@ -133,9 +127,7 @@ def test_smoke_demo_build_index_dry_run_no_db(tmp_path: Path) -> None:
     runner.invoke(app, ["init", str(repo)])
     db_path = repo / "generated" / "modelops.db"
 
-    result = runner.invoke(
-        app, ["build-index", "--repo", str(repo), "--dry-run"]
-    )
+    result = runner.invoke(app, ["build-index", "--repo", str(repo), "--dry-run"])
     assert result.exit_code == 0
     assert "Dry-run" in result.output
     assert not db_path.exists()
@@ -176,9 +168,7 @@ def test_smoke_simple_product_model(tmp_path: Path) -> None:
     _assert_json_key(health_data, "index_fresh", bool)
 
     # 4. search --json
-    result = runner.invoke(
-        app, ["search", "product", "--repo", str(repo), "--json"]
-    )
+    result = runner.invoke(app, ["search", "product", "--repo", str(repo), "--json"])
     assert result.exit_code == 0
     search_data = json.loads(result.output)
     _assert_json_key(search_data, "results", list)
@@ -186,9 +176,7 @@ def test_smoke_simple_product_model(tmp_path: Path) -> None:
     assert search_data["total_count"] > 0
 
     # 5. query --json
-    result = runner.invoke(
-        app, ["query", "--repo", str(repo), "--type", "Attribute", "--json"]
-    )
+    result = runner.invoke(app, ["query", "--repo", str(repo), "--type", "Attribute", "--json"])
     assert result.exit_code == 0
     query_data = json.loads(result.output)
     _assert_json_key(query_data, "results", list)
@@ -196,9 +184,7 @@ def test_smoke_simple_product_model(tmp_path: Path) -> None:
     assert query_data["total_count"] > 0
 
     # 6. trace --json
-    result = runner.invoke(
-        app, ["trace", "DOMAIN-PRODUCT", "--repo", str(repo), "--json"]
-    )
+    result = runner.invoke(app, ["trace", "DOMAIN-PRODUCT", "--repo", str(repo), "--json"])
     assert result.exit_code == 0
     trace_data = json.loads(result.output)
     _assert_json_key(trace_data, "root_object_id", str)
@@ -206,9 +192,7 @@ def test_smoke_simple_product_model(tmp_path: Path) -> None:
     _assert_json_key(trace_data, "edges", list)
 
     # 7. impact --json
-    result = runner.invoke(
-        app, ["impact", "DOMAIN-PRODUCT", "--repo", str(repo), "--json"]
-    )
+    result = runner.invoke(app, ["impact", "DOMAIN-PRODUCT", "--repo", str(repo), "--json"])
     assert result.exit_code == 0
     impact_data = json.loads(result.output)
     _assert_json_key(impact_data, "root_object_id", str)
@@ -216,9 +200,7 @@ def test_smoke_simple_product_model(tmp_path: Path) -> None:
 
     # 8. profile-dataset --json
     csv_path = repo / "data" / "samples" / "product_sample.csv"
-    result = runner.invoke(
-        app, ["profile-dataset", str(csv_path), "--repo", str(repo), "--json"]
-    )
+    result = runner.invoke(app, ["profile-dataset", str(csv_path), "--repo", str(repo), "--json"])
     assert result.exit_code == 0
     profile_data = json.loads(result.output)
     _assert_json_key(profile_data, "dataset_id", str)
@@ -226,8 +208,6 @@ def test_smoke_simple_product_model(tmp_path: Path) -> None:
     _assert_json_key(profile_data, "column_count", int)
 
     # 9. export --json
-    result = runner.invoke(
-        app, ["export-model", "--repo", str(repo), "--format", "csv"]
-    )
+    result = runner.invoke(app, ["export-model", "--repo", str(repo), "--format", "csv"])
     assert result.exit_code == 0
     assert "Exported" in result.output

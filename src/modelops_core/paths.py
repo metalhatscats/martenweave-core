@@ -37,6 +37,5 @@ def resolve_allowed_path(
             continue
 
     raise PathTraversalError(
-        f"Path '{path}' is outside allowed roots: "
-        f"{[str(r) for r in allowed_roots]}"
+        f"Path '{path}' is outside allowed roots: {[str(r) for r in allowed_roots]}"
     )

@@ -82,8 +82,7 @@ def test_broken_parent_entity_reference() -> None:
     summary = validate_objects([domain, child])
     assert not summary.is_valid
     assert any(
-        r.code == "REFERENCE_BROKEN" and r.object_id == "ENTITY-CHILD"
-        for r in summary.results
+        r.code == "REFERENCE_BROKEN" and r.object_id == "ENTITY-CHILD" for r in summary.results
     )
 
 

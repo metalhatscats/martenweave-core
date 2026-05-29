@@ -206,9 +206,7 @@ def test_cli_source_show_json(tmp_path: Path) -> None:
         row_count=10,
         column_count=2,
     )
-    result = runner.invoke(
-        app, ["source-show", "DS-001", "--repo", str(tmp_path), "--json"]
-    )
+    result = runner.invoke(app, ["source-show", "DS-001", "--repo", str(tmp_path), "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["source_id"] == "DS-001"

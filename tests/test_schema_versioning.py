@@ -31,6 +31,7 @@ from modelops_core.validation.result import ValidationSeverity
 # validate_object_schema_version
 # ---------------------------------------------------------------------------
 
+
 class TestValidateObjectSchemaVersion:
     def test_missing_schema_version_info(self) -> None:
         fm = {"id": "TEST-001", "type": "Attribute"}
@@ -77,6 +78,7 @@ class TestValidateObjectSchemaVersion:
 # validate_repo_schema_version
 # ---------------------------------------------------------------------------
 
+
 class TestValidateRepoSchemaVersion:
     def test_missing_repo_schema_version_info(self) -> None:
         issues = validate_repo_schema_version({"name": "Test"})
@@ -98,6 +100,7 @@ class TestValidateRepoSchemaVersion:
 # _check_schema_version (pipeline integration)
 # ---------------------------------------------------------------------------
 
+
 class TestCheckSchemaVersionPipeline:
     def test_pipeline_missing_schema_version(self) -> None:
         fm = {"id": "TEST-001", "type": "Attribute"}
@@ -115,6 +118,7 @@ class TestCheckSchemaVersionPipeline:
 # needs_migration
 # ---------------------------------------------------------------------------
 
+
 class TestNeedsMigration:
     def test_true_when_none(self) -> None:
         assert needs_migration(None) is False
@@ -126,15 +130,13 @@ class TestNeedsMigration:
         assert needs_migration({"id": "TEST", "schema_version": "0.9"}) is True
 
     def test_false_when_current(self) -> None:
-        assert (
-            needs_migration({"id": "TEST", "schema_version": CURRENT_SCHEMA_VERSION})
-            is False
-        )
+        assert needs_migration({"id": "TEST", "schema_version": CURRENT_SCHEMA_VERSION}) is False
 
 
 # ---------------------------------------------------------------------------
 # migrate_object
 # ---------------------------------------------------------------------------
+
 
 class TestMigrateObject:
     def test_returns_none_for_none(self) -> None:
@@ -180,6 +182,7 @@ class TestMigrateObject:
 # preview_migration
 # ---------------------------------------------------------------------------
 
+
 class TestPreviewMigration:
     def test_preview_no_mutation(self) -> None:
         fm = {"id": "TEST", "schema_version": "0.9"}
@@ -191,6 +194,7 @@ class TestPreviewMigration:
 # ---------------------------------------------------------------------------
 # rewrite_frontmatter
 # ---------------------------------------------------------------------------
+
 
 class TestRewriteFrontmatter:
     def test_rewrites_md_file(self, tmp_path: Path) -> None:
@@ -264,9 +268,7 @@ class TestMigrateCliJson:
         )
         obj.write_text(frontmatter, encoding="utf-8")
 
-        result = runner.invoke(
-            app, ["migrate", "--repo", str(repo), "--dry-run", "--json"]
-        )
+        result = runner.invoke(app, ["migrate", "--repo", str(repo), "--dry-run", "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert data["dry_run"] is True

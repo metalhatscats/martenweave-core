@@ -28,13 +28,11 @@ def _init_repo(tmp_path: Path) -> Path:
     generated_dir.mkdir()
 
     (model_dir / "DOMAIN-TEST.md").write_text(
-        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\n"
-        "name: Test Domain\n---\n",
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n",
         encoding="utf-8",
     )
     (model_dir / "PERSON-OWNER.md").write_text(
-        "---\nid: TEST-OWNER\ntype: Person\nstatus: active\n"
-        "name: Test Owner\n---\n",
+        "---\nid: TEST-OWNER\ntype: Person\nstatus: active\nname: Test Owner\n---\n",
         encoding="utf-8",
     )
     (model_dir / "ATTR-TEST.md").write_text(

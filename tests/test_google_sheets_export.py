@@ -60,9 +60,7 @@ def test_connector_fetch_metadata() -> None:
     }
     mock_service.spreadsheets().get.return_value = mock_get
 
-    with patch(
-        "modelops_core.connectors.google_sheets._check_dependencies"
-    ) as mock_check:
+    with patch("modelops_core.connectors.google_sheets._check_dependencies") as mock_check:
         mock_check.return_value = (MagicMock(), MagicMock())
         conn = GoogleSheetsConnector(credentials=MagicMock())
         conn._service = mock_service
@@ -84,9 +82,7 @@ def test_connector_fetch_content() -> None:
     }
     mock_service.spreadsheets().values().get.return_value = mock_get
 
-    with patch(
-        "modelops_core.connectors.google_sheets._check_dependencies"
-    ) as mock_check:
+    with patch("modelops_core.connectors.google_sheets._check_dependencies") as mock_check:
         mock_check.return_value = (MagicMock(), MagicMock())
         conn = GoogleSheetsConnector(credentials=MagicMock())
         conn._service = mock_service
@@ -103,9 +99,7 @@ def test_connector_write_content() -> None:
     mock_update = MagicMock()
     mock_service.spreadsheets().values().update.return_value = mock_update
 
-    with patch(
-        "modelops_core.connectors.google_sheets._check_dependencies"
-    ) as mock_check:
+    with patch("modelops_core.connectors.google_sheets._check_dependencies") as mock_check:
         mock_check.return_value = (MagicMock(), MagicMock())
         conn = GoogleSheetsConnector(credentials=MagicMock())
         conn._service = mock_service
@@ -132,9 +126,7 @@ def test_connector_write_sheet_values() -> None:
     mock_update = MagicMock()
     mock_service.spreadsheets().values().update.return_value = mock_update
 
-    with patch(
-        "modelops_core.connectors.google_sheets._check_dependencies"
-    ) as mock_check:
+    with patch("modelops_core.connectors.google_sheets._check_dependencies") as mock_check:
         mock_check.return_value = (MagicMock(), MagicMock())
         conn = GoogleSheetsConnector(credentials=MagicMock())
         conn._service = mock_service
@@ -167,9 +159,7 @@ def test_connector_to_source_entry() -> None:
     }
     mock_service.spreadsheets().get.return_value = mock_get
 
-    with patch(
-        "modelops_core.connectors.google_sheets._check_dependencies"
-    ) as mock_check:
+    with patch("modelops_core.connectors.google_sheets._check_dependencies") as mock_check:
         mock_check.return_value = (MagicMock(), MagicMock())
         conn = GoogleSheetsConnector(credentials=MagicMock())
         conn._service = mock_service
@@ -193,9 +183,7 @@ def test_connector_ensure_sheet_exists_creates_new() -> None:
     mock_service.spreadsheets().get.return_value = mock_get
     mock_service.spreadsheets().batchUpdate.return_value = mock_batch
 
-    with patch(
-        "modelops_core.connectors.google_sheets._check_dependencies"
-    ) as mock_check:
+    with patch("modelops_core.connectors.google_sheets._check_dependencies") as mock_check:
         mock_check.return_value = (MagicMock(), MagicMock())
         conn = GoogleSheetsConnector(credentials=MagicMock())
         conn._service = mock_service
@@ -216,9 +204,7 @@ def test_connector_ensure_sheet_exists_skips_existing() -> None:
     mock_service.spreadsheets().get.return_value = mock_get
     mock_service.spreadsheets().batchUpdate.return_value = mock_batch
 
-    with patch(
-        "modelops_core.connectors.google_sheets._check_dependencies"
-    ) as mock_check:
+    with patch("modelops_core.connectors.google_sheets._check_dependencies") as mock_check:
         mock_check.return_value = (MagicMock(), MagicMock())
         conn = GoogleSheetsConnector(credentials=MagicMock())
         conn._service = mock_service
@@ -294,12 +280,7 @@ def test_export_to_google_sheets_max_objects_limit(tmp_path: Path) -> None:
 
     for i in range(5):
         (model_dir / f"ATTR-{i}.md").write_text(
-            f"---\n"
-            f"id: ATTR-{i}\n"
-            f"type: Attribute\n"
-            f"status: draft\n"
-            f"name: Attribute {i}\n"
-            f"---\n"
+            f"---\nid: ATTR-{i}\ntype: Attribute\nstatus: draft\nname: Attribute {i}\n---\n"
         )
 
     from modelops_core.errors import ResourceLimitExceeded
@@ -338,19 +319,12 @@ def test_cli_export_sheets_success(tmp_path: Path) -> None:
     model_dir = tmp_path / "model"
     model_dir.mkdir(parents=True)
     (model_dir / "DOMAIN-TEST.md").write_text(
-        "---\n"
-        "id: DOMAIN-TEST\n"
-        "type: MasterDataDomain\n"
-        "status: draft\n"
-        "name: Test Domain\n"
-        "---\n"
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n"
     )
 
     runner = CliRunner()
 
-    with patch(
-        "modelops_core.exports.google_sheets_export.GoogleSheetsConnector"
-    ) as mock_conn_cls:
+    with patch("modelops_core.exports.google_sheets_export.GoogleSheetsConnector") as mock_conn_cls:
         mock_conn = MagicMock()
         mock_conn_cls.return_value = mock_conn
         result = runner.invoke(
@@ -372,12 +346,7 @@ def test_cli_export_sheets_missing_dependency(tmp_path: Path) -> None:
     model_dir = tmp_path / "model"
     model_dir.mkdir(parents=True)
     (model_dir / "DOMAIN-TEST.md").write_text(
-        "---\n"
-        "id: DOMAIN-TEST\n"
-        "type: MasterDataDomain\n"
-        "status: draft\n"
-        "name: Test Domain\n"
-        "---\n"
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n"
     )
 
     runner = CliRunner()

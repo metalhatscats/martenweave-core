@@ -81,8 +81,7 @@ def _build_search_sql(query: str) -> tuple[str, list[Any]]:
         pattern = f"%{term}%"
         base_cols = ["name", "title", "description", "body"]
         json_cols = [
-            f"json_extract(frontmatter_json, '$.{field}') LIKE ?"
-            for field in search_fields
+            f"json_extract(frontmatter_json, '$.{field}') LIKE ?" for field in search_fields
         ]
         cond = " OR ".join([f"{c} LIKE ?" for c in base_cols] + json_cols)
         conditions.append(f"({cond})")
@@ -201,9 +200,7 @@ def query_objects(
         params.append(f"%{name_like}%")
     if tags:
         placeholders = ", ".join("?" for _ in tags)
-        conditions.append(
-            f"id IN (SELECT object_id FROM tags WHERE tag IN ({placeholders}))"
-        )
+        conditions.append(f"id IN (SELECT object_id FROM tags WHERE tag IN ({placeholders}))")
         params.extend(tags)
     if owner:
         owner_conds = " OR ".join(
@@ -261,9 +258,7 @@ def get_object_by_id(db_path: Path, object_id: str) -> dict[str, Any] | None:
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
     try:
-        cursor = conn.execute(
-            "SELECT frontmatter_json FROM objects WHERE id = ?", (object_id,)
-        )
+        cursor = conn.execute("SELECT frontmatter_json FROM objects WHERE id = ?", (object_id,))
         row = cursor.fetchone()
     finally:
         conn.close()

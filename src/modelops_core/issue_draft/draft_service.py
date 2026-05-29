@@ -52,9 +52,7 @@ def _fm_string(value: Any) -> str:
     return str(value)
 
 
-def create_draft_from_change_request(
-    model_path: Path, cr_id: str
-) -> DraftResult:
+def create_draft_from_change_request(model_path: Path, cr_id: str) -> DraftResult:
     """Generate an issue draft from a ChangeRequest."""
     cr = load_change_request(model_path, cr_id)
     if cr is None:
@@ -190,8 +188,7 @@ def create_draft_from_proposal(
 
     lines.append("## Goal")
     lines.append(
-        fm.get("source_evidence")
-        or f"Review PatchProposal {proposal_id} before application."
+        fm.get("source_evidence") or f"Review PatchProposal {proposal_id} before application."
     )
     lines.append("")
 
@@ -296,9 +293,7 @@ def create_draft_from_validation(
     if errors:
         lines.append("### Errors")
         for r in errors[:30]:
-            lines.append(
-                f"- `{r.object_id or '—'}` — {r.code}: {r.message}"
-            )
+            lines.append(f"- `{r.object_id or '—'}` — {r.code}: {r.message}")
             if r.suggested_fix:
                 lines.append(f"  - *Fix:* {r.suggested_fix}")
         if len(errors) > 30:
@@ -308,9 +303,7 @@ def create_draft_from_validation(
     if warnings:
         lines.append("### Warnings")
         for r in warnings[:30]:
-            lines.append(
-                f"- `{r.object_id or '—'}` — {r.code}: {r.message}"
-            )
+            lines.append(f"- `{r.object_id or '—'}` — {r.code}: {r.message}")
             if r.suggested_fix:
                 lines.append(f"  - *Fix:* {r.suggested_fix}")
         if len(warnings) > 30:
@@ -355,13 +348,11 @@ def write_draft(repo_root: Path, draft: DraftResult, output_path: Path | None = 
 
     frontmatter_lines = [
         "---",
-        f"title: \"{draft.title}\"",
+        f'title: "{draft.title}"',
         f"labels: [{', '.join(draft.labels)}]",
     ]
     if draft.suggested_assignees:
-        frontmatter_lines.append(
-            f"assignees: [{', '.join(draft.suggested_assignees)}]"
-        )
+        frontmatter_lines.append(f"assignees: [{', '.join(draft.suggested_assignees)}]")
     frontmatter_lines.append("---")
     frontmatter_lines.append("")
 
