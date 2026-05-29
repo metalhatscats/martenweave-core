@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -84,27 +85,19 @@ def test_e2e_v0_1_command_surface(sample_repo: Path) -> None:
     assert result.exit_code == 0
 
     # 4. Search
-    result = runner.invoke(
-        app, ["search", "Customer Group", "--repo", repo, "--json"]
-    )
+    result = runner.invoke(app, ["search", "Customer Group", "--repo", repo, "--json"])
     assert result.exit_code == 0
 
     # 5. Query
-    result = runner.invoke(
-        app, ["query", "--type", "Attribute", "--repo", repo, "--json"]
-    )
+    result = runner.invoke(app, ["query", "--type", "Attribute", "--repo", repo, "--json"])
     assert result.exit_code == 0
 
     # 6. Export model CSV
-    result = runner.invoke(
-        app, ["export-model", "--repo", repo, "--format", "csv"]
-    )
+    result = runner.invoke(app, ["export-model", "--repo", repo, "--format", "csv"])
     assert result.exit_code == 0
 
     # 7. Export model XLSX
-    result = runner.invoke(
-        app, ["export-model", "--repo", repo, "--format", "xlsx"]
-    )
+    result = runner.invoke(app, ["export-model", "--repo", repo, "--format", "xlsx"])
     assert result.exit_code == 0
 
     # 8. Usage report
@@ -161,3 +154,32 @@ def test_e2e_v0_4_command_surface(sample_repo: Path) -> None:
     # 6. Proposal report
     result = runner.invoke(app, ["proposal", "report", "--repo", repo])
     assert result.exit_code == 0
+
+
+def test_generic_product_model_validates_and_indexes() -> None:
+    """Regression test for #372: generic_product_model must validate and build cleanly."""
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parent.parent / "examples" / "generic_product_model"
+
+    # Validate
+    result = runner.invoke(app, ["validate", "--repo", str(repo), "--json"])
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.output)
+    assert data["is_valid"] is True
+    assert data["error_count"] == 0
+    assert data["warning_count"] == 0
+
+    # Build index
+    result = runner.invoke(app, ["build-index", "--repo", str(repo), "--jsonl"])
+    assert result.exit_code == 0, result.output
+    assert (repo / "generated" / "modelops.db").exists()
+    assert (repo / "generated" / "search_documents.jsonl").exists()
+    assert (repo / "generated" / "lineage_edges.jsonl").exists()
+
+    # Trace and impact work
+    result = runner.invoke(app, ["trace", "ATTR-PRODUCT-SKU", "--repo", str(repo)])
+    assert result.exit_code == 0, result.output
+
+    result = runner.invoke(app, ["impact", "FEP-PRODUCT-SKU", "--repo", str(repo)])
+    assert result.exit_code == 0, result.output
