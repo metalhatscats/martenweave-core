@@ -16,6 +16,7 @@ from modelops_core.patching.patch_proposal_service import (
     write_patch_proposal,
 )
 from modelops_core.reports.audit_service import AuditEventService
+from modelops_core.repository import parse_file
 
 runner = CliRunner()
 
@@ -301,3 +302,42 @@ class TestChangeRequestApproval:
         approve_event = next(e for e in events if e.event_type == "change_request_approved")
         assert approve_event.actor == "alice"
         assert approve_event.status == "success"
+
+
+    def test_accept_auto_creates_and_approves_cr(self, tmp_path: Path) -> None:
+        repo = _init_repo(tmp_path)
+        _create_proposal(repo)
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "accept",
+                "PP-001",
+                "--repo",
+                str(repo),
+                "--reviewer",
+                "alice",
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        data = json.loads(result.output)
+        assert data["status"] == "accepted"
+        assert data["change_request_id"] == "CR-PP-001"
+        assert data["change_request_status"] == "approved"
+
+        # Verify CR file exists and is approved
+        cr_path = repo / "model" / "change-requests" / "CR-PP-001.md"
+        assert cr_path.exists()
+        parsed = parse_file(cr_path)
+        assert parsed.frontmatter is not None
+        assert parsed.frontmatter["status"] == "approved"
+        assert parsed.frontmatter["linked_proposals"] == ["PP-001"]
+
+        # Verify audit events
+        service = AuditEventService(repo)
+        events = service.read_events()
+        event_types = [e.event_type for e in events]
+        assert "proposal_status_changed" in event_types
+        assert "change_request_approved" in event_types
