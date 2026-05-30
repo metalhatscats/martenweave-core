@@ -4,6 +4,7 @@
 
 ```bash
 modelops export-model --repo <repo> --format csv|xlsx --output <path>
+modelops export-schema --repo <repo> --type <ObjectType|all> --output <path>
 modelops import-model-sheet <path> --repo <repo> --json
 ```
 

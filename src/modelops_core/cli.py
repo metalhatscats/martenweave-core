@@ -42,6 +42,10 @@ from modelops_core.exports.github_publish_service import (
     publish_pr_from_bundle,
 )
 from modelops_core.exports.google_sheets_export import export_to_google_sheets
+from modelops_core.exports.schema_export_service import (
+    export_schemas,
+    write_schema_export,
+)
 from modelops_core.gaps import detect_dataset_gaps
 from modelops_core.guardrails.config_guard import (
     has_blocking_issues,
@@ -4494,6 +4498,44 @@ def export_model(
                 "file_count": len(written) if is_list_format else 1,
             },
         )
+    )
+
+
+@app.command("export-schema")
+@with_telemetry("export-schema")
+def export_schema(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    type: str = typer.Option(
+        "all", "--type", help="Object type to export. Use 'all' for every type."
+    ),
+    output: Path | None = typer.Option(  # noqa: B008
+        None, "--output", help="Output file path."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Export JSON Schema for canonical object types."""
+    repo_root = _resolve_repo(repo)
+
+    if output is None:
+        output = resolve_generated_path(repo_root) / "schemas" / "canonical_objects.json"
+
+    try:
+        result = export_schemas(type_filter=type)
+    except ValueError as exc:
+        if json_output:
+            print(json.dumps({"error": str(exc)}))
+        else:
+            console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    output_path = write_schema_export(output, type_filter=type)
+
+    if json_output:
+        print(json.dumps(result, indent=2, sort_keys=True, default=str))
+        raise typer.Exit()
+
+    console.print(
+        f"[green]Exported {result['type_count']} JSON Schema(s) to {output_path}[/green]"
     )
 
 

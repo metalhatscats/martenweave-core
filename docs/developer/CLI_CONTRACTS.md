@@ -12,7 +12,7 @@ Stable command contracts grouped by capability. Agents and future UI layers may 
 | Search, Query, and Trace | [cli-contracts/search-query-trace.md](cli-contracts/search-query-trace.md) | `search`, `query`, `trace`, `impact` |
 | Dataset and Gap Analysis | [cli-contracts/dataset-gaps.md](cli-contracts/dataset-gaps.md) | `profile-dataset`, `infer-model`, `gaps` |
 | Proposals and Approval | [cli-contracts/proposals-approval.md](cli-contracts/proposals-approval.md) | `propose-patch`, `proposal *`, `change-request *` |
-| Export and Import | [cli-contracts/export-import.md](cli-contracts/export-import.md) | `export-model`, `import-model-sheet` |
+| Export and Import | [cli-contracts/export-import.md](cli-contracts/export-import.md) | `export-model`, `export-schema`, `import-model-sheet` |
 | Reports and Governance | [cli-contracts/reports-governance.md](cli-contracts/reports-governance.md) | `config-guard`, `scorecard`, `gap-report`, `owners`, `decisions`, `audit-log`, `usage-report` |
 | System and Server | [cli-contracts/system-server.md](cli-contracts/system-server.md) | `clean`, `diff`, `migrate`, `serve`, `mcp`, `sources` |
 
