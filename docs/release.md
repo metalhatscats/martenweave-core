@@ -30,13 +30,31 @@ Both must match before a release commit.
 - [ ] No secrets or raw sensitive data in commits
 - [ ] Package builds locally:
   ```bash
+  rm -rf dist/ src/*.egg-info
   python -m build
-  ```
-- [ ] Built artifacts are inspected:
-  ```bash
   ls -l dist/
   ```
 - [ ] Optional extras are documented (see below)
+
+## Automated Release
+
+Push a signed tag to trigger the release workflow:
+
+```bash
+git tag -s v0.4.0 -m "Release v0.4.0"
+git push origin v0.4.0
+```
+
+The [`.github/workflows/release.yml`](../../.github/workflows/release.yml) workflow will:
+
+1. Run tests and lint
+2. Build wheel + sdist with `python -m build`
+3. Publish to PyPI via [trusted publishing (OIDC)](https://docs.pypi.org/trusted-publishers/)
+4. Create a GitHub Release with auto-generated notes
+
+**Requirements:**
+- The `release` environment must be configured in the GitHub repository settings.
+- The PyPI project must have a trusted publisher entry for this repository and workflow.
 
 ## Local Build
 
