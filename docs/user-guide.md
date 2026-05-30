@@ -156,6 +156,12 @@ modelops export-model --repo ./my-model --format csv
 # Export model to XLSX (one workbook, one sheet per type)
 modelops export-model --repo ./my-model --format xlsx
 
+# Export JSON Schema for all canonical object types
+modelops export-schema --repo ./my-model --type all --output generated/schemas/canonical_objects.json
+
+# Export JSON Schema for a single type
+modelops export-schema --repo ./my-model --type Attribute --json
+
 # Import spreadsheet edits as a new PatchProposal
 modelops import-model-sheet generated/exports/csv --repo ./my-model --json
 ```

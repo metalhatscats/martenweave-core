@@ -1,0 +1,77 @@
+"""Mapping from canonical object type names to their Pydantic model classes."""
+
+from __future__ import annotations
+
+from modelops_core.schemas.change_request import ChangeRequest
+from modelops_core.schemas.common import BaseObject
+from modelops_core.schemas.decision import Decision
+from modelops_core.schemas.domain import (
+    Application,
+    Attribute,
+    AttributeUsage,
+    BusinessEntity,
+    BusinessRule,
+    DataFlowStep,
+    DataQualityCheck,
+    Dataset,
+    EntityContext,
+    Evidence,
+    FieldEndpoint,
+    IntegrationFlow,
+    Interface,
+    InterfaceEndpoint,
+    Mapping,
+    MappingSet,
+    MasterDataDomain,
+    MigrationObject,
+    OwnershipRole,
+    Person,
+    SAPObject,
+    System,
+    SystemEnvironment,
+    Team,
+    TransformationLogic,
+    TransformationRule,
+    ValidationRule,
+    ValueList,
+    ValueMapping,
+)
+from modelops_core.schemas.issue import Issue, Risk
+from modelops_core.schemas.patch_proposal import PatchProposal
+
+OBJECT_TYPE_MODELS: dict[str, type[BaseObject]] = {
+    "MasterDataDomain": MasterDataDomain,
+    "MigrationObject": MigrationObject,
+    "BusinessEntity": BusinessEntity,
+    "EntityContext": EntityContext,
+    "Attribute": Attribute,
+    "AttributeUsage": AttributeUsage,
+    "System": System,
+    "SystemEnvironment": SystemEnvironment,
+    "SAPObject": SAPObject,
+    "FieldEndpoint": FieldEndpoint,
+    "Interface": Interface,
+    "InterfaceEndpoint": InterfaceEndpoint,
+    "Dataset": Dataset,
+    "Application": Application,
+    "IntegrationFlow": IntegrationFlow,
+    "DataFlowStep": DataFlowStep,
+    "TransformationRule": TransformationRule,
+    "MappingSet": MappingSet,
+    "Mapping": Mapping,
+    "ValueList": ValueList,
+    "ValueMapping": ValueMapping,
+    "BusinessRule": BusinessRule,
+    "TransformationLogic": TransformationLogic,
+    "ValidationRule": ValidationRule,
+    "DataQualityCheck": DataQualityCheck,
+    "OwnershipRole": OwnershipRole,
+    "Person": Person,
+    "Team": Team,
+    "Issue": Issue,
+    "Risk": Risk,
+    "Decision": Decision,
+    "ChangeRequest": ChangeRequest,
+    "PatchProposal": PatchProposal,
+    "Evidence": Evidence,
+}

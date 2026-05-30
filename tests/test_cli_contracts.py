@@ -930,6 +930,23 @@ class TestExportContract:
         assert result.exit_code == 0
         assert "Exported XLSX workbook" in result.output
 
+    def test_export_schema_json_schema(self, sample_repo: Path) -> None:
+        result = runner.invoke(
+            app, ["export-schema", "--repo", str(sample_repo), "--type", "Attribute", "--json"]
+        )
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert isinstance(data, dict)
+        assert "$schema" in data
+        assert "title" in data
+        assert "type_count" in data
+        assert "schemas" in data
+        assert data["type_count"] == 1
+        assert "Attribute" in data["schemas"]
+        schema = data["schemas"]["Attribute"]
+        assert "properties" in schema
+        assert "required" in schema
+
 
 # ---------------------------------------------------------------------------
 # import-model-sheet
