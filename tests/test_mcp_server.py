@@ -515,12 +515,13 @@ class TestMCPCLIGracefulDegradation:
             **dict(subprocess.os.environ),
             "PYTHONPATH": "src",
         }
+        repo_root = str(Path(__file__).resolve().parent.parent)
         result = subprocess.run(
             [sys.executable, "-c", code],
             capture_output=True,
             text=True,
             env=env,
-            cwd="/Users/dzmitryikharlanau/Developments/martenweave",
+            cwd=repo_root,
         )
         assert result.returncode == 1
         combined = (result.stdout + result.stderr).lower()

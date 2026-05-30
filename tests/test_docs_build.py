@@ -134,6 +134,9 @@ def test_docs_first_15_minutes_filenames_match_disk() -> None:
                 if "/" in token and not token.startswith("http"):
                     # Strip any trailing backslash for line continuations
                     clean = token.rstrip("\\")
+                    # .venv paths are environment-specific and not expected in CI
+                    if clean.startswith(".venv/"):
+                        continue
                     path = repo_root / clean
                     if not path.exists():
                         broken.append(clean)

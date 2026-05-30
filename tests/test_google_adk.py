@@ -117,6 +117,11 @@ def test_tools_do_not_bypass_validation() -> None:
 
 def test_build_agent_raises_without_adk() -> None:
     """Agent construction raises ImportError when google-adk is missing."""
+    from modelops_core.ai.google_adk import _HAS_ADK
+
+    if _HAS_ADK:
+        pytest.skip("google-adk is installed")
+
     from modelops_core.ai.google_adk.agent import _build_agent
 
     with pytest.raises(ImportError, match="google-adk is not installed"):
@@ -126,11 +131,17 @@ def test_build_agent_raises_without_adk() -> None:
 def test_adk_module_has_has_adk_flag() -> None:
     from modelops_core.ai.google_adk import _HAS_ADK
 
+    if _HAS_ADK:
+        pytest.skip("google-adk is installed")
+
     assert _HAS_ADK is False
 
 
 def test_require_adk_raises() -> None:
-    from modelops_core.ai.google_adk import _require_adk
+    from modelops_core.ai.google_adk import _HAS_ADK, _require_adk
+
+    if _HAS_ADK:
+        pytest.skip("google-adk is installed")
 
     with pytest.raises(ImportError, match="Google ADK is not installed"):
         _require_adk()

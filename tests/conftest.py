@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from modelops_core.index.sqlite_builder import build_index
+
 
 @pytest.fixture
 def sample_repo(tmp_path: Path) -> Path:
@@ -14,6 +16,8 @@ def sample_repo(tmp_path: Path) -> Path:
     src = Path(__file__).resolve().parent.parent / "examples" / "customer_bp_model"
     dst = tmp_path / "customer_bp_model"
     shutil.copytree(src, dst)
+    # Build the SQLite index so tests that require it don't fail in CI.
+    build_index(dst, allow_invalid=True)
     return dst
 
 
