@@ -29,6 +29,16 @@ class ValidationResult(BaseModel):
     details: dict[str, Any] | None = Field(default=None)
 
 
+METHODOLOGY_WARNING_CODES: frozenset[str] = frozenset(
+    {
+        "FLAT_MODEL_STRUCTURE",
+        "FIELD_ENDPOINT_MISSING_ENRICHMENT",
+        "ATTRIBUTE_MISSING_CONTEXT",
+        "ATTRIBUTE_USAGE_MISSING_TYPE",
+    }
+)
+
+
 class ValidationSummary(BaseModel):
     """Aggregated validation results."""
 

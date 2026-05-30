@@ -1004,6 +1004,14 @@ def validate(
         False, "--check-decisions", help="Run extended Decision evidence validation."
     ),
     strict: bool = typer.Option(False, "--strict", help="Exit with code 2 if any warnings exist."),
+    suppress_methodology_warnings: bool = typer.Option(
+        False,
+        "--suppress-methodology-warnings",
+        help=(
+            "Suppress methodology warnings "
+            "(FLAT_MODEL_STRUCTURE, FIELD_ENDPOINT_MISSING_ENRICHMENT, etc.)."
+        ),
+    ),
 ) -> None:
     """Run deterministic validation on canonical files."""
     repo_root = _resolve_repo(repo)
@@ -1037,6 +1045,13 @@ def validate(
                 suggested_fix=issue.suggested_fix,
             )
         )
+
+    if suppress_methodology_warnings:
+        from modelops_core.validation.result import METHODOLOGY_WARNING_CODES
+
+        summary.results = [
+            r for r in summary.results if r.code not in METHODOLOGY_WARNING_CODES
+        ]
 
     if json_output:
         result = {
