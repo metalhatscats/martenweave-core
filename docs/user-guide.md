@@ -102,6 +102,9 @@ modelops validate --repo ./my-model
 # Strict mode — fail on warnings (exit 2) as well as errors (exit 1)
 modelops validate --repo ./my-model --strict
 
+# Suppress noisy methodology warnings for simple models
+modelops validate --repo ./my-model --suppress-methodology-warnings
+
 # Show repository health
 modelops health --repo ./my-model
 ```

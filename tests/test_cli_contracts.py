@@ -155,6 +155,64 @@ class TestValidateContract:
         assert "results" in data
         assert isinstance(data["results"], list)
 
+    def test_validate_suppress_methodology_warnings_json(self) -> None:
+        repo = "examples/simple_product_model"
+        result = runner.invoke(app, ["validate", "--repo", repo, "--json"])
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        codes = {r["code"] for r in data["results"]}
+        assert "FIELD_ENDPOINT_MISSING_ENRICHMENT" in codes
+        assert "OWNERSHIP_MISSING" in codes
+        before_warnings = data["warning_count"]
+
+        result2 = runner.invoke(
+            app,
+            ["validate", "--repo", repo, "--suppress-methodology-warnings", "--json"],
+        )
+        assert result2.exit_code == 0
+        data2 = _parse_json(result2)
+        codes2 = {r["code"] for r in data2["results"]}
+        assert "FIELD_ENDPOINT_MISSING_ENRICHMENT" not in codes2
+        assert "OWNERSHIP_MISSING" in codes2
+        assert data2["warning_count"] < before_warnings
+        assert "FIELD_ENDPOINT_MISSING_ENRICHMENT" not in data2["summary_by_code"]
+
+    def test_validate_suppress_methodology_does_not_hide_errors(self) -> None:
+        from modelops_core.validation.result import (
+            METHODOLOGY_WARNING_CODES,
+            ValidationResult,
+            ValidationSeverity,
+            ValidationSummary,
+        )
+
+        summary = ValidationSummary(
+            results=[
+                ValidationResult(
+                    severity=ValidationSeverity.ERROR,
+                    code="REFERENCE_BROKEN",
+                    message="Broken ref.",
+                ),
+                ValidationResult(
+                    severity=ValidationSeverity.WARNING,
+                    code="FIELD_ENDPOINT_MISSING_ENRICHMENT",
+                    message="Missing enrichment.",
+                ),
+                ValidationResult(
+                    severity=ValidationSeverity.WARNING,
+                    code="OWNERSHIP_MISSING",
+                    message="Missing owner.",
+                ),
+            ]
+        )
+        filtered = [
+            r for r in summary.results if r.code not in METHODOLOGY_WARNING_CODES
+        ]
+        summary.results = filtered
+        assert summary.error_count == 1
+        assert summary.warning_count == 1
+        assert summary.results[0].code == "REFERENCE_BROKEN"
+        assert summary.results[1].code == "OWNERSHIP_MISSING"
+
 
 # ---------------------------------------------------------------------------
 # build-index / health / analyze / trace / impact / search / query
