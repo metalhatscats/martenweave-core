@@ -1157,3 +1157,58 @@ class TestProposalListReviewerFilter:
         data = json.loads(result.output)
         assert len(data) == 1
         assert data[0]["reviewer"] == "alice"
+
+
+def test_proposal_accept_creates_and_approves_cr(temp_model_dir: Path) -> None:
+    op = PatchOperation(op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X")
+    proposal = build_patch_proposal("PP-ACCEPT-CR", [op])
+    write_patch_proposal(proposal, temp_model_dir)
+
+    result = runner.invoke(
+        app,
+        [
+            "proposal",
+            "accept",
+            "PP-ACCEPT-CR",
+            "--repo",
+            _repo_from_model(temp_model_dir),
+            "--reviewer",
+            "alice",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "PatchProposal PP-ACCEPT-CR accepted" in result.output
+    assert "ChangeRequest CR-PP-ACCEPT-CR created and approved" in result.output
+
+    cr_path = temp_model_dir.parent / "model" / "change-requests" / "CR-PP-ACCEPT-CR.md"
+    assert cr_path.exists()
+    parsed = parse_file(cr_path)
+    assert parsed.frontmatter is not None
+    assert parsed.frontmatter["status"] == "approved"
+    assert parsed.frontmatter["linked_proposals"] == ["PP-ACCEPT-CR"]
+
+
+def test_proposal_accept_skip_cr_creation(temp_model_dir: Path) -> None:
+    op = PatchOperation(op="update_object", object_id="DOMAIN-TEST", target_path="name", after="X")
+    proposal = build_patch_proposal("PP-ACCEPT-NO-CR", [op])
+    write_patch_proposal(proposal, temp_model_dir)
+
+    result = runner.invoke(
+        app,
+        [
+            "proposal",
+            "accept",
+            "PP-ACCEPT-NO-CR",
+            "--repo",
+            _repo_from_model(temp_model_dir),
+            "--reviewer",
+            "alice",
+            "--skip-cr-creation",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "PatchProposal PP-ACCEPT-NO-CR accepted" in result.output
+    assert "ChangeRequest" not in result.output
+
+    cr_path = temp_model_dir.parent / "model" / "change-requests" / "CR-PP-ACCEPT-NO-CR.md"
+    assert not cr_path.exists()

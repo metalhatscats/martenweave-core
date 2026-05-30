@@ -3106,6 +3106,9 @@ def proposal_accept(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     reviewer: str = typer.Option(..., "--reviewer", help="Identity of the reviewer."),
     notes: str | None = typer.Option(None, "--notes", help="Reviewer notes."),
+    skip_cr_creation: bool = typer.Option(
+        False, "--skip-cr-creation", help="Skip auto-creating a ChangeRequest."
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Accept a PatchProposal."""
@@ -3152,11 +3155,46 @@ def proposal_accept(
         proposal_path, "accepted", reviewer=reviewer, reviewer_notes=notes
     )
 
+    cr_id: str | None = None
+    if not skip_cr_creation:
+        cr_id = f"CR-{proposal_id}"
+        create_change_request(
+            model_path=model_path,
+            cr_id=cr_id,
+            title=f"Change Request: {proposal_id}",
+            status="pending",
+            requester=reviewer,
+            linked_proposals=[proposal_id],
+            affected_objects=fm.get("affected_objects") or [],
+        )
+        approve_change_request(model_path, cr_id, reviewer)
+
+        # Audit event for CR approval
+        service = AuditEventService(repo_root)
+        service.emit(
+            create_audit_event(
+                event_type="change_request_approved",
+                actor=reviewer,
+                status="success",
+                command="proposal accept",
+                proposal_id=cr_id,
+                changed_object_ids=fm.get("affected_objects") or [],
+                outputs={"auto_created": True, "linked_proposal": proposal_id},
+            )
+        )
+
+    result: dict[str, Any] = {"proposal_id": proposal_id, "status": "accepted"}
+    if cr_id:
+        result["change_request_id"] = cr_id
+        result["change_request_status"] = "approved"
+
     if json_output:
-        print(json.dumps({"proposal_id": proposal_id, "status": "accepted"}, indent=2))
+        print(json.dumps(result, indent=2))
         raise typer.Exit()
 
     console.print(f"[green]PatchProposal {proposal_id} accepted.[/green]")
+    if cr_id:
+        console.print(f"[green]ChangeRequest {cr_id} created and approved.[/green]")
 
 
 @proposal_app.command("reject")
