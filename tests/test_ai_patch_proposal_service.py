@@ -8,6 +8,7 @@ from unittest import mock
 import pytest
 
 from modelops_core.ai.patch_proposal_service import (
+    _extract_object_ids,
     _get_default_adapter,
     build_patch_proposal_from_note,
 )
@@ -18,6 +19,7 @@ from modelops_core.ai.provider_adapter import (
     NoProviderAdapter,
     ProviderOutputValidator,
 )
+from modelops_core.index import build_index
 from modelops_core.telemetry.ai_usage import AIUsageTelemetryService
 
 
@@ -248,4 +250,101 @@ class TestProviderOutputValidator:
         assert result["proposal"]["validation_status"] == "invalid"
         assert any(
             v["code"] == "PATCH_ID_INVALID" for v in result["proposal"]["validation_results"]
+        )
+
+
+class TestExtractObjectIds:
+    def test_extracts_single_id(self) -> None:
+        assert _extract_object_ids("Update ATTR-CUST-SALES-CUSTOMER-GROUP") == [
+            "ATTR-CUST-SALES-CUSTOMER-GROUP"
+        ]
+
+    def test_extracts_multiple_ids(self) -> None:
+        ids = _extract_object_ids(
+            "Link FEP-S4-KNVV-KDGRP to ATTR-CUST-SALES-CUSTOMER-GROUP"
+        )
+        assert set(ids) == {"FEP-S4-KNVV-KDGRP", "ATTR-CUST-SALES-CUSTOMER-GROUP"}
+
+    def test_no_ids_returns_empty(self) -> None:
+        assert _extract_object_ids("Just a generic note") == []
+
+
+def _build_repo(tmp_path: Path, objects: list[dict]) -> Path:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir(parents=True, exist_ok=True)
+    generated_dir = tmp_path / "generated"
+    generated_dir.mkdir(parents=True, exist_ok=True)
+
+    for obj in objects:
+        obj_id = obj["id"]
+        frontmatter_lines = []
+        for k, v in obj.items():
+            if isinstance(v, list):
+                frontmatter_lines.append(f"{k}:")
+                for item in v:
+                    frontmatter_lines.append(f"  - {item}")
+            else:
+                frontmatter_lines.append(f"{k}: {v}")
+        frontmatter = "\n".join(frontmatter_lines)
+        content = f"---\n{frontmatter}\n---\n\n# {obj_id}\n"
+        (model_dir / f"{obj_id}.md").write_text(content, encoding="utf-8")
+
+    db_path = generated_dir / "modelops.db"
+    build_index(repo_root=tmp_path, db_path=db_path, allow_invalid=True)
+    return tmp_path
+
+
+class TestBuildPatchProposalFromNoteWithRepoRoot:
+    def test_repo_root_builds_context_bundle(self, tmp_path: Path) -> None:
+        repo_root = _build_repo(
+            tmp_path,
+            [
+                {"id": "ATTR-1", "type": "Attribute", "status": "active", "name": "A1"},
+                {"id": "FEP-1", "type": "FieldEndpoint", "status": "active", "name": "F1"},
+            ],
+        )
+
+        received: list[AIContextBundle] = []
+
+        class SpyAdapter:
+            def generate_candidates(self, context: AIContextBundle) -> list[AICandidateOutput]:
+                received.append(context)
+                return []
+
+        build_patch_proposal_from_note(
+            "Update ATTR-1 and FEP-1",
+            adapter=SpyAdapter(),
+            repo_root=repo_root,
+        )
+
+        assert len(received) == 1
+        ctx = received[0]
+        assert ctx.repository_context is not None
+        assert ctx.repository_context["metadata"]["workflow"] == "proposal-review"
+        assert ctx.repository_context["metadata"]["token_budget"] == 4000
+        assert len(ctx.repository_context["included_objects"]) >= 2
+        ids = {o["object_id"] for o in ctx.repository_context["included_objects"]}
+        assert "ATTR-1" in ids
+        assert "FEP-1" in ids
+        assert ctx.repository_context["validation_summary"] is not None
+
+    def test_repo_root_no_index_empty_context(self, tmp_path: Path) -> None:
+        received: list[AIContextBundle] = []
+
+        class SpyAdapter:
+            def generate_candidates(self, context: AIContextBundle) -> list[AICandidateOutput]:
+                received.append(context)
+                return []
+
+        build_patch_proposal_from_note(
+            "Update ATTR-1",
+            adapter=SpyAdapter(),
+            repo_root=tmp_path,
+        )
+
+        assert len(received) == 1
+        ctx = received[0]
+        assert ctx.repository_context is not None
+        assert any(
+            "not found" in str(w).lower() for w in ctx.repository_context.get("warnings", [])
         )
