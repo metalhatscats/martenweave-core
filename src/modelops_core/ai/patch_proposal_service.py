@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +27,14 @@ def _get_default_adapter() -> AIProviderAdapter:
     return NoProviderAdapter()
 
 
+_ID_PATTERN = re.compile(r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*")
+
+
+def _extract_object_ids(note: str) -> list[str]:
+    """Extract candidate canonical object IDs from a free-text note."""
+    return list({m for m in _ID_PATTERN.findall(note) if len(m) >= 3})
+
+
 def build_patch_proposal_from_note(
     note: str,
     include_raw_samples: bool = False,
@@ -41,6 +50,26 @@ def build_patch_proposal_from_note(
         note=note,
         include_raw_samples=include_raw_samples,
     )
+
+    if repo_root is not None:
+        from modelops_core.ai.context_builder import build_context_bundle
+        from modelops_core.config import resolve_generated_path
+
+        db_path = resolve_generated_path(repo_root) / "modelops.db"
+        target_object_ids = _extract_object_ids(note)
+        bundle = build_context_bundle(
+            db_path=db_path,
+            workflow="proposal-review",
+            target_object_ids=target_object_ids,
+            token_budget=context.max_context_length,
+        )
+        context.repository_context = {
+            "metadata": bundle.to_metadata(),
+            "included_objects": bundle.included_objects,
+            "relationship_refs": bundle.relationship_refs,
+            "validation_summary": bundle.validation_summary,
+            "warnings": bundle.warnings,
+        }
 
     if adapter is None:
         adapter = _get_default_adapter()

@@ -40,6 +40,7 @@ class ContextBundle:
     redaction_policy: str = "summary_only"
     created_at: str = ""
     warnings: list[str] = field(default_factory=list)
+    validation_summary: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if not self.created_at:
@@ -275,6 +276,8 @@ def build_context_bundle(
                 }
             )
 
+    evidence_refs = [o["object_id"] for o in all_objects]
+    validation_summary = _fetch_validation_summary(conn, evidence_refs)
     conn.close()
 
     # Compaction: truncate to max_objects
@@ -313,6 +316,7 @@ def build_context_bundle(
         size_budget=rough_size,
         redaction_policy=redaction_policy,
         warnings=warnings,
+        validation_summary=validation_summary,
     )
 
     # Final fallback: if still oversized, return summary-only

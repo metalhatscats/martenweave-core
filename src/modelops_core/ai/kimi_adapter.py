@@ -77,6 +77,10 @@ def _build_prompt(context: AIContextBundle) -> str:
         lines.append(f"Dataset columns: {', '.join(context.dataset_columns)}")
     if context.dataset_row_count is not None:
         lines.append(f"Dataset rows: {context.dataset_row_count}")
+    if context.repository_context:
+        lines.append("")
+        lines.append("Repository context (canonical objects, relationships, validation summary):")
+        lines.append(json.dumps(context.repository_context, indent=2, default=str))
     lines.append("")
     lines.append("Respond with JSON matching this schema:")
     lines.append(json.dumps(_CANDIDATE_SCHEMA, indent=2))

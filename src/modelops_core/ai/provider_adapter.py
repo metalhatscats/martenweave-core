@@ -20,6 +20,7 @@ class AIContextBundle:
     domain: str | None = None
     include_raw_samples: bool = False
     max_context_length: int = 4000
+    repository_context: dict[str, Any] | None = None
 
     def scrub(self) -> AIContextBundle:
         """Return a copy with raw samples removed."""
@@ -31,6 +32,7 @@ class AIContextBundle:
             domain=self.domain,
             include_raw_samples=False,
             max_context_length=self.max_context_length,
+            repository_context=self.repository_context,
         )
 
 
