@@ -141,17 +141,15 @@ modelops propose-patch --from ./note.md --repo ./my-model
 
 ## Code Style Guidelines
 
-- **Line length**: 100 characters (`tool.ruff.line-length = 100`)
-- **Target version**: Python 3.11 (`tool.ruff.target-version = "py311"`)
+See [`docs/developer/CODE_STYLE.md`](docs/developer/CODE_STYLE.md) for the full contributor guide.
+
+Quick reference:
+- **Line length**: 100 characters
+- **Target version**: Python 3.11
 - **Lint rules**: E, F, I, UP, B
-- **Imports**: Use `from __future__ import annotations` at the top of every module
-- **Type hints**: Use modern syntax (e.g., `str | None`, `list[str]`)
-- **Docstrings**: Use triple double-quoted docstrings for modules, classes, and functions
-- **Naming**:
-  - Modules: `snake_case.py`
-  - Classes: `PascalCase`
-  - Functions/variables: `snake_case`
-  - Constants: `UPPER_SNAKE_CASE`
+- **Imports**: `from __future__ import annotations` at the top of every module
+- **Type hints**: modern syntax (`str | None`, `list[str]`)
+- **Naming**: modules `snake_case.py`, classes `PascalCase`, functions `snake_case`, constants `UPPER_SNAKE_CASE`
 
 ---
 
