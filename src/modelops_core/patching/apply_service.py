@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -12,7 +13,7 @@ import yaml
 from modelops_core.approval.risk_service import compute_proposal_risk
 from modelops_core.config import load_repo_config, resolve_generated_path
 from modelops_core.index import build_index
-from modelops_core.repository import parse_file, scan_repository
+from modelops_core.repository import ParsedObject, parse_file, scan_repository
 from modelops_core.validation import validate_objects
 from modelops_core.validation.result import ValidationSeverity, ValidationSummary
 
@@ -33,6 +34,7 @@ class ApplyResult:
     risk_level: str | None = None
     risk_assessment: dict[str, Any] = field(default_factory=dict)
     approved_change_request_id: str | None = None
+    pre_write_warnings: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -141,6 +143,103 @@ def _render_markdown(frontmatter: dict[str, Any], body: str | None = None) -> st
         lines.append(f"# {name or obj_id}")
         lines.append("")
     return "\n".join(lines) + "\n"
+
+
+def _build_candidate_update_object(op: Any, repo_model_path: Path) -> ParsedObject:
+    object_id = op.object_id
+    if not object_id:
+        raise ValueError("update_object requires object_id")
+
+    target_path = _find_object_file(repo_model_path, object_id)
+    if target_path is None:
+        raise ValueError(f"Object '{object_id}' not found in repository")
+
+    if not _is_safe_path(target_path, repo_model_path):
+        raise ValueError(f"Unsafe path for update_object: {target_path}")
+
+    parsed = parse_file(target_path)
+    if parsed.frontmatter is None:
+        raise ValueError(f"File for '{object_id}' has no frontmatter")
+
+    frontmatter = dict(parsed.frontmatter)
+    target_field = op.target_path or ""
+    if not target_field:
+        raise ValueError("update_object requires target_path")
+
+    if "." in target_field:
+        parts = target_field.split(".")
+        if len(parts) != 2:
+            raise ValueError(
+                f"Nested target_path deeper than one level not supported: {target_field}"
+            )
+        parent, child = parts
+        if parent not in frontmatter:
+            frontmatter[parent] = {}
+        if not isinstance(frontmatter[parent], dict):
+            raise ValueError(f"Cannot set nested key on non-dict: {parent}")
+        frontmatter[parent][child] = op.after
+    else:
+        frontmatter[target_field] = op.after
+
+    new_content = _render_markdown(frontmatter, parsed.body)
+    content_hash = hashlib.sha256(new_content.encode("utf-8")).hexdigest()
+    return ParsedObject(
+        source_path=str(target_path),
+        content_hash=content_hash,
+        frontmatter=frontmatter,
+        body=parsed.body,
+        parser_error=None,
+    )
+
+
+def _build_candidate_create_object(op: Any, repo_model_path: Path) -> ParsedObject:
+    object_id = op.object_id
+    object_type = op.object_type
+    if not object_id:
+        raise ValueError("create_object requires object_id")
+    if not object_type:
+        raise ValueError("create_object requires object_type")
+
+    target_dir = _resolve_subfolder(repo_model_path, object_type)
+    target_path = target_dir / f"{object_id}.md"
+
+    if not _is_safe_path(target_path, repo_model_path):
+        raise ValueError(f"Unsafe path for create_object: {target_path}")
+
+    if isinstance(op.after, dict):
+        frontmatter = dict(op.after)
+    else:
+        frontmatter = {"id": object_id, "type": object_type, "status": "draft"}
+
+    frontmatter.setdefault("id", object_id)
+    frontmatter.setdefault("type", object_type)
+    frontmatter.setdefault("status", "draft")
+
+    new_content = _render_markdown(frontmatter, None)
+    content_hash = hashlib.sha256(new_content.encode("utf-8")).hexdigest()
+    return ParsedObject(
+        source_path=str(target_path),
+        content_hash=content_hash,
+        frontmatter=frontmatter,
+        body=None,
+        parser_error=None,
+    )
+
+
+def _integrate_candidate(
+    current_objects: list[ParsedObject], candidate: ParsedObject
+) -> list[ParsedObject]:
+    result: list[ParsedObject] = []
+    replaced = False
+    for obj in current_objects:
+        if obj.source_path == candidate.source_path:
+            result.append(candidate)
+            replaced = True
+        else:
+            result.append(obj)
+    if not replaced:
+        result.append(candidate)
+    return result
 
 
 def _apply_update_object(
@@ -364,6 +463,10 @@ def dry_run_patch_proposal(repo_model_path: Path, proposal_id: str) -> DryRunRes
     operations = [_Op(op) for op in operations_raw if isinstance(op, dict)]
     preview: list[dict[str, Any]] = []
 
+    current_objects = [parse_file(f) for f in scan_repository(repo_model_path)]
+    config = load_repo_config(repo_model_path.parent)
+    enabled_packs = config.enabled_domain_packs if config else None
+
     for op in operations:
         if op.op not in _SUPPORTED_OPERATIONS:
             preview.append(
@@ -386,20 +489,68 @@ def dry_run_patch_proposal(repo_model_path: Path, proposal_id: str) -> DryRunRes
                         "reason": f"Object '{op.object_id}' not found",
                     }
                 )
-            else:
-                preview.append(
-                    {
-                        "op": "update_object",
-                        "object_id": op.object_id,
-                        "status": "would_update",
-                        "file": str(target_path),
-                        "field": op.target_path,
-                        "after": op.after,
-                    }
-                )
+                continue
         elif op.op == "create_object":
             target_dir = _resolve_subfolder(repo_model_path, op.object_type)
             target_path = target_dir / f"{op.object_id}.md"
+
+        # Run pre-write validation for this operation
+        try:
+            if op.op == "update_object":
+                candidate = _build_candidate_update_object(op, repo_model_path)
+            else:
+                candidate = _build_candidate_create_object(op, repo_model_path)
+        except ValueError as exc:
+            preview.append(
+                {
+                    "op": op.op,
+                    "object_id": op.object_id,
+                    "status": "error",
+                    "reason": str(exc),
+                }
+            )
+            continue
+
+        candidate_objects = _integrate_candidate(current_objects, candidate)
+        pre_summary = validate_objects(candidate_objects, enabled_packs)
+
+        validation_preview: dict[str, Any] = {
+            "is_valid": pre_summary.is_valid,
+            "error_count": pre_summary.error_count,
+            "warning_count": pre_summary.warning_count,
+        }
+
+        if not pre_summary.is_valid:
+            error_details = "; ".join(
+                f"{r.code}: {r.message}"
+                for r in pre_summary.results
+                if r.severity == ValidationSeverity.ERROR
+            )
+            preview.append(
+                {
+                    "op": op.op,
+                    "object_id": op.object_id,
+                    "status": "validation_error",
+                    "reason": error_details,
+                    "validation": validation_preview,
+                    "file": str(target_path),
+                }
+            )
+            continue
+
+        if op.op == "update_object":
+            preview.append(
+                {
+                    "op": "update_object",
+                    "object_id": op.object_id,
+                    "status": "would_update",
+                    "file": str(target_path),
+                    "field": op.target_path,
+                    "after": op.after,
+                    "validation": validation_preview,
+                }
+            )
+        elif op.op == "create_object":
             preview.append(
                 {
                     "op": "create_object",
@@ -407,8 +558,11 @@ def dry_run_patch_proposal(repo_model_path: Path, proposal_id: str) -> DryRunRes
                     "object_type": op.object_type,
                     "status": "would_create",
                     "file": str(target_path),
+                    "validation": validation_preview,
                 }
             )
+
+        current_objects = candidate_objects
 
     result = DryRunResult(
         proposal_id=proposal_id,
@@ -487,6 +641,11 @@ def apply_patch_proposal(
 
     backup_state: dict[Path, str | None] = {}
     changed_files: list[str] = []
+    pre_write_warnings: list[str] = []
+
+    current_objects = [parse_file(f) for f in scan_repository(repo_model_path)]
+    config = load_repo_config(repo_model_path.parent)
+    enabled_packs = config.enabled_domain_packs if config else None
 
     try:
         for op in operations:
@@ -497,16 +656,44 @@ def apply_patch_proposal(
                 )
 
             if op.op == "update_object":
+                candidate = _build_candidate_update_object(op, repo_model_path)
+            elif op.op == "create_object":
+                candidate = _build_candidate_create_object(op, repo_model_path)
+            else:
+                continue  # unreachable due to check above
+
+            candidate_objects = _integrate_candidate(current_objects, candidate)
+            pre_summary = validate_objects(candidate_objects, enabled_packs)
+
+            if not pre_summary.is_valid:
+                error_details = "; ".join(
+                    f"{r.code}: {r.message}"
+                    for r in pre_summary.results
+                    if r.severity == ValidationSeverity.ERROR
+                )
+                raise ValueError(
+                    f"Pre-write validation failed for operation '{op.op}' on "
+                    f"'{op.object_id}': {pre_summary.error_count} error(s). {error_details}"
+                )
+
+            if pre_summary.warning_count > 0:
+                pre_write_warnings.extend(
+                    f"{r.code}: {r.message}"
+                    for r in pre_summary.results
+                    if r.severity == ValidationSeverity.WARNING
+                )
+
+            if op.op == "update_object":
                 modified_path = _apply_update_object(op, repo_model_path, backup_state)
                 changed_files.append(str(modified_path.resolve()))
             elif op.op == "create_object":
                 created_path = _apply_create_object(op, repo_model_path, backup_state)
                 changed_files.append(str(created_path.resolve()))
 
+            current_objects = candidate_objects
+
         files = scan_repository(repo_model_path)
         parsed_objects = [parse_file(f) for f in files]
-        config = load_repo_config(repo_model_path.parent)
-        enabled_packs = config.enabled_domain_packs if config else None
         validation_summary = validate_objects(parsed_objects, enabled_packs)
 
         if not validation_summary.is_valid:
@@ -560,6 +747,7 @@ def apply_patch_proposal(
             db_path=str(db_path.resolve()) if index_rebuilt else None,
             risk_level=risk.risk_level,
             approved_change_request_id=approved_change_request_id,
+            pre_write_warnings=pre_write_warnings,
             risk_assessment={
                 "requires_approval": risk.requires_approval,
                 "risk_level": risk.risk_level,
