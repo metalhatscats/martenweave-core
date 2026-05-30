@@ -38,12 +38,22 @@ Both must match before a release commit.
 
 ## Automated Release
 
-Push a signed tag to trigger the release workflow:
+Push a tag to trigger the release workflow:
 
 ```bash
-git tag -s v0.4.0 -m "Release v0.4.0"
+git tag v0.4.0 -m "Release v0.4.0"
 git push origin v0.4.0
 ```
+
+**Tag signing policy:**
+- Signed tags (`git tag -s`) are **recommended** for releases.
+- Unsigned maintainer tags are **allowed** for v0.x releases when GPG signing is not configured locally.
+- Once GPG is set up, switch to signed tags and update this policy:
+  ```bash
+  gpg --full-generate-key
+  git config --global user.signingkey <KEY_ID>
+  git config --global tag.gpgSign true
+  ```
 
 The [`.github/workflows/release.yml`](../../.github/workflows/release.yml) workflow will:
 
