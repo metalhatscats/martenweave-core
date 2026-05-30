@@ -21,6 +21,7 @@
 
 | Document | What you will learn |
 |---|---|
+| [docs/architecture/AGENT_QUICK_REFERENCE.md](architecture/AGENT_QUICK_REFERENCE.md) | **Start here** — concise object types, validation layers, CLI, file layout |
 | [docs/architecture/SYSTEM_ARCHITECTURE.md](architecture/SYSTEM_ARCHITECTURE.md) | Full system architecture, components, data flows |
 | [docs/architecture/DOMAIN_MODEL.md](architecture/DOMAIN_MODEL.md) | Conceptual domain model, object relationships |
 | [docs/architecture/CORE_DOMAIN_MODEL.md](architecture/CORE_DOMAIN_MODEL.md) | Core domain model boundaries |

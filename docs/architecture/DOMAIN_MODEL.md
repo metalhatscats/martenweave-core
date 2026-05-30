@@ -1,3 +1,5 @@
+> **Deep-dive reference.** Start with [`AGENT_QUICK_REFERENCE.md`](AGENT_QUICK_REFERENCE.md) for a concise overview.
+
 # Martenweave — Domain Model
 
 Version: `0.2-draft`  
