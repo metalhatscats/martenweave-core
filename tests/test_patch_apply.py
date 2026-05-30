@@ -113,3 +113,108 @@ def test_apply_rejects_invalid_proposal_disallowed_operation(temp_model_dir: Pat
     updated = parse_file(temp_model_dir / "DOMAIN-TEST.md")
     assert updated.frontmatter is not None
     assert updated.frontmatter["name"] != "X"
+
+
+def test_apply_update_invalid_status_blocked(temp_model_dir: Path) -> None:
+    op = PatchOperation(
+        op="update_object",
+        object_id="DOMAIN-TEST",
+        target_path="status",
+        after="bogus_status",
+    )
+    proposal = build_patch_proposal("PP-APPLY-BAD-STATUS", [op])
+    write_patch_proposal(proposal, temp_model_dir)
+
+    from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
+
+    proposal_path = temp_model_dir / "patch-proposals" / "PP-APPLY-BAD-STATUS.md"
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+    with pytest.raises(ValueError, match="Pre-write validation failed"):
+        apply_patch_proposal(temp_model_dir, "PP-APPLY-BAD-STATUS")
+
+    from modelops_core.repository import parse_file
+
+    updated = parse_file(temp_model_dir / "DOMAIN-TEST.md")
+    assert updated.frontmatter is not None
+    assert updated.frontmatter["status"] == "draft"
+
+
+def test_apply_update_broken_reference_blocked(temp_model_dir: Path) -> None:
+    op = PatchOperation(
+        op="update_object",
+        object_id="ATTR-TEST",
+        target_path="domain",
+        after="NONEXISTENT-DOMAIN",
+    )
+    proposal = build_patch_proposal("PP-APPLY-BAD-REF", [op])
+    write_patch_proposal(proposal, temp_model_dir)
+
+    from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
+
+    proposal_path = temp_model_dir / "patch-proposals" / "PP-APPLY-BAD-REF.md"
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+    with pytest.raises(ValueError, match="Pre-write validation failed"):
+        apply_patch_proposal(temp_model_dir, "PP-APPLY-BAD-REF")
+
+    from modelops_core.repository import parse_file
+
+    updated = parse_file(temp_model_dir / "ATTR-TEST.md")
+    assert updated.frontmatter is not None
+    assert updated.frontmatter["domain"] == "DOMAIN-TEST"
+
+
+def test_apply_create_sap_context_violation_blocked(sample_repo: Path) -> None:
+    model_dir = sample_repo / "model"
+    op = PatchOperation(
+        op="create_object",
+        object_id="FEP-BAD-SAP",
+        object_type="FieldEndpoint",
+        after={
+            "id": "FEP-BAD-SAP",
+            "type": "FieldEndpoint",
+            "status": "draft",
+            "name": "Bad SAP Field",
+            "endpoint_type": "sap_table_field",
+            "sap_table": "KNVV",
+        },
+    )
+    proposal = build_patch_proposal("PP-APPLY-BAD-SAP", [op])
+    write_patch_proposal(proposal, model_dir)
+
+    from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
+
+    proposal_path = model_dir / "patch-proposals" / "PP-APPLY-BAD-SAP.md"
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+    with pytest.raises(ValueError, match="Pre-write validation failed"):
+        apply_patch_proposal(model_dir, "PP-APPLY-BAD-SAP")
+
+    assert not (model_dir / "field-endpoints" / "FEP-BAD-SAP.md").exists()
+
+
+def test_apply_update_warning_allowed(temp_model_dir: Path) -> None:
+    op = PatchOperation(
+        op="update_object",
+        object_id="DOMAIN-TEST",
+        target_path="name",
+        after="",
+    )
+    proposal = build_patch_proposal("PP-APPLY-WARN", [op])
+    write_patch_proposal(proposal, temp_model_dir)
+
+    from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
+
+    proposal_path = temp_model_dir / "patch-proposals" / "PP-APPLY-WARN.md"
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+    result = apply_patch_proposal(temp_model_dir, "PP-APPLY-WARN")
+    assert result.application_status == "applied"
+    assert any("DISPLAY_NAME_MISSING" in w for w in result.pre_write_warnings)
+
+    from modelops_core.repository import parse_file
+
+    updated = parse_file(temp_model_dir / "DOMAIN-TEST.md")
+    assert updated.frontmatter is not None
+    assert updated.frontmatter["name"] == ""
