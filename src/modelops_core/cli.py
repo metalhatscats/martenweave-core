@@ -2109,8 +2109,17 @@ def propose_patch(
     note = note_file.read_text(encoding="utf-8")
 
     from modelops_core.ai.patch_proposal_service import build_patch_proposal_from_note
+    from modelops_core.ai.provider_adapter import AIOutputValidationError
 
-    result = build_patch_proposal_from_note(note, repo_root=repo_root)
+    try:
+        result = build_patch_proposal_from_note(note, repo_root=repo_root)
+    except AIOutputValidationError as exc:
+        msg = str(exc)
+        if json_output:
+            print(json.dumps({"error": msg}, indent=2))
+            raise typer.Exit(code=1) from exc
+        console.print(f"[red]{msg}[/red]")
+        raise typer.Exit(code=1) from exc
 
     proposal = result.get("proposal")
     if proposal is None:
@@ -3186,7 +3195,27 @@ def proposal_accept(
             linked_proposals=[proposal_id],
             affected_objects=fm.get("affected_objects") or [],
         )
-        approve_change_request(model_path, cr_id, reviewer)
+        try:
+            approve_change_request(model_path, cr_id, reviewer)
+        except ValueError as exc:
+            msg = str(exc)
+            if json_output:
+                print(
+                    json.dumps(
+                        {
+                            "proposal_id": proposal_id,
+                            "status": "accepted",
+                            "change_request_id": cr_id,
+                            "change_request_status": "pending",
+                            "error": msg,
+                        },
+                        indent=2,
+                    )
+                )
+                raise typer.Exit(code=1) from exc
+            console.print(f"[green]PatchProposal {proposal_id} accepted.[/green]")
+            console.print(f"[yellow]ChangeRequest {cr_id} created but not approved: {msg}[/yellow]")
+            raise typer.Exit(code=1) from exc
 
         # Audit event for CR approval
         service = AuditEventService(repo_root)
