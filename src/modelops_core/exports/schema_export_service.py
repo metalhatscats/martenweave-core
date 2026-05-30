@@ -25,8 +25,7 @@ def export_schemas(type_filter: str | None = None) -> dict[str, Any]:
     if type_filter and type_filter.lower() != "all":
         if type_filter not in types:
             raise ValueError(
-                f"Unknown object type '{type_filter}'. "
-                f"Known types: {', '.join(types)}"
+                f"Unknown object type '{type_filter}'. Known types: {', '.join(types)}"
             )
         types = [type_filter]
 

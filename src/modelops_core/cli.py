@@ -1049,9 +1049,7 @@ def validate(
     if suppress_methodology_warnings:
         from modelops_core.validation.result import METHODOLOGY_WARNING_CODES
 
-        summary.results = [
-            r for r in summary.results if r.code not in METHODOLOGY_WARNING_CODES
-        ]
+        summary.results = [r for r in summary.results if r.code not in METHODOLOGY_WARNING_CODES]
 
     if json_output:
         result = {
@@ -4578,9 +4576,7 @@ def export_schema(
         print(json.dumps(result, indent=2, sort_keys=True, default=str))
         raise typer.Exit()
 
-    console.print(
-        f"[green]Exported {result['type_count']} JSON Schema(s) to {output_path}[/green]"
-    )
+    console.print(f"[green]Exported {result['type_count']} JSON Schema(s) to {output_path}[/green]")
 
 
 @app.command("export-sheets")

@@ -303,7 +303,6 @@ class TestChangeRequestApproval:
         assert approve_event.actor == "alice"
         assert approve_event.status == "success"
 
-
     def test_accept_auto_creates_and_approves_cr(self, tmp_path: Path) -> None:
         repo = _init_repo(tmp_path)
         _create_proposal(repo)

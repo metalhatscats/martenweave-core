@@ -69,9 +69,7 @@ class TestExportSchemasService:
 
 class TestExportSchemaCLI:
     def test_cli_export_schema_json(self, sample_repo: Path) -> None:
-        result = runner.invoke(
-            app, ["export-schema", "--repo", str(sample_repo), "--json"]
-        )
+        result = runner.invoke(app, ["export-schema", "--repo", str(sample_repo), "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output.strip())
         assert data["type_count"] > 0

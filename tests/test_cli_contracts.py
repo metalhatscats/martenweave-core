@@ -204,9 +204,7 @@ class TestValidateContract:
                 ),
             ]
         )
-        filtered = [
-            r for r in summary.results if r.code not in METHODOLOGY_WARNING_CODES
-        ]
+        filtered = [r for r in summary.results if r.code not in METHODOLOGY_WARNING_CODES]
         summary.results = filtered
         assert summary.error_count == 1
         assert summary.warning_count == 1

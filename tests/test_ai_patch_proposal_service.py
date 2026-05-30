@@ -260,9 +260,7 @@ class TestExtractObjectIds:
         ]
 
     def test_extracts_multiple_ids(self) -> None:
-        ids = _extract_object_ids(
-            "Link FEP-S4-KNVV-KDGRP to ATTR-CUST-SALES-CUSTOMER-GROUP"
-        )
+        ids = _extract_object_ids("Link FEP-S4-KNVV-KDGRP to ATTR-CUST-SALES-CUSTOMER-GROUP")
         assert set(ids) == {"FEP-S4-KNVV-KDGRP", "ATTR-CUST-SALES-CUSTOMER-GROUP"}
 
     def test_no_ids_returns_empty(self) -> None:
