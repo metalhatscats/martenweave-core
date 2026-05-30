@@ -1,3 +1,5 @@
+> **Deep-dive reference.** Start with [`AGENT_QUICK_REFERENCE.md`](AGENT_QUICK_REFERENCE.md) for a concise overview.
+
 # ModelOps for MDM — Schema and Validation Specification
 
 Version: `0.2-draft`  
