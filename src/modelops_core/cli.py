@@ -5366,9 +5366,7 @@ def assessment_run(
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
     if not db_path.exists():
-        console.print(
-            "[yellow]No index found. Building index first...[/yellow]"
-        )
+        console.print("[yellow]No index found. Building index first...[/yellow]")
         try:
             _build_index(repo_root=repo_root, allow_invalid=True)
         except (ValueError, ResourceLimitExceeded) as exc:

@@ -258,9 +258,7 @@ def _render_high_risk_fields_md(risk_items: list[_RiskItem], repo_name: str) -> 
             reasons += f"; +{len(item.reasons) - 3} more"
         name = item.object_name or "—"
         obj_type = item.object_type or "—"
-        lines.append(
-            f"| `{item.object_id}` | {obj_type} | {name} | {item.severity} | {reasons} |"
-        )
+        lines.append(f"| `{item.object_id}` | {obj_type} | {name} | {item.severity} | {reasons} |")
     lines.append("")
     lines.append("## Severity Legend")
     lines.append("")
@@ -321,9 +319,7 @@ def _render_recommendations_md(
     high_risk = [r for r in risk_items if r.severity == "high"]
     if high_risk:
         for r in high_risk[:10]:
-            themes["Risk & Issues"].append(
-                f"Resolve risks for `{r.object_id}`: {r.reasons[0]}"
-            )
+            themes["Risk & Issues"].append(f"Resolve risks for `{r.object_id}`: {r.reasons[0]}")
 
     for theme, actions in themes.items():
         if not actions:
