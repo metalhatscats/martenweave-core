@@ -56,7 +56,7 @@ def _ensure_index(repo_root: Path) -> Path:
     """Build index if missing; return db path."""
     db_path = repo_root / "generated" / "modelops.db"
     if not db_path.exists():
-        build_index(repo_root, allow_invalid=True)
+        build_index(repo_root)
     return db_path
 
 
