@@ -15,6 +15,9 @@ from rich.table import Table
 
 from modelops_core import __version__
 from modelops_core.approval import compute_proposal_risk
+from modelops_core.assessment.assessment_service import (
+    generate_assessment_package,
+)
 from modelops_core.bundle import create_git_bundle
 from modelops_core.change_request import (
     approve_change_request,
@@ -5337,6 +5340,82 @@ def migrate(
     console.print(
         f"\n[bold]Migration complete[/bold] — {migrated_count} migrated, {skipped_count} skipped"
     )
+
+
+# ---------------------------------------------------------------------------
+# Assessment subcommands
+# ---------------------------------------------------------------------------
+assessment_app = typer.Typer(
+    name="assessment",
+    help="Migration Model Readiness Assessment.",
+)
+app.add_typer(assessment_app, name="assessment")
+
+
+@assessment_app.command("run")
+@with_telemetry("assessment_run")
+def assessment_run(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Output directory for assessment package."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON metadata."),
+) -> None:
+    """Run a full migration readiness assessment and write the output package."""
+    repo_root = _resolve_repo(repo)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+
+    if not db_path.exists():
+        console.print(
+            "[yellow]No index found. Building index first...[/yellow]"
+        )
+        try:
+            _build_index(repo_root=repo_root, allow_invalid=True)
+        except (ValueError, ResourceLimitExceeded) as exc:
+            if json_output:
+                print(json.dumps({"error": str(exc)}, indent=2))
+                raise typer.Exit(code=1) from exc
+            console.print(f"[red]{exc}[/red]")
+            raise typer.Exit(code=1) from exc
+
+    try:
+        package = generate_assessment_package(repo_root, out)
+    except (ValueError, ResourceLimitExceeded, RuntimeError) as exc:
+        if json_output:
+            print(json.dumps({"error": str(exc)}, indent=2))
+            raise typer.Exit(code=1) from exc
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        result = {
+            "martenweave_version": __version__,
+            "repo_name": package.repo_name,
+            "generated_at": package.generated_at,
+            "readiness_level": package.readiness_level,
+            "object_count": package.object_count,
+            "gap_score": package.gap_score,
+            "high_risk_count": package.high_risk_count,
+            "artifacts": [
+                {
+                    "path": str(a.path),
+                    "description": a.description,
+                }
+                for a in package.artifacts
+            ],
+        }
+        print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print(f"[bold]Assessment complete: {package.repo_name}[/bold]")
+    console.print(f"  Readiness level: {package.readiness_level}")
+    console.print(f"  Objects:         {package.object_count}")
+    console.print(f"  Gap score:       {package.gap_score}")
+    console.print(f"  High risk items: {package.high_risk_count}")
+    console.print(f"  Output:          {out}")
+    console.print("\n[bold]Artifacts generated[/bold]")
+    for a in package.artifacts:
+        console.print(f"  {a.path.name} — {a.description}")
 
 
 if __name__ == "__main__":
