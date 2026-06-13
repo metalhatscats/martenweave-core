@@ -426,3 +426,112 @@ class TestApplyRollback:
         assert len(rollback_events) >= 1
         assert rollback_events[0].status == "failed"
         assert "boom" in rollback_events[0].outputs.get("error", "")
+
+    def test_apply_rolls_back_multi_op_when_second_op_fails(self, sample_repo: Path) -> None:
+        """If op 1 writes and op 2 fails, op 1's change is rolled back."""
+        model_dir = sample_repo / "model"
+        from modelops_core.repository import parse_file
+
+        first_path = model_dir / "DOMAIN-CUSTOMER-BP.md"
+        original = parse_file(first_path)
+        assert original.frontmatter is not None
+        original_name = original.frontmatter["name"]
+
+        ops = [
+            PatchOperation(
+                op="update_object",
+                object_id="DOMAIN-CUSTOMER-BP",
+                target_path="name",
+                after="Mutated Name",
+            ),
+            PatchOperation(
+                op="update_object",
+                object_id="ATTR-CUST-SALES-CUSTOMER-GROUP",
+                target_path="status",
+                after="bogus_status",
+            ),
+        ]
+        proposal = build_patch_proposal("PP-ROLLBACK-MULTI", ops)
+        write_patch_proposal(proposal, model_dir)
+
+        from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
+
+        proposal_path = model_dir / "patch-proposals" / "PP-ROLLBACK-MULTI.md"
+        transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+        with pytest.raises(ValueError, match="Pre-write validation failed"):
+            apply_patch_proposal(model_dir, "PP-ROLLBACK-MULTI", skip_risk_check=True)
+
+        restored = parse_file(first_path)
+        assert restored.frontmatter is not None
+        assert restored.frontmatter["name"] == original_name
+
+
+class TestBeforeStateValidation:
+    def test_apply_rejects_mismatched_before(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object",
+            object_id="DOMAIN-TEST",
+            target_path="name",
+            before="Wrong Original",
+            after="Updated Name",
+        )
+        proposal = build_patch_proposal("PP-BEFORE-BAD", [op])
+        write_patch_proposal(proposal, temp_model_dir)
+
+        from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
+
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-BEFORE-BAD.md"
+        transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+        with pytest.raises(ValueError, match="Before-state mismatch"):
+            apply_patch_proposal(temp_model_dir, "PP-BEFORE-BAD")
+
+        from modelops_core.repository import parse_file
+
+        updated = parse_file(temp_model_dir / "DOMAIN-TEST.md")
+        assert updated.frontmatter is not None
+        assert updated.frontmatter["name"] == "Test Domain"
+
+    def test_apply_accepts_matching_before(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object",
+            object_id="DOMAIN-TEST",
+            target_path="name",
+            before="Test Domain",
+            after="Updated Domain Name",
+        )
+        proposal = build_patch_proposal("PP-BEFORE-OK", [op])
+        write_patch_proposal(proposal, temp_model_dir)
+
+        from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
+
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-BEFORE-OK.md"
+        transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+        result = apply_patch_proposal(temp_model_dir, "PP-BEFORE-OK")
+        assert result.application_status == "applied"
+
+        from modelops_core.repository import parse_file
+
+        updated = parse_file(temp_model_dir / "DOMAIN-TEST.md")
+        assert updated.frontmatter is not None
+        assert updated.frontmatter["name"] == "Updated Domain Name"
+
+    def test_apply_skips_before_check_when_absent(self, temp_model_dir: Path) -> None:
+        op = PatchOperation(
+            op="update_object",
+            object_id="DOMAIN-TEST",
+            target_path="name",
+            after="Updated Domain Name",
+        )
+        proposal = build_patch_proposal("PP-BEFORE-SKIP", [op])
+        write_patch_proposal(proposal, temp_model_dir)
+
+        from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
+
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-BEFORE-SKIP.md"
+        transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+        result = apply_patch_proposal(temp_model_dir, "PP-BEFORE-SKIP")
+        assert result.application_status == "applied"

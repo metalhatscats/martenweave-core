@@ -251,6 +251,17 @@ def _integrate_candidate(
     return result
 
 
+def _get_nested_value(frontmatter: dict[str, Any], target_field: str) -> Any:
+    """Return the current value of a possibly nested frontmatter field."""
+    if "." in target_field:
+        parent, child = target_field.split(".", 1)
+        parent_value = frontmatter.get(parent)
+        if isinstance(parent_value, dict):
+            return parent_value.get(child)
+        return None
+    return frontmatter.get(target_field)
+
+
 def _apply_update_object(
     op: Any, repo_model_path: Path, backup_state: dict[Path, str | None]
 ) -> Path:
@@ -276,6 +287,14 @@ def _apply_update_object(
     target_field = op.target_path or ""
     if not target_field:
         raise ValueError("update_object requires target_path")
+
+    if op.before is not None:
+        current_value = _get_nested_value(frontmatter, target_field)
+        if current_value != op.before:
+            raise ValueError(
+                f"Before-state mismatch for '{object_id}.{target_field}': "
+                f"expected {op.before!r}, found {current_value!r}."
+            )
 
     if "." in target_field:
         parts = target_field.split(".")
@@ -625,7 +644,7 @@ def apply_patch_proposal(
     proposal_dict = dict(fm)
     proposal_dict.setdefault("id", proposal_id)
     proposal_dict.setdefault("type", "PatchProposal")
-    validation_results = validate_patch_proposal(proposal_dict)
+    validation_results = validate_patch_proposal(proposal_dict, repo_model_path=repo_model_path)
     proposal_errors = [r for r in validation_results if r.severity == ValidationSeverity.ERROR]
     if proposal_errors:
         error_details = "; ".join(f"{r.code}: {r.message}" for r in proposal_errors)
