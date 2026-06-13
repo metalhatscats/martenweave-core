@@ -1,7 +1,12 @@
-"""ChangeRequest build, write, approve, and reject services."""
+"""ChangeRequest build, write, approve, and reject services.
+
+.. deprecated::
+    This module is deprecated. Use ``modelops_core.change_request.service`` instead.
+"""
 
 from __future__ import annotations
 
+import warnings
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -11,6 +16,13 @@ import yaml
 from modelops_core.patching.apply_service import apply_patch_proposal
 from modelops_core.patching.change_request_validator import validate_change_request
 from modelops_core.repository import parse_file
+
+warnings.warn(
+    "modelops_core.patching.change_request_service is deprecated and will be removed. "
+    "Use modelops_core.change_request.service instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 
 def build_change_request_from_patch_proposal(

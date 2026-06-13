@@ -3477,7 +3477,7 @@ def proposal_validate(
 
     from modelops_core.patching.patch_validator import validate_patch_proposal
 
-    results = validate_patch_proposal(fm)
+    results = validate_patch_proposal(fm, repo_model_path=model_path)
     error_count = sum(1 for r in results if r.severity == "ERROR")
     warning_count = sum(1 for r in results if r.severity == "WARNING")
 
