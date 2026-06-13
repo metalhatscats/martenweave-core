@@ -7,6 +7,8 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
 
+from modelops_core.approval.risk_service import compute_proposal_risk
+from modelops_core.change_request.service import find_approved_cr_for_proposal
 from modelops_core.config import load_repo_config, resolve_generated_path, resolve_model_path
 from modelops_core.exports import export_model_csv, export_model_xlsx
 from modelops_core.impact.impact_service import generate_impact_report
@@ -300,12 +302,56 @@ def dry_run_proposal(
 def apply_proposal(
     proposal_id: str,
     repo: str | None = Query(None, description="Path to model repository"),
+    skip_risk_check: bool = Query(
+        False, description="Skip high-risk proposal blocking (not recommended)"
+    ),
 ) -> dict[str, Any]:
     """Apply an accepted PatchProposal."""
     repo_root = _resolve_repo(repo)
     model_path = resolve_model_path(repo_root)
+
+    proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
+    if not proposal_path.exists():
+        raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
+
+    parsed = parse_file(proposal_path)
+    fm = parsed.frontmatter or {}
+    operations = fm.get("operations", [])
+
+    risk = compute_proposal_risk(operations, model_path)
+    approved_change_request_id: str | None = None
+    if risk.risk_level == "high":
+        # High-risk proposals always require an approved ChangeRequest, even when
+        # skip_risk_check is requested.
+        approved_cr = find_approved_cr_for_proposal(model_path, proposal_id)
+        if approved_cr is None:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"High-risk proposal {proposal_id} requires an approved "
+                    "ChangeRequest. skip_risk_check cannot bypass this gate."
+                ),
+            )
+        approved_change_request_id = approved_cr.get("id")
+    elif risk.requires_approval and not skip_risk_check:
+        approved_cr = find_approved_cr_for_proposal(model_path, proposal_id)
+        if approved_cr is None:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Approval required for {proposal_id}. Risk level: {risk.risk_level}. "
+                    "Link an approved ChangeRequest or use skip_risk_check."
+                ),
+            )
+        approved_change_request_id = approved_cr.get("id")
+
     try:
-        result = apply_patch_proposal(model_path, proposal_id)
+        result = apply_patch_proposal(
+            model_path,
+            proposal_id,
+            skip_risk_check=approved_change_request_id is not None,
+            approved_change_request_id=approved_change_request_id,
+        )
     except (ValueError, FileNotFoundError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

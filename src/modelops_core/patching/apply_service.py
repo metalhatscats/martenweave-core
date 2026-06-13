@@ -84,7 +84,16 @@ _BLOCKED_PATH_SEGMENTS: frozenset[str] = frozenset(
 
 _GOVERNANCE_FOLDERS: frozenset[str] = frozenset({"patch-proposals", "change-requests"})
 
-_SUPPORTED_OPERATIONS: frozenset[str] = frozenset({"update_object", "create_object"})
+_SUPPORTED_OPERATIONS: frozenset[str] = frozenset(
+    {"update_object", "create_object", "add_object", "create_issue"}
+)
+
+
+def _normalize_operation_name(op: str) -> str:
+    """Map legacy/alias operation names to their canonical implementation."""
+    if op in {"add_object", "create_issue"}:
+        return "create_object"
+    return op
 
 
 def _now_iso() -> str:
@@ -478,7 +487,11 @@ def dry_run_patch_proposal(repo_model_path: Path, proposal_id: str) -> DryRunRes
             )
             continue
 
-        if op.op == "update_object":
+        canonical_op = _normalize_operation_name(op.op)
+        if canonical_op == "create_object" and op.op == "create_issue" and not op.object_type:
+            op.object_type = "Issue"
+
+        if canonical_op == "update_object":
             target_path = _find_object_file(repo_model_path, op.object_id or "")
             if target_path is None:
                 preview.append(
@@ -490,13 +503,13 @@ def dry_run_patch_proposal(repo_model_path: Path, proposal_id: str) -> DryRunRes
                     }
                 )
                 continue
-        elif op.op == "create_object":
+        elif canonical_op == "create_object":
             target_dir = _resolve_subfolder(repo_model_path, op.object_type)
             target_path = target_dir / f"{op.object_id}.md"
 
         # Run pre-write validation for this operation
         try:
-            if op.op == "update_object":
+            if canonical_op == "update_object":
                 candidate = _build_candidate_update_object(op, repo_model_path)
             else:
                 candidate = _build_candidate_create_object(op, repo_model_path)
@@ -538,7 +551,7 @@ def dry_run_patch_proposal(repo_model_path: Path, proposal_id: str) -> DryRunRes
             )
             continue
 
-        if op.op == "update_object":
+        if canonical_op == "update_object":
             preview.append(
                 {
                     "op": "update_object",
@@ -550,7 +563,7 @@ def dry_run_patch_proposal(repo_model_path: Path, proposal_id: str) -> DryRunRes
                     "validation": validation_preview,
                 }
             )
-        elif op.op == "create_object":
+        elif canonical_op == "create_object":
             preview.append(
                 {
                     "op": "create_object",
@@ -655,9 +668,13 @@ def apply_patch_proposal(
                     f" Supported: {', '.join(sorted(_SUPPORTED_OPERATIONS))}."
                 )
 
-            if op.op == "update_object":
+            canonical_op = _normalize_operation_name(op.op)
+            if canonical_op == "create_object" and op.op == "create_issue" and not op.object_type:
+                op.object_type = "Issue"
+
+            if canonical_op == "update_object":
                 candidate = _build_candidate_update_object(op, repo_model_path)
-            elif op.op == "create_object":
+            elif canonical_op == "create_object":
                 candidate = _build_candidate_create_object(op, repo_model_path)
             else:
                 continue  # unreachable due to check above
@@ -683,10 +700,10 @@ def apply_patch_proposal(
                     if r.severity == ValidationSeverity.WARNING
                 )
 
-            if op.op == "update_object":
+            if canonical_op == "update_object":
                 modified_path = _apply_update_object(op, repo_model_path, backup_state)
                 changed_files.append(str(modified_path.resolve()))
-            elif op.op == "create_object":
+            elif canonical_op == "create_object":
                 created_path = _apply_create_object(op, repo_model_path, backup_state)
                 changed_files.append(str(created_path.resolve()))
 

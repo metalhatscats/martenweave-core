@@ -57,6 +57,11 @@ class RepoConfig(BaseModel):
     generated_path: str = "generated"
     data_path: str = "data"
     enabled_domain_packs: list[str] = []
+    min_approvers: int = Field(
+        default=2,
+        ge=1,
+        description="Minimum unique approvers required for high-risk ChangeRequests.",
+    )
     resource_limits: ResourceLimits = Field(default_factory=ResourceLimits)
 
 

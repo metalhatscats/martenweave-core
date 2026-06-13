@@ -218,3 +218,87 @@ def test_apply_update_warning_allowed(temp_model_dir: Path) -> None:
     updated = parse_file(temp_model_dir / "DOMAIN-TEST.md")
     assert updated.frontmatter is not None
     assert updated.frontmatter["name"] == ""
+
+
+def test_apply_add_object_alias(temp_model_dir: Path) -> None:
+    op = PatchOperation(
+        op="add_object",
+        object_id="SYS-ALIAS",
+        object_type="System",
+        after={"id": "SYS-ALIAS", "type": "System", "status": "draft", "name": "Alias System"},
+    )
+    proposal = build_patch_proposal("PP-ALIAS-001", [op])
+    write_patch_proposal(proposal, temp_model_dir)
+
+    from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
+
+    proposal_path = temp_model_dir / "patch-proposals" / "PP-ALIAS-001.md"
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+    result = apply_patch_proposal(temp_model_dir, "PP-ALIAS-001")
+    assert result.application_status == "applied"
+
+    from modelops_core.repository import parse_file
+
+    created = parse_file(temp_model_dir / "systems" / "SYS-ALIAS.md")
+    assert created.frontmatter is not None
+    assert created.frontmatter["id"] == "SYS-ALIAS"
+
+
+def test_apply_create_issue_alias(temp_model_dir: Path) -> None:
+    op = PatchOperation(
+        op="create_issue",
+        object_id="ISS-001",
+        after={"id": "ISS-001", "name": "Missing owner", "status": "open"},
+    )
+    proposal = build_patch_proposal("PP-ISSUE-001", [op])
+    write_patch_proposal(proposal, temp_model_dir)
+
+    from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
+
+    proposal_path = temp_model_dir / "patch-proposals" / "PP-ISSUE-001.md"
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+    result = apply_patch_proposal(temp_model_dir, "PP-ISSUE-001")
+    assert result.application_status == "applied"
+
+    from modelops_core.repository import parse_file
+
+    created = parse_file(temp_model_dir / "issues" / "ISS-001.md")
+    assert created.frontmatter is not None
+    assert created.frontmatter["type"] == "Issue"
+
+
+def test_apply_rejects_add_relationship(temp_model_dir: Path) -> None:
+    op = PatchOperation(
+        op="add_relationship",
+        object_id="DOMAIN-TEST",
+        target_path="related_to",
+        after="OTHER",
+    )
+    proposal = build_patch_proposal("PP-BAD-REL", [op])
+    write_patch_proposal(proposal, temp_model_dir)
+
+    from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
+
+    proposal_path = temp_model_dir / "patch-proposals" / "PP-BAD-REL.md"
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+    with pytest.raises(ValueError, match="PATCH_OPERATION_DISALLOWED"):
+        apply_patch_proposal(temp_model_dir, "PP-BAD-REL")
+
+
+def test_allowed_operations_are_supported_by_apply_service() -> None:
+    """Patch validator and apply service must agree on the operation set."""
+    from modelops_core.patching.apply_service import (
+        _SUPPORTED_OPERATIONS,
+        _normalize_operation_name,
+    )
+    from modelops_core.patching.patch_model import _ALLOWED_OPERATIONS
+
+    for op in _ALLOWED_OPERATIONS:
+        assert op in _SUPPORTED_OPERATIONS, f"Allowed operation {op!r} not supported by apply"
+        canonical = _normalize_operation_name(op)
+        assert canonical in {"update_object", "create_object"}, (
+            f"Operation {op!r} normalizes to unhandled {canonical!r}"
+        )

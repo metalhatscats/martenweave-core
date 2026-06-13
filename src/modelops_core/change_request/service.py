@@ -10,6 +10,7 @@ from typing import Any
 import yaml
 
 from modelops_core.approval.risk_service import assess_change_request
+from modelops_core.config import load_repo_config
 from modelops_core.repository import parse_file
 
 _ID_PATTERN = re.compile(r"^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$")
@@ -220,6 +221,22 @@ def approve_change_request(
     frontmatter = dict(parsed.frontmatter)
     current_status = str(frontmatter.get("status", ""))
 
+    # Risk assessment
+    risk = assess_change_request(frontmatter, model_path)
+
+    repo_root = model_path.parent
+    config = load_repo_config(repo_root)
+    min_approvers = 1
+    if risk.risk_level == "high" and not skip_risk_check:
+        min_approvers = config.min_approvers if config else 2
+
+    existing_approvals = frontmatter.get("approvals") or []
+    if any(
+        a.get("approver") == approver and a.get("decision") == "approved"
+        for a in existing_approvals
+    ):
+        raise ValueError(f"Approver '{approver}' has already approved this ChangeRequest.")
+
     allowed = _VALID_TRANSITIONS.get(current_status, set())
     if "approved" not in allowed:
         raise ValueError(
@@ -227,17 +244,24 @@ def approve_change_request(
             f"Allowed: {', '.join(allowed) or 'none'}"
         )
 
-    # Risk assessment
-    risk = assess_change_request(frontmatter, model_path)
+    _record_approval(frontmatter, approver, "approved")
+
     if risk.risk_level == "high" and not skip_risk_check:
-        raise ValueError(
-            f"High-risk ChangeRequest blocked (level: {risk.risk_level}). "
-            f"Reasons: {'; '.join(risk.risk_reasons)}. "
-            "Use --skip-risk-check to override."
+        approved_count = sum(
+            1 for a in frontmatter.get("approvals", []) if a.get("decision") == "approved"
         )
+        if approved_count < min_approvers:
+            frontmatter["risk_level"] = risk.risk_level
+            frontmatter["risk_reasons"] = risk.risk_reasons
+            frontmatter["risk_triggering_rules"] = risk.triggering_rules
+            path.write_text(_render_change_request_markdown(frontmatter), encoding="utf-8")
+            raise ValueError(
+                f"High-risk ChangeRequest requires {min_approvers} distinct approvers; "
+                f"recorded {approved_count}. "
+                f"Add {min_approvers - approved_count} more before the request is approved."
+            )
 
     frontmatter["status"] = "approved"
-    _record_approval(frontmatter, approver, "approved")
     frontmatter["risk_level"] = risk.risk_level
     frontmatter["risk_reasons"] = risk.risk_reasons
     frontmatter["risk_triggering_rules"] = risk.triggering_rules

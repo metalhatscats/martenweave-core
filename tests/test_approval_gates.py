@@ -307,8 +307,11 @@ def test_cli_proposal_apply_allows_with_approved_cr(tmp_path: Path) -> None:
         title="Approve PP",
         status="pending",
         linked_proposals=["PP-HIGH-002"],
+        affected_objects=["MAP-001"],
     )
-    approve_change_request(model_dir, "CR-PP-002", "alice")
+    with pytest.raises(ValueError, match="requires 2 distinct approvers"):
+        approve_change_request(model_dir, "CR-PP-002", "alice")
+    approve_change_request(model_dir, "CR-PP-002", "bob")
 
     result = runner.invoke(
         app,
@@ -318,7 +321,7 @@ def test_cli_proposal_apply_allows_with_approved_cr(tmp_path: Path) -> None:
     assert "Applied PP-HIGH-002" in result.output
 
 
-def test_cli_proposal_apply_force_bypasses_gate(tmp_path: Path) -> None:
+def test_cli_proposal_apply_force_still_requires_cr(tmp_path: Path) -> None:
     model_dir = tmp_path / "model"
     model_dir.mkdir()
     generated_dir = tmp_path / "generated"
@@ -351,8 +354,8 @@ def test_cli_proposal_apply_force_bypasses_gate(tmp_path: Path) -> None:
             "--force",
         ],
     )
-    assert result.exit_code == 0
-    assert "Applied PP-HIGH-003" in result.output
+    assert result.exit_code == 1
+    assert "Approval required" in result.output
 
 
 def test_cli_proposal_impact_shows_risk(tmp_path: Path) -> None:
@@ -495,8 +498,12 @@ def test_service_approve_cr_blocks_high_risk_by_default(tmp_path: Path) -> None:
         affected_objects=["MAP-001"],
     )
 
-    with pytest.raises(ValueError, match="High-risk ChangeRequest blocked"):
+    with pytest.raises(ValueError, match="requires 2 distinct approvers"):
         approve_change_request(model_dir, "CR-SVC-HIGH-001", "alice")
+
+    cr = approve_change_request(model_dir, "CR-SVC-HIGH-001", "bob")
+    assert cr["status"] == "approved"
+    assert len(cr["approvals"]) == 2
 
 
 def test_service_approve_cr_allows_high_risk_with_skip(tmp_path: Path) -> None:
@@ -640,7 +647,7 @@ def test_cli_cr_approve_skip_risk_check(tmp_path: Path) -> None:
         ],
     )
     assert result.exit_code == 1
-    assert "High-risk ChangeRequest blocked" in result.output
+    assert "requires 2 distinct approvers" in result.output
 
     result = runner.invoke(
         app,
@@ -651,12 +658,12 @@ def test_cli_cr_approve_skip_risk_check(tmp_path: Path) -> None:
             "--repo",
             str(repo_root),
             "--approver",
-            "alice",
+            "bob",
             "--skip-risk-check",
         ],
     )
     assert result.exit_code == 0
-    assert "approved by alice" in result.output
+    assert "approved by bob" in result.output
     assert "Risk level: high" in result.output
 
 
@@ -753,3 +760,116 @@ def test_apply_records_approved_cr_in_audit(tmp_path: Path) -> None:
     apply_events = [e for e in events if e.event_type == "patch_apply"]
     assert len(apply_events) == 1
     assert apply_events[0].outputs.get("approved_change_request_id") == "CR-AUDIT-001"
+
+
+def test_service_high_risk_cr_requires_two_approvers(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+
+    (model_dir / "MAP-001.md").write_text(
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
+        encoding="utf-8",
+    )
+
+    create_change_request(
+        model_path=model_dir,
+        cr_id="CR-MIN-001",
+        title="High Risk CR",
+        status="pending",
+        affected_objects=["MAP-001"],
+    )
+
+    with pytest.raises(ValueError, match="requires 2 distinct approvers"):
+        approve_change_request(model_dir, "CR-MIN-001", "alice")
+
+    cr = approve_change_request(model_dir, "CR-MIN-001", "bob")
+    assert cr["status"] == "approved"
+    assert len(cr["approvals"]) == 2
+
+
+def test_service_duplicate_approver_rejected(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+
+    create_change_request(
+        model_path=model_dir,
+        cr_id="CR-DUP-001",
+        title="Low Risk CR",
+        status="pending",
+    )
+
+    approve_change_request(model_dir, "CR-DUP-001", "alice")
+    with pytest.raises(ValueError, match="has already approved"):
+        approve_change_request(model_dir, "CR-DUP-001", "alice")
+
+
+def test_service_high_risk_cr_single_approver_when_configured(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    config_path = tmp_path / "modelops.config.yaml"
+    config_path.write_text(
+        "name: Test\nmin_approvers: 1\n",
+        encoding="utf-8",
+    )
+
+    (model_dir / "MAP-001.md").write_text(
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
+        encoding="utf-8",
+    )
+
+    create_change_request(
+        model_path=model_dir,
+        cr_id="CR-CFG-001",
+        title="High Risk CR",
+        status="pending",
+        affected_objects=["MAP-001"],
+    )
+
+    cr = approve_change_request(model_dir, "CR-CFG-001", "alice")
+    assert cr["status"] == "approved"
+    assert len(cr["approvals"]) == 1
+
+
+def test_cli_proposal_apply_force_bypasses_medium_risk(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    generated_dir = tmp_path / "generated"
+    generated_dir.mkdir()
+    repo_root = tmp_path
+
+    (model_dir / "ATTR-001.md").write_text(
+        "---\nid: ATTR-001\ntype: Attribute\nstatus: draft\nname: Test\n---\n",
+        encoding="utf-8",
+    )
+
+    from modelops_core.index import build_index
+
+    db_path = generated_dir / "modelops.db"
+    build_index(repo_root=tmp_path, db_path=db_path)
+
+    op = PatchOperation(
+        op="update_object",
+        object_id="ATTR-001",
+        target_path="name",
+        after="New",
+    )
+    proposal = build_patch_proposal("PP-MED-001", [op])
+    write_patch_proposal(proposal, model_dir)
+    proposal_path = model_dir / "patch-proposals" / "PP-MED-001.md"
+    transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+    result = runner.invoke(
+        app,
+        [
+            "proposal",
+            "apply",
+            "PP-MED-001",
+            "--repo",
+            str(repo_root),
+            "--apply",
+            "--force",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "Applied PP-MED-001" in result.output
+    assert "Warning: --force was used" in result.output
