@@ -8,7 +8,7 @@ from typing import Any
 
 from modelops_core.domain_packs import get_domain_packs
 from modelops_core.repository import ParsedObject
-from modelops_core.schemas import ObjectType, get_expected_target_types
+from modelops_core.schemas import ObjectType, get_expected_target_types, get_reference_fields
 from modelops_core.schemas.common import (
     ChangeRequestStatus,
     GeneralStatus,
@@ -365,11 +365,62 @@ def _build_registry(objects: list[ParsedObject]) -> dict[str, dict[str, Any]]:
     return registry
 
 
+def _collect_reference_values(
+    field_name: str,
+    value: Any,
+    is_list: bool,
+    object_id: str | None,
+    source_file: str,
+) -> tuple[list[str], list[ValidationResult]]:
+    """Normalize a reference field value and detect cardinality issues."""
+    extra: list[ValidationResult] = []
+    refs: list[str] = []
+
+    if is_list:
+        if not isinstance(value, list):
+            extra.append(
+                ValidationResult(
+                    severity=ValidationSeverity.ERROR,
+                    code="REFERENCE_CARDINALITY_MISMATCH",
+                    message=f"Reference field '{field_name}' must be a list.",
+                    object_id=object_id,
+                    source_file=source_file,
+                    field_path=field_name,
+                    suggested_fix=f"Change '{field_name}' to a YAML list of object IDs.",
+                )
+            )
+            return refs, extra
+        for idx, item in enumerate(value):
+            if isinstance(item, str):
+                refs.append(item)
+            else:
+                extra.append(
+                    ValidationResult(
+                        severity=ValidationSeverity.WARNING,
+                        code="REFERENCE_LIST_ITEM_INVALID_TYPE",
+                        message=f"Item at {field_name}[{idx}] is not a string reference.",
+                        object_id=object_id,
+                        source_file=source_file,
+                        field_path=f"{field_name}[{idx}]",
+                        suggested_fix="Use a string object ID in the reference list.",
+                    )
+                )
+        return refs, extra
+
+    if isinstance(value, str):
+        refs = [value]
+    elif isinstance(value, list):
+        # Tolerate lists on single-valued fields for backward compatibility.
+        refs = [str(v) for v in value if isinstance(v, str)]
+    return refs, extra
+
+
 def _validate_references(
     objects: list[ParsedObject], registry: dict[str, dict[str, Any]]
 ) -> list[ValidationResult]:
     results: list[ValidationResult] = []
 
+    reference_fields = get_reference_fields()
     for obj in objects:
         if obj.parser_error is not None or obj.frontmatter is None:
             continue
@@ -377,19 +428,16 @@ def _validate_references(
         source_id = frontmatter.get("id")
         source_id_str = str(source_id) if isinstance(source_id, str) else None
 
-        reference_fields = get_expected_target_types()
-        for field, expected_type in reference_fields.items():
+        for field, ref in reference_fields.items():
             value = frontmatter.get(field)
             if value is None:
                 continue
 
-            refs: list[str] = []
-            if isinstance(value, str):
-                refs = [value]
-            elif isinstance(value, list):
-                refs = [str(v) for v in value if isinstance(v, str)]
-            else:
-                continue
+            refs, cardinality_results = _collect_reference_values(
+                field, value, ref.is_list, source_id_str, obj.source_path
+            )
+            results.extend(cardinality_results)
+            expected_type = ref.expected_target_type
 
             for ref_id in refs:
                 if ref_id not in registry:
@@ -556,12 +604,33 @@ def _validate_lov_governance(
             continue
         obj_id = fm.get("id")
         entries = fm.get("entries") or []
-        codes = set()
-        for entry in entries:
-            if isinstance(entry, dict):
-                code = entry.get("code")
-                if code is not None:
-                    codes.add(str(code))
+        codes: set[str] = set()
+        seen_codes: dict[str, int] = {}
+        for idx, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                continue
+            code = entry.get("code")
+            if code is None:
+                continue
+            code_str = str(code)
+            codes.add(code_str)
+            if code_str in seen_codes:
+                results.append(
+                    ValidationResult(
+                        severity=ValidationSeverity.ERROR,
+                        code="LOV_DUPLICATE_CODE",
+                        message=(
+                            f"ValueList '{obj_id}' has duplicate code "
+                            f"'{code_str}' at entries[{idx}]."
+                        ),
+                        object_id=obj_id,
+                        source_file=obj.source_path,
+                        field_path=f"entries[{idx}].code",
+                        suggested_fix="Remove or rename the duplicate value-list code.",
+                    )
+                )
+            else:
+                seen_codes[code_str] = idx
         value_list_codes[obj_id] = codes
         status = str(fm.get("status", "")).lower()
         if status in ("active", "draft") and not codes:

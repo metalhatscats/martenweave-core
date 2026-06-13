@@ -210,3 +210,33 @@ def test_affected_objects_format_warning() -> None:
     proposal["affected_objects"] = "not-a-list"
     results = validate_patch_proposal(proposal)
     assert any(r.code == "PATCH_AFFECTED_OBJECT_FORMAT" for r in results)
+
+
+def test_affected_objects_valid_list_passes(temp_model_dir: Path) -> None:
+    op = PatchOperation(
+        op="update_object", object_id="DOMAIN-TEST", target_path="name", after="New Name"
+    )
+    proposal = build_patch_proposal("PP-AFFECTED-OK", [op])
+    proposal["affected_objects"] = ["DOMAIN-TEST"]
+    results = validate_patch_proposal(proposal, repo_model_path=temp_model_dir)
+    assert not any(r.severity == "ERROR" for r in results)
+
+
+def test_affected_objects_invalid_id() -> None:
+    op = PatchOperation(
+        op="update_object", object_id="ATTR-TEST", target_path="name", after="New Name"
+    )
+    proposal = build_patch_proposal("PP-AFFECTED-BAD-ID", [op])
+    proposal["affected_objects"] = ["lowercase-id"]
+    results = validate_patch_proposal(proposal)
+    assert any(r.code == "PATCH_AFFECTED_OBJECT_ID_INVALID" for r in results)
+
+
+def test_affected_objects_not_found(temp_model_dir: Path) -> None:
+    op = PatchOperation(
+        op="update_object", object_id="DOMAIN-TEST", target_path="name", after="New Name"
+    )
+    proposal = build_patch_proposal("PP-AFFECTED-MISSING", [op])
+    proposal["affected_objects"] = ["MISSING-OBJECT"]
+    results = validate_patch_proposal(proposal, repo_model_path=temp_model_dir)
+    assert any(r.code == "PATCH_AFFECTED_OBJECT_NOT_FOUND" for r in results)

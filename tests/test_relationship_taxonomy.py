@@ -12,6 +12,7 @@ from modelops_core.schemas.registry import (
     get_all_types,
     get_entry,
     get_expected_target_types,
+    get_reference_cardinality,
     get_reference_fields,
     get_relationship_classes,
     get_relationship_fields,
@@ -188,3 +189,31 @@ def test_registry_helpers_return_sane_defaults_for_all_types() -> None:
         search_fields = get_search_fields(type_id)
         assert isinstance(search_fields, tuple)
         assert len(search_fields) > 0, f"Empty search_fields for {type_id}"
+
+
+def test_reference_cardinality_metadata() -> None:
+    """Reference fields must declare whether they expect a list of IDs."""
+    cardinality = get_reference_cardinality()
+
+    assert cardinality["affected_objects"] is True
+    assert cardinality["related_objects"] is True
+    assert cardinality["related_decisions"] is True
+    assert cardinality["related_issues"] is True
+    assert cardinality["source_patch_proposals"] is True
+    assert cardinality["validation_rules"] is True
+
+    assert cardinality["domain"] is False
+    assert cardinality["attribute"] is False
+    assert cardinality["source_endpoint"] is False
+    assert cardinality["target_endpoint"] is False
+    assert cardinality["evidence"] is False
+
+
+def test_change_request_registry_includes_lifecycle_refs() -> None:
+    refs = get_reference_fields("ChangeRequest")
+    assert "source_patch_proposals" in refs
+    assert "related_issues" in refs
+    assert "related_decisions" in refs
+    assert refs["source_patch_proposals"].is_list is True
+    assert refs["related_issues"].is_list is True
+    assert refs["related_decisions"].is_list is True
