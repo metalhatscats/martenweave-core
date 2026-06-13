@@ -3673,7 +3673,14 @@ def proposal_apply(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Preview changes without applying."),
     apply: bool = typer.Option(False, "--apply", help="Apply the proposal to canonical files."),
-    force: bool = typer.Option(False, "--force", help="Skip approval gate (not recommended)."),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help=(
+            "Bypass the medium-risk approval-gate lookup (not recommended). "
+            "High-risk proposals still require an approved ChangeRequest."
+        ),
+    ),
     skip_risk_check: bool = typer.Option(
         False, "--skip-risk-check", help="Skip high-risk proposal blocking."
     ),
@@ -3796,7 +3803,35 @@ def proposal_apply(
 
     # Approval gate
     approved_cr = None
-    if risk.requires_approval and not force and not skip_risk_check:
+    if risk.risk_level == "high" and not skip_risk_check:
+        # High-risk proposals always require an approved ChangeRequest, even with --force.
+        approved_cr = find_approved_cr_for_proposal(model_path, proposal_id)
+        if approved_cr is None:
+            if json_output:
+                print(
+                    json.dumps(
+                        {
+                            "error": "Approval required",
+                            "proposal_id": proposal_id,
+                            "risk_level": risk.risk_level,
+                            "risk_reasons": risk.risk_reasons,
+                        }
+                    )
+                )
+            else:
+                console.print(
+                    f"[red]Approval required for {proposal_id}. Risk level: {risk.risk_level}[/red]"
+                )
+                for reason in risk.risk_reasons:
+                    console.print(f"  • {reason}")
+                console.print(
+                    "[yellow]Create an approved ChangeRequest linking to this proposal, "
+                    "or use --skip-risk-check to override.[/yellow]"
+                )
+            raise typer.Exit(code=1)
+        if not json_output:
+            console.print(f"[green]Approved via ChangeRequest {approved_cr.get('id')}[/green]")
+    elif risk.requires_approval and not force and not skip_risk_check:
         approved_cr = find_approved_cr_for_proposal(model_path, proposal_id)
         if approved_cr is None:
             if json_output:
@@ -3824,7 +3859,7 @@ def proposal_apply(
         if not json_output:
             console.print(f"[green]Approved via ChangeRequest {approved_cr.get('id')}[/green]")
 
-    skip_risk = skip_risk_check or force or (approved_cr is not None)
+    skip_risk = skip_risk_check or (approved_cr is not None)
 
     try:
         result = apply_patch_proposal(
@@ -3861,6 +3896,10 @@ def proposal_apply(
         console.print(f"    {f}")
     if result.risk_level:
         console.print(f"  Risk level: {result.risk_level}")
+    if force:
+        console.print(
+            "[yellow]  Warning: --force was used; normal approval workflow was bypassed.[/yellow]"
+        )
     if result.audit_event_written:
         console.print("  Audit event written")
     if result.index_rebuilt:
@@ -5360,6 +5399,11 @@ def assessment_run(
         ..., "--out", help="Output directory for assessment package."
     ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON metadata."),
+    allow_invalid: bool = typer.Option(
+        False,
+        "--allow-invalid",
+        help="Build the index even if model validation reports errors.",
+    ),
 ) -> None:
     """Run a full migration readiness assessment and write the output package."""
     repo_root = _resolve_repo(repo)
@@ -5368,13 +5412,24 @@ def assessment_run(
     if not db_path.exists():
         console.print("[yellow]No index found. Building index first...[/yellow]")
         try:
-            _build_index(repo_root=repo_root, allow_invalid=True)
+            _build_index(repo_root=repo_root, allow_invalid=allow_invalid)
         except (ValueError, ResourceLimitExceeded) as exc:
             if json_output:
                 print(json.dumps({"error": str(exc)}, indent=2))
                 raise typer.Exit(code=1) from exc
             console.print(f"[red]{exc}[/red]")
+            if not allow_invalid:
+                console.print(
+                    "[yellow]Use --allow-invalid to build the index despite "
+                    "validation errors.[/yellow]"
+                )
             raise typer.Exit(code=1) from exc
+
+        if allow_invalid:
+            console.print(
+                "[yellow]Warning: index built with --allow-invalid. "
+                "Assessment is based on a model with validation errors.[/yellow]"
+            )
 
     try:
         package = generate_assessment_package(repo_root, out)

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
-from modelops_core.patching.patch_model import PatchOperation
+from modelops_core.patching.patch_model import _ALLOWED_OPERATIONS, PatchOperation
 from modelops_core.patching.patch_validator import validate_patch_proposal
 
 
@@ -128,14 +128,7 @@ class ProviderOutputValidator:
             raise AIOutputValidationError("Candidate has no operations.")
 
         for op in candidate.operations:
-            if op.get("op") not in {
-                "add_object",
-                "update_object",
-                "create_object",
-                "add_relationship",
-                "add_evidence_link",
-                "create_issue",
-            }:
+            if op.get("op") not in _ALLOWED_OPERATIONS:
                 raise AIOutputValidationError(f"Disallowed operation: {op.get('op')}")
 
         return {"valid": True, "candidate": candidate}

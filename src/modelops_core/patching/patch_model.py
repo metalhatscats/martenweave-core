@@ -37,8 +37,6 @@ _ALLOWED_OPERATIONS: frozenset[str] = frozenset(
         "add_object",
         "update_object",
         "create_object",
-        "add_relationship",
-        "add_evidence_link",
         "create_issue",
     }
 )

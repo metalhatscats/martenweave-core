@@ -19,6 +19,9 @@ data_path: "data"
 #   max_context_relationships: 100
 #   max_response_size_bytes: 10485760      # 10 MB
 
+# Minimum distinct approvers for high-risk ChangeRequests (default: 2).
+# min_approvers: 2
+
 # Optional domain packs for additional validation rules.
 # enabled_domain_packs:
 #   - sap

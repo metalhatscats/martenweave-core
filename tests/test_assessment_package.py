@@ -85,3 +85,47 @@ def test_assessment_json_output(sample_repo: Path, tmp_path: Path) -> None:
     assert "readiness_level" in data
     assert "artifacts" in data
     assert isinstance(data["artifacts"], list)
+
+
+def test_assessment_run_rejects_invalid_model(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    (model_dir / "ATTR-BAD.md").write_text(
+        "---\nid: ATTR-BAD\ntype: Attribute\nstatus: draft\nname: Bad\ndomain: NONEXISTENT\n---\n",
+        encoding="utf-8",
+    )
+
+    out = tmp_path / "assessment"
+    result = runner.invoke(
+        app, ["assessment", "run", "--repo", str(tmp_path), "--out", str(out)]
+    )
+    assert result.exit_code == 1, result.output
+    assert "Validation failed" in result.output
+    assert not out.exists()
+
+
+def test_assessment_run_allow_invalid_builds_package(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    (model_dir / "ATTR-BAD.md").write_text(
+        "---\nid: ATTR-BAD\ntype: Attribute\nstatus: draft\nname: Bad\ndomain: NONEXISTENT\n---\n",
+        encoding="utf-8",
+    )
+
+    out = tmp_path / "assessment-allow"
+    result = runner.invoke(
+        app,
+        [
+            "assessment",
+            "run",
+            "--repo",
+            str(tmp_path),
+            "--out",
+            str(out),
+            "--allow-invalid",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert (out / "01_readiness_scorecard.md").exists()
+    assert "--allow-invalid" in result.output
+    assert "validation errors" in result.output

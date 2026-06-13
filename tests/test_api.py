@@ -251,7 +251,7 @@ def test_api_dry_run_proposal_not_accepted(temp_model_dir: Path) -> None:
 def test_api_apply_proposal_not_found(temp_model_dir: Path) -> None:
     repo = str(temp_model_dir.parent)
     response = client.post("/proposals/PP-MISSING/apply", params={"repo": repo})
-    assert response.status_code == 400
+    assert response.status_code == 404
     assert "not found" in response.json()["detail"].lower()
 
 
@@ -276,3 +276,159 @@ def test_api_apply_proposal_already_applied(temp_model_dir: Path) -> None:
     response = client.post("/proposals/PP-TEST-004/apply", params={"repo": repo})
     assert response.status_code == 400
     assert "already been applied" in response.json()["detail"].lower()
+
+
+# ---------------------------------------------------------------------------
+# proposal apply risk / CR gates (issue #437)
+# ---------------------------------------------------------------------------
+
+
+def test_api_apply_high_risk_blocked_without_cr(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    repo_root = tmp_path
+
+    (model_dir / "MAP-001.md").write_text(
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
+        encoding="utf-8",
+    )
+    proposals_dir = model_dir / "patch-proposals"
+    proposals_dir.mkdir()
+    (proposals_dir / "PP-API-HIGH-001.md").write_text(
+        "---\n"
+        "id: PP-API-HIGH-001\n"
+        "type: PatchProposal\n"
+        "status: accepted\n"
+        "operations:\n"
+        "  - op: update_object\n"
+        "    object_id: MAP-001\n"
+        "    target_path: name\n"
+        "    after: New\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    response = client.post(
+        "/proposals/PP-API-HIGH-001/apply", params={"repo": str(repo_root)}
+    )
+    assert response.status_code == 400
+    data = response.json()
+    assert "requires an approved ChangeRequest" in data["detail"]
+
+
+def test_api_apply_high_risk_allowed_with_cr(tmp_path: Path) -> None:
+    from modelops_core.change_request.service import (
+        approve_change_request,
+        create_change_request,
+    )
+
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    repo_root = tmp_path
+
+    (model_dir / "MAP-001.md").write_text(
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
+        encoding="utf-8",
+    )
+    proposals_dir = model_dir / "patch-proposals"
+    proposals_dir.mkdir()
+    (proposals_dir / "PP-API-HIGH-002.md").write_text(
+        "---\n"
+        "id: PP-API-HIGH-002\n"
+        "type: PatchProposal\n"
+        "status: accepted\n"
+        "operations:\n"
+        "  - op: update_object\n"
+        "    object_id: MAP-001\n"
+        "    target_path: name\n"
+        "    after: New\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    create_change_request(
+        model_path=model_dir,
+        cr_id="CR-API-002",
+        title="Approve PP-API-HIGH-002",
+        status="pending",
+        linked_proposals=["PP-API-HIGH-002"],
+        affected_objects=["MAP-001"],
+    )
+    with pytest.raises(ValueError, match="requires 2 distinct approvers"):
+        approve_change_request(model_dir, "CR-API-002", "alice")
+    approve_change_request(model_dir, "CR-API-002", "bob")
+
+    response = client.post(
+        "/proposals/PP-API-HIGH-002/apply", params={"repo": str(repo_root)}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["proposal_id"] == "PP-API-HIGH-002"
+    assert len(data["changed_files"]) > 0
+
+
+def test_api_apply_high_risk_skip_still_requires_cr(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    repo_root = tmp_path
+
+    (model_dir / "MAP-001.md").write_text(
+        "---\nid: MAP-001\ntype: Mapping\nstatus: active\nname: Test Mapping\n---\n",
+        encoding="utf-8",
+    )
+    proposals_dir = model_dir / "patch-proposals"
+    proposals_dir.mkdir()
+    (proposals_dir / "PP-API-HIGH-003.md").write_text(
+        "---\n"
+        "id: PP-API-HIGH-003\n"
+        "type: PatchProposal\n"
+        "status: accepted\n"
+        "operations:\n"
+        "  - op: update_object\n"
+        "    object_id: MAP-001\n"
+        "    target_path: name\n"
+        "    after: New\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    response = client.post(
+        "/proposals/PP-API-HIGH-003/apply",
+        params={"repo": str(repo_root), "skip_risk_check": "true"},
+    )
+    assert response.status_code == 400
+    data = response.json()
+    assert "requires an approved ChangeRequest" in data["detail"]
+
+
+def test_api_apply_medium_risk_blocked_without_cr(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    repo_root = tmp_path
+
+    (model_dir / "ATTR-001.md").write_text(
+        "---\nid: ATTR-001\ntype: Attribute\nstatus: draft\nname: Test\n---\n",
+        encoding="utf-8",
+    )
+    proposals_dir = model_dir / "patch-proposals"
+    proposals_dir.mkdir()
+    (proposals_dir / "PP-API-MED-001.md").write_text(
+        "---\n"
+        "id: PP-API-MED-001\n"
+        "type: PatchProposal\n"
+        "status: accepted\n"
+        "operations:\n"
+        "  - op: update_object\n"
+        "    object_id: ATTR-001\n"
+        "    target_path: name\n"
+        "    after: New\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    response = client.post(
+        "/proposals/PP-API-MED-001/apply", params={"repo": str(repo_root)}
+    )
+    assert response.status_code == 400
+    data = response.json()
+    assert "approval required" in data["detail"].lower()
