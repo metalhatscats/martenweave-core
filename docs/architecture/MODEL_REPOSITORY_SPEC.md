@@ -1,6 +1,6 @@
 # ModelOps for MDM — Model Repository Specification
 
-Version: `0.2-draft`  
+Version: 0.4.0  
 Document type: Repository architecture / canonical model storage specification  
 Scope: File-based canonical model repository for SAP migration, MDM, data governance, and AMS model knowledge  
 Initial domain: SAP Business Partner migration model, Customer role slice first  
@@ -852,7 +852,7 @@ Example metadata:
 {
   "generated_at": "2026-04-26T21:00:00+02:00",
   "source_repository_hash": "abc123",
-  "modelops_version": "0.1.0"
+  "modelops_version": "0.4.0"
 }
 ```
 
@@ -2639,7 +2639,7 @@ modelops profile-dataset
 modelops detect-gaps
 modelops impact ATTR-CUST-SALES-CUSTOMER-GROUP
 modelops propose-patch --from note.md
-modelops approve-patch PATCH-0021
+modelops proposal accept PATCH-0021
 modelops export catalog
 ```
 

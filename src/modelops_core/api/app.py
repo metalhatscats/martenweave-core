@@ -7,6 +7,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query
 
+from modelops_core import __version__
 from modelops_core.approval.risk_service import compute_proposal_risk
 from modelops_core.change_request.service import find_approved_cr_for_proposal
 from modelops_core.config import load_repo_config, resolve_generated_path, resolve_model_path
@@ -21,7 +22,7 @@ from modelops_core.validation import validate_objects
 app = FastAPI(
     title="Martenweave API",
     description="Lightweight local API for the agentic data model registry.",
-    version="0.1.0",
+    version=__version__,
 )
 
 
