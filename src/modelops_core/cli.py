@@ -678,9 +678,7 @@ def gaps(
     created_files: list[str] = []
     if create_issues and all_gaps:
         if dry_run:
-            console.print(
-                f"\n[yellow]Dry-run: would create {len(all_gaps)} Issue(s).[/yellow]"
-            )
+            console.print(f"\n[yellow]Dry-run: would create {len(all_gaps)} Issue(s).[/yellow]")
         else:
             issues_dir = model_path / "issues"
             issues_dir.mkdir(parents=True, exist_ok=True)
@@ -737,11 +735,7 @@ def gaps(
             event_type="gap_mutation_applied",
             actor="system",
             status="success",
-            command=(
-                "gaps --create-issues"
-                if create_issues
-                else "gaps --promote-to-proposal"
-            ),
+            command=("gaps --create-issues" if create_issues else "gaps --promote-to-proposal"),
             changed_object_ids=[Path(f).stem for f in created_files],
             outputs={"created_files": created_files},
         )
@@ -2155,6 +2149,11 @@ def propose_patch(
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Preview proposal without writing files."
     ),
+    include_raw_samples: bool = typer.Option(
+        False,
+        "--include-raw-samples",
+        help="Include raw dataset sample values in the AI context (default: redacted).",
+    ),
 ) -> None:
     """Create a PatchProposal from a structured note."""
     repo_root = _resolve_repo(repo)
@@ -2166,11 +2165,19 @@ def propose_patch(
 
     note = note_file.read_text(encoding="utf-8")
 
+    if include_raw_samples:
+        console.print(
+            "[yellow]Warning: raw dataset rows may leave the local environment "
+            "depending on provider configuration.[/yellow]"
+        )
+
     from modelops_core.ai.patch_proposal_service import build_patch_proposal_from_note
     from modelops_core.ai.provider_adapter import AIOutputValidationError
 
     try:
-        result = build_patch_proposal_from_note(note, repo_root=repo_root)
+        result = build_patch_proposal_from_note(
+            note, repo_root=repo_root, include_raw_samples=include_raw_samples
+        )
     except AIOutputValidationError as exc:
         msg = str(exc)
         if json_output:
@@ -2701,9 +2708,7 @@ def cr_reject(
 
     is_preview = not write and not dry_run
     try:
-        cr = reject_change_request(
-            model_path, cr_id, approver, reason=reason, dry_run=not write
-        )
+        cr = reject_change_request(model_path, cr_id, approver, reason=reason, dry_run=not write)
     except ValueError as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
@@ -3321,9 +3326,11 @@ def proposal_accept(
         console.print(f"[red]{msg}[/red]")
         raise typer.Exit(code=1)
 
-    transition_patch_proposal_status(
+    transition_warning = transition_patch_proposal_status(
         proposal_path, "accepted", reviewer=reviewer, reviewer_notes=notes
     )
+    if transition_warning:
+        console.print(f"[yellow]{transition_warning}[/yellow]")
 
     cr_id: str | None = None
     if not skip_cr_creation:
@@ -3437,9 +3444,11 @@ def proposal_reject(
         console.print(f"[red]{msg}[/red]")
         raise typer.Exit(code=1)
 
-    transition_patch_proposal_status(
+    transition_warning = transition_patch_proposal_status(
         proposal_path, "rejected", reviewer=reviewer, reviewer_notes=notes, rejection_reason=reason
     )
+    if transition_warning:
+        console.print(f"[yellow]{transition_warning}[/yellow]")
 
     if json_output:
         print(json.dumps({"proposal_id": proposal_id, "status": "rejected"}, indent=2))

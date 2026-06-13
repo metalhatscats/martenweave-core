@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -302,3 +303,126 @@ def test_allowed_operations_are_supported_by_apply_service() -> None:
         assert canonical in {"update_object", "create_object"}, (
             f"Operation {op!r} normalizes to unhandled {canonical!r}"
         )
+
+
+class TestApplyRollback:
+    def test_apply_rolls_back_first_write_on_oserror(
+        self, temp_model_dir: Path, monkeypatch
+    ) -> None:
+        from modelops_core.patching import apply_service
+        from modelops_core.repository import parse_file
+
+        original_apply_create = apply_service._apply_create_object
+        call_count = 0
+
+        def _raising_create(
+            op: Any, repo_model_path: Path, backup_state: dict[Path, str | None]
+        ) -> Path:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise OSError("disk full")
+            return original_apply_create(op, repo_model_path, backup_state)
+
+        monkeypatch.setattr(apply_service, "_apply_create_object", _raising_create)
+
+        ops = [
+            PatchOperation(
+                op="update_object",
+                object_id="DOMAIN-TEST",
+                target_path="name",
+                after="First Update",
+            ),
+            PatchOperation(
+                op="create_object",
+                object_id="SYS-NEW",
+                object_type="System",
+                after={"id": "SYS-NEW", "type": "System", "status": "draft", "name": "New"},
+            ),
+        ]
+        proposal = build_patch_proposal("PP-ROLLBACK-OSERROR", ops)
+        write_patch_proposal(proposal, temp_model_dir)
+
+        from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
+
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-ROLLBACK-OSERROR.md"
+        transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+        with pytest.raises(OSError, match="disk full"):
+            apply_patch_proposal(temp_model_dir, "PP-ROLLBACK-OSERROR")
+
+        updated = parse_file(temp_model_dir / "DOMAIN-TEST.md")
+        assert updated.frontmatter is not None
+        assert updated.frontmatter["name"] == "Test Domain"
+        assert not (temp_model_dir / "systems" / "SYS-NEW.md").exists()
+
+    def test_apply_rolls_back_on_unexpected_exception(
+        self, temp_model_dir: Path, monkeypatch
+    ) -> None:
+        from modelops_core.patching import apply_service
+        from modelops_core.repository import parse_file
+
+        def _raising_update(
+            op: Any, repo_model_path: Path, backup_state: dict[Path, str | None]
+        ) -> Path:
+            raise RuntimeError("unexpected failure")
+
+        monkeypatch.setattr(apply_service, "_apply_update_object", _raising_update)
+
+        op = PatchOperation(
+            op="update_object",
+            object_id="DOMAIN-TEST",
+            target_path="name",
+            after="Should Not Persist",
+        )
+        proposal = build_patch_proposal("PP-ROLLBACK-RUNTIME", [op])
+        write_patch_proposal(proposal, temp_model_dir)
+
+        from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
+
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-ROLLBACK-RUNTIME.md"
+        transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+        with pytest.raises(RuntimeError, match="unexpected failure"):
+            apply_patch_proposal(temp_model_dir, "PP-ROLLBACK-RUNTIME")
+
+        updated = parse_file(temp_model_dir / "DOMAIN-TEST.md")
+        assert updated.frontmatter is not None
+        assert updated.frontmatter["name"] == "Test Domain"
+
+    def test_apply_failure_emits_rollback_audit_event(
+        self, temp_model_dir: Path, monkeypatch
+    ) -> None:
+        from modelops_core.patching import apply_service
+        from modelops_core.reports.audit_service import AuditEventService
+
+        def _raising_update(
+            op: Any, repo_model_path: Path, backup_state: dict[Path, str | None]
+        ) -> Path:
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(apply_service, "_apply_update_object", _raising_update)
+
+        op = PatchOperation(
+            op="update_object",
+            object_id="DOMAIN-TEST",
+            target_path="name",
+            after="Should Not Persist",
+        )
+        proposal = build_patch_proposal("PP-ROLLBACK-AUDIT", [op])
+        write_patch_proposal(proposal, temp_model_dir)
+
+        from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
+
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-ROLLBACK-AUDIT.md"
+        transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+        with pytest.raises(RuntimeError, match="boom"):
+            apply_patch_proposal(temp_model_dir, "PP-ROLLBACK-AUDIT")
+
+        service = AuditEventService(temp_model_dir.parent)
+        events = service.read_events()
+        rollback_events = [e for e in events if e.event_type == "patch_apply_rollback"]
+        assert len(rollback_events) >= 1
+        assert rollback_events[0].status == "failed"
+        assert "boom" in rollback_events[0].outputs.get("error", "")

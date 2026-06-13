@@ -346,3 +346,56 @@ class TestBuildPatchProposalFromNoteWithRepoRoot:
         assert any(
             "not found" in str(w).lower() for w in ctx.repository_context.get("warnings", [])
         )
+
+
+class TestProposePatchPrivacyCli:
+    def test_cli_include_raw_samples_prints_warning(
+        self, tmp_path: Path, temp_model_dir: Path
+    ) -> None:
+        from typer.testing import CliRunner
+
+        from modelops_core.cli import app
+
+        note_file = tmp_path / "note.md"
+        note_file.write_text("Update CUSTOMER GROUP", encoding="utf-8")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            app,
+            [
+                "propose-patch",
+                "--from",
+                str(note_file),
+                "--repo",
+                str(temp_model_dir.parent),
+                "--dry-run",
+                "--include-raw-samples",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "raw dataset rows may leave the local environment" in result.output
+
+    def test_cli_default_does_not_print_raw_samples_warning(
+        self, tmp_path: Path, temp_model_dir: Path
+    ) -> None:
+        from typer.testing import CliRunner
+
+        from modelops_core.cli import app
+
+        note_file = tmp_path / "note.md"
+        note_file.write_text("Update CUSTOMER GROUP", encoding="utf-8")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            app,
+            [
+                "propose-patch",
+                "--from",
+                str(note_file),
+                "--repo",
+                str(temp_model_dir.parent),
+                "--dry-run",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "raw dataset rows may leave the local environment" not in result.output

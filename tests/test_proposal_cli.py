@@ -1212,3 +1212,55 @@ def test_proposal_accept_skip_cr_creation(temp_model_dir: Path) -> None:
 
     cr_path = temp_model_dir.parent / "model" / "change-requests" / "CR-PP-ACCEPT-NO-CR.md"
     assert not cr_path.exists()
+
+
+class TestTransitionAuditWarning:
+    def test_transition_warning_when_audit_emission_fails(
+        self, temp_model_dir: Path, monkeypatch
+    ) -> None:
+        from modelops_core.reports.audit_service import AuditEventService
+
+        def _raising_emit(self, event):
+            raise OSError("audit log locked")
+
+        monkeypatch.setattr(AuditEventService, "emit", _raising_emit)
+
+        proposal = build_patch_proposal("PP-AUDIT-WARN", [])
+        write_patch_proposal(proposal, temp_model_dir)
+        proposal_path = temp_model_dir / "patch-proposals" / "PP-AUDIT-WARN.md"
+
+        with pytest.warns(UserWarning, match="audit event emission failed"):
+            warning = transition_patch_proposal_status(proposal_path, "accepted", reviewer="alice")
+
+        assert warning is not None
+        assert "audit event emission failed" in warning
+        parsed = parse_file(proposal_path)
+        assert parsed.frontmatter is not None
+        assert parsed.frontmatter["status"] == "accepted"
+
+    def test_cli_reject_prints_audit_warning(self, temp_model_dir: Path, monkeypatch) -> None:
+        from modelops_core.reports.audit_service import AuditEventService
+
+        def _raising_emit(self, event):
+            raise OSError("audit log locked")
+
+        monkeypatch.setattr(AuditEventService, "emit", _raising_emit)
+
+        proposal = build_patch_proposal("PP-CLI-AUDIT-WARN", [])
+        write_patch_proposal(proposal, temp_model_dir)
+
+        result = runner.invoke(
+            app,
+            [
+                "proposal",
+                "reject",
+                "PP-CLI-AUDIT-WARN",
+                "--repo",
+                _repo_from_model(temp_model_dir),
+                "--reviewer",
+                "bob",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "rejected" in result.output
+        assert "audit event emission failed" in result.output

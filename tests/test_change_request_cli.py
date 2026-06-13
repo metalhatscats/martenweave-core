@@ -133,7 +133,7 @@ def test_cr_update_status_valid_transition(tmp_path: Path) -> None:
         [
             "change-request",
             "update-status",
-                "--write",
+            "--write",
             "CR-TEST-004",
             "approved",
             "--repo",
@@ -170,7 +170,7 @@ def test_cr_update_status_invalid_transition(tmp_path: Path) -> None:
         [
             "change-request",
             "update-status",
-                "--write",
+            "--write",
             "CR-TEST-005",
             "pending",
             "--repo",
@@ -1102,7 +1102,6 @@ class TestChangeRequestApproveRejectCli:
         reject_events = [e for e in events if e.event_type == "change_request_rejected"]
         assert len(reject_events) >= 1
         assert any(e.recipient_id == "alice" for e in reject_events)
-
 
 
 class TestChangeRequestWriteGate:
