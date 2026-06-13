@@ -775,6 +775,26 @@ def apply_patch_proposal(
             },
         )
 
-    except ValueError:
+    except Exception as exc:
         _rollback(backup_state)
+        try:
+            from modelops_core.reports.audit_service import (
+                AuditEventService,
+                create_audit_event,
+            )
+
+            repo_root = repo_model_path.parent
+            service = AuditEventService(repo_root)
+            event = create_audit_event(
+                event_type="patch_apply_rollback",
+                actor="system",
+                status="failed",
+                command="proposal apply",
+                proposal_id=proposal_id,
+                changed_files=changed_files,
+                outputs={"error": str(exc), "changed_files": changed_files},
+            )
+            service.emit(event)
+        except Exception:
+            pass
         raise

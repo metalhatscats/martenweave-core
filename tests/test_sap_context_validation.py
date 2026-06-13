@@ -100,7 +100,6 @@ def test_knb1_requires_company_code() -> None:
     assert summary.is_valid
 
 
-
 def test_lfa1_requires_vendor_general() -> None:
     ctx = ParsedObject(
         source_path="ctx.md",

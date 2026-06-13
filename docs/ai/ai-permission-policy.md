@@ -53,3 +53,17 @@ High-risk proposals require:
 2. Validation pass
 3. Explicit approval
 4. Audit logging
+
+## Privacy Defaults for AI Context
+
+By default, AI context bundles exclude raw dataset rows and sample values.
+Only metadata, column names, row counts, and model objects are included.
+
+To include raw sample values, explicitly opt in with `--include-raw-samples`:
+
+```bash
+modelops propose-patch --from note.md --include-raw-samples
+```
+
+When this flag is used, the CLI prints a warning that raw dataset rows may leave
+the local environment depending on the configured provider.

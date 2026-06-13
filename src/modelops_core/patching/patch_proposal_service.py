@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import warnings
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -73,7 +74,7 @@ def transition_patch_proposal_status(
     reviewer: str | None = None,
     reviewer_notes: str | None = None,
     rejection_reason: str | None = None,
-) -> None:
+) -> str | None:
     """Transition a PatchProposal's status in its canonical file.
 
     Args:
@@ -82,6 +83,9 @@ def transition_patch_proposal_status(
         reviewer: Identity of the reviewer.
         reviewer_notes: Free-form notes from the reviewer.
         rejection_reason: Reason for rejection (when new_status is 'rejected').
+
+    Returns:
+        A warning message if audit emission failed, otherwise None.
     """
     from modelops_core.repository import parse_file
 
@@ -115,6 +119,7 @@ def transition_patch_proposal_status(
     proposal_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     # Emit audit event for the transition
+    warning: str | None = None
     try:
         repo_root = proposal_path.parent.parent.parent
         from modelops_core.reports.audit_service import (
@@ -135,5 +140,10 @@ def transition_patch_proposal_status(
             },
         )
         service.emit(event)
-    except Exception:
-        pass
+    except Exception as exc:
+        warning = (
+            f"PatchProposal status changed to {new_status}, but audit event emission failed: {exc}"
+        )
+        warnings.warn(warning, stacklevel=2)
+
+    return warning
