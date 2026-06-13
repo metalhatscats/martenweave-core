@@ -23,6 +23,8 @@ class ReferenceField:
     relationship_class: str = "reference"
     """Traversal class: core_dependency, context, mapping, validation,
     governance, evidence, or reference."""
+    is_list: bool = False
+    """True when the field is expected to hold a list of reference IDs."""
 
 
 @dataclass(frozen=True)
@@ -79,13 +81,17 @@ _FIELD_ENDPOINT_REF = ReferenceField(
 _SOURCE_ENDPOINT_REF = ReferenceField("source_endpoint", "mapped_from", "FieldEndpoint", "mapping")
 _TARGET_ENDPOINT_REF = ReferenceField("target_endpoint", "mapped_to", "FieldEndpoint", "mapping")
 _SOURCE_ENDPOINTS_REF = ReferenceField(
-    "source_endpoints", "mapped_from", "FieldEndpoint", "mapping"
+    "source_endpoints", "mapped_from", "FieldEndpoint", "mapping", is_list=True
 )
-_TARGET_ENDPOINTS_REF = ReferenceField("target_endpoints", "mapped_to", "FieldEndpoint", "mapping")
+_TARGET_ENDPOINTS_REF = ReferenceField(
+    "target_endpoints", "mapped_to", "FieldEndpoint", "mapping", is_list=True
+)
 _RELATED_ISSUE_REF = ReferenceField("related_issue", "affected_by_issue", "Issue", "governance")
-_RELATED_ISSUES_REF = ReferenceField("related_issues", "affected_by_issue", "Issue", "governance")
+_RELATED_ISSUES_REF = ReferenceField(
+    "related_issues", "affected_by_issue", "Issue", "governance", is_list=True
+)
 _RELATED_DECISIONS_REF = ReferenceField(
-    "related_decisions", "explained_by_decision", "Decision", "governance"
+    "related_decisions", "explained_by_decision", "Decision", "governance", is_list=True
 )
 _VALUE_LIST_REF = ReferenceField("value_list", "has_allowed_values", "ValueList", "validation")
 _SOURCE_VALUE_LIST_REF = ReferenceField(
@@ -103,14 +109,18 @@ _PARENT_VALUE_LIST_REF = ReferenceField(
 _MAPPING_REF = ReferenceField("mapping", "uses_mapping", "Mapping", "mapping")
 _MAPPING_SET_REF = ReferenceField("mapping_set", "part_of_mapping_set", "MappingSet", "mapping")
 _VALIDATION_RULES_REF = ReferenceField(
-    "validation_rules", "validated_by", "ValidationRule", "validation"
+    "validation_rules", "validated_by", "ValidationRule", "validation", is_list=True
 )
 _EVIDENCE_REF = ReferenceField("evidence", "supported_by_evidence", "Evidence", "evidence")
 _SOURCE_PATCH_PROPOSALS_REF = ReferenceField(
-    "source_patch_proposals", "proposed_by", "PatchProposal", "governance"
+    "source_patch_proposals", "proposed_by", "PatchProposal", "governance", is_list=True
 )
-_AFFECTED_OBJECTS_REF = ReferenceField("affected_objects", "affects", None, "governance")
-_RELATED_OBJECTS_REF = ReferenceField("related_objects", "related_to", None, "reference")
+_AFFECTED_OBJECTS_REF = ReferenceField(
+    "affected_objects", "affects", None, "governance", is_list=True
+)
+_RELATED_OBJECTS_REF = ReferenceField(
+    "related_objects", "related_to", None, "reference", is_list=True
+)
 _BUSINESS_OWNER_REF = ReferenceField("business_owner", "owned_by_business", "Person", "governance")
 _TECHNICAL_OWNER_REF = ReferenceField(
     "technical_owner", "owned_by_technical", "Person", "governance"
@@ -438,7 +448,14 @@ _REGISTRY: dict[str, ObjectTypeEntry] = {
         type_id="ChangeRequest",
         ui_label_singular="Change Request",
         ui_label_plural="Change Requests",
-        reference_fields=(_DOMAIN_REF, _AFFECTED_OBJECTS_REF, _EVIDENCE_REF),
+        reference_fields=(
+            _DOMAIN_REF,
+            _AFFECTED_OBJECTS_REF,
+            _EVIDENCE_REF,
+            _SOURCE_PATCH_PROPOSALS_REF,
+            _RELATED_ISSUES_REF,
+            _RELATED_DECISIONS_REF,
+        ),
         search_fields=_COMMON_SEARCH_FIELDS,
     ),
     "PatchProposal": ObjectTypeEntry(
@@ -512,6 +529,12 @@ def get_expected_target_types(type_id: str | None = None) -> dict[str, str | Non
     """Return a mapping from frontmatter field name to expected target object type."""
     refs = get_reference_fields(type_id)
     return {name: ref.expected_target_type for name, ref in refs.items()}
+
+
+def get_reference_cardinality(type_id: str | None = None) -> dict[str, bool]:
+    """Return a mapping from frontmatter field name to its list cardinality."""
+    refs = get_reference_fields(type_id)
+    return {name: ref.is_list for name, ref in refs.items()}
 
 
 def get_search_fields(type_id: str | None = None) -> tuple[str, ...]:

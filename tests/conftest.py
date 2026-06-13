@@ -22,6 +22,16 @@ def sample_repo(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
+def supplier_repo(tmp_path: Path) -> Path:
+    """Copy the example supplier-vendor model into a temporary directory."""
+    src = Path(__file__).resolve().parent.parent / "examples" / "supplier_vendor_model"
+    dst = tmp_path / "supplier_vendor_model"
+    shutil.copytree(src, dst)
+    build_index(dst, allow_invalid=True)
+    return dst
+
+
+@pytest.fixture
 def temp_model_dir(tmp_path: Path) -> Path:
     """Create a temporary model directory with a few canonical objects."""
     model_dir = tmp_path / "model"

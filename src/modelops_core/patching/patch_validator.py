@@ -101,6 +101,9 @@ def validate_patch_proposal(
             )
         )
 
+    existing_ids = _load_existing_object_ids(repo_model_path)
+    registered_types = set(get_all_types())
+
     operations = proposal.get("operations", [])
     if not operations:
         results.append(
@@ -113,8 +116,6 @@ def validate_patch_proposal(
             )
         )
     elif isinstance(operations, list):
-        existing_ids = _load_existing_object_ids(repo_model_path)
-        registered_types = set(get_all_types())
         for idx, op in enumerate(operations):
             if not isinstance(op, dict):
                 continue
@@ -211,16 +212,43 @@ def validate_patch_proposal(
                     )
 
     affected_objects = proposal.get("affected_objects")
-    if affected_objects is not None and not isinstance(affected_objects, list):
-        results.append(
-            ValidationResult(
-                severity=ValidationSeverity.WARNING,
-                code="PATCH_AFFECTED_OBJECT_FORMAT",
-                message="affected_objects should be a list.",
-                object_id=str(proposal_id) if proposal_id else None,
-                suggested_fix="Change affected_objects to a list of object IDs.",
+    if affected_objects is not None:
+        if not isinstance(affected_objects, list):
+            results.append(
+                ValidationResult(
+                    severity=ValidationSeverity.WARNING,
+                    code="PATCH_AFFECTED_OBJECT_FORMAT",
+                    message="affected_objects should be a list.",
+                    object_id=str(proposal_id) if proposal_id else None,
+                    suggested_fix="Change affected_objects to a list of object IDs.",
+                )
             )
-        )
+        else:
+            for idx, ref in enumerate(affected_objects):
+                if not isinstance(ref, str) or not _ID_PATTERN.match(ref):
+                    results.append(
+                        ValidationResult(
+                            severity=ValidationSeverity.ERROR,
+                            code="PATCH_AFFECTED_OBJECT_ID_INVALID",
+                            message=(f"affected_objects[{idx}] has invalid object ID '{ref}'."),
+                            object_id=str(proposal_id) if proposal_id else None,
+                            field_path=f"affected_objects[{idx}]",
+                            suggested_fix="Use a valid canonical object ID.",
+                        )
+                    )
+                elif existing_ids and ref not in existing_ids:
+                    results.append(
+                        ValidationResult(
+                            severity=ValidationSeverity.ERROR,
+                            code="PATCH_AFFECTED_OBJECT_NOT_FOUND",
+                            message=(
+                                f"affected_objects[{idx}] references non-existent object '{ref}'."
+                            ),
+                            object_id=str(proposal_id) if proposal_id else None,
+                            field_path=f"affected_objects[{idx}]",
+                            suggested_fix="Reference an existing canonical object ID.",
+                        )
+                    )
 
     expires_at = proposal.get("expires_at")
     if expires_at:

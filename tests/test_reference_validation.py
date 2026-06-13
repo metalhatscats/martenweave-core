@@ -333,3 +333,60 @@ def test_decision_without_evidence_no_error() -> None:
     )
     summary = validate_objects([decision])
     assert not any(r.code == "EVIDENCE_BROKEN_LINK" for r in summary.results)
+
+
+def test_list_reference_field_rejects_scalar() -> None:
+    issue = ParsedObject(
+        source_path="issue.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "ISS-001",
+            "type": "Issue",
+            "status": "open",
+            "affected_objects": "ATTR-001",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([issue])
+    assert any(
+        r.code == "REFERENCE_CARDINALITY_MISMATCH" and r.severity.name == "ERROR"
+        for r in summary.results
+    )
+
+
+def test_list_reference_field_accepts_list() -> None:
+    issue = ParsedObject(
+        source_path="issue.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "ISS-001",
+            "type": "Issue",
+            "status": "open",
+            "affected_objects": ["ATTR-001"],
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([issue])
+    assert not any(r.code == "REFERENCE_CARDINALITY_MISMATCH" for r in summary.results)
+
+
+def test_reference_list_with_non_string_item() -> None:
+    issue = ParsedObject(
+        source_path="issue.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "ISS-001",
+            "type": "Issue",
+            "status": "open",
+            "affected_objects": ["ATTR-001", 123],
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([issue])
+    assert any(
+        r.code == "REFERENCE_LIST_ITEM_INVALID_TYPE" and r.severity.name == "WARNING"
+        for r in summary.results
+    )

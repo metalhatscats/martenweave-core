@@ -223,3 +223,45 @@ def test_value_list_parent_reference_broken() -> None:
     summary = validate_objects([child])
     codes = {r.code for r in summary.results}
     assert "REFERENCE_BROKEN" in codes
+
+
+def test_lov_duplicate_code_error() -> None:
+    obj = _make_obj(
+        Path("VLIST-DUP.md"),
+        {
+            "id": "VLIST-DUP",
+            "type": "ValueList",
+            "status": "active",
+            "name": "Duplicate Code",
+            "entries": [
+                {"code": "01", "label": "Wholesale"},
+                {"code": "01", "label": "Duplicate Wholesale"},
+            ],
+        },
+    )
+    summary = validate_objects([obj])
+    codes = {r.code for r in summary.results}
+    assert "LOV_DUPLICATE_CODE" in codes
+    assert any(
+        r.code == "LOV_DUPLICATE_CODE" and r.severity == ValidationSeverity.ERROR
+        for r in summary.results
+    )
+
+
+def test_lov_unique_codes_no_duplicate_error() -> None:
+    obj = _make_obj(
+        Path("VLIST-UNIQUE.md"),
+        {
+            "id": "VLIST-UNIQUE",
+            "type": "ValueList",
+            "status": "active",
+            "name": "Unique Codes",
+            "entries": [
+                {"code": "01", "label": "Wholesale"},
+                {"code": "02", "label": "Retail"},
+            ],
+        },
+    )
+    summary = validate_objects([obj])
+    codes = {r.code for r in summary.results}
+    assert "LOV_DUPLICATE_CODE" not in codes
