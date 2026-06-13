@@ -22,8 +22,13 @@ def help_output() -> str:
     return result.stdout
 
 
+def _strip_ansi(text: str) -> str:
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
+
+
 def _extract_commands_section(help_text: str) -> str:
-    lines = help_text.splitlines()
+    clean = _strip_ansi(help_text)
+    lines = clean.splitlines()
     start: int | None = None
     end: int | None = None
     for i, line in enumerate(lines):
