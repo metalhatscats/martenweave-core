@@ -89,6 +89,5 @@ def test_factories_accept_overrides(domain_factory, attribute_factory) -> None:
     summary = validate_objects(objects)
     assert summary.is_valid
     assert not any(
-        r.object_id == "DOMAIN-OVERRIDE" and r.severity.name == "ERROR"
-        for r in summary.results
+        r.object_id == "DOMAIN-OVERRIDE" and r.severity.name == "ERROR" for r in summary.results
     )
