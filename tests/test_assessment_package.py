@@ -96,9 +96,7 @@ def test_assessment_run_rejects_invalid_model(tmp_path: Path) -> None:
     )
 
     out = tmp_path / "assessment"
-    result = runner.invoke(
-        app, ["assessment", "run", "--repo", str(tmp_path), "--out", str(out)]
-    )
+    result = runner.invoke(app, ["assessment", "run", "--repo", str(tmp_path), "--out", str(out)])
     assert result.exit_code == 1, result.output
     assert "Validation failed" in result.output
     assert not out.exists()

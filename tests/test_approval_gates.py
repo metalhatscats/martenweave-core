@@ -762,7 +762,6 @@ def test_apply_records_approved_cr_in_audit(tmp_path: Path) -> None:
     assert apply_events[0].outputs.get("approved_change_request_id") == "CR-AUDIT-001"
 
 
-
 def test_service_high_risk_cr_requires_two_approvers(tmp_path: Path) -> None:
     model_dir = tmp_path / "model"
     model_dir.mkdir()

@@ -308,9 +308,7 @@ def test_api_apply_high_risk_blocked_without_cr(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    response = client.post(
-        "/proposals/PP-API-HIGH-001/apply", params={"repo": str(repo_root)}
-    )
+    response = client.post("/proposals/PP-API-HIGH-001/apply", params={"repo": str(repo_root)})
     assert response.status_code == 400
     data = response.json()
     assert "requires an approved ChangeRequest" in data["detail"]
@@ -358,9 +356,7 @@ def test_api_apply_high_risk_allowed_with_cr(tmp_path: Path) -> None:
         approve_change_request(model_dir, "CR-API-002", "alice")
     approve_change_request(model_dir, "CR-API-002", "bob")
 
-    response = client.post(
-        "/proposals/PP-API-HIGH-002/apply", params={"repo": str(repo_root)}
-    )
+    response = client.post("/proposals/PP-API-HIGH-002/apply", params={"repo": str(repo_root)})
     assert response.status_code == 200
     data = response.json()
     assert data["proposal_id"] == "PP-API-HIGH-002"
@@ -426,9 +422,7 @@ def test_api_apply_medium_risk_blocked_without_cr(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    response = client.post(
-        "/proposals/PP-API-MED-001/apply", params={"repo": str(repo_root)}
-    )
+    response = client.post("/proposals/PP-API-MED-001/apply", params={"repo": str(repo_root)})
     assert response.status_code == 400
     data = response.json()
     assert "approval required" in data["detail"].lower()

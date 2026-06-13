@@ -220,7 +220,6 @@ def test_apply_update_warning_allowed(temp_model_dir: Path) -> None:
     assert updated.frontmatter["name"] == ""
 
 
-
 def test_apply_add_object_alias(temp_model_dir: Path) -> None:
     op = PatchOperation(
         op="add_object",
@@ -287,7 +286,6 @@ def test_apply_rejects_add_relationship(temp_model_dir: Path) -> None:
 
     with pytest.raises(ValueError, match="PATCH_OPERATION_DISALLOWED"):
         apply_patch_proposal(temp_model_dir, "PP-BAD-REL")
-
 
 
 def test_allowed_operations_are_supported_by_apply_service() -> None:
