@@ -2,7 +2,7 @@
 
 # Martenweave — MVP Scope
 
-Version: 0.1  
+Version: 0.4.0  
 Status: Working MVP scope  
 Product: Martenweave (general agentic data model registry)  
 Category: Data ModelOps Workspace  
@@ -667,8 +667,8 @@ Rules:
 ### 10.1 Attribute minimum fields
 
 ```yaml
-id: attr.customer.sales_area.customer_group
-object_type: Attribute
+id: ATTR-CUST-SALES-CUSTOMER-GROUP
+type: Attribute
 name: Customer Group
 domain_id: domain.customer_bp
 entity_id: entity.customer_sales_area
@@ -719,7 +719,7 @@ target_fields:
   - table: KNVV
     field: KDGRP
 attribute_ids:
-  - attr.customer.sales_area.customer_group
+  - ATTR-CUST-SALES-CUSTOMER-GROUP
 transformation_rule_ids:
   - rule.normalize_customer_group
 lifecycle_status: active
@@ -736,7 +736,7 @@ name: Customer Group required for CH01 sales area
 rule_type: conditional_required
 severity: error
 attribute_ids:
-  - attr.customer.sales_area.customer_group
+  - ATTR-CUST-SALES-CUSTOMER-GROUP
 condition:
   all:
     - field: sales_org
@@ -763,7 +763,7 @@ issue_type: validation_gap
 severity: high
 status: open
 related_object_ids:
-  - attr.customer.sales_area.customer_group
+  - ATTR-CUST-SALES-CUSTOMER-GROUP
   - val.customer_group_required_for_ch01
 source_gap_id: gap.dataset.customer_bp.001
 owner_id: owner.sales_data_team
@@ -945,7 +945,7 @@ AI must follow these rules:
     },
     {
       "op": "link_validation_to_attribute",
-      "object_id": "attr.customer.sales_area.customer_group",
+      "object_id": "ATTR-CUST-SALES-CUSTOMER-GROUP",
       "target_file": "attributes/customer_sales_area/customer_group.yaml",
       "payload": {
         "validation_rule_ids_add": ["val.customer_group_required_for_ch01"]
@@ -1006,9 +1006,9 @@ Checks:
 
 Good MVP stack:
 
-- Frontend: Next.js or simple React app.
-- Backend: Python FastAPI or Node.js API.
-- Schemas: Pydantic or Zod.
+- No hosted UI; use CLI, local API, and generated static docs.
+- Backend: Python FastAPI.
+- Schemas: Pydantic.
 - Canonical storage: YAML/JSON/Markdown files.
 - Generated index: SQLite or DuckDB.
 - Dataset processing: Python pandas or DuckDB.

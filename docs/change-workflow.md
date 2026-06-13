@@ -1,6 +1,6 @@
 # Model Change Request Workflow
 
-Version: 0.1  
+Version: 0.4.0  
 Status: Draft  
 Scope: Lightweight end-to-end workflow for requesting, reviewing, approving, applying, and tracking model changes  
 
@@ -257,7 +257,7 @@ Audit events are append-only and written to `generated/audit_events.jsonl`.
 | Update status | `modelops change-request update-status <id> --status <status>` |
 | Approve | `modelops change-request approve <id> --approver <person>` |
 | Reject | `modelops change-request reject <id> --reason <reason>` |
-| Apply proposal | `modelops apply --proposal <id>` |
+| Apply proposal | `modelops proposal apply <id>` |
 | Preview impact | `modelops impact <object-id>` |
 | Validate | `modelops validate --repo <repo>` |
 | Build index | `modelops build-index --repo <repo>` |

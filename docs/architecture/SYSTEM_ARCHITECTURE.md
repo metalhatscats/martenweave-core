@@ -2,7 +2,7 @@
 
 # Martenweave — System Architecture
 
-Version: `0.2-draft`  
+Version: 0.4.0  
 Document type: Product/system architecture  
 Initial product focus: General agentic data model registry, with SAP Business Partner migration as the first domain pack  
 Architecture style: Local-first, file-based, AI-ready, domain-aware model workspace  
@@ -49,7 +49,7 @@ The system must support:
 - AI-assisted patch proposal;
 - human approval before model changes;
 - generated query/search/index layers;
-- UI and CLI workflows.
+- CLI, local API, and IDE workflows.
 
 ---
 
@@ -64,7 +64,7 @@ Local file-based model repository
   + Pydantic validation
   + SQLite generated index
   + optional DuckDB profiling layer
-  + Next.js UI
+  + generated static docs / IDE integration
   + Typer CLI
   + JSONL AI search documents
   + AI adapter with patch proposal workflow
@@ -181,7 +181,7 @@ Primary MVP mode.
 User machine
   ├─ model repository folder
   ├─ FastAPI backend
-  ├─ Next.js frontend
+  ├─ generated static docs / IDE integration
   ├─ SQLite generated index
   ├─ optional DuckDB profiling files
   └─ optional AI provider adapter
@@ -305,7 +305,7 @@ report outputs
 ┌───────────────────────────────────────────────────────────────┐
 │                         User Interfaces                       │
 │                                                               │
-│  Next.js UI       Typer CLI       Obsidian/VS Code/GitHub      │
+│  IDE / static docs    Typer CLI       Obsidian/VS Code/GitHub   │
 └───────────────┬────────────────────┬──────────────────────────┘
                 │                    │
                 ▼                    ▼
@@ -362,7 +362,7 @@ report outputs
 
 | Layer | Recommended choice | Reason |
 |---|---|---|
-| Frontend | Next.js + React + TypeScript | Product UI, App Router, rich tables, future hosted mode |
+| Frontend | Generated static docs + local API | Read-only local viewer, IDE integration, future optional UI |
 | Styling | Tailwind + shadcn-style components | Fast clean enterprise UI |
 | Backend | FastAPI | Strong Python API layer, practical for data tools |
 | Schemas | Pydantic | Runtime validation, JSON schema export, strict models |
@@ -1213,8 +1213,8 @@ modelops impact FEP-S4-KNVV-KDGRP
 modelops profile-dataset DATASET-CUSTOMER-SALES-AREA-LOAD
 modelops detect-gaps DATASET-CUSTOMER-SALES-AREA-LOAD
 modelops propose-patch --from notes/ch01-a17.md
-modelops approve-patch PATCH-0021
-modelops reject-patch PATCH-0021
+modelops proposal accept PATCH-0021
+modelops proposal reject PATCH-0021
 modelops generate-report ams-handover
 modelops serve
 ```
@@ -1372,7 +1372,7 @@ Example:
 ```yaml
 workspace:
   name: Customer BP Migration Model
-  version: 0.1
+  version: 0.4.0
   default_domain: DOMAIN-CUSTOMER-BP
 
 repository:
@@ -1859,7 +1859,7 @@ AIActionsPanel
 ### 28.1 Local development
 
 ```text
-Next.js dev server
+Static docs generator
 FastAPI dev server
 local repository path
 SQLite generated index
@@ -2290,7 +2290,7 @@ Build the product in this order:
 Best technical starting point:
 
 ```text
-FastAPI + Pydantic + SQLite + Next.js + Typer CLI + Markdown/YAML repository.
+FastAPI + Pydantic + SQLite + generated static docs + Typer CLI + Markdown/YAML repository.
 ```
 
 Keep this line strict:
