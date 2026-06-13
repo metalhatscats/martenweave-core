@@ -47,6 +47,9 @@ Validates SAP-specific context rules for `FieldEndpoint` objects:
 | `KNB1` | `customer_company_code` |
 | `KNVP` | `customer_partner_function` |
 | `BUT000` | `bp_central` |
+| `LFA1` | `vendor_general` |
+| `LFB1` | `vendor_company_code` |
+| `LFM1` | `vendor_purchasing_org` |
 
 A `FieldEndpoint` with `endpoint_type: sap_table_field` and `sap_table: KNVV` must reference an `EntityContext` whose `context_category` is `customer_sales_area`.
 

@@ -168,7 +168,7 @@ Quick reference:
 | `test_cli.py` | All CLI commands: init, validate, build-index, health, impact |
 | `test_schema_validation.py` | Pydantic schema validation |
 | `test_reference_validation.py` | Reference resolution and broken reference detection |
-| `test_sap_context_validation.py` | SAP-specific context rules (KNVV, KNB1, KNVP, BUT000) |
+| `test_sap_context_validation.py` | SAP-specific context rules (KNVV, KNB1, KNVP, BUT000, LFA1, LFB1, LFM1) |
 | `test_index_builder.py` | SQLite index generation |
 | `test_lineage_edges.py` | Lineage edge export |
 | `test_impact_service.py` | BFS impact traversal |
@@ -276,6 +276,9 @@ Validation runs in layers and is **deterministic** — no AI involvement:
      - `KNB1` → `customer_company_code`
      - `KNVP` → `customer_partner_function`
      - `BUT000` → `bp_central`
+     - `LFA1` → `vendor_general`
+     - `LFB1` → `vendor_company_code`
+     - `LFM1` → `vendor_purchasing_org`
 
 Validation results include severity (`ERROR`, `WARNING`, `INFO`), error codes, messages, and suggested fixes.
 
@@ -315,5 +318,5 @@ For deeper context, refer to the `docs/` directory:
 - **Add a new CLI command?** Add a new `@app.command()` function in `src/modelops_core/cli.py`.
 - **Add a new validation rule?** Extend `src/modelops_core/validation/pipeline.py` and add tests in `tests/test_*.py`.
 - **Change the generated index schema?** Update `src/modelops_core/index/sqlite_builder.py`.
-- **Add a new SAP context rule?** Add to `_SAP_CONTEXT_RULES` in `src/modelops_core/schemas/registry.py`.
+- **Add a new SAP context rule?** Add to `_SAP_CONTEXT_RULES` in `src/modelops_core/domain_packs/sap.py`.
 - **Never** edit files in `generated/` directly — they are rebuilt by `modelops build-index`.

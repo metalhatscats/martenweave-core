@@ -6,7 +6,7 @@ schema_version: "1.0"
 name: Vendor Central S/4 Context
 domain: DOMAIN-SUPPLIER-VENDOR
 entity: ENTITY-SUPPLIER-CENTRAL
-context_category: vendor_central
+context_category: vendor_general
 system: SYS-S4HANA
 ---
 

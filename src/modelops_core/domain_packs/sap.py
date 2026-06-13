@@ -26,6 +26,11 @@ _SAP_CONTEXT_RULES: tuple[SAPContextRule, ...] = (
         "SAP_CONTEXT_KNVP_REQUIRES_PARTNER_FUNCTION",
     ),
     SAPContextRule("BUT000", "bp_central", "SAP_CONTEXT_BUT000_REQUIRES_BP_CENTRAL"),
+    SAPContextRule("LFA1", "vendor_general", "SAP_CONTEXT_LFA1_REQUIRES_VENDOR_GENERAL"),
+    SAPContextRule("LFB1", "vendor_company_code", "SAP_CONTEXT_LFB1_REQUIRES_VENDOR_COMPANY_CODE"),
+    SAPContextRule(
+        "LFM1", "vendor_purchasing_org", "SAP_CONTEXT_LFM1_REQUIRES_VENDOR_PURCHASING_ORG"
+    ),
 )
 
 

@@ -290,6 +290,7 @@ class TestChangeRequestApproval:
                 "alice",
                 "--repo",
                 str(repo),
+                "--write",
             ],
         )
         assert result.exit_code == 0, result.output

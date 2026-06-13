@@ -293,7 +293,7 @@ class TestGapsCli:
         assert data["gaps"][0]["column_name"] == "UNKNOWN"
         assert len(data["matches"]) == 1
 
-    def test_gaps_create_issues(self, tmp_path: Path) -> None:
+    def test_gaps_create_issues_preview_without_write(self, tmp_path: Path) -> None:
         repo = tmp_path / "repo"
         model_dir = repo / "model"
         model_dir.mkdir(parents=True)
@@ -340,11 +340,117 @@ class TestGapsCli:
             ],
         )
         assert result.exit_code == 0
+        assert "Preview only" in result.output
+        assert "--write" in result.output
+        issue_file = model_dir / "issues" / "ISSUE-GAP-DATA-001.md"
+        assert not issue_file.exists()
+
+    def test_gaps_create_issues_with_write(self, tmp_path: Path) -> None:
+        repo = tmp_path / "repo"
+        model_dir = repo / "model"
+        model_dir.mkdir(parents=True)
+        generated = repo / "generated"
+        generated.mkdir()
+        db = generated / "modelops.db"
+
+        import sqlite3
+
+        conn = sqlite3.connect(str(db))
+        conn.executescript(
+            """
+            CREATE TABLE objects (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                name TEXT,
+                title TEXT,
+                domain TEXT,
+                description TEXT,
+                source_file TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                frontmatter_json TEXT NOT NULL,
+                body TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            );
+            """
+        )
+        conn.commit()
+        conn.close()
+
+        csv_path = tmp_path / "data.csv"
+        csv_path.write_text("UNKNOWN_COL\n1\n", encoding="utf-8")
+
+        result = runner.invoke(
+            app,
+            [
+                "gaps",
+                str(csv_path),
+                "--repo",
+                str(repo),
+                "--create-issues",
+                "--write",
+            ],
+        )
+        assert result.exit_code == 0
         issue_file = model_dir / "issues" / "ISSUE-GAP-DATA-001.md"
         assert issue_file.exists()
         text = issue_file.read_text(encoding="utf-8")
         assert "Issue" in text
         assert "UNKNOWN_COL" in text
+        assert "Audit event written" in result.output
+
+    def test_gaps_create_issues_dry_run(self, tmp_path: Path) -> None:
+        repo = tmp_path / "repo"
+        model_dir = repo / "model"
+        model_dir.mkdir(parents=True)
+        generated = repo / "generated"
+        generated.mkdir()
+        db = generated / "modelops.db"
+
+        import sqlite3
+
+        conn = sqlite3.connect(str(db))
+        conn.executescript(
+            """
+            CREATE TABLE objects (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                name TEXT,
+                title TEXT,
+                domain TEXT,
+                description TEXT,
+                source_file TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                frontmatter_json TEXT NOT NULL,
+                body TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            );
+            """
+        )
+        conn.commit()
+        conn.close()
+
+        csv_path = tmp_path / "data.csv"
+        csv_path.write_text("UNKNOWN_COL\n1\n", encoding="utf-8")
+
+        result = runner.invoke(
+            app,
+            [
+                "gaps",
+                str(csv_path),
+                "--repo",
+                str(repo),
+                "--create-issues",
+                "--dry-run",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "Dry-run" in result.output
+        issue_file = model_dir / "issues" / "ISSUE-GAP-DATA-001.md"
+        assert not issue_file.exists()
 
 
 def test_gap_severity_assignment() -> None:
@@ -546,6 +652,7 @@ class TestGapsPromoteCli:
                 "--repo",
                 str(repo),
                 "--promote-to-proposal",
+                "--write",
             ],
         )
         assert result.exit_code == 0
@@ -554,6 +661,7 @@ class TestGapsPromoteCli:
         text = proposal_file.read_text(encoding="utf-8")
         assert "PatchProposal" in text
         assert "pending_review" in text
+        assert "Audit event written" in result.output
 
 
 def test_detect_dataset_gaps_empty_dataset(tmp_path: Path) -> None:
@@ -1043,6 +1151,7 @@ class TestGapsPromoteCliRepeated:
                 "--repo",
                 str(repo),
                 "--promote-to-proposal",
+                "--write",
             ],
         )
         assert result.exit_code == 0
@@ -1058,6 +1167,7 @@ class TestGapsPromoteCliRepeated:
                 "--repo",
                 str(repo),
                 "--promote-to-proposal",
+                "--write",
             ],
         )
         assert result.exit_code == 0

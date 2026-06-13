@@ -98,3 +98,129 @@ def test_knb1_requires_company_code() -> None:
     )
     summary = validate_objects([ctx, fep], enabled_domain_packs=["sap"])
     assert summary.is_valid
+
+
+
+def test_lfa1_requires_vendor_general() -> None:
+    ctx = ParsedObject(
+        source_path="ctx.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "CTX-VENDOR-GENERAL",
+            "type": "EntityContext",
+            "status": "draft",
+            "context_category": "vendor_general",
+        },
+        body=None,
+        parser_error=None,
+    )
+    fep = ParsedObject(
+        source_path="fep.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "FEP-S4-LFA1-NAME1",
+            "type": "FieldEndpoint",
+            "status": "draft",
+            "endpoint_type": "sap_table_field",
+            "sap_table": "LFA1",
+            "entity_context": "CTX-VENDOR-GENERAL",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([ctx, fep], enabled_domain_packs=["sap"])
+    assert summary.is_valid
+
+
+def test_lfa1_wrong_context_category() -> None:
+    ctx = ParsedObject(
+        source_path="ctx.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "CTX-WRONG",
+            "type": "EntityContext",
+            "status": "draft",
+            "context_category": "vendor_company_code",
+        },
+        body=None,
+        parser_error=None,
+    )
+    fep = ParsedObject(
+        source_path="fep.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "FEP-S4-LFA1-NAME1",
+            "type": "FieldEndpoint",
+            "status": "draft",
+            "endpoint_type": "sap_table_field",
+            "sap_table": "LFA1",
+            "entity_context": "CTX-WRONG",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([ctx, fep], enabled_domain_packs=["sap"])
+    assert not summary.is_valid
+    assert any(r.code == "SAP_CONTEXT_LFA1_REQUIRES_VENDOR_GENERAL" for r in summary.results)
+
+
+def test_lfb1_requires_vendor_company_code() -> None:
+    ctx = ParsedObject(
+        source_path="ctx.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "CTX-VENDOR-COMPANY",
+            "type": "EntityContext",
+            "status": "draft",
+            "context_category": "vendor_company_code",
+        },
+        body=None,
+        parser_error=None,
+    )
+    fep = ParsedObject(
+        source_path="fep.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "FEP-S4-LFB1-AKONT",
+            "type": "FieldEndpoint",
+            "status": "draft",
+            "endpoint_type": "sap_table_field",
+            "sap_table": "LFB1",
+            "entity_context": "CTX-VENDOR-COMPANY",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([ctx, fep], enabled_domain_packs=["sap"])
+    assert summary.is_valid
+
+
+def test_lfm1_requires_vendor_purchasing_org() -> None:
+    ctx = ParsedObject(
+        source_path="ctx.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "CTX-VENDOR-PURCHASING",
+            "type": "EntityContext",
+            "status": "draft",
+            "context_category": "vendor_purchasing_org",
+        },
+        body=None,
+        parser_error=None,
+    )
+    fep = ParsedObject(
+        source_path="fep.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "FEP-S4-LFM1-ZTERM",
+            "type": "FieldEndpoint",
+            "status": "draft",
+            "endpoint_type": "sap_table_field",
+            "sap_table": "LFM1",
+            "entity_context": "CTX-VENDOR-PURCHASING",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([ctx, fep], enabled_domain_packs=["sap"])
+    assert summary.is_valid

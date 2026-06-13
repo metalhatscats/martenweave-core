@@ -168,7 +168,9 @@ def load_change_request(model_path: Path, cr_id: str) -> dict[str, Any] | None:
     return parsed.frontmatter or {}
 
 
-def update_change_request_status(model_path: Path, cr_id: str, new_status: str) -> dict[str, Any]:
+def update_change_request_status(
+    model_path: Path, cr_id: str, new_status: str, dry_run: bool = False
+) -> dict[str, Any]:
     """Transition a ChangeRequest to a new status."""
     if new_status not in _VALID_TRANSITIONS:
         raise ValueError(
@@ -201,12 +203,17 @@ def update_change_request_status(model_path: Path, cr_id: str, new_status: str) 
     if new_status == "implemented":
         frontmatter["implemented_at"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    path.write_text(_render_change_request_markdown(frontmatter), encoding="utf-8")
+    if not dry_run:
+        path.write_text(_render_change_request_markdown(frontmatter), encoding="utf-8")
     return frontmatter
 
 
 def approve_change_request(
-    model_path: Path, cr_id: str, approver: str, skip_risk_check: bool = False
+    model_path: Path,
+    cr_id: str,
+    approver: str,
+    skip_risk_check: bool = False,
+    dry_run: bool = False,
 ) -> dict[str, Any]:
     """Approve a ChangeRequest and record the approver."""
     cr_dir = model_path / "change-requests"
@@ -254,7 +261,8 @@ def approve_change_request(
             frontmatter["risk_level"] = risk.risk_level
             frontmatter["risk_reasons"] = risk.risk_reasons
             frontmatter["risk_triggering_rules"] = risk.triggering_rules
-            path.write_text(_render_change_request_markdown(frontmatter), encoding="utf-8")
+            if not dry_run:
+                path.write_text(_render_change_request_markdown(frontmatter), encoding="utf-8")
             raise ValueError(
                 f"High-risk ChangeRequest requires {min_approvers} distinct approvers; "
                 f"recorded {approved_count}. "
@@ -265,7 +273,8 @@ def approve_change_request(
     frontmatter["risk_level"] = risk.risk_level
     frontmatter["risk_reasons"] = risk.risk_reasons
     frontmatter["risk_triggering_rules"] = risk.triggering_rules
-    path.write_text(_render_change_request_markdown(frontmatter), encoding="utf-8")
+    if not dry_run:
+        path.write_text(_render_change_request_markdown(frontmatter), encoding="utf-8")
     return frontmatter
 
 
@@ -286,7 +295,11 @@ def find_approved_cr_for_proposal(model_path: Path, proposal_id: str) -> dict[st
 
 
 def reject_change_request(
-    model_path: Path, cr_id: str, approver: str, reason: str | None = None
+    model_path: Path,
+    cr_id: str,
+    approver: str,
+    reason: str | None = None,
+    dry_run: bool = False,
 ) -> dict[str, Any]:
     """Reject a ChangeRequest and record the approver."""
     cr_dir = model_path / "change-requests"
@@ -312,5 +325,6 @@ def reject_change_request(
     _record_approval(frontmatter, approver, "rejected")
     if reason:
         frontmatter["rejection_reason"] = reason
-    path.write_text(_render_change_request_markdown(frontmatter), encoding="utf-8")
+    if not dry_run:
+        path.write_text(_render_change_request_markdown(frontmatter), encoding="utf-8")
     return frontmatter
