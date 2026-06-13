@@ -133,6 +133,7 @@ def test_cr_update_status_valid_transition(tmp_path: Path) -> None:
         [
             "change-request",
             "update-status",
+                "--write",
             "CR-TEST-004",
             "approved",
             "--repo",
@@ -169,6 +170,7 @@ def test_cr_update_status_invalid_transition(tmp_path: Path) -> None:
         [
             "change-request",
             "update-status",
+                "--write",
             "CR-TEST-005",
             "pending",
             "--repo",
@@ -344,6 +346,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "approve",
+                "--write",
                 "CR-APPROVE-001",
                 "--repo",
                 str(repo_root),
@@ -397,6 +400,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "approve",
+                "--write",
                 "CR-APPROVE-JSON-001",
                 "--repo",
                 str(repo_root),
@@ -435,6 +439,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "approve",
+                "--write",
                 "CR-APPROVE-BLOCK-001",
                 "--repo",
                 str(repo_root),
@@ -448,6 +453,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "approve",
+                "--write",
                 "CR-APPROVE-BLOCK-001",
                 "--repo",
                 str(repo_root),
@@ -483,6 +489,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "reject",
+                "--write",
                 "CR-APPROVE-REJ-001",
                 "--repo",
                 str(repo_root),
@@ -496,6 +503,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "approve",
+                "--write",
                 "CR-APPROVE-REJ-001",
                 "--repo",
                 str(repo_root),
@@ -532,6 +540,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "approve",
+                "--write",
                 "CR-APPROVE-IMPL-001",
                 "--repo",
                 str(repo_root),
@@ -552,6 +561,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "approve",
+                "--write",
                 "CR-MISSING",
                 "--repo",
                 str(repo_root),
@@ -588,6 +598,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "reject",
+                "--write",
                 "CR-REJECT-001",
                 "--repo",
                 str(repo_root),
@@ -641,6 +652,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "reject",
+                "--write",
                 "CR-REJECT-REASON-001",
                 "--repo",
                 str(repo_root),
@@ -692,6 +704,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "reject",
+                "--write",
                 "CR-REJECT-JSON-001",
                 "--repo",
                 str(repo_root),
@@ -730,6 +743,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "reject",
+                "--write",
                 "CR-REJECT-BLOCK-001",
                 "--repo",
                 str(repo_root),
@@ -743,6 +757,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "reject",
+                "--write",
                 "CR-REJECT-BLOCK-001",
                 "--repo",
                 str(repo_root),
@@ -780,6 +795,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "reject",
+                "--write",
                 "CR-REJECT-IMPL-001",
                 "--repo",
                 str(repo_root),
@@ -800,6 +816,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "reject",
+                "--write",
                 "CR-MISSING",
                 "--repo",
                 str(repo_root),
@@ -836,6 +853,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "approve",
+                "--write",
                 "CR-APPROVED-TO-REJECT-001",
                 "--repo",
                 str(repo_root),
@@ -849,6 +867,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "reject",
+                "--write",
                 "CR-APPROVED-TO-REJECT-001",
                 "--repo",
                 str(repo_root),
@@ -906,6 +925,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "approve",
+                "--write",
                 "CR-AUDIT-001",
                 "--repo",
                 str(repo_root),
@@ -949,6 +969,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "reject",
+                "--write",
                 "CR-AUDIT-REJ-001",
                 "--repo",
                 str(repo_root),
@@ -1006,6 +1027,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "approve",
+                "--write",
                 "CR-NOTIF-001",
                 "--repo",
                 str(repo_root),
@@ -1061,6 +1083,7 @@ class TestChangeRequestApproveRejectCli:
             [
                 "change-request",
                 "reject",
+                "--write",
                 "CR-NOTIF-REJ-001",
                 "--repo",
                 str(repo_root),
@@ -1079,3 +1102,201 @@ class TestChangeRequestApproveRejectCli:
         reject_events = [e for e in events if e.event_type == "change_request_rejected"]
         assert len(reject_events) >= 1
         assert any(e.recipient_id == "alice" for e in reject_events)
+
+
+
+class TestChangeRequestWriteGate:
+    def test_cr_approve_default_does_not_write(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-WRITE-001",
+                "--title",
+                "Write Gate",
+                "--repo",
+                str(repo_root),
+            ],
+        )
+
+        cr_path = model_dir / "change-requests" / "CR-WRITE-001.md"
+        original_text = cr_path.read_text(encoding="utf-8")
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "approve",
+                "CR-WRITE-001",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "alice",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "Preview only" in result.output
+        assert cr_path.read_text(encoding="utf-8") == original_text
+
+    def test_cr_approve_write_modifies_file(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-WRITE-002",
+                "--title",
+                "Write Gate",
+                "--repo",
+                str(repo_root),
+            ],
+        )
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "approve",
+                "CR-WRITE-002",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "alice",
+                "--write",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "approved by alice" in result.output
+
+        result = runner.invoke(
+            app,
+            ["change-request", "show", "CR-WRITE-002", "--repo", str(repo_root), "--json"],
+        )
+        data = json.loads(result.output)
+        assert data["status"] == "approved"
+
+    def test_cr_reject_dry_run_does_not_write(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-WRITE-003",
+                "--title",
+                "Dry Run",
+                "--repo",
+                str(repo_root),
+            ],
+        )
+
+        cr_path = model_dir / "change-requests" / "CR-WRITE-003.md"
+        original_text = cr_path.read_text(encoding="utf-8")
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "reject",
+                "CR-WRITE-003",
+                "--repo",
+                str(repo_root),
+                "--approver",
+                "bob",
+                "--dry-run",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "Dry-run" in result.output
+        assert cr_path.read_text(encoding="utf-8") == original_text
+
+    def test_cr_update_status_default_does_not_write(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-WRITE-004",
+                "--title",
+                "Status Write Gate",
+                "--repo",
+                str(repo_root),
+            ],
+        )
+
+        cr_path = model_dir / "change-requests" / "CR-WRITE-004.md"
+        original_text = cr_path.read_text(encoding="utf-8")
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "update-status",
+                "CR-WRITE-004",
+                "approved",
+                "--repo",
+                str(repo_root),
+            ],
+        )
+        assert result.exit_code == 0
+        assert "Preview only" in result.output
+        assert cr_path.read_text(encoding="utf-8") == original_text
+
+    def test_cr_update_status_write_emits_audit_event(self, tmp_path: Path) -> None:
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        repo_root = tmp_path
+
+        runner.invoke(
+            app,
+            [
+                "change-request",
+                "create",
+                "--id",
+                "CR-WRITE-005",
+                "--title",
+                "Status Audit",
+                "--repo",
+                str(repo_root),
+            ],
+        )
+
+        result = runner.invoke(
+            app,
+            [
+                "change-request",
+                "update-status",
+                "CR-WRITE-005",
+                "approved",
+                "--repo",
+                str(repo_root),
+                "--write",
+            ],
+        )
+        assert result.exit_code == 0
+
+        from modelops_core.reports.audit_service import AuditEventService
+
+        service = AuditEventService(repo_root)
+        events = service.read_events()
+        assert any(e.event_type == "change_request_status_updated" for e in events)

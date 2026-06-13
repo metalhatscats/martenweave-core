@@ -31,6 +31,9 @@ context_rules:
   KNB1: customer_company_code
   KNVP: customer_partner_function
   BUT000: bp_central
+  LFA1: vendor_general
+  LFB1: vendor_company_code
+  LFM1: vendor_purchasing_org
 ```
 
 ## Registration

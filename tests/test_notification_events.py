@@ -139,6 +139,7 @@ def test_cli_cr_approve_emits_event(tmp_path: Path) -> None:
             "approved",
             "--repo",
             str(tmp_path),
+            "--write",
         ],
     )
     assert result.exit_code == 0

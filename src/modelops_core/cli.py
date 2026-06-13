@@ -486,6 +486,12 @@ def gaps(
         False, "--promote-to-proposal", help="Promote gaps to a draft PatchProposal."
     ),
     check_model: bool = typer.Option(False, "--check-model", help="Also check model-side gaps."),
+    write: bool = typer.Option(
+        False, "--write", help="Persist Issue or PatchProposal files created from gaps."
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Preview intended changes without writing files."
+    ),
 ) -> None:
     """Detect dataset-to-model gaps by comparing dataset columns against FieldEndpoints."""
     repo_root = _resolve_repo(repo)
@@ -649,47 +655,98 @@ def gaps(
             )
         console.print(match_table)
 
+    if dry_run and write:
+        console.print("[red]Cannot use both --dry-run and --write.[/red]")
+        raise typer.Exit(code=1)
+
+    if (create_issues and all_gaps) or (promote_to_proposal and all_dataset_gaps):
+        if not write and not dry_run:
+            console.print(
+                "\n[yellow]Preview only: mutation flags were given but --write was not passed. "
+                "Use --write to persist these changes.[/yellow]"
+            )
+            if create_issues and all_gaps:
+                console.print(f"  Would create {len(all_gaps)} Issue(s):")
+                for idx in range(1, len(all_gaps) + 1):
+                    console.print(f"    ISSUE-GAP-{dataset_id.upper()}-{idx:03d}.md")
+            if promote_to_proposal and all_dataset_gaps:
+                console.print(
+                    f"  Would promote {len(all_dataset_gaps)} gap(s) to a draft PatchProposal."
+                )
+            raise typer.Exit()
+
+    created_files: list[str] = []
     if create_issues and all_gaps:
-        issues_dir = model_path / "issues"
-        issues_dir.mkdir(parents=True, exist_ok=True)
-        for idx, g in enumerate(all_gaps, start=1):
-            issue_id = f"ISSUE-GAP-{dataset_id.upper()}-{idx:03d}"
-            issue_fm = {
-                "id": issue_id,
-                "type": "Issue",
-                "status": "open",
-                "name": f"Gap: {g.gap_code}",
-                "issue_type": "dataset_gap",
-                "severity": g.severity,
-                "source_dataset_id": dataset_id,
-                "source_column": g.column_name,
-                "source_gap_code": g.gap_code,
-                "recommended_action": g.message,
-            }
-            issue_path = issues_dir / f"{issue_id}.md"
-            body_text = f"# {g.gap_code}\n\n{g.message}\n"
-            yaml_text = yaml.safe_dump(
-                issue_fm, default_flow_style=False, sort_keys=False, allow_unicode=True
+        if dry_run:
+            console.print(
+                f"\n[yellow]Dry-run: would create {len(all_gaps)} Issue(s).[/yellow]"
             )
-            issue_path.write_text(
-                f"---\n{yaml_text}---\n\n{body_text}\n",
-                encoding="utf-8",
-            )
-            console.print(f"[green]Created {issue_path.name}[/green]")
+        else:
+            issues_dir = model_path / "issues"
+            issues_dir.mkdir(parents=True, exist_ok=True)
+            for idx, g in enumerate(all_gaps, start=1):
+                issue_id = f"ISSUE-GAP-{dataset_id.upper()}-{idx:03d}"
+                issue_fm = {
+                    "id": issue_id,
+                    "type": "Issue",
+                    "status": "open",
+                    "name": f"Gap: {g.gap_code}",
+                    "issue_type": "dataset_gap",
+                    "severity": g.severity,
+                    "source_dataset_id": dataset_id,
+                    "source_column": g.column_name,
+                    "source_gap_code": g.gap_code,
+                    "recommended_action": g.message,
+                }
+                issue_path = issues_dir / f"{issue_id}.md"
+                body_text = f"# {g.gap_code}\n\n{g.message}\n"
+                yaml_text = yaml.safe_dump(
+                    issue_fm, default_flow_style=False, sort_keys=False, allow_unicode=True
+                )
+                issue_path.write_text(
+                    f"---\n{yaml_text}---\n\n{body_text}\n",
+                    encoding="utf-8",
+                )
+                created_files.append(str(issue_path.resolve()))
+                console.print(f"[green]Created {issue_path.name}[/green]")
 
     if promote_to_proposal and all_dataset_gaps:
-        from modelops_core.gaps.gap_detection import (
-            DatasetGapReport,
-            promote_gaps_to_proposal,
-        )
+        if dry_run:
+            console.print(
+                f"\n[yellow]Dry-run: would promote {len(all_dataset_gaps)} gap(s) "
+                "to a draft PatchProposal.[/yellow]"
+            )
+        else:
+            from modelops_core.gaps.gap_detection import (
+                DatasetGapReport,
+                promote_gaps_to_proposal,
+            )
 
-        combined_report = DatasetGapReport(
-            dataset_id=dataset_id,
-            matches=all_matches,
-            gaps=all_dataset_gaps,
+            combined_report = DatasetGapReport(
+                dataset_id=dataset_id,
+                matches=all_matches,
+                gaps=all_dataset_gaps,
+            )
+            proposal_path = promote_gaps_to_proposal(combined_report, model_path)
+            created_files.append(str(proposal_path.resolve()))
+            console.print(f"[green]Created PatchProposal {proposal_path.name}[/green]")
+
+    if created_files:
+        service = AuditEventService(repo_root)
+        event = create_audit_event(
+            event_type="gap_mutation_applied",
+            actor="system",
+            status="success",
+            command=(
+                "gaps --create-issues"
+                if create_issues
+                else "gaps --promote-to-proposal"
+            ),
+            changed_object_ids=[Path(f).stem for f in created_files],
+            outputs={"created_files": created_files},
         )
-        proposal_path = promote_gaps_to_proposal(combined_report, model_path)
-        console.print(f"[green]Created PatchProposal {proposal_path.name}[/green]")
+        service.emit(event)
+        console.print("  Audit event written")
 
 
 @app.command("import-drive")
@@ -2445,13 +2502,20 @@ def cr_update_status(
     status: str = typer.Argument(..., help="New status."),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+    write: bool = typer.Option(False, "--write", help="Persist the status change."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Preview the status change."),
 ) -> None:
     """Update the status of a ChangeRequest."""
+    if dry_run and write:
+        console.print("[red]Cannot use both --dry-run and --write.[/red]")
+        raise typer.Exit(code=1)
+
     repo_root = _resolve_repo(repo)
     model_path = resolve_model_path(repo_root)
 
+    is_preview = not write and not dry_run
     try:
-        cr = update_change_request_status(model_path, cr_id, status)
+        cr = update_change_request_status(model_path, cr_id, status, dry_run=not write)
     except ValueError as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
@@ -2459,7 +2523,34 @@ def cr_update_status(
     if json_output:
         print(json.dumps(cr, indent=2, default=str))
     else:
-        console.print(f"[green]ChangeRequest {cr_id} updated to '{status}'[/green]")
+        if is_preview:
+            console.print(
+                f"[yellow]Preview only: ChangeRequest {cr_id} would be updated to "
+                f"'{status}'. Use --write to persist.[/yellow]"
+            )
+        elif dry_run:
+            console.print(
+                f"[yellow]Dry-run: ChangeRequest {cr_id} would be updated to "
+                f"'{status}'. No files were modified.[/yellow]"
+            )
+        else:
+            console.print(f"[green]ChangeRequest {cr_id} updated to '{status}'[/green]")
+
+    if not write:
+        raise typer.Exit()
+
+    service = AuditEventService(repo_root)
+    service.emit(
+        create_audit_event(
+            event_type="change_request_status_updated",
+            actor="system",
+            status="success",
+            command="change-request update-status",
+            proposal_id=cr_id,
+            changed_object_ids=cr.get("affected_objects") or [],
+            outputs={"new_status": status, "previous_status": cr.get("status")},
+        )
+    )
 
     # Emit notification events for status transition
     event_type_map = {
@@ -2500,13 +2591,26 @@ def cr_approve(
         False, "--skip-risk-check", help="Skip high-risk ChangeRequest blocking."
     ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+    write: bool = typer.Option(False, "--write", help="Persist the approval."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Preview the approval."),
 ) -> None:
     """Approve a ChangeRequest."""
+    if dry_run and write:
+        console.print("[red]Cannot use both --dry-run and --write.[/red]")
+        raise typer.Exit(code=1)
+
     repo_root = _resolve_repo(repo)
     model_path = resolve_model_path(repo_root)
 
+    is_preview = not write and not dry_run
     try:
-        cr = approve_change_request(model_path, cr_id, approver, skip_risk_check=skip_risk_check)
+        cr = approve_change_request(
+            model_path,
+            cr_id,
+            approver,
+            skip_risk_check=skip_risk_check,
+            dry_run=not write,
+        )
     except ValueError as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
@@ -2514,11 +2618,25 @@ def cr_approve(
     if json_output:
         print(json.dumps(cr, indent=2, default=str))
     else:
-        console.print(f"[green]ChangeRequest {cr_id} approved by {approver}[/green]")
+        if is_preview:
+            console.print(
+                f"[yellow]Preview only: ChangeRequest {cr_id} would be approved by "
+                f"{approver}. Use --write to persist.[/yellow]"
+            )
+        elif dry_run:
+            console.print(
+                f"[yellow]Dry-run: ChangeRequest {cr_id} would be approved by "
+                f"{approver}. No files were modified.[/yellow]"
+            )
+        else:
+            console.print(f"[green]ChangeRequest {cr_id} approved by {approver}[/green]")
         if cr.get("approvals"):
             console.print(f"  Approvals: {len(cr['approvals'])}")
         if cr.get("risk_level"):
             console.print(f"  Risk level: {cr['risk_level']}")
+
+    if not write:
+        raise typer.Exit()
 
     service = AuditEventService(repo_root)
     outputs: dict[str, Any] = {"approver": approver, "approvals": cr.get("approvals", [])}
@@ -2570,13 +2688,22 @@ def cr_reject(
     approver: str = typer.Option(..., "--approver", help="Approver ID."),
     reason: str | None = typer.Option(None, "--reason", help="Reason for rejection."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+    write: bool = typer.Option(False, "--write", help="Persist the rejection."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Preview the rejection."),
 ) -> None:
     """Reject a ChangeRequest."""
+    if dry_run and write:
+        console.print("[red]Cannot use both --dry-run and --write.[/red]")
+        raise typer.Exit(code=1)
+
     repo_root = _resolve_repo(repo)
     model_path = resolve_model_path(repo_root)
 
+    is_preview = not write and not dry_run
     try:
-        cr = reject_change_request(model_path, cr_id, approver, reason=reason)
+        cr = reject_change_request(
+            model_path, cr_id, approver, reason=reason, dry_run=not write
+        )
     except ValueError as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
@@ -2584,7 +2711,21 @@ def cr_reject(
     if json_output:
         print(json.dumps(cr, indent=2, default=str))
     else:
-        console.print(f"[yellow]ChangeRequest {cr_id} rejected by {approver}[/yellow]")
+        if is_preview:
+            console.print(
+                f"[yellow]Preview only: ChangeRequest {cr_id} would be rejected by "
+                f"{approver}. Use --write to persist.[/yellow]"
+            )
+        elif dry_run:
+            console.print(
+                f"[yellow]Dry-run: ChangeRequest {cr_id} would be rejected by "
+                f"{approver}. No files were modified.[/yellow]"
+            )
+        else:
+            console.print(f"[yellow]ChangeRequest {cr_id} rejected by {approver}[/yellow]")
+
+    if not write:
+        raise typer.Exit()
 
     service = AuditEventService(repo_root)
     service.emit(
