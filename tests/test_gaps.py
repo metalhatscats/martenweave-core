@@ -14,7 +14,7 @@ from modelops_core.gaps.gap_detection import (
     _find_matches,
     detect_dataset_gaps,
 )
-from modelops_core.imports.dataset_profiler import ColumnProfile, DatasetProfile
+from modelops_core.imports.dataset_profiler import ColumnProfile, DatasetProfile, profile_csv
 
 runner = CliRunner()
 
@@ -1307,3 +1307,45 @@ class TestGapsMultiSheetXlsx:
         assert result.exit_code == 0
         assert "Coverage" in result.output
         assert "Sheet" in result.output
+
+
+class TestMessyDatasetGaps:
+    def test_messy_customer_dataset_reports_expected_gaps(self, sample_repo: Path) -> None:
+        csv_path = sample_repo / "data" / "samples" / "customer_messy.csv"
+        profile = profile_csv(csv_path, dataset_id="customer_messy")
+        db_path = sample_repo / "generated" / "modelops.db"
+        report = detect_dataset_gaps(profile, db_path)
+
+        gap_codes = {g.gap_code for g in report.gaps}
+        assert "DUPLICATE_COLUMN_NAME" in gap_codes
+        assert "UNMODELED_DATASET_COLUMN" in gap_codes
+
+        gap_columns = {g.column_name for g in report.gaps}
+        assert "CUSTOMER_ID" in gap_columns
+        assert "SALES_ORG" in gap_columns
+        assert "LEGACY_STATUS" in gap_columns
+        assert "NAME_ORG1" in gap_columns
+
+        matched_endpoints = {m.matched_endpoint_id for m in report.matches}
+        assert "FEP-S4-BUT000-NAME-ORG1" in matched_endpoints
+        assert "FEP-LEGACY-CUST-GROUP" in matched_endpoints
+        assert "FEP-S4-KNVV-KDGRP" in matched_endpoints
+
+        assert report.coverage is not None
+        assert report.coverage.total_columns == 7
+        assert report.coverage.matched_columns == 3
+        assert report.coverage.unmatched_columns == 3
+        assert report.coverage.duplicate_columns == 1
+        assert report.coverage.match_rate == round(3 / 7, 4)
+
+    def test_clean_customer_dataset_has_full_coverage(self, sample_repo: Path) -> None:
+        csv_path = sample_repo / "data" / "samples" / "customer_clean.csv"
+        profile = profile_csv(csv_path, dataset_id="customer_clean")
+        db_path = sample_repo / "generated" / "modelops.db"
+        report = detect_dataset_gaps(profile, db_path)
+
+        assert report.gaps == []
+        assert report.coverage is not None
+        assert report.coverage.total_columns == 7
+        assert report.coverage.matched_columns == 7
+        assert report.coverage.match_rate == 1.0

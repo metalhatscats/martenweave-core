@@ -20,7 +20,8 @@ Stable public contract fields by command:
 - profile-dataset --json: dataset_id, row_count, column_count, columns, status
 - infer-model --json: id, type, status, operations, affected_objects,
   validation_status, assumptions, human_checks
-- propose-patch --json: is_safe, proposal, assumptions, human_checks
+- propose-patch --json: is_safe, proposal, assumptions, human_checks,
+  generated_by
 - proposal impact --json: proposal_id, high_risk, risk_assessment,
   affected_objects, operations
 - change-request create --json: id, status, title, path
@@ -696,7 +697,26 @@ class TestProposalContract:
         assert "proposal" in data
         assert "assumptions" in data
         assert "human_checks" in data
+        assert data.get("generated_by") == "no_provider_scaffold"
         assert not proposal_path.exists()
+
+    def test_propose_patch_warns_when_scaffold(self, sample_repo: Path) -> None:
+        note = sample_repo / "note.md"
+        note.write_text("Update CUSTOMER GROUP semantics.", encoding="utf-8")
+        result = runner.invoke(
+            app,
+            [
+                "propose-patch",
+                "--from",
+                str(note),
+                "--repo",
+                str(sample_repo),
+                "--dry-run",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert "Warning: no AI provider is configured" in result.output
+        assert "scaffold" in result.output.lower()
 
     def test_proposal_apply_dry_run_output(self, repo_with_proposal: Path) -> None:
         # dry-run requires the proposal to be in 'accepted' status

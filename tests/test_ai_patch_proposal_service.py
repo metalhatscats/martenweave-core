@@ -33,6 +33,8 @@ class TestBuildPatchProposalFromNote:
         assert result["proposal"]["id"] == "PP-SCAFFOLD-001"
         assert result["assumptions"]
         assert result["human_checks"]
+        assert result["generated_by"] == "no_provider_scaffold"
+        assert result["proposal"]["generated_by"] == "no_provider_scaffold"
 
     def test_customer_group_keyword_triggers_scaffold_operation(self) -> None:
         result = build_patch_proposal_from_note("Update the CUSTOMER GROUP logic")
@@ -142,12 +144,39 @@ class TestBuildPatchProposalFromNote:
         assert proposal["type"] == "PatchProposal"
         assert proposal["status"] == "pending_review"
         assert proposal["created_by"] == "ai"
+        assert proposal["generated_by"] == "no_provider_scaffold"
         assert "created_at" in proposal
         assert "validation_status" in proposal
         assert "validation_results" in proposal
         assert isinstance(result["assumptions"], list)
         assert isinstance(result["human_checks"], list)
         assert isinstance(result["validation"], list)
+
+    def test_custom_adapter_without_generated_by(self) -> None:
+        class CustomAdapter:
+            def generate_candidates(self, context: AIContextBundle) -> list[AICandidateOutput]:
+                return [
+                    AICandidateOutput(
+                        proposal_id="PP-CUSTOM-001",
+                        title="Custom Proposal",
+                        operations=[
+                            {
+                                "op": "update_object",
+                                "object_id": "DOMAIN-TEST",
+                                "object_type": "MasterDataDomain",
+                                "target_path": "name",
+                                "after": "Updated",
+                                "reason": "Test",
+                            }
+                        ],
+                        affected_objects=["DOMAIN-TEST"],
+                    )
+                ]
+
+        result = build_patch_proposal_from_note("any note", adapter=CustomAdapter())
+        assert result["is_safe"] is True
+        assert "generated_by" not in result["proposal"]
+        assert result.get("generated_by") is None
 
 
 class TestGetDefaultAdapter:

@@ -85,6 +85,9 @@ The examples below use Option A. Replace `.venv/bin/modelops` with `modelops` if
 # Propose a patch from a note
 .venv/bin/modelops propose-patch --from ./note.md --repo ./my-model
 
+# Run a migration readiness assessment
+.venv/bin/modelops assessment --repo ./my-model
+
 # Clean generated artifacts (dry-run first)
 .venv/bin/modelops clean --repo ./my-model --dry-run
 ```
@@ -100,12 +103,14 @@ For a step-by-step walkthrough using the included examples, see [docs/first-15-m
 | `init` | Scaffold a new model repository |
 | `validate` | Run deterministic validation on canonical files |
 | `build-index` | Build SQLite index and optional JSONL exports |
+| `index-fresh` | Check whether the generated index is stale |
 | `health` | Show repository health report |
+| `doctor` | Run diagnostics: version, config, paths, index freshness, validation |
 | `scorecard` | Show governance readiness scorecard |
+| `analyze` | Analyze model completeness, risk, and readiness |
 | `gap-report` | Consolidated gap summary across all sources (model coverage) |
 | `gaps` | Dataset-to-model gap detection (requires a dataset path) |
 | `owners` | Ownership coverage and steward workload |
-| `analyze` | Analyze model completeness, risk, and readiness |
 | `trace` | Trace upstream/downstream relationships for an object |
 | `impact` | Generate impact report for an object or proposal |
 | `search` | Search indexed objects by keyword |
@@ -114,7 +119,10 @@ For a step-by-step walkthrough using the included examples, see [docs/first-15-m
 | `proposal` | Review and apply PatchProposals (subcommands: `impact`, `apply`, `validate`, `report`) |
 | `change-request` | Create and manage ChangeRequests (subcommands: `create`, `approve`, `reject`, `list`, `show`, `update-status`) |
 | `decisions` | Browse and inspect Decision objects (subcommands: `list`, `show`, `report`) |
+| `assessment` | Migration model readiness assessment |
 | `export-model` | Export canonical objects to CSV or XLSX |
+| `export-schema` | Export JSON Schema for canonical object types |
+| `export-sheets` | Export canonical model objects to Google Sheets |
 | `docs-build` | Generate static Markdown docs from the index |
 | `usage-report` | Show aggregated usage report from telemetry |
 | `audit-log` | Query the append-only audit log |
@@ -125,7 +133,10 @@ For a step-by-step walkthrough using the included examples, see [docs/first-15-m
 | `profile-dataset` | Profile a CSV/XLSX dataset |
 | `infer-model` | Infer draft model objects from a dataset profile |
 | `import-model-sheet` | Import spreadsheet edits as a PatchProposal |
+| `import-drive` | Import and profile a CSV/XLSX file from Google Drive |
+| `import-sheet` | Import a Google Sheet as a PatchProposal |
 | `sources` | List registered external sources |
+| `source-show` | Show details for a single registered source |
 | `issue-draft` | Generate GitHub-ready issue drafts |
 | `git-bundle` | Generate a GitHub-ready change bundle |
 | `publish-issue` | Publish an issue draft to GitHub |
@@ -139,6 +150,11 @@ Use `--help` on any command for full options:
 ```bash
 .venv/bin/modelops <command> --help
 ```
+
+> **Note on `serve` and `mcp`:** These commands start local, agent-facing
+> integration servers so that pipelines, IDEs, and other agents can query the
+> model registry programmatically. They are **not** a user-facing product UI.
+> Martenweave remains a CLI-driven, backend-first core library.
 
 ## Example Models
 
@@ -166,6 +182,18 @@ Run validation against either:
 .venv/bin/modelops validate --repo examples/customer_bp_model
 .venv/bin/modelops validate --repo examples/supplier_vendor_model
 ```
+
+## Migration Readiness Assessment
+
+Run a structured assessment to get a scorecard and gap list for a model:
+
+```bash
+.venv/bin/modelops build-index --repo examples/customer_bp_model --jsonl
+.venv/bin/modelops assessment --repo examples/customer_bp_model
+```
+
+The assessment reports coverage, risk, ownership, and dataset gap findings that
+are useful for mock-load and cutover readiness conversations.
 
 ## Architecture
 

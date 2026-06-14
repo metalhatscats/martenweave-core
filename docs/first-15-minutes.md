@@ -81,6 +81,29 @@ This creates:
 
 This compares dataset columns against your model's FieldEndpoints and reports matches, gaps, and coverage.
 
+### Realistic messy dataset
+
+The customer example includes a deliberately messy CSV so you can see concrete
+gap types. Compare it with the clean reference:
+
+```bash
+.venv/bin/modelops gaps \
+  examples/customer_bp_model/data/samples/customer_messy.csv \
+  --repo examples/customer_bp_model
+
+.venv/bin/modelops gaps \
+  examples/customer_bp_model/data/samples/customer_clean.csv \
+  --repo examples/customer_bp_model
+```
+
+The messy dataset produces:
+
+- A `DUPLICATE_COLUMN_NAME` gap for the repeated `NAME_ORG1` column.
+- `UNMODELED_DATASET_COLUMN` gaps for `CUSTOMER_ID`, `SALES_ORG`, and `LEGACY_STATUS`.
+- Matches for renamed/legacy columns such as `CUST_GROUP` and `KDGRP`.
+
+The clean dataset should report 100% coverage.
+
 ## 7. Review a proposal (dry-run)
 
 If a PatchProposal exists in `model/patch-proposals/`:

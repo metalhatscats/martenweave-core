@@ -2194,6 +2194,13 @@ def propose_patch(
             console.print("[red]No proposal generated.[/red]")
         raise typer.Exit(code=1)
 
+    is_scaffold = result.get("generated_by") == "no_provider_scaffold"
+    if is_scaffold and not json_output:
+        console.print(
+            "[yellow]Warning: no AI provider is configured. "
+            "This proposal is a deterministic scaffold and must be reviewed before use.[/yellow]"
+        )
+
     path = None
     if not dry_run:
         path = write_patch_proposal(proposal, model_path)

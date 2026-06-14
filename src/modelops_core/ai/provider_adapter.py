@@ -47,6 +47,7 @@ class AICandidateOutput:
     assumptions: list[str] = field(default_factory=list)
     human_checks: list[str] = field(default_factory=list)
     source_evidence: str | None = None
+    generated_by: str | None = None
 
 
 class AIProviderError(Exception):
@@ -75,6 +76,10 @@ class AIProviderAdapter(Protocol):
 
 class NoProviderAdapter:
     """Deterministic scaffold adapter used when no AI provider is configured."""
+
+    provider_name: str = "none"
+    model: str | None = None
+    is_scaffold: bool = True
 
     def generate_candidates(self, context: AIContextBundle) -> list[AICandidateOutput]:
         note = context.note.upper()
@@ -108,6 +113,7 @@ class NoProviderAdapter:
                 assumptions=assumptions,
                 human_checks=human_checks,
                 source_evidence=context.note[:500],
+                generated_by="no_provider_scaffold",
             )
         ]
 
@@ -144,6 +150,7 @@ class ProviderOutputValidator:
             affected_objects=candidate.affected_objects,
             source_evidence=candidate.source_evidence,
             created_by="ai",
+            generated_by=candidate.generated_by,
         )
 
         validation_results = validate_patch_proposal(proposal)
@@ -159,4 +166,5 @@ class ProviderOutputValidator:
             "markdown": "",
             "assumptions": candidate.assumptions,
             "human_checks": candidate.human_checks,
+            "generated_by": candidate.generated_by,
         }
