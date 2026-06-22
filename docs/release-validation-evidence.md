@@ -32,24 +32,25 @@ Environment:
 |---|---|---|
 | `.venv/bin/modelops config-guard --repo . --json` | Failed locally | Detected potential `api_key` secrets in ignored local `.env` at lines 1, 2, and 4 |
 | `.venv/bin/modelops config-guard --repo . --mode release --json` | Completed | Reported the same ignored `.env` findings and no `repo_config`, `gitignore`, or `repo_secrets` findings |
+| Clean committed-tree worktree plus `.venv/bin/modelops config-guard --repo /tmp/martenweave-core-release-clean-check --json` | Passed | Returned empty `env_file`, `repo_config`, `gitignore`, and `repo_secrets` findings |
 
-Interpretation: the local `.env` file is ignored and must not be staged. This is environment-only
-noise for this working copy, but the release should not be called fully clean until the maintainer
-either removes/moves the local `.env` or explicitly accepts this documented local-only finding.
+Interpretation: the local `.env` file is ignored and must not be staged. It remains a working-copy
+finding only. A detached clean worktree created from the committed release branch passed
+`config-guard` with no findings, so the committed release tree is clean for this check.
 
 ## Public Site Validation
 
 | Command | Result | Evidence |
 |---|---|---|
-| `npm run build:docs` | Passed | Generated 10 static browser-readable docs routes |
+| `npm run build:docs` | Passed | Generated 11 static browser-readable docs routes |
 | `npm run validate` | Passed | Checked generated docs, root assets, anchors, required copy, sitemap, AI discovery files, and public docs routes |
 | `python3 -m http.server 4174` plus HTTP checks | Passed | `/`, `/docs.html`, `/docs/quickstart.html`, `/docs/product.html`, `/docs/architecture.html`, `/docs/ai-governance.html`, `/llms.txt`, `/llms-full.txt`, `/ai.json`, and `/sitemap.xml` returned HTTP 200 |
+| Playwright CLI screenshot pass | Passed | Captured committed homepage desktop/mobile, docs index, and quickstart docs screenshots; separately checked `/docs/release-proof.html` rendering |
 
 Browser-path note: the in-app Browser runtime rejected `http://127.0.0.1:4174/` under its URL
-policy and crashed the tab. Static validation and HTTP route checks passed, but desktop/mobile
-visual screenshots were not captured in this run. Treat browser screenshot proof as a remaining
-release-candidate task unless the Browser policy is adjusted or a maintainer explicitly approves a
-separate Playwright fallback run.
+policy and crashed the tab. The frontend testing fallback used Playwright CLI with Chromium after
+the Browser invocation failed. The committed site branch includes browser-readable release proof at
+`/docs/release-proof.html`, backed by screenshots in `assets/screenshots/`.
 
 ## Generated Artifacts
 
