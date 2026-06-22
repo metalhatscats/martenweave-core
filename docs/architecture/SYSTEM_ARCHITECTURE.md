@@ -1202,21 +1202,20 @@ CLI commands should call the same services as API.
 Recommended commands:
 
 ```bash
-modelops init
-modelops validate
-modelops build-index
-modelops health
-modelops catalog attributes
-modelops show ATTR-CUST-SALES-CUSTOMER-GROUP
-modelops lineage ATTR-CUST-SALES-CUSTOMER-GROUP
-modelops impact FEP-S4-KNVV-KDGRP
-modelops profile-dataset DATASET-CUSTOMER-SALES-AREA-LOAD
-modelops detect-gaps DATASET-CUSTOMER-SALES-AREA-LOAD
-modelops propose-patch --from notes/ch01-a17.md
-modelops approve-patch PATCH-0021
-modelops reject-patch PATCH-0021
-modelops generate-report ams-handover
-modelops serve
+modelops init ./my-model
+modelops validate --repo ./my-model
+modelops build-index --repo ./my-model --jsonl
+modelops health --repo ./my-model
+modelops search "customer group" --repo ./my-model
+modelops query --type Attribute --repo ./my-model
+modelops trace ATTR-CUST-SALES-CUSTOMER-GROUP --repo ./my-model
+modelops impact FEP-S4-KNVV-KDGRP --repo ./my-model
+modelops profile-dataset ./data/customer_sales_area.csv --repo ./my-model
+modelops gaps ./data/customer_sales_area.csv --repo ./my-model --check-model
+modelops propose-patch --from notes/ch01-a17.md --repo ./my-model
+modelops proposal validate PP-SCAFFOLD-001 --repo ./my-model
+modelops proposal impact PP-SCAFFOLD-001 --repo ./my-model
+modelops serve --repo ./my-model
 ```
 
 CLI is required for:

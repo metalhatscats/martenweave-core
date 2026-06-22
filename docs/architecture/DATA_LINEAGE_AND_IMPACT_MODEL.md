@@ -2254,15 +2254,12 @@ Example response:
 Recommended commands:
 
 ```bash
-modelops lineage ATTR-CUST-SALES-CUSTOMER-GROUP
-modelops lineage FEP-S4-KNVV-KDGRP
-modelops lineage --from FEP-LEGACY-CUSTOMER-GROUP --to FEP-S4-KNVV-KDGRP
-
-modelops impact ATTR-CUST-SALES-CUSTOMER-GROUP
-modelops impact VLIST-S4-KNVV-KDGRP --change-type value_list_updated
-modelops impact DATASET-CUSTOMER-SALES-AREA-LOAD --direction downstream
-
-modelops report impact ATTR-CUST-SALES-CUSTOMER-GROUP --out generated/reports/impact/
+modelops trace ATTR-CUST-SALES-CUSTOMER-GROUP --repo ./my-model
+modelops trace FEP-S4-KNVV-KDGRP --repo ./my-model --direction both
+modelops impact ATTR-CUST-SALES-CUSTOMER-GROUP --repo ./my-model
+modelops impact FEP-S4-KNVV-KDGRP --repo ./my-model --direction downstream
+modelops impact ATTR-CUST-SALES-CUSTOMER-GROUP --repo ./my-model --format markdown \
+  --output generated/reports/impact/ATTR-CUST-SALES-CUSTOMER-GROUP.md
 ```
 
 ---

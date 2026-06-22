@@ -2,6 +2,8 @@
 
 This document defines how Martenweave Core is versioned, built, and released.
 
+For the complete go/no-go checklist, see [release-checklist.md](release-checklist.md).
+
 ## Versioning Policy
 
 Martenweave Core follows [Semantic Versioning 2.0.0](https://semver.org/):
@@ -19,19 +21,24 @@ Both must match before a release commit.
 
 ## Release Checklist
 
-- [ ] All tests pass: `pytest tests -v`
-- [ ] Lint passes: `ruff check .`
-- [ ] Example models validate: `modelops validate --repo examples/*`
-- [ ] Build index succeeds: `modelops build-index --repo examples/customer_bp_model --jsonl`
+- [ ] All tests pass: `.venv/bin/python -m pytest`
+- [ ] Lint passes: `.venv/bin/python -m ruff check .`
+- [ ] Format check passes: `.venv/bin/python -m ruff format --check .`
+- [ ] JSON smoke passes: `bash scripts/smoke_test.sh`
+- [ ] Release smoke passes: `bash scripts/release_smoke.sh`
+- [ ] Example models validate and build indexes
 - [ ] Version is updated in `pyproject.toml` and `src/modelops_core/__version__.py`
 - [ ] `CHANGELOG.md` is updated for this release
 - [ ] `docs/release.md` is still accurate
-- [ ] Config guard passes: `modelops config-guard --repo . --json`
+- [ ] Known limitations are current: `docs/known-limitations.md`
+- [ ] Open-source docs exist: `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, `SUPPORT.md`
+- [ ] Local config guard reviewed: `.venv/bin/modelops config-guard --repo . --json`
+- [ ] Release config guard passes: `.venv/bin/modelops config-guard --repo . --mode release --json`
 - [ ] No secrets or raw sensitive data in commits
 - [ ] Package builds locally:
   ```bash
   rm -rf dist/ src/*.egg-info
-  python -m build
+  .venv/bin/python -m build
   ls -l dist/
   ```
 - [ ] Optional extras are documented (see below)
@@ -69,7 +76,7 @@ The [`.github/workflows/release.yml`](../../.github/workflows/release.yml) workf
 ## Local Build
 
 ```bash
-python -m build
+.venv/bin/python -m build
 ```
 
 This produces:
@@ -91,6 +98,7 @@ Martenweave Core keeps the base package lightweight. Optional integrations are i
 |---|---|---|
 | `dev` | `pip install -e ".[dev]"` | pytest, ruff, build |
 | `google_adk` | `pip install -e ".[google_adk]"` | Google ADK agent provider |
+| `mcp` | `pip install -e ".[mcp]"` | MCP server runtime |
 
 Do not add provider-specific packages to the base `dependencies` list.
 

@@ -2628,19 +2628,20 @@ The repository must stay focused on model knowledge.
 CLI should support:
 
 ```bash
-modelops init
-modelops validate
-modelops build-index
-modelops health
-modelops create attribute
-modelops create field-endpoint
-modelops import excel
-modelops profile-dataset
-modelops detect-gaps
-modelops impact ATTR-CUST-SALES-CUSTOMER-GROUP
-modelops propose-patch --from note.md
-modelops approve-patch PATCH-0021
-modelops export catalog
+modelops init ./my-model
+modelops validate --repo ./my-model
+modelops build-index --repo ./my-model --jsonl
+modelops health --repo ./my-model
+modelops search "customer group" --repo ./my-model
+modelops query --type Attribute --repo ./my-model
+modelops import-model-sheet ./review-workbook.xlsx --repo ./my-model
+modelops profile-dataset ./data/customer_sales_area.csv --repo ./my-model
+modelops gaps ./data/customer_sales_area.csv --repo ./my-model --check-model
+modelops impact ATTR-CUST-SALES-CUSTOMER-GROUP --repo ./my-model
+modelops propose-patch --from note.md --repo ./my-model
+modelops proposal accept PP-SCAFFOLD-001 --repo ./my-model --reviewer "reviewer@example.com"
+modelops proposal apply PP-SCAFFOLD-001 --repo ./my-model --dry-run
+modelops export-model --repo ./my-model --format xlsx
 ```
 
 The UI should call the same core services.

@@ -47,8 +47,8 @@ Validate Martenweave with minimal commitment:
 
 3. **Infer draft model objects**
    ```bash
-   modelops infer-model --from ./source_sample_profile.json --repo ./pilot-model
-   modelops infer-model --from ./target_sample_profile.json --repo ./pilot-model
+   modelops infer-model ./pilot-model/generated/dataset_profiles/source_sample.json --repo ./pilot-model
+   modelops infer-model ./pilot-model/generated/dataset_profiles/target_sample.json --repo ./pilot-model
    ```
    Review the generated PatchProposals in `model/patch-proposals/`.
 
@@ -168,4 +168,3 @@ At the end of the pilot, the prospect receives:
 - **Pilot week**: Free self-service; optional paid facilitation ($2K–$5K) if we run it together
 - **Post-pilot team license**: TBD based on # of repos and users; target $500–$2K/month for a 10-person team
 - **Enterprise**: TBD; only discussed after team-level success is proven
-

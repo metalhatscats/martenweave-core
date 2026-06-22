@@ -51,6 +51,7 @@ from modelops_core.exports.schema_export_service import (
 )
 from modelops_core.gaps import detect_dataset_gaps
 from modelops_core.guardrails.config_guard import (
+    ConfigGuardMode,
     has_blocking_issues,
     run_all_checks,
 )
@@ -4925,11 +4926,19 @@ def docs_build(
 def config_guard(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+    mode: ConfigGuardMode = typer.Option(  # noqa: B008
+        ConfigGuardMode.LOCAL,
+        "--mode",
+        help=(
+            "Scan mode. 'local' reports all blocking findings, including ignored local files. "
+            "'release' does not block on ignored local-only files."
+        ),
+    ),
 ) -> None:
     """Scan repository for secrets and configuration guardrail issues."""
     repo_root = _resolve_repo(repo)
 
-    results = run_all_checks(repo_root)
+    results = run_all_checks(repo_root, mode=mode)
 
     if json_output:
         output: dict[str, Any] = {}
@@ -4941,11 +4950,12 @@ def config_guard(
                     "file_path": i.file_path,
                     "line_number": i.line_number,
                     "severity": i.severity,
+                    "file_status": i.file_status,
                 }
                 for i in issues
             ]
         print(json.dumps(output, indent=2, default=str))
-        if has_blocking_issues(results):
+        if has_blocking_issues(results, mode=mode):
             raise typer.Exit(code=1)
         raise typer.Exit()
 
@@ -4954,6 +4964,7 @@ def config_guard(
     warning_count = sum(1 for issues in results.values() for i in issues if i.severity == "WARNING")
 
     console.print("[bold]Configuration Guardrails[/bold]")
+    console.print(f"  Mode: {mode.value}")
     console.print(f"  Checks: {len(results)}")
     console.print(f"  Issues: {total_issues} ({error_count} errors, {warning_count} warnings)")
 
@@ -4961,18 +4972,19 @@ def config_guard(
         if not issues:
             continue
         console.print(f"\n[bold]{check_name}[/bold] ({len(issues)} issues)")
-        table = Table("Severity", "Code", "File", "Line", "Message")
+        table = Table("Severity", "Code", "File Status", "File", "Line", "Message")
         for i in issues:
             table.add_row(
                 i.severity,
                 i.code,
+                i.file_status or "—",
                 i.file_path or "—",
                 str(i.line_number) if i.line_number else "—",
                 i.message,
             )
         console.print(table)
 
-    if has_blocking_issues(results):
+    if has_blocking_issues(results, mode=mode):
         console.print("[red]Blocking issues found.[/red]")
         raise typer.Exit(code=1)
 

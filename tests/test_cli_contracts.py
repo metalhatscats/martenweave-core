@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -944,6 +945,27 @@ class TestConfigGuardContract:
         # May exit 0 or 1 depending on issues found; JSON should still be parseable
         data = _parse_json(result)
         assert isinstance(data, dict)
+
+    def test_config_guard_json_includes_file_status(self, tmp_path: Path) -> None:
+        subprocess.run(
+            ["git", "-C", str(tmp_path), "init"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        (tmp_path / ".gitignore").write_text(
+            ".env\n*.pem\n*.key\nid_rsa\nid_ed25519\n", encoding="utf-8"
+        )
+        (tmp_path / ".env").write_text("API_KEY=sk-abcdefghijklmnopqrstuvwxyz\n", encoding="utf-8")
+
+        result = runner.invoke(
+            app,
+            ["config-guard", "--repo", str(tmp_path), "--mode", "release", "--json"],
+        )
+
+        assert result.exit_code == 0
+        data = _parse_json(result)
+        assert data["env_file"][0]["file_status"] == "ignored"
 
 
 # ---------------------------------------------------------------------------

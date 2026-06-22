@@ -67,3 +67,6 @@ jobs:
 
       - name: Validate generic_product_model example
         run: modelops validate --repo examples/generic_product_model
+
+      - name: Release smoke checks
+        run: bash scripts/release_smoke.sh

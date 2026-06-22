@@ -93,6 +93,8 @@ The examples below use Option A. Replace `.venv/bin/modelops` with `modelops` if
 
 For a step-by-step walkthrough using the included examples, see [docs/first-15-minutes.md](docs/first-15-minutes.md).
 
+For a release-grade demo path that exercises validation, indexing, search, trace, impact, gaps, scorecards, and proposal dry-runs, see [docs/demo-quickstart-flow.md](docs/demo-quickstart-flow.md).
+
 ## Command Reference
 
 | Command | Purpose |
@@ -215,7 +217,18 @@ See [docs/README.md](docs/README.md) for the full documentation index, including
 
 # Lint
 .venv/bin/python -m ruff check .
+
+# Release smoke across bundled examples
+bash scripts/release_smoke.sh
 ```
+
+Release and public-readiness docs:
+
+- [docs/release-checklist.md](docs/release-checklist.md)
+- [docs/release-notes-first-public-rc.md](docs/release-notes-first-public-rc.md)
+- [docs/release-validation-evidence.md](docs/release-validation-evidence.md)
+- [docs/open-source-readiness.md](docs/open-source-readiness.md)
+- [docs/known-limitations.md](docs/known-limitations.md)
 
 ## License
 
