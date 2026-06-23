@@ -3,7 +3,7 @@
 ## Commands
 
 ```bash
-modelops config-guard --repo <repo> [--json]
+modelops config-guard --repo <repo> [--mode local|release] [--json]
 modelops scorecard --repo <repo> [--json]
 modelops gap-report --repo <repo> [--json]
 modelops owners --repo <repo> [--json]
@@ -17,7 +17,10 @@ modelops usage-report --repo <repo> [--json]
 
 ### `config-guard --json`
 
-Stable shape: dict of check names to issue lists.
+Stable shape: dict of check names to issue lists. Each issue includes `file_status`
+when a repository path is available (`tracked`, `untracked`, `ignored`, or `unknown`).
+Default `local` mode blocks on ignored local findings; `release` mode reports ignored
+local findings but does not make them release-blocking.
 
 ### `scorecard --json`
 

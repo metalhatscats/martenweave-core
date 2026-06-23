@@ -2,7 +2,7 @@
 # Acceptance demo for Martenweave v0.3 gap-to-proposal workflow.
 # Runs end-to-end without external services (deterministic no-provider mode).
 # Uses supplier_vendor_model with a synthetic dataset to demonstrate:
-#   validate → build-index → profile-dataset → detect-gaps → promote-gaps
+#   validate → build-index → profile-dataset → gaps → promote-gaps
 #   → impact-analysis → proposal-show → proposal-diff → dry-run-apply
 #
 # All mutations are confined to a temporary directory. The canonical example
@@ -73,14 +73,18 @@ step "8. Show promoted PatchProposal"
 step "9. Diff the PatchProposal"
 "${MODELOPS}" proposal diff PP-GAP-VENDOR-EXTRACT-001 --repo "${DEMO_REPO}"
 
-step "10. Dry-run apply (requires temporary acceptance)"
+step "10. Dry-run apply review gate (requires temporary acceptance)"
 # Proposals are created as pending_review for safety. Dry-run apply needs
-# accepted status. We temporarily flip the status in the temp copy.
+# accepted status. We temporarily flip the status in the temp copy. The promoted
+# gap proposal intentionally contains draft operations that still need human
+# modeling, so the dry-run demonstrates that incomplete operations are not
+# silently applied.
 PROPOSAL_FILE="${DEMO_REPO}/model/patch-proposals/PP-GAP-VENDOR-EXTRACT-001.md"
 if [[ -f "${PROPOSAL_FILE}" ]]; then
     sed -i.bak 's/status: pending_review/status: accepted/' "${PROPOSAL_FILE}"
     rm "${PROPOSAL_FILE}.bak"
     "${MODELOPS}" proposal apply PP-GAP-VENDOR-EXTRACT-001 --repo "${DEMO_REPO}" --dry-run
+    echo "Review gate verified: draft gap operations were inspected without mutating canonical files."
 else
     echo "Proposal not found; skipping dry-run."
 fi
@@ -102,5 +106,5 @@ echo "  Impact:         ANALYZED"
 echo "  Query:          OK"
 echo "  Proposal show:  OK"
 echo "  Proposal diff:  OK"
-echo "  Dry-run apply:  OK"
+echo "  Review gate:    VERIFIED"
 echo "=========================================="

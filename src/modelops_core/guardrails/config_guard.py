@@ -3,10 +3,28 @@
 from __future__ import annotations
 
 import re
+import subprocess
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 
 from modelops_core.guardrails.secrets import scan_text
+
+
+class ConfigGuardMode(StrEnum):
+    """Config guard scan modes."""
+
+    LOCAL = "local"
+    RELEASE = "release"
+
+
+class FileStatus(StrEnum):
+    """Git classification for files with guardrail findings."""
+
+    TRACKED = "tracked"
+    UNTRACKED = "untracked"
+    IGNORED = "ignored"
+    UNKNOWN = "unknown"
 
 
 @dataclass
@@ -18,6 +36,59 @@ class GuardrailIssue:
     file_path: str | None = None
     line_number: int | None = None
     severity: str = "WARNING"
+    file_status: str | None = None
+
+
+class _GitFileClassifier:
+    """Classify files relative to the current Git worktree."""
+
+    def __init__(self, repo_root: Path) -> None:
+        self.repo_root = repo_root.resolve()
+        self._is_git_repo = self._git(["rev-parse", "--is-inside-work-tree"]).returncode == 0
+
+    def classify(self, path: str | Path | None) -> str | None:
+        """Return tracked, untracked, ignored, or unknown for a repository file."""
+        if path is None:
+            return None
+        if not self._is_git_repo:
+            return FileStatus.UNKNOWN.value
+
+        try:
+            path_obj = Path(path)
+            absolute_path = path_obj if path_obj.is_absolute() else self.repo_root / path_obj
+            relative_path = absolute_path.resolve().relative_to(self.repo_root).as_posix()
+        except (OSError, ValueError):
+            return FileStatus.UNKNOWN.value
+
+        if self._git(["ls-files", "--error-unmatch", "--", relative_path]).returncode == 0:
+            return FileStatus.TRACKED.value
+        if self._git(["check-ignore", "-q", "--", relative_path]).returncode == 0:
+            return FileStatus.IGNORED.value
+        if absolute_path.exists():
+            return FileStatus.UNTRACKED.value
+        return FileStatus.UNKNOWN.value
+
+    def _git(self, args: list[str]) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["git", "-C", str(self.repo_root), *args],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+
+def _normalize_mode(mode: ConfigGuardMode | str) -> ConfigGuardMode:
+    if isinstance(mode, ConfigGuardMode):
+        return mode
+    return ConfigGuardMode(mode)
+
+
+def _annotate_file_status(
+    issues: list[GuardrailIssue], classifier: _GitFileClassifier
+) -> list[GuardrailIssue]:
+    for issue in issues:
+        issue.file_status = classifier.classify(issue.file_path)
+    return issues
 
 
 def validate_env_file(path: Path) -> list[GuardrailIssue]:
@@ -227,22 +298,26 @@ def validate_gitignore(repo_root: Path) -> list[GuardrailIssue]:
     return issues
 
 
-def run_all_checks(repo_root: Path) -> dict[str, list[GuardrailIssue]]:
+def run_all_checks(
+    repo_root: Path, mode: ConfigGuardMode | str = ConfigGuardMode.LOCAL
+) -> dict[str, list[GuardrailIssue]]:
     """Run all configuration guardrail checks for a repository.
 
     Returns a mapping from check name to list of issues.
     """
+    _normalize_mode(mode)
     results: dict[str, list[GuardrailIssue]] = {}
+    classifier = _GitFileClassifier(repo_root)
 
     env_path = repo_root / ".env"
-    results["env_file"] = validate_env_file(env_path)
+    results["env_file"] = _annotate_file_status(validate_env_file(env_path), classifier)
 
     config_path = repo_root / "modelops.config.yaml"
     if not config_path.exists():
         config_path = repo_root / "modelops.config.yml"
-    results["repo_config"] = validate_repo_config(config_path)
+    results["repo_config"] = _annotate_file_status(validate_repo_config(config_path), classifier)
 
-    results["gitignore"] = validate_gitignore(repo_root)
+    results["gitignore"] = _annotate_file_status(validate_gitignore(repo_root), classifier)
 
     # Scan the whole repo for secrets (excluding known safe paths).
     from modelops_core.guardrails.secrets import scan_repo
@@ -268,6 +343,7 @@ def run_all_checks(repo_root: Path) -> dict[str, list[GuardrailIssue]]:
                 file_path=finding.file_path,
                 line_number=finding.line_number,
                 severity="ERROR",
+                file_status=classifier.classify(finding.file_path),
             )
         )
     results["repo_secrets"] = repo_secret_issues
@@ -275,10 +351,18 @@ def run_all_checks(repo_root: Path) -> dict[str, list[GuardrailIssue]]:
     return results
 
 
-def has_blocking_issues(results: dict[str, list[GuardrailIssue]]) -> bool:
+def has_blocking_issues(
+    results: dict[str, list[GuardrailIssue]], mode: ConfigGuardMode | str = ConfigGuardMode.LOCAL
+) -> bool:
     """Return True if any check produced an ERROR-level issue."""
+    normalized_mode = _normalize_mode(mode)
     for issues in results.values():
         for issue in issues:
+            if (
+                normalized_mode == ConfigGuardMode.RELEASE
+                and issue.file_status == FileStatus.IGNORED.value
+            ):
+                continue
             if issue.severity == "ERROR":
                 return True
     return False

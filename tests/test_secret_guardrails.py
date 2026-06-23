@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 from modelops_core.guardrails.config_guard import (
+    ConfigGuardMode,
+    FileStatus,
     GuardrailIssue,
     has_blocking_issues,
     run_all_checks,
@@ -19,6 +22,16 @@ from modelops_core.guardrails.secrets import (
     scan_repo,
     scan_text,
 )
+
+
+def _git(repo: Path, *args: str) -> None:
+    subprocess.run(
+        ["git", "-C", str(repo), *args],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
 
 # ---------------------------------------------------------------------------
 # redact
@@ -338,6 +351,62 @@ class TestRunAllChecks:
         )
         results = run_all_checks(tmp_path)
         assert any(i.code == "REPO_SECRET_DETECTED" for i in results["repo_secrets"])
+
+    def test_classifies_tracked_untracked_and_ignored_findings(self, tmp_path: Path) -> None:
+        _git(tmp_path, "init")
+        (tmp_path / ".gitignore").write_text(
+            ".env\n*.pem\n*.key\nid_rsa\nid_ed25519\n", encoding="utf-8"
+        )
+        (tmp_path / "tracked.txt").write_text(
+            "API_KEY=sk-abcdefghijklmnopqrstuvwxyz\n", encoding="utf-8"
+        )
+        (tmp_path / "untracked.txt").write_text(
+            "API_KEY=sk-bcdefghijklmnopqrstuvwxyz\n", encoding="utf-8"
+        )
+        (tmp_path / ".env").write_text("API_KEY=sk-cdefghijklmnopqrstuvwxyz\n", encoding="utf-8")
+        _git(tmp_path, "add", ".gitignore", "tracked.txt")
+
+        results = run_all_checks(tmp_path)
+
+        repo_secret_statuses = {
+            Path(issue.file_path or "").name: issue.file_status for issue in results["repo_secrets"]
+        }
+        assert repo_secret_statuses["tracked.txt"] == FileStatus.TRACKED.value
+        assert repo_secret_statuses["untracked.txt"] == FileStatus.UNTRACKED.value
+        assert any(
+            issue.code == "ENV_SECRET_DETECTED" and issue.file_status == FileStatus.IGNORED.value
+            for issue in results["env_file"]
+        )
+
+    def test_release_mode_does_not_block_ignored_env_secret(self, tmp_path: Path) -> None:
+        _git(tmp_path, "init")
+        (tmp_path / ".gitignore").write_text(
+            ".env\n*.pem\n*.key\nid_rsa\nid_ed25519\n", encoding="utf-8"
+        )
+        (tmp_path / ".env").write_text("API_KEY=sk-abcdefghijklmnopqrstuvwxyz\n", encoding="utf-8")
+        _git(tmp_path, "add", ".gitignore")
+
+        results = run_all_checks(tmp_path, mode=ConfigGuardMode.RELEASE)
+
+        assert has_blocking_issues(results) is True
+        assert has_blocking_issues(results, mode=ConfigGuardMode.RELEASE) is False
+
+    def test_release_mode_blocks_untracked_secret(self, tmp_path: Path) -> None:
+        _git(tmp_path, "init")
+        (tmp_path / ".gitignore").write_text(
+            ".env\n*.pem\n*.key\nid_rsa\nid_ed25519\n", encoding="utf-8"
+        )
+        (tmp_path / "untracked.txt").write_text(
+            "API_KEY=sk-abcdefghijklmnopqrstuvwxyz\n", encoding="utf-8"
+        )
+        _git(tmp_path, "add", ".gitignore")
+
+        results = run_all_checks(tmp_path, mode=ConfigGuardMode.RELEASE)
+
+        assert any(
+            issue.file_status == FileStatus.UNTRACKED.value for issue in results["repo_secrets"]
+        )
+        assert has_blocking_issues(results, mode=ConfigGuardMode.RELEASE) is True
 
 
 # ---------------------------------------------------------------------------

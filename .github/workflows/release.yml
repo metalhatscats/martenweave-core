@@ -44,6 +44,9 @@ jobs:
       - name: Test
         run: python -m pytest
 
+      - name: Release smoke checks
+        run: bash scripts/release_smoke.sh
+
   build-and-publish:
     needs: test-and-lint
     runs-on: ubuntu-latest

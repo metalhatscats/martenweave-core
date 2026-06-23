@@ -393,8 +393,11 @@ Before declaring a model "production ready":
 # Export to Google Sheets
 modelops export-sheets --repo ./my-model
 
-# Import changes back
-modelops import-sheet --from ./updated_sheet.xlsx --repo ./my-model
+# Import changes back from Google Sheets by spreadsheet ID
+modelops import-sheet <spreadsheet-id> --repo ./my-model
+
+# Import an edited XLSX/CSV model review workbook
+modelops import-model-sheet ./updated_sheet.xlsx --repo ./my-model
 ```
 
 ### GitHub PR Review
@@ -468,4 +471,3 @@ modelops scorecard --repo ./my-model
 ```
 
 You now have a searchable, valid, scorecarded model.
-

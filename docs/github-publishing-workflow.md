@@ -159,10 +159,14 @@ git push origin model-change-<proposal-id>
 
 ### 3.4 Create issue drafts from model gaps or change requests
 
-**Future flow (#58):**
+**Current flow:**
 
 ```bash
-modelops create-issue --from-gap <gap-id> --repo ./my-model
+modelops issue-draft create --from-validation --repo ./my-model
+modelops publish-issue generated/issues/<draft-file>.md \
+  --repo ./my-model \
+  --github-repo metalhatscats/martenweave-core \
+  --dry-run
 ```
 
 **What happens:**
