@@ -77,6 +77,40 @@ The [`.github/workflows/release.yml`](../../.github/workflows/release.yml) workf
 - The `release` environment must be configured in the GitHub repository settings.
 - The PyPI project must have a trusted publisher entry for this repository and workflow.
 - The tag must point at the exact commit that passed local validation and CI.
+- **The Git tag version must match the package version in `pyproject.toml`.** The release
+  workflow runs a preflight guard that fails before building if the versions differ.
+
+### Tag / package version matching
+
+The release guard strips a leading `v` from the tag and compares the remainder to
+`project.version` in `pyproject.toml`. Examples:
+
+| Tag | `pyproject.toml` version | Result |
+|---|---|---|
+| `v0.4.1` | `0.4.1` | ✅ passes |
+| `0.4.1` | `0.4.1` | ✅ passes |
+| `v0.4.1a1` | `0.4.1` | ❌ fails — cannot publish a pre-release tag from a stable package version |
+| `v0.4.2` | `0.4.1` | ❌ fails — tag and package versions differ |
+
+To publish a pre-release (e.g. for a dry-run on a real tag), bump the package version
+to the same pre-release version first:
+
+```bash
+# pyproject.toml: version = "0.4.2a1"
+git tag -a v0.4.2a1 -m "Pre-release v0.4.2a1"
+git push origin v0.4.2a1
+```
+
+This prevents a pre-release tag from accidentally publishing a stable version such as
+`0.4.1` to PyPI.
+
+### Dry-run release tests
+
+For local or CI release smoke tests that do **not** intend to publish, do not push a
+tag that triggers `.github/workflows/release.yml`. If you must exercise the release
+workflow end-to-end, use a dedicated test PyPI instance or ensure `pyproject.toml`
+declares a pre-release version that matches the tag. Never run a dry-run against the
+production PyPI project with a stable package version.
 
 ## Local Build
 
