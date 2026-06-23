@@ -9,7 +9,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-MODELOPS="${REPO_ROOT}/.venv/bin/modelops"
+DEFAULT_MODELOPS="${REPO_ROOT}/.venv/bin/modelops"
+MODELOPS="${MODELOPS:-}"
 SMOKE_DIR="$(mktemp -d)"
 
 cleanup() {
@@ -41,10 +42,24 @@ assert_jq() {
 
 require_tool jq
 
-if [[ ! -x "${MODELOPS}" ]]; then
-    echo "FAIL: ${MODELOPS} not found or not executable"
-    echo "Run: python -m venv .venv && .venv/bin/python -m pip install -e '.[dev]'"
-    exit 1
+if [[ -z "${MODELOPS}" ]]; then
+    if [[ -x "${DEFAULT_MODELOPS}" ]]; then
+        MODELOPS="${DEFAULT_MODELOPS}"
+    elif command -v modelops >/dev/null 2>&1; then
+        MODELOPS="$(command -v modelops)"
+    else
+        echo "FAIL: modelops not found or not executable"
+        echo "Run: python -m venv .venv && .venv/bin/python -m pip install -e '.[dev]'"
+        exit 1
+    fi
+elif [[ ! -x "${MODELOPS}" ]]; then
+    if command -v "${MODELOPS}" >/dev/null 2>&1; then
+        MODELOPS="$(command -v "${MODELOPS}")"
+    else
+        echo "FAIL: ${MODELOPS} not found or not executable"
+        echo "Run: python -m venv .venv && .venv/bin/python -m pip install -e '.[dev]'"
+        exit 1
+    fi
 fi
 
 cd "${REPO_ROOT}"
