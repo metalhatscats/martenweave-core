@@ -64,6 +64,88 @@ For a fuller walkthrough, use `docs/demo-quickstart-flow.md` and
 - Some integration docs describe design direction or optional surfaces; verify current command
   availability with `modelops --help`.
 
+## License And Commercial Use
+
+Martenweave Core is currently MIT-licensed. MIT permits commercial use, copying, modification,
+distribution, sublicensing, and sale when the license notice is preserved.
+
+The recommended release-candidate commercial path is to keep the current core MIT and monetize
+optional paid pilots, facilitation, support, templates, and future products. Any move to dual
+licensing or source-available non-commercial terms remains a future owner decision.
+
+See `docs/licensing-and-commercial-use.md`.
+
+## Suggested Tag
+
+Suggested tag after the PyPI trusted publisher blocker is resolved:
+
+```bash
+git tag v0.4.0 -m "Release v0.4.0"
+git push origin v0.4.0
+```
+
+Do not create or push the tag until the maintainer intentionally starts the release.
+
+## GitHub Release Notes Draft
+
+Martenweave Core v0.4.0 is the first public release-candidate-quality package for the
+backend-first model registry.
+
+Highlights:
+
+- canonical Markdown/YAML model files as source of truth
+- deterministic validation for objects, references, ownership/readiness warnings, and SAP context
+- generated SQLite and JSONL indexes for search, lineage, reports, and agent context
+- CLI workflows for validate, build-index, search, query, trace, impact, gaps, health, scorecard,
+  ownership, audit, import/export, and proposal review
+- example model repositories for Customer / Business Partner, Supplier / Vendor, simple product,
+  and generic product scenarios
+- proposal-first AI workflow: AI can draft `PatchProposal` objects, but humans approve canonical
+  changes
+- release smoke coverage across bundled examples and config-guard release mode
+
+Known limits:
+
+- backend/core only; no production UI or hosted SaaS
+- no direct SAP write-back
+- provider-backed AI is optional and must be tested with synthetic data first
+- PyPI publish remains blocked until trusted publishing is configured
+
+## Short Public Announcement
+
+Martenweave Core is ready as a public release candidate: a backend-first model registry that turns
+scattered migration, MDM, governance, and AMS model knowledge into validated canonical files,
+generated indexes, trace/impact reports, gap checks, and human-approved patch proposals.
+
+## LinkedIn Post Draft
+
+I have prepared Martenweave Core as a first serious public release candidate.
+
+It is a backend-first model registry for SAP migration, MDM, data governance, data quality, and AMS
+support contexts. The idea is simple: canonical model files are the source of truth, validators
+check consistency, generated indexes support search/trace/impact/gaps, and AI can propose changes
+without silently mutating the model.
+
+I am open to feedback and practical pilot conversations around SAP MDM / migration readiness,
+model governance, dataset gaps, validation evidence, and AMS knowledge continuity.
+
+Core repo: https://github.com/metalhatscats/martenweave-core
+Website: https://martenweave.github.io/
+
+## Pilot Invitation Text
+
+Good pilot scenarios include customer/BP mapping control, supplier/vendor model control, dataset
+gaps before mock load, validation report triage, ownership/rule traceability, and AMS knowledge
+continuity. A useful pilot should provide sample mappings, small synthetic or approved dataset
+extracts, validation findings, tickets/decisions, and field/rule context. Martenweave should
+produce a validated model repository, gap report, impact examples, evidence links, patch proposal
+examples, and readiness summary.
+
+## Remaining Follow-Up Issues
+
+- [#411](https://github.com/metalhatscats/martenweave-core/issues/411) remains open and blocks PyPI
+  publishing until trusted publisher configuration is complete.
+
 ## Validation Evidence
 
 See `docs/release-validation-evidence.md` for the current local validation run and blockers.

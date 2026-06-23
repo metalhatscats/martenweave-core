@@ -166,5 +166,6 @@ At the end of the pilot, the prospect receives:
 ## Pricing Hypothesis for Pilot
 
 - **Pilot week**: Free self-service; optional paid facilitation ($2K–$5K) if we run it together
-- **Post-pilot team license**: TBD based on # of repos and users; target $500–$2K/month for a 10-person team
+- **Post-pilot team offering**: TBD based on team needs; likely support, templates, assessment
+  packs, or future workspace functionality rather than a paid license to the current MIT core
 - **Enterprise**: TBD; only discussed after team-level success is proven

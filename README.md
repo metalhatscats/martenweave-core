@@ -232,4 +232,5 @@ Release and public-readiness docs:
 
 ## License
 
-MIT
+MIT. See [docs/licensing-and-commercial-use.md](docs/licensing-and-commercial-use.md) for the
+current commercial-use clarification and future licensing options.

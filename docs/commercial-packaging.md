@@ -8,13 +8,19 @@
 
 **Open core drives adoption.  Paid value accelerates outcomes.**
 
-The CLI, validation engine, and canonical model format remain free and open-source.  Paid offerings add convenience, collaboration, and expert support — not access to fundamental functionality.
+The CLI, validation engine, and canonical model format are currently MIT-licensed. MIT permits
+commercial use. Paid offerings should add convenience, collaboration, facilitation, templates,
+future proprietary products, or expert support -- not imply that the current MIT core requires a
+paid license.
+
+For the explicit licensing decision record, see
+[licensing-and-commercial-use.md](licensing-and-commercial-use.md).
 
 ---
 
 ## Packaging Options
 
-### 1. Open-Core CLI (Free, Forever)
+### 1. MIT Core CLI (Free, Commercial Use Allowed)
 
 | What | Included |
 |---|---|
@@ -25,7 +31,9 @@ The CLI, validation engine, and canonical model format remain free and open-sour
 | AI scaffold | NoProviderAdapter (deterministic) |
 | Telemetry | Local usage and AI usage event logging |
 
-**Why free**: A data model registry is infrastructure.  Locking basic documentation behind a paywall destroys trust with data architects.
+**Why free**: A data model registry is infrastructure. Locking basic documentation behind a paywall
+destroys trust with data architects. Under the current MIT license, commercial use of the core is
+allowed; paid work must be positioned as optional services, support, templates, or future products.
 
 ### 2. Team Pilot Package (Paid Facilitation, Optional)
 
@@ -50,7 +58,8 @@ The CLI, validation engine, and canonical model format remain free and open-sour
 | Collaboration features | Web-based review UI, comment threads on proposals |
 | Support | Email support, 48-hour response |
 
-**Pricing hypothesis**: $500–$2,000/month per team (10–25 users)  
+**Pricing hypothesis**: $500–$2,000/month per team (10–25 users), for future hosted/team
+functionality rather than the current MIT core
 **Target**: Teams that have completed a pilot and want to scale  
 **Risk**: Building a web UI is significant scope; defer until CLI adoption is proven
 
@@ -125,4 +134,3 @@ These add value without breaking the open-core promise:
 4. **After Team Workspace revenue**: Build Enterprise edition with SSO, RBAC, SOC-2
 
 Do not build Team Workspace or Enterprise features until CLI adoption is proven.
-

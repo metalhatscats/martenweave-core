@@ -59,6 +59,7 @@ The release smoke script covers:
 - [ ] `README.md` quickstart works from a clean clone.
 - [ ] `docs/first-15-minutes.md` and `docs/demo-quickstart-flow.md` are accurate.
 - [ ] `docs/known-limitations.md` reflects current limits.
+- [ ] License/commercial-use wording matches `LICENSE`, `pyproject.toml`, and `docs/licensing-and-commercial-use.md`.
 - [ ] `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, and `SUPPORT.md` exist.
 - [ ] No secrets, private datasets, `.env` files, or generated indexes are staged.
 - [ ] Ignored local `.env` findings are reviewed in local mode and do not block release mode.
