@@ -10,7 +10,7 @@ Turns data models into a structured, traceable, validated, AI-ready model knowle
 
 SAP migration and Master Data Management are the **first domain pack** and proof case, not the product boundary. The core works for generic data models: domains, entities, attributes, relationships, datasets, mappings, rules, evidence, decisions, and change proposals.
 
-**No UI is included.** This is a CLI-driven, backend/core library designed to be embedded in pipelines, IDEs, and agent workflows.
+**No user-facing UI is included.** This is a CLI-driven, backend/core library designed to be embedded in pipelines, IDEs, local API processes, MCP servers, and agent workflows.
 
 ## Status
 
@@ -121,46 +121,63 @@ For a release-grade demo path that exercises validation, indexing, search, trace
 | Command | Purpose |
 |---|---|
 | `init` | Scaffold a new model repository |
+| `profile-dataset` | Profile a CSV/XLSX dataset and save the profile |
+| `gaps` | Detect dataset-to-model gaps against FieldEndpoints |
+| `import-drive` | Import a CSV/XLSX file from Google Drive and profile it |
+| `import-sheet` | Import a Google Sheet as a PatchProposal |
+| `sources` | List registered external sources |
+| `source-show` | Show one registered source |
+| `infer-model` | Infer draft model objects from a dataset profile |
 | `validate` | Run deterministic validation on canonical files |
 | `build-index` | Build SQLite index and optional JSONL exports |
+| `clean` | Remove generated artifacts from a repository |
+| `index-fresh` | Check whether the generated index is stale |
 | `health` | Show repository health report |
+| `doctor` | Run diagnostics for version, config, paths, index freshness, and validation |
 | `scorecard` | Show governance readiness scorecard |
-| `gap-report` | Consolidated gap summary across all sources (model coverage) |
-| `gaps` | Dataset-to-model gap detection (requires a dataset path) |
 | `owners` | Ownership coverage and steward workload |
 | `analyze` | Analyze model completeness, risk, and readiness |
+| `gap-report` | Consolidated gap summary across all sources |
 | `trace` | Trace upstream/downstream relationships for an object |
 | `impact` | Generate impact report for an object or proposal |
-| `search` | Search indexed objects by keyword |
-| `query` | Run structured queries over the index |
 | `propose-patch` | Create a PatchProposal from a note |
-| `proposal` | Review and apply PatchProposals (subcommands: `impact`, `apply`, `validate`, `report`) |
-| `change-request` | Create and manage ChangeRequests (subcommands: `create`, `approve`, `reject`, `list`, `show`, `update-status`) |
-| `decisions` | Browse and inspect Decision objects (subcommands: `list`, `show`, `report`) |
-| `export-model` | Export canonical objects to CSV or XLSX |
-| `docs-build` | Generate static Markdown docs from the index |
-| `usage-report` | Show aggregated usage report from telemetry |
-| `audit-log` | Query the append-only audit log |
-| `config-guard` | Scan for secrets and configuration guardrail issues |
-| `clean` | Remove generated artifacts from a repository |
-| `diff` | Compare two model repositories |
-| `migrate` | Migrate canonical objects to the current schema version |
-| `profile-dataset` | Profile a CSV/XLSX dataset |
-| `infer-model` | Infer draft model objects from a dataset profile |
+| `serve` | Start the optional local API server |
+| `mcp` | Start the optional MCP server for agent integration |
 | `import-model-sheet` | Import spreadsheet edits as a PatchProposal |
-| `sources` | List registered external sources |
-| `issue-draft` | Generate GitHub-ready issue drafts |
+| `export-model` | Export canonical objects to CSV or XLSX |
+| `export-schema` | Export JSON Schema for canonical object types |
+| `export-sheets` | Export canonical model objects to Google Sheets |
 | `git-bundle` | Generate a GitHub-ready change bundle |
 | `publish-issue` | Publish an issue draft to GitHub |
 | `publish-pr` | Publish a git bundle as a GitHub pull request |
+| `audit-log` | Query the append-only audit log |
+| `usage-report` | Show aggregated usage report from telemetry |
+| `docs-build` | Generate static Markdown docs from the index |
+| `config-guard` | Scan for secrets and configuration guardrail issues |
+| `diff` | Compare two model repositories |
+| `search` | Search indexed objects by keyword |
+| `query` | Run structured queries over the index |
+| `migrate` | Migrate canonical objects to the current schema version |
+| `issue-draft` | Generate GitHub-ready issue drafts |
+| `change-request` | Create and manage ChangeRequests |
 | `notifications` | Preview notification recipients |
-| `serve` | Start the local API server |
-| `mcp` | Start the MCP server for agent integration |
+| `decisions` | Browse and inspect Decision objects |
+| `proposal` | Review and apply PatchProposals |
+| `assessment` | Run migration model readiness assessment workflows |
+
+`serve` and `mcp` are local integration surfaces for APIs, tools, and agents. They do not provide a
+hosted product UI or browser application.
 
 Use `--help` on any command for full options:
 
 ```bash
 .venv/bin/modelops <command> --help
+```
+
+### Assessment Example
+
+```bash
+.venv/bin/modelops assessment run --repo examples/customer_bp_model --out generated/assessment/customer-bp
 ```
 
 ## Example Models

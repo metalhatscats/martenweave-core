@@ -8,7 +8,7 @@
 
 **martenweave-core** (Python package `modelops_core`) is a backend-first **agentic data model registry**. It turns data models into a structured, traceable, validated, AI-ready model knowledge layer. SAP migration and Master Data Management are the first domain pack and proof case, not the product boundary.
 
-**No UI is included.** This is a CLI-driven, backend/core library designed to be embedded in pipelines, IDEs, and agent workflows.
+**No user-facing UI is included.** This is a CLI-driven, backend/core library designed to be embedded in pipelines, IDEs, local API processes, MCP servers, and agent workflows.
 
 ### Core Principles
 
@@ -135,6 +135,10 @@ modelops impact FEP-S4-KNVV-KDGRP --repo ./my-model
 
 # Propose a patch from a note
 modelops propose-patch --from ./note.md --repo ./my-model
+
+# Optional local integration surfaces, not a product UI
+modelops serve --repo ./my-model --host 127.0.0.1 --port 8000
+modelops mcp --repo ./my-model
 ```
 
 ---
