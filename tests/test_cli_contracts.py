@@ -1063,13 +1063,13 @@ class TestVersionMetadata:
     def test_version_flag(self) -> None:
         result = runner.invoke(app, ["--version"])
         assert result.exit_code == 0
-        assert "0.4.0" in result.output
+        assert "0.4.1" in result.output
 
     def _assert_report_has_version(self, args: list[str]) -> None:
         result = runner.invoke(app, args)
         assert result.exit_code == 0
         data = _parse_json(result)
-        assert data.get("martenweave_version") == "0.4.0"
+        assert data.get("martenweave_version") == "0.4.1"
 
     def test_scorecard_json_has_version(self, indexed_repo: Path) -> None:
         self._assert_report_has_version(["scorecard", "--repo", str(indexed_repo), "--json"])

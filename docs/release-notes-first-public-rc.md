@@ -1,8 +1,8 @@
-# First Public Release Candidate Notes
+# Martenweave Core v0.4.1 — Public Source Release Notes
 
-Draft date: 2026-06-22
+Release date: 2026-06-23
 
-This is the draft release note for the first serious public release candidate of Martenweave Core.
+This is the first public source release of Martenweave Core.
 
 ## Positioning
 
@@ -50,7 +50,7 @@ python -m venv .venv
 bash scripts/release_smoke.sh
 ```
 
-For a fuller walkthrough, use `docs/demo-quickstart-flow.md` and
+For a fuller walkthrough, use `docs/first-15-minutes.md` and
 `scripts/demo_v0_3_gap_to_proposal.sh`.
 
 ## Known Limitations
@@ -75,23 +75,23 @@ licensing or source-available non-commercial terms remains a future owner decisi
 
 See `docs/licensing-and-commercial-use.md`.
 
-## Suggested Tag
-
-Suggested tag after the PyPI trusted publisher blocker is resolved:
+## Safe Tagging Policy
 
 ```bash
-git tag -a vX.Y.Z -m "Release vX.Y.Z"
-git push origin vX.Y.Z
+git tag -a v0.4.1 -m "Release v0.4.1"
+git push origin v0.4.1
 ```
 
-Do not create or push the tag until the maintainer intentionally starts the release. Do not move or
-reuse an existing remote tag; if a failed release already consumed a tag that points to the wrong
-commit, use the next patch version from the intended release commit.
+Do not create or push the tag until the maintainer intentionally starts the release and PyPI
+trusted publishing is verified. Do not move or reuse the existing remote `v0.4.0` tag; it points to
+an older commit and must remain untouched.
+
+Because `v0.4.0` already exists on the wrong commit, `v0.4.1` is the safe patch release that
+carries the validated public source readiness changes without rewriting any existing tags.
 
 ## GitHub Release Notes Draft
 
-Martenweave Core v0.4.0 is the first public release-candidate-quality package for the
-backend-first model registry.
+Martenweave Core v0.4.1 is the first public source release of the backend-first model registry.
 
 Highlights:
 
@@ -105,6 +105,7 @@ Highlights:
 - proposal-first AI workflow: AI can draft `PatchProposal` objects, but humans approve canonical
   changes
 - release smoke coverage across bundled examples and config-guard release mode
+- `serve` and `mcp` remain local integration surfaces; no hosted product UI
 
 Known limits:
 
@@ -116,13 +117,13 @@ Known limits:
 
 ## Short Public Announcement
 
-Martenweave Core is ready as a public release candidate: a backend-first model registry that turns
+Martenweave Core is ready as a public source release: a backend-first model registry that turns
 scattered migration, MDM, governance, and AMS model knowledge into validated canonical files,
 generated indexes, trace/impact reports, gap checks, and human-approved patch proposals.
 
 ## LinkedIn Post Draft
 
-I have prepared Martenweave Core as a first serious public release candidate.
+I have prepared Martenweave Core as a first public source release.
 
 It is a backend-first model registry for SAP migration, MDM, data governance, data quality, and AMS
 support contexts. The idea is simple: canonical model files are the source of truth, validators
@@ -147,7 +148,8 @@ examples, and readiness summary.
 ## Remaining Follow-Up Issues
 
 - [#411](https://github.com/metalhatscats/martenweave-core/issues/411) remains open and blocks PyPI
-  publishing until trusted publisher configuration is complete.
+  publishing until trusted publisher configuration is complete. The repository side is ready; the
+  PyPI project trusted publisher entry must be created manually.
 
 ## Validation Evidence
 
