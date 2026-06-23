@@ -24,6 +24,7 @@ classifiers = [
   "Topic :: Database",
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+
 dependencies = [
   "pydantic>=2.6",
   "pyyaml>=6.0",
@@ -33,6 +34,13 @@ dependencies = [
   "fastapi>=0.100",
   "uvicorn>=0.23",
 ]
+
+[project.urls]
+Homepage = "https://martenweave.github.io/"
+Repository = "https://github.com/metalhatscats/martenweave-core"
+Documentation = "https://martenweave.github.io/docs.html"
+Issues = "https://github.com/metalhatscats/martenweave-core/issues"
+Changelog = "https://github.com/metalhatscats/martenweave-core/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [

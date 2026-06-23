@@ -80,11 +80,13 @@ See `docs/licensing-and-commercial-use.md`.
 Suggested tag after the PyPI trusted publisher blocker is resolved:
 
 ```bash
-git tag v0.4.0 -m "Release v0.4.0"
-git push origin v0.4.0
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
 ```
 
-Do not create or push the tag until the maintainer intentionally starts the release.
+Do not create or push the tag until the maintainer intentionally starts the release. Do not move or
+reuse an existing remote tag; if a failed release already consumed a tag that points to the wrong
+commit, use the next patch version from the intended release commit.
 
 ## GitHub Release Notes Draft
 
@@ -109,7 +111,8 @@ Known limits:
 - backend/core only; no production UI or hosted SaaS
 - no direct SAP write-back
 - provider-backed AI is optional and must be tested with synthetic data first
-- PyPI publish remains blocked until trusted publishing is configured
+- PyPI publish remains blocked until trusted publishing is configured and a safe tag points to the
+  intended release commit
 
 ## Short Public Announcement
 

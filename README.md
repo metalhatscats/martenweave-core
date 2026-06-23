@@ -1,5 +1,9 @@
 # martenweave-core
 
+[![CI](https://github.com/metalhatscats/martenweave-core/actions/workflows/ci.yml/badge.svg)](https://github.com/metalhatscats/martenweave-core/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 Backend-first agentic data model registry.
 
 Turns data models into a structured, traceable, validated, AI-ready model knowledge layer. This repository contains the canonical model registry, deterministic validation, generated SQLite index, safe AI patch proposals, and Git-friendly model files.
@@ -7,6 +11,13 @@ Turns data models into a structured, traceable, validated, AI-ready model knowle
 SAP migration and Master Data Management are the **first domain pack** and proof case, not the product boundary. The core works for generic data models: domains, entities, attributes, relationships, datasets, mappings, rules, evidence, decisions, and change proposals.
 
 **No UI is included.** This is a CLI-driven, backend/core library designed to be embedded in pipelines, IDEs, and agent workflows.
+
+## Status
+
+- Current source version: `0.4.0`
+- Package name: `martenweave-core`
+- Public site and docs: <https://martenweave.github.io/>
+- PyPI publishing is intentionally gated by the trusted-publisher release workflow. Until a package is published, install from source as shown below.
 
 ## Core Principles
 
@@ -29,6 +40,16 @@ SAP migration and Master Data Management are the **first domain pack** and proof
 ## Quickstart
 
 Martenweave Core requires Python 3.11+.
+
+### Install from Source
+
+```bash
+git clone https://github.com/metalhatscats/martenweave-core.git
+cd martenweave-core
+python -m venv .venv
+.venv/bin/python -m pip install -e ".[dev]"
+.venv/bin/modelops --help
+```
 
 ### Setup
 

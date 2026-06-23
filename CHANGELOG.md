@@ -36,6 +36,8 @@ All notable changes to Martenweave Core.
 
 - **Validation JSON output** (#126): `validate --json` now emits parseable JSON.
 - **Schema version normalization** (#124): Example canonical objects aligned to schema version 1.0.
+- **Release-safe config guard** (#466): Release/smoke mode distinguishes tracked, untracked, and ignored files so ignored local `.env` findings remain visible without blocking clean release scans.
+- **Release smoke execution**: Release smoke now uses the installed `modelops` executable consistently in CI and local validation.
 
 ---
 

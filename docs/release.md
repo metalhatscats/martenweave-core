@@ -48,9 +48,13 @@ Both must match before a release commit.
 Push a tag to trigger the release workflow:
 
 ```bash
-git tag v0.4.0 -m "Release v0.4.0"
-git push origin v0.4.0
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
 ```
+
+Do not move or reuse an existing remote tag. If a tag exists from a failed release attempt and
+points to the wrong commit, create the next patch version from the intended release commit instead
+of force-pushing the old tag.
 
 **Tag signing policy:**
 - Signed tags (`git tag -s`) are **recommended** for releases.
@@ -72,6 +76,7 @@ The [`.github/workflows/release.yml`](../../.github/workflows/release.yml) workf
 **Requirements:**
 - The `release` environment must be configured in the GitHub repository settings.
 - The PyPI project must have a trusted publisher entry for this repository and workflow.
+- The tag must point at the exact commit that passed local validation and CI.
 
 ## Local Build
 
