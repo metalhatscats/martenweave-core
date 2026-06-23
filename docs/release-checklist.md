@@ -56,6 +56,7 @@ The release smoke script covers:
 - [ ] `CHANGELOG.md` has a dated entry for the release.
 - [ ] `docs/release-notes-first-public-rc.md` is updated or superseded by final release notes.
 - [ ] `docs/release-validation-evidence.md` reflects the latest release-candidate validation run.
+- [ ] Tag safety: verify the intended tag does not already exist on a different commit. If a prior tag points to the wrong commit, bump to the next patch version instead of reusing or force-updating it.
 - [ ] `README.md` quickstart works from a clean clone.
 - [ ] `docs/first-15-minutes.md` and `docs/demo-quickstart-flow.md` are accurate.
 - [ ] `docs/known-limitations.md` reflects current limits.
@@ -76,3 +77,15 @@ Do not release if:
 - AI can mutate canonical files without a proposal/review path
 - package metadata points to a missing license
 - known failing tests are hidden or skipped without an issue
+- PyPI trusted publishing is not configured ([#411](https://github.com/metalhatscats/martenweave-core/issues/411)) and the `release` environment / PyPI project trusted publisher entry is missing
+
+## Tagging Decision
+
+Do **not** push a release tag while #411 is open. Pushing `v0.4.1` would trigger `.github/workflows/release.yml`, which will fail at the PyPI publish step. Options:
+
+1. **PyPI path (preferred once #411 is closed):**
+   ```bash
+   git tag -a v0.4.1 -m "Release v0.4.1"
+   git push origin v0.4.1
+   ```
+2. **Source-only handoff while #411 is open:** create a GitHub Release from the validated commit without pushing a tag that triggers the release workflow, or attach source artifacts manually.

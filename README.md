@@ -14,7 +14,7 @@ SAP migration and Master Data Management are the **first domain pack** and proof
 
 ## Status
 
-- Current source version: `0.4.0`
+- Current source version: `0.4.1`
 - Package name: `martenweave-core`
 - Public site and docs: <https://martenweave.github.io/>
 - PyPI publishing is intentionally gated by the trusted-publisher release workflow. Until a package is published, install from source as shown below.

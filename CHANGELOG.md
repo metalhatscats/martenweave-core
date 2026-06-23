@@ -2,6 +2,32 @@
 
 All notable changes to Martenweave Core.
 
+## [0.4.1] — 2026-06-23
+
+### Added
+
+- **Safe first public source release path**: prepared `v0.4.1` as the patch release that preserves the existing remote `v0.4.0` tag.
+- **Release notes and validation evidence** for `v0.4.1` documenting public source readiness, command reference sync, local integration surfaces, and the `v0.4.0` tag decision.
+
+### Changed
+
+- **README / package metadata polish**: bumped source version references to `0.4.1` and aligned the public source readiness wording.
+- **Command reference sync**: README command reference remains current with the full `modelops` CLI surface.
+- **Release smoke and config guard**: release smoke and `config-guard --mode release` remain the gating checks; ignored local `.env` findings are visible but do not block release scans.
+- **Local integration clarification**: `serve` and `mcp` are explicitly local integration surfaces for APIs, tools, and agents; there is no hosted product UI.
+
+### Fixed
+
+- **Version consistency**: all package, source, test, and release-document version references now read `0.4.1`.
+
+### Why v0.4.1 instead of reusing v0.4.0
+
+The remote `v0.4.0` tag already points to an older commit and must not be moved, reused, deleted, or force-updated. Creating `v0.4.1` from the validated `main` branch is the safe patch release path.
+
+### Known Release Blocker
+
+- PyPI publishing remains blocked by [#411](https://github.com/metalhatscats/martenweave-core/issues/411) until PyPI trusted publishing is configured. Do not push the `v0.4.1` tag while #411 is open because it would trigger a failing PyPI publish step.
+
 ## [0.4.0] — 2026-05-26
 
 ### Added
