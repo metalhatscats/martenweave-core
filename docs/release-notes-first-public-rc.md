@@ -69,9 +69,9 @@ For a fuller walkthrough, use `docs/first-15-minutes.md` and
 Martenweave Core is currently MIT-licensed. MIT permits commercial use, copying, modification,
 distribution, sublicensing, and sale when the license notice is preserved.
 
-The recommended release-candidate commercial path is to keep the current core MIT and monetize
-optional paid pilots, facilitation, support, templates, and future products. Any move to dual
-licensing or source-available non-commercial terms remains a future owner decision.
+The current commercial path is to keep the core MIT and monetize optional implementation support,
+private SAP/MDM domain packs, enterprise validation packs, hosted workbench work, custom
+integrations, support SLAs, and future separately distributed extensions.
 
 See `docs/licensing-and-commercial-use.md`.
 
@@ -82,9 +82,8 @@ git tag -a v0.4.1 -m "Release v0.4.1"
 git push origin v0.4.1
 ```
 
-Do not create or push the tag until the maintainer intentionally starts the release and PyPI
-trusted publishing is verified. Do not move or reuse the existing remote `v0.4.0` tag; it points to
-an older commit and must remain untouched.
+The `v0.4.1` tag has been used for the public release. Do not move or reuse the existing remote
+`v0.4.0` tag; it points to an older commit and must remain untouched.
 
 Because `v0.4.0` already exists on the wrong commit, `v0.4.1` is the safe patch release that
 carries the validated public source readiness changes without rewriting any existing tags.
@@ -112,8 +111,7 @@ Known limits:
 - backend/core only; no production UI or hosted SaaS
 - no direct SAP write-back
 - provider-backed AI is optional and must be tested with synthetic data first
-- PyPI publish remains blocked until trusted publishing is configured and a safe tag points to the
-  intended release commit
+- PyPI publishing must continue to go through the trusted-publisher release workflow
 
 ## Short Public Announcement
 
@@ -145,11 +143,10 @@ extracts, validation findings, tickets/decisions, and field/rule context. Marten
 produce a validated model repository, gap report, impact examples, evidence links, patch proposal
 examples, and readiness summary.
 
-## Remaining Follow-Up Issues
+## Resolved Release Setup
 
-- [#411](https://github.com/metalhatscats/martenweave-core/issues/411) remains open and blocks PyPI
-  publishing until trusted publisher configuration is complete. The repository side is ready; the
-  PyPI project trusted publisher entry must be created manually.
+- [#411](https://github.com/metalhatscats/martenweave-core/issues/411) is resolved: PyPI trusted
+  publishing is configured and `martenweave-core 0.4.1` is published.
 
 ## Validation Evidence
 

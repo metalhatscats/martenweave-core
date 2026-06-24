@@ -1,7 +1,7 @@
 # Martenweave AI-Ready Data Model Layer
 
 Version: 0.2
-Status: Aligned with v0.4.0 implementation
+Status: Aligned with v0.4.1 implementation
 Scope: Why Martenweave creates an AI-ready model layer without becoming a generic AI chatbot
 
 ---

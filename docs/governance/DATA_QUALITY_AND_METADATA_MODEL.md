@@ -1,7 +1,7 @@
 # Martenweave Data Quality and Metadata Model
 
 Version: 0.2
-Status: Aligned with v0.4.0 implementation
+Status: Aligned with v0.4.1 implementation
 Scope: How Martenweave captures metadata, supports data quality dimensions, detects gaps, and records validation results
 
 ---

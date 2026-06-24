@@ -1,7 +1,7 @@
 # Licensing and Commercial Use
 
-This page records the current licensing reality and the recommended commercial path for the first
-public release candidate.
+This page records the current licensing reality and the recommended commercial path after the
+`0.4.1` public release.
 
 ## Current License
 
@@ -16,42 +16,25 @@ This means the current core package cannot honestly be described as non-commerci
 source-available. Any public website, release note, package metadata, or pilot document should state
 the MIT reality instead of implying that a paid license is required to use the current core.
 
-## Commercial Model Options
+## Commercial Use and Future Offerings
 
-### Option A: Keep MIT and monetize services/support/templates
+Martenweave Core remains MIT-licensed open source. Commercial offerings may include implementation
+support, private SAP/MDM domain packs, enterprise validation packs, a hosted workbench, custom
+integrations, and support SLAs.
 
-Keep the core package MIT. Charge for facilitated pilots, migration readiness assessments,
-implementation support, training, starter templates, review packs, and future hosted or team
-collaboration products.
+Future extensions, templates, packs, or hosted services may be distributed under separate
+commercial terms. Those commercial terms must be scoped to the separate offering and must not imply
+that the current MIT core requires a paid license.
 
-This is the safest current path because it preserves adoption trust and does not change rights for
-existing users.
+## Contribution Licensing
 
-### Option B: Dual license future proprietary additions
+By contributing to Martenweave Core, contributors agree their contribution is licensed under the
+same MIT License as the project. No separate contributor license agreement is required at this
+stage.
 
-Keep the existing core MIT, then place future proprietary add-ons under separate paid commercial
-terms. Examples could include a hosted workbench, review queues, branded assessment packs,
-enterprise support, or private connector bundles.
-
-This requires clear repository boundaries so MIT code and commercial code are not confused.
-
-### Option C: Move future releases to source-available non-commercial terms
-
-Future releases could use a source-available non-commercial license plus paid commercial terms. This
-would be a major project decision, not a release-candidate cleanup task.
-
-If chosen later, it must be explicit, legally reviewed, and communicated as a forward-looking
-license change. It should not be implied while `LICENSE` and package metadata remain MIT.
-
-## Recommendation for This Release Candidate
-
-Use Option A for the current release candidate:
+## Public Wording Guardrails
 
 - Keep `martenweave-core` under MIT.
-- Describe commercial activity as optional paid pilots, facilitation, support, templates, and future
-  products.
 - Do not claim that company pilots, consulting use, internal production use, or redistribution
   require a paid license under the current MIT core.
-- Mark any move to dual licensing or non-commercial source-available terms as an owner decision.
-
-Final license strategy after the first release candidate: **requires owner decision**.
+- Mark any future commercial extensions, private packs, or hosted services as separate offerings.

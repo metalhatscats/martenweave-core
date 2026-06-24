@@ -2,7 +2,7 @@
 
 # Martenweave — System Architecture
 
-Version: 0.4.0  
+Version: 0.4.1
 Document type: Product/system architecture  
 Initial product focus: General agentic data model registry, with SAP Business Partner migration as the first domain pack  
 Architecture style: Local-first, file-based, AI-ready, domain-aware model workspace  
@@ -1371,7 +1371,7 @@ Example:
 ```yaml
 workspace:
   name: Customer BP Migration Model
-  version: 0.4.0
+  version: 0.4.1
   default_domain: DOMAIN-CUSTOMER-BP
 
 repository:

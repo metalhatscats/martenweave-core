@@ -1,6 +1,6 @@
 # Martenweave Modeling Methodology
 
-Version: 0.4.0  
+Version: 0.4.1
 Status: Draft  
 Scope: How to model data in Martenweave, from simple files to large enterprise objects
 

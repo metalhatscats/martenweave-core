@@ -77,15 +77,15 @@ Do not release if:
 - AI can mutate canonical files without a proposal/review path
 - package metadata points to a missing license
 - known failing tests are hidden or skipped without an issue
-- PyPI trusted publishing is not configured ([#411](https://github.com/metalhatscats/martenweave-core/issues/411)) and the `release` environment / PyPI project trusted publisher entry is missing
+- PyPI trusted publishing or the `release` environment is missing for a release that should publish
+  to PyPI
 
 ## Tagging Decision
 
-Do **not** push a release tag while #411 is open. Pushing `v0.4.1` would trigger `.github/workflows/release.yml`, which will fail at the PyPI publish step. Options:
+`v0.4.1` is the published public release. For future releases, push a tag only after local
+validation passes and the PyPI trusted-publisher setup is confirmed:
 
-1. **PyPI path (preferred once #411 is closed):**
-   ```bash
-   git tag -a v0.4.1 -m "Release v0.4.1"
-   git push origin v0.4.1
-   ```
-2. **Source-only handoff while #411 is open:** create a GitHub Release from the validated commit without pushing a tag that triggers the release workflow, or attach source artifacts manually.
+```bash
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
+```

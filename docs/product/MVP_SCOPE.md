@@ -2,7 +2,7 @@
 
 # Martenweave — MVP Scope
 
-Version: 0.4.0  
+Version: 0.4.1
 Status: Working MVP scope  
 Product: Martenweave (general agentic data model registry)  
 Category: Data ModelOps Workspace  

@@ -24,9 +24,11 @@ All notable changes to Martenweave Core.
 
 The remote `v0.4.0` tag already points to an older commit and must not be moved, reused, deleted, or force-updated. Creating `v0.4.1` from the validated `main` branch is the safe patch release path.
 
-### Known Release Blocker
+### Release Status
 
-- PyPI publishing remains blocked by [#411](https://github.com/metalhatscats/martenweave-core/issues/411) until PyPI trusted publishing is configured. Do not push the `v0.4.1` tag while #411 is open because it would trigger a failing PyPI publish step.
+- Resolved after release: [#411](https://github.com/metalhatscats/martenweave-core/issues/411)
+  was closed after PyPI trusted publishing was configured and `martenweave-core 0.4.1` was
+  published through the release workflow.
 
 ## [0.4.0] — 2026-05-26
 

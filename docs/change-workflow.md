@@ -1,6 +1,6 @@
 # Model Change Request Workflow
 
-Version: 0.4.0  
+Version: 0.4.1
 Status: Draft  
 Scope: Lightweight end-to-end workflow for requesting, reviewing, approving, applying, and tracking model changes  
 

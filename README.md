@@ -15,19 +15,21 @@ SAP migration and Master Data Management are the **first domain pack** and proof
 ## Status
 
 - Current source version: `0.4.1`
-- Package name: `martenweave-core`
+- Package / PyPI name: `martenweave-core`
+- Install from PyPI: `pip install martenweave-core`
+- Source install remains available for contributors and local development.
 - Public site and docs: <https://martenweave.github.io/>
-- PyPI publishing is intentionally gated by the trusted-publisher release workflow. Until a package is published, install from source as shown below.
 
 ## Naming
 
 - Product: **Martenweave**
-- Open-source core package / PyPI package: `martenweave-core`
+- Open-source core / PyPI package: `martenweave-core`
 - Python module: `modelops_core`
-- CLI commands: `martenweave` and `modelops`
+- CLI commands: `modelops` and `martenweave`
 
-Use `martenweave` for new terminal examples and documentation. The existing `modelops` command
-remains supported for backward compatibility with scripts, CI jobs, and early adopters.
+`martenweave-core` is the backend-first open-source core package for the Martenweave product. Use
+`martenweave` for new terminal examples and documentation. The existing `modelops` command remains
+supported for backward compatibility with scripts, CI jobs, and early adopters.
 
 ## Core Principles
 
@@ -51,7 +53,16 @@ remains supported for backward compatibility with scripts, CI jobs, and early ad
 
 Martenweave Core requires Python 3.11+.
 
+### Install from PyPI
+
+```bash
+python -m pip install martenweave-core
+martenweave --help
+```
+
 ### Install from Source
+
+Use a source install when contributing to the core repository or testing local changes:
 
 ```bash
 git clone https://github.com/metalhatscats/martenweave-core.git
@@ -278,6 +289,17 @@ Release and public-readiness docs:
 - [docs/release-validation-evidence.md](docs/release-validation-evidence.md)
 - [docs/open-source-readiness.md](docs/open-source-readiness.md)
 - [docs/known-limitations.md](docs/known-limitations.md)
+
+## Licensing and commercial use
+
+Martenweave Core is MIT-licensed open source. Commercial offerings may include implementation
+support, private SAP/MDM domain packs, enterprise validation packs, a hosted workbench, custom
+integrations, and support SLAs. Future extensions, templates, packs, or hosted services may be
+distributed under separate commercial terms.
+
+By contributing to Martenweave Core, contributors agree their contribution is licensed under the
+same MIT License as the project. No separate contributor license agreement is required at this
+stage.
 
 ## License
 

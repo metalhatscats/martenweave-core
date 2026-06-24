@@ -61,14 +61,12 @@ findings remain release-blocking.
 
 ## Release Readiness Decision
 
-The core is release-candidate clean for a source/GitHub handoff: validation, smoke tests, package
-build, and config-guard release mode all pass locally.
+The core is release-clean for source/GitHub and PyPI handoff: validation, smoke tests, package
+build, config-guard release mode, trusted publishing, and PyPI publication for `martenweave-core
+0.4.1` have completed.
 
-**Do not publish to PyPI until
-[#411](https://github.com/metalhatscats/martenweave-core/issues/411) is closed.** The issue remains
-open because the PyPI project trusted publisher entry must be configured manually. Do not push the
-`v0.4.1` tag while #411 is open; pushing the tag would trigger `.github/workflows/release.yml` and
-fail at the PyPI publish step.
+[#411](https://github.com/metalhatscats/martenweave-core/issues/411) was the manual PyPI trusted
+publisher setup blocker during the release-candidate phase. It is now resolved and closed.
 
 ## Generated Artifacts
 
