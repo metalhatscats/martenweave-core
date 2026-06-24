@@ -316,7 +316,7 @@ def _add_readme_sheet(
         (
             "This workbook is a generated review view over the canonical model files. "
             "It is NOT the source of truth. Changes made here must be imported back "
-            "via 'modelops import-model-sheet' to produce a PatchProposal for human review.",
+            "via 'martenweave import-model-sheet' to produce a PatchProposal for human review.",
             normal_font,
         ),
         ("", normal_font),

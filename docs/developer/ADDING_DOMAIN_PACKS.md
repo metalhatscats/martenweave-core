@@ -21,8 +21,8 @@
 
 ```bash
 .venv/bin/python -m pytest tests/test_domain_packs.py -v
-.venv/bin/modelops validate --repo examples/simple_product_model
-.venv/bin/modelops validate --repo examples/customer_bp_model
+.venv/bin/martenweave validate --repo examples/simple_product_model
+.venv/bin/martenweave validate --repo examples/customer_bp_model
 .venv/bin/python -m ruff check .
 ```
 

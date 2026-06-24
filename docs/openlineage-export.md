@@ -158,14 +158,14 @@ Martenweave-specific metadata is attached through custom facets prefixed with `m
 
 ```bash
 # Export lineage as OpenLineage JSONL events
-modelops export-lineage --repo ./my-model --format openlineage
+martenweave export-lineage --repo ./my-model --format openlineage
 
 # Export only system lineage objects
-modelops export-lineage --repo ./my-model --format openlineage \
+martenweave export-lineage --repo ./my-model --format openlineage \
   --types IntegrationFlow,DataFlowStep,TransformationRule
 
 # Export with synthetic run IDs for catalog ingestion
-modelops export-lineage --repo ./my-model --format openlineage \
+martenweave export-lineage --repo ./my-model --format openlineage \
   --run-prefix "martenweave-export-"
 ```
 

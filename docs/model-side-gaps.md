@@ -7,7 +7,7 @@ Dataset-side gaps compare a CSV or XLSX against your model's `FieldEndpoint` obj
 ## How it works
 
 ```bash
-modelops gaps --check-model --repo <repo> [--json]
+martenweave gaps --check-model --repo <repo> [--json]
 ```
 
 This queries the SQLite index (run `build-index` first) and reports:
@@ -32,10 +32,10 @@ Using the `customer_bp_model` example:
 
 ```bash
 # Build the index first
-.venv/bin/modelops build-index --repo examples/customer_bp_model
+.venv/bin/martenweave build-index --repo examples/customer_bp_model
 
 # Check model-side gaps
-.venv/bin/modelops gaps --check-model --repo examples/customer_bp_model
+.venv/bin/martenweave gaps --check-model --repo examples/customer_bp_model
 ```
 
 Sample output:

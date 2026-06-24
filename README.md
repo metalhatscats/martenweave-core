@@ -19,6 +19,16 @@ SAP migration and Master Data Management are the **first domain pack** and proof
 - Public site and docs: <https://martenweave.github.io/>
 - PyPI publishing is intentionally gated by the trusted-publisher release workflow. Until a package is published, install from source as shown below.
 
+## Naming
+
+- Product: **Martenweave**
+- Open-source core package / PyPI package: `martenweave-core`
+- Python module: `modelops_core`
+- CLI commands: `martenweave` and `modelops`
+
+Use `martenweave` for new terminal examples and documentation. The existing `modelops` command
+remains supported for backward compatibility with scripts, CI jobs, and early adopters.
+
 ## Core Principles
 
 - **Canonical files are the source of truth.** Markdown + YAML frontmatter objects live in `model/`.
@@ -48,7 +58,7 @@ git clone https://github.com/metalhatscats/martenweave-core.git
 cd martenweave-core
 python -m venv .venv
 .venv/bin/python -m pip install -e ".[dev]"
-.venv/bin/modelops --help
+.venv/bin/martenweave --help
 ```
 
 ### Setup
@@ -59,7 +69,7 @@ Choose one style and use it throughout:
 ```bash
 python -m venv .venv
 .venv/bin/python -m pip install -e .
-# Then use .venv/bin/modelops for every command
+# Then use .venv/bin/martenweave for every command
 ```
 
 **Option B — activate the venv once:**
@@ -67,47 +77,48 @@ python -m venv .venv
 python -m venv .venv
 source .venv/bin/activate
 pip install -e .
-# Then use bare modelops for every command
+# Then use bare martenweave for every command
 ```
 
-The examples below use Option A. Replace `.venv/bin/modelops` with `modelops` if you chose Option B.
+The examples below use Option A. Replace `.venv/bin/martenweave` with `martenweave` if you chose
+Option B. `.venv/bin/modelops` and `modelops` still work as compatibility aliases.
 
 ```bash
 # Install
 .venv/bin/python -m pip install -e .
 
 # Scaffold a new repository
-.venv/bin/modelops init ./my-model
+.venv/bin/martenweave init ./my-model
 
 # Validate canonical files
-.venv/bin/modelops validate --repo ./my-model
+.venv/bin/martenweave validate --repo ./my-model
 
 # Build SQLite index + JSONL exports
-.venv/bin/modelops build-index --repo ./my-model --jsonl
+.venv/bin/martenweave build-index --repo ./my-model --jsonl
 
 # Check index freshness
-.venv/bin/modelops index-fresh --repo ./my-model
+.venv/bin/martenweave index-fresh --repo ./my-model
 
 # Health report and scorecard
-.venv/bin/modelops health --repo ./my-model
-.venv/bin/modelops scorecard --repo ./my-model
+.venv/bin/martenweave health --repo ./my-model
+.venv/bin/martenweave scorecard --repo ./my-model
 
 # Impact and trace analysis
-.venv/bin/modelops impact FEP-S4-KNVV-KDGRP --repo ./my-model
-.venv/bin/modelops trace ATTR-CUST-SALES-CUSTOMER-GROUP --repo ./my-model
+.venv/bin/martenweave impact FEP-S4-KNVV-KDGRP --repo ./my-model
+.venv/bin/martenweave trace ATTR-CUST-SALES-CUSTOMER-GROUP --repo ./my-model
 
 # Search and query
-.venv/bin/modelops search "Customer Group" --repo ./my-model
-.venv/bin/modelops query --type Attribute --repo ./my-model
+.venv/bin/martenweave search "Customer Group" --repo ./my-model
+.venv/bin/martenweave query --type Attribute --repo ./my-model
 
 # Diff against another repository
-.venv/bin/modelops diff ./my-model ./other-model
+.venv/bin/martenweave diff ./my-model ./other-model
 
 # Propose a patch from a note
-.venv/bin/modelops propose-patch --from ./note.md --repo ./my-model
+.venv/bin/martenweave propose-patch --from ./note.md --repo ./my-model
 
 # Clean generated artifacts (dry-run first)
-.venv/bin/modelops clean --repo ./my-model --dry-run
+.venv/bin/martenweave clean --repo ./my-model --dry-run
 ```
 
 ## First 15 Minutes
@@ -171,13 +182,13 @@ hosted product UI or browser application.
 Use `--help` on any command for full options:
 
 ```bash
-.venv/bin/modelops <command> --help
+.venv/bin/martenweave <command> --help
 ```
 
 ### Assessment Example
 
 ```bash
-.venv/bin/modelops assessment run --repo examples/customer_bp_model --out generated/assessment/customer-bp
+.venv/bin/martenweave assessment run --repo examples/customer_bp_model --out generated/assessment/customer-bp
 ```
 
 ## Example Models
@@ -203,8 +214,8 @@ Supplier -> Vendor Central -> LFA1/KTOKK, LFB1/ZTERM, LFM1/SPERR
 Run validation against either:
 
 ```bash
-.venv/bin/modelops validate --repo examples/customer_bp_model
-.venv/bin/modelops validate --repo examples/supplier_vendor_model
+.venv/bin/martenweave validate --repo examples/customer_bp_model
+.venv/bin/martenweave validate --repo examples/supplier_vendor_model
 ```
 
 ## Architecture

@@ -1,4 +1,4 @@
-"""Typer CLI for ModelOps MDM Core."""
+"""Typer CLI for Martenweave Core."""
 
 from __future__ import annotations
 
@@ -131,8 +131,7 @@ from modelops_core.trace import trace_object
 from modelops_core.validation import validate_objects
 
 app = typer.Typer(
-    name="modelops",
-    help="ModelOps MDM Core — backend-first model registry CLI.",
+    help="Martenweave Core — backend-first model registry CLI.",
     no_args_is_help=True,
 )
 _base_console = Console()
@@ -178,7 +177,8 @@ def _check_and_warn_stale_index(repo_root: Path, json_output: bool = False) -> b
     is_stale = not freshness.fresh
     if is_stale and not json_output:
         console.print(
-            "[yellow]Warning: index may be stale. Run `modelops build-index` to refresh.[/yellow]"
+            "[yellow]Warning: index may be stale. "
+            "Run `martenweave build-index` to refresh.[/yellow]"
         )
     return is_stale
 
@@ -250,7 +250,7 @@ def _print_validation_summary(summary: Any) -> None:
 
 def _version_callback(value: bool) -> None:
     if value:
-        console.print(f"modelops {__version__}")
+        console.print(f"martenweave-core {__version__}")
         raise typer.Exit()
 
 
@@ -500,7 +500,7 @@ def gaps(
     model_path = resolve_model_path(repo_root)
 
     if not db_path.exists():
-        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        console.print("[yellow]No index found. Run `martenweave build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
     stale = _check_and_warn_stale_index(repo_root, json_output)
@@ -1365,7 +1365,7 @@ def health(
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
     if not db_path.exists():
-        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        console.print("[yellow]No index found. Run `martenweave build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
     stale = _check_and_warn_stale_index(repo_root, json_output)
@@ -1555,7 +1555,7 @@ def scorecard(
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
     if not db_path.exists():
-        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        console.print("[yellow]No index found. Run `martenweave build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
     report = generate_scorecard(db_path, repo_root)
@@ -1642,7 +1642,7 @@ def owners(
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
     if not db_path.exists():
-        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        console.print("[yellow]No index found. Run `martenweave build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
     report = generate_ownership_report(db_path, repo_root)
@@ -1709,7 +1709,7 @@ def analyze(
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
     if not db_path.exists():
-        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        console.print("[yellow]No index found. Run `martenweave build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
     report = generate_analysis_report(db_path, repo_root)
@@ -1878,7 +1878,7 @@ def gap_report(
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
     if not db_path.exists():
-        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        console.print("[yellow]No index found. Run `martenweave build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
     report = generate_gap_summary_report(db_path, repo_root)
@@ -1945,7 +1945,7 @@ def trace(
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
     if not db_path.exists():
-        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        console.print("[yellow]No index found. Run `martenweave build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
     stale = _check_and_warn_stale_index(repo_root, json_output)
@@ -2047,7 +2047,7 @@ def impact(
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
     if not db_path.exists():
-        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        console.print("[yellow]No index found. Run `martenweave build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
     stale = _check_and_warn_stale_index(repo_root, json_output or fmt.lower() == "json")
@@ -2902,7 +2902,7 @@ def decisions_list(
         if json_output:
             print(json.dumps([]))
             raise typer.Exit()
-        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        console.print("[yellow]No index found. Run `martenweave build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
     conn = sqlite3.connect(str(db_path))
@@ -2953,7 +2953,7 @@ def decisions_show(
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
     if not db_path.exists():
-        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        console.print("[yellow]No index found. Run `martenweave build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
     conn = sqlite3.connect(str(db_path))
@@ -3028,7 +3028,7 @@ def decisions_report(
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
     if not db_path.exists():
-        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        console.print("[yellow]No index found. Run `martenweave build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
     report = generate_decisions_report(db_path, repo_root)
@@ -3582,7 +3582,7 @@ def proposal_impact(
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
     if not db_path.exists():
-        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        console.print("[yellow]No index found. Run `martenweave build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
     proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
@@ -4424,7 +4424,7 @@ def proposal_review_bundle(
             "risk_assessment": {},
             "affected_objects": [],
             "operations": [],
-            "note": "No index found. Run `modelops build-index` first.",
+            "note": "No index found. Run `martenweave build-index` first.",
         }
 
     # ---- Validation section ----
@@ -5292,7 +5292,7 @@ def search(
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
     if not db_path.exists():
-        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        console.print("[yellow]No index found. Run `martenweave build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
     stale = _check_and_warn_stale_index(repo_root, json_output)
@@ -5370,7 +5370,7 @@ def query(
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
     if not db_path.exists():
-        console.print("[yellow]No index found. Run `modelops build-index` first.[/yellow]")
+        console.print("[yellow]No index found. Run `martenweave build-index` first.[/yellow]")
         raise typer.Exit(code=1)
 
     stale = _check_and_warn_stale_index(repo_root, json_output)

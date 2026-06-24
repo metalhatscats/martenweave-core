@@ -4,7 +4,7 @@
 
 ## Pre-Engagement
 
-- [ ] Martenweave CLI installed and working (`modelops --version`)
+- [ ] Martenweave CLI installed and working (`martenweave --version`)
 - [ ] Example repository cloned or client repository accessible
 - [ ] Stakeholder list confirmed (business owner, technical owner, migration lead)
 - [ ] Interview questions printed or shared in advance
@@ -20,14 +20,14 @@
 
 ## Validation & Index
 
-- [ ] `modelops validate --repo <repo>` runs without unhandled exceptions
+- [ ] `martenweave validate --repo <repo>` runs without unhandled exceptions
 - [ ] All ERROR-level findings are documented as accepted risks or scheduled for fix
-- [ ] `modelops build-index --repo <repo>` succeeds
+- [ ] `martenweave build-index --repo <repo>` succeeds
 - [ ] Index is fresh (rebuilt after the latest model changes)
 
 ## Assessment Generation
 
-- [ ] `modelops assessment run --repo <repo> --out <dir>` completes successfully
+- [ ] `martenweave assessment run --repo <repo> --out <dir>` completes successfully
 - [ ] `01_readiness_scorecard.md` contains readiness level and metrics
 - [ ] `02_gap_report.md` contains gap score and gaps by type
 - [ ] `03_high_risk_fields.md` contains at least a severity legend
@@ -65,7 +65,7 @@
 
 ## Optional Enhancements
 
-- [ ] `modelops export-model --format xlsx --business-review` used for additional review rounds
-- [ ] `modelops health` and `modelops scorecard` run separately for ad-hoc checks
+- [ ] `martenweave export-model --format xlsx --business-review` used for additional review rounds
+- [ ] `martenweave health` and `martenweave scorecard` run separately for ad-hoc checks
 - [ ] Impact analysis run for any object the team plans to change
 - [ ] Pilot kit templates customized for the client's industry or use case

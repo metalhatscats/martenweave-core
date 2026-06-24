@@ -60,9 +60,9 @@ Martenweave defines seven primary roles. One person may wear multiple hats, but 
 - **Actions:**
   - Reviews attribute definitions, value lists, and validation rules.
   - Approves semantic changes (e.g., adding a new Customer Group value).
-  - Runs `modelops validate` and `modelops health` to monitor model quality.
+  - Runs `martenweave validate` and `martenweave health` to monitor model quality.
   - Creates `PatchProposal`s for governance-driven changes.
-- **CLI usage:** `modelops validate --repo ./my-model`, `modelops scorecard --repo ./my-model`
+- **CLI usage:** `martenweave validate --repo ./my-model`, `martenweave scorecard --repo ./my-model`
 
 ### SAP Functional Consultant
 
@@ -73,8 +73,8 @@ Martenweave defines seven primary roles. One person may wear multiple hats, but 
   - Reviews `FieldEndpoint` objects for correct `sap_table`, `sap_field`, and `context_category`.
   - Validates that `KNVV` fields are in `customer_sales_area` context.
   - Reviews mapping correctness for cutover.
-  - Runs `modelops trace` and `modelops impact` before approving technical changes.
-- **CLI usage:** `modelops trace FEP-S4-KNVV-KDGRP --repo ./my-model`, `modelops impact FEP-S4-KNVV-KDGRP --repo ./my-model`
+  - Runs `martenweave trace` and `martenweave impact` before approving technical changes.
+- **CLI usage:** `martenweave trace FEP-S4-KNVV-KDGRP --repo ./my-model`, `martenweave impact FEP-S4-KNVV-KDGRP --repo ./my-model`
 
 ### Migration Lead
 
@@ -86,7 +86,7 @@ Martenweave defines seven primary roles. One person may wear multiple hats, but 
   - Reviews `Dataset` profiles and gap reports.
   - Ensures all mapped fields have `ValidationRule`s before cutover.
   - Tracks open `Issue`s and `Decision`s for cutover readiness.
-- **CLI usage:** `modelops gaps ./data/load.csv --repo ./my-model`, `modelops gap-report --repo ./my-model`
+- **CLI usage:** `martenweave gaps ./data/load.csv --repo ./my-model`, `martenweave gap-report --repo ./my-model`
 
 ### Data Quality Analyst
 
@@ -96,9 +96,9 @@ Martenweave defines seven primary roles. One person may wear multiple hats, but 
 - **Actions:**
   - Writes and reviews `ValidationRule` objects.
   - Reviews `ValueList` completeness.
-  - Runs `modelops validate --strict` in CI pipelines.
+  - Runs `martenweave validate --strict` in CI pipelines.
   - Investigates `REFERENCE_BROKEN`, `SAP_CONTEXT_KNVV_REQUIRES_SALES_AREA`, and other validation errors.
-- **CLI usage:** `modelops validate --repo ./my-model --strict`, `modelops health --repo ./my-model`
+- **CLI usage:** `martenweave validate --repo ./my-model --strict`, `martenweave health --repo ./my-model`
 
 ### AI Assistant / Agent Operator
 
@@ -106,11 +106,11 @@ Martenweave defines seven primary roles. One person may wear multiple hats, but 
 - **Typical title:** AI operator, automation engineer, tool administrator.
 - **Martenweave mapping:** `PatchProposal.created_by = "ai"`, human approver on `ChangeRequest`.
 - **Actions:**
-  - Runs `modelops propose-patch --from note.md` to generate AI proposals.
+  - Runs `martenweave propose-patch --from note.md` to generate AI proposals.
   - Reviews AI-generated `PatchProposal`s for hallucinated SAP facts.
   - Adjusts AI assumptions and required human checks.
   - Ensures AI proposals pass deterministic validation before human review.
-- **CLI usage:** `modelops propose-patch --from ./note.md --repo ./my-model`, `modelops proposal validate PP-001 --repo ./my-model`
+- **CLI usage:** `martenweave propose-patch --from ./note.md --repo ./my-model`, `martenweave proposal validate PP-001 --repo ./my-model`
 
 ### Validator (System Role)
 
@@ -123,7 +123,7 @@ Martenweave defines seven primary roles. One person may wear multiple hats, but 
   - Validates mapping coherence and value mapping completeness.
   - Checks ownership presence on active objects.
   - Validates `PatchProposal` operations against allow-lists.
-- **CLI usage:** `modelops validate --repo ./my-model`
+- **CLI usage:** `martenweave validate --repo ./my-model`
 
 ### Approver
 
@@ -186,7 +186,7 @@ Every change to the canonical model follows this lifecycle:
          │
          ▼
 ┌─────────────────┐
-│  Index Rebuild   │  ← `modelops build-index` regenerates SQLite, JSONL, search docs, lineage
+│  Index Rebuild   │  ← `martenweave build-index` regenerates SQLite, JSONL, search docs, lineage
 │  (fresh index)   │
 └────────┬────────┘
          │
@@ -309,7 +309,7 @@ Source email indicates that Customer Group handling for CH01 / A17 differs from 
 The consultant runs:
 
 ```bash
-modelops propose-patch --from ./email-note.md --repo ./my-model
+martenweave propose-patch --from ./email-note.md --repo ./my-model
 ```
 
 The AI provider (or `NoProviderAdapter`) creates a `PatchProposal`:
@@ -352,7 +352,7 @@ validation_status: pending
 The consultant runs:
 
 ```bash
-modelops proposal validate PP-001 --repo ./my-model
+martenweave proposal validate PP-001 --repo ./my-model
 ```
 
 The validator checks:
@@ -368,7 +368,7 @@ Result: `validation_status: valid` (with warnings: target value not yet confirme
 The consultant runs:
 
 ```bash
-modelops proposal impact PP-001 --repo ./my-model
+martenweave proposal impact PP-001 --repo ./my-model
 ```
 
 Impact report shows:
@@ -431,7 +431,7 @@ Status: `approved`.
 The model maintainer applies:
 
 ```bash
-modelops proposal apply PP-001 --repo ./my-model --apply
+martenweave proposal apply PP-001 --repo ./my-model --apply
 ```
 
 > **Note:** `proposal apply` defaults to dry-run. Pass `--apply` to actually mutate canonical files.
@@ -445,7 +445,7 @@ The system:
 **Step 9: Index rebuild**
 
 ```bash
-modelops build-index --repo ./my-model --jsonl
+martenweave build-index --repo ./my-model --jsonl
 ```
 
 SQLite index, lineage edges, and search documents are regenerated.
@@ -453,7 +453,7 @@ SQLite index, lineage edges, and search documents are regenerated.
 **Step 10: Post-apply validation**
 
 ```bash
-modelops validate --repo ./my-model
+martenweave validate --repo ./my-model
 ```
 
 Validation passes with zero errors. The `Issue` status is updated to `resolved`.
@@ -461,8 +461,8 @@ Validation passes with zero errors. The `Issue` status is updated to `resolved`.
 **Step 11: Report generation**
 
 ```bash
-modelops health --repo ./my-model
-modelops scorecard --repo ./my-model
+martenweave health --repo ./my-model
+martenweave scorecard --repo ./my-model
 ```
 
 Health report shows improved coverage. Scorecard reflects resolved gap.
@@ -499,7 +499,7 @@ Health report shows improved coverage. Scorecard reflects resolved gap.
 | Storing the only copy of truth in Martenweave | Martenweave documents truth; systems own data | Use Martenweave as knowledge layer, not data store |
 | Expecting real-time collaboration | Martenweave is async/Git-based | Use short PR cycles and frequent validation |
 | Giving every user full repo access | Accidental mutation | File-system permissions or Git branch protection |
-| Skipping validation before apply | Broken references, SAP context errors | Always run `modelops validate` before and after apply |
+| Skipping validation before apply | Broken references, SAP context errors | Always run `martenweave validate` before and after apply |
 
 ---
 

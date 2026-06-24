@@ -233,7 +233,7 @@ Martenweave detects gaps in two directions:
 The `gaps` command profiles a CSV/XLSX dataset and compares columns against `FieldEndpoint` objects:
 
 ```bash
-modelops gaps ./data/customer_sales_area_load.csv --repo ./my-model
+martenweave gaps ./data/customer_sales_area_load.csv --repo ./my-model
 ```
 
 | Gap Code | Severity | Meaning | Example |
@@ -247,7 +247,7 @@ modelops gaps ./data/customer_sales_area_load.csv --repo ./my-model
 **Auto-proposal:** The system can promote gaps to a `PatchProposal`:
 
 ```bash
-modelops gaps ./data/load.csv --repo ./my-model --promote-to-proposal
+martenweave gaps ./data/load.csv --repo ./my-model --promote-to-proposal
 ```
 
 This creates a draft `PatchProposal` with `create_object` operations for unmodeled columns.
@@ -257,7 +257,7 @@ This creates a draft `PatchProposal` with `create_object` operations for unmodel
 The `gaps` command (with `--check-model`) detects model-side gaps:
 
 ```bash
-modelops gaps ./data/load.csv --repo ./my-model --check-model
+martenweave gaps ./data/load.csv --repo ./my-model --check-model
 ```
 
 | Gap Code | Severity | Meaning | Example |
@@ -344,7 +344,7 @@ Lineage is generated from canonical references and stored as directed edges:
 **Lineage query example:**
 
 ```bash
-modelops trace ATTR-CUST-SALES-CUSTOMER-GROUP --repo ./my-model
+martenweave trace ATTR-CUST-SALES-CUSTOMER-GROUP --repo ./my-model
 ```
 
 Returns upstream (source systems, source fields, source datasets) and downstream (target fields, validations, mappings, issues, decisions, owners).

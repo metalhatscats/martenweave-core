@@ -20,7 +20,7 @@
 
 ```bash
 .venv/bin/python -m pytest tests/test_schema_validation.py tests/test_reference_validation.py -v
-.venv/bin/modelops validate --repo examples/simple_product_model
+.venv/bin/martenweave validate --repo examples/simple_product_model
 .venv/bin/python -m ruff check .
 ```
 

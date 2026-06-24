@@ -16,10 +16,10 @@ A future GitHub Action that validates Martenweave model repositories in CI and p
 ## Behavior
 
 1. Install `modelops_core` from PyPI or a pinned commit.
-2. Run `modelops validate --repo <path>`.
-3. Run `modelops build-index --repo <path> --jsonl`.
-4. Run `modelops analyze --repo <path> --json`.
-5. Optionally run `modelops health --repo <path> --json` and compare to baseline.
+2. Run `martenweave validate --repo <path>`.
+3. Run `martenweave build-index --repo <path> --jsonl`.
+4. Run `martenweave analyze --repo <path> --json`.
+5. Optionally run `martenweave health --repo <path> --json` and compare to baseline.
 6. Post a PR comment with:
    - Validation summary (errors, warnings)
    - Scorecard delta (if baseline exists)

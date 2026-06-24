@@ -59,6 +59,7 @@ mcp = [
 ]
 
 [project.scripts]
+martenweave = "modelops_core.cli:app"
 modelops = "modelops_core.cli:app"
 
 [tool.pytest.ini_options]

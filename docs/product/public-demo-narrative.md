@@ -13,45 +13,45 @@ Acme Corp is migrating customer master data to a new system. They have:
 
 1. **Import and profile**
    ```bash
-   modelops import-model-sheet ./customers_legacy.csv --repo ./acme-model
+   martenweave import-model-sheet ./customers_legacy.csv --repo ./acme-model
    ```
    → Profiles dataset, creates inferred entities and attributes.
 
 2. **Validate gaps**
    ```bash
-   modelops validate --repo ./acme-model
+   martenweave validate --repo ./acme-model
    ```
    → Shows missing owners, unmapped fields, context_category errors.
 
 3. **Build index and trace**
    ```bash
-   modelops build-index --repo ./acme-model --jsonl
-   modelops impact ATTR-CUST-SALES-CUSTOMER-GROUP --repo ./acme-model
+   martenweave build-index --repo ./acme-model --jsonl
+   martenweave impact ATTR-CUST-SALES-CUSTOMER-GROUP --repo ./acme-model
    ```
    → BFS traversal shows affected Mappings, FieldEndpoints, ValueLists.
 
 4. **Analyze coverage**
    ```bash
-   modelops analyze --repo ./acme-model
+   martenweave analyze --repo ./acme-model
    ```
    → Reports orphan fields, ownership gaps, rule coverage, unresolved risks.
 
 5. **Propose patch**
    ```bash
-   modelops propose-patch --from ./stakeholder-note.md --repo ./acme-model
+   martenweave propose-patch --from ./stakeholder-note.md --repo ./acme-model
    ```
    → AI-assisted PatchProposal for missing AttributeUsages and ValueLists.
 
 6. **Review and apply**
    ```bash
-   modelops proposal show PROP-2026-001 --repo ./acme-model
-   modelops proposal apply PROP-2026-001 --repo ./acme-model --apply
+   martenweave proposal show PROP-2026-001 --repo ./acme-model
+   martenweave proposal apply PROP-2026-001 --repo ./acme-model --apply
    ```
    → Human review, validation, atomic apply with audit log.
 
 7. **Export scorecard**
    ```bash
-   modelops health --repo ./acme-model --json
+   martenweave health --repo ./acme-model --json
    ```
    → Health score, coverage metrics, readiness summary.
 
@@ -65,8 +65,8 @@ Martenweave is not a data dictionary. It is a **governed model knowledge layer**
 
 ## Screenshots / Terminal Captures Needed
 
-- `modelops validate` output (rich tables)
-- `modelops impact` graph (text or rendered)
-- `modelops analyze` summary
-- `modelops health --json` scorecard
+- `martenweave validate` output (rich tables)
+- `martenweave impact` graph (text or rendered)
+- `martenweave analyze` summary
+- `martenweave health --json` scorecard
 - PatchProposal diff view

@@ -25,7 +25,7 @@ Talk through:
 ### 2. Validate the model (2 min)
 
 ```bash
-modelops validate --repo examples/customer_bp_model
+martenweave validate --repo examples/customer_bp_model
 ```
 
 Talk through:
@@ -36,7 +36,7 @@ Talk through:
 ### 3. Build the index (1 min)
 
 ```bash
-modelops build-index --repo examples/customer_bp_model --jsonl
+martenweave build-index --repo examples/customer_bp_model --jsonl
 ```
 
 Talk through:
@@ -46,7 +46,7 @@ Talk through:
 ### 4. Run the readiness assessment (3 min)
 
 ```bash
-modelops assessment run --repo examples/customer_bp_model --out /tmp/martenweave-assessment
+martenweave assessment run --repo examples/customer_bp_model --out /tmp/martenweave-assessment
 ```
 
 Talk through:
@@ -89,9 +89,9 @@ ls /tmp/martenweave-assessment
 ### 6. Show additional commands (2 min)
 
 ```bash
-modelops health --repo examples/customer_bp_model
-modelops scorecard --repo examples/customer_bp_model
-modelops impact FEP-S4-KNVV-KDGRP --repo examples/customer_bp_model
+martenweave health --repo examples/customer_bp_model
+martenweave scorecard --repo examples/customer_bp_model
+martenweave impact FEP-S4-KNVV-KDGRP --repo examples/customer_bp_model
 ```
 
 ## Closing Questions

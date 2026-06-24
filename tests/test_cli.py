@@ -17,7 +17,7 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures"
 def test_cli_version() -> None:
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
-    assert "modelops" in result.output
+    assert "martenweave-core" in result.output
 
 
 def test_cli_init(tmp_path: Path) -> None:

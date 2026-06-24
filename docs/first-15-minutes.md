@@ -27,7 +27,7 @@ The commands below use `simple_product_model`. Replace the path if you want the 
 ## 1. Validate the canonical model
 
 ```bash
-.venv/bin/modelops validate --repo examples/simple_product_model
+.venv/bin/martenweave validate --repo examples/simple_product_model
 ```
 
 You should see zero errors. Warnings are normal for methodology checks and do not block the index.
@@ -35,7 +35,7 @@ You should see zero errors. Warnings are normal for methodology checks and do no
 ## 2. Build the index
 
 ```bash
-.venv/bin/modelops build-index --repo examples/simple_product_model --jsonl
+.venv/bin/martenweave build-index --repo examples/simple_product_model --jsonl
 ```
 
 This creates:
@@ -47,26 +47,26 @@ This creates:
 
 ```bash
 # Keyword search
-.venv/bin/modelops search "product" --repo examples/simple_product_model
+.venv/bin/martenweave search "product" --repo examples/simple_product_model
 
 # Structured query
-.venv/bin/modelops query --type Attribute --repo examples/simple_product_model
+.venv/bin/martenweave query --type Attribute --repo examples/simple_product_model
 ```
 
 ## 4. Trace and impact
 
 ```bash
 # Trace relationships for an object
-.venv/bin/modelops trace ATTR-PRODUCT-NAME --repo examples/simple_product_model
+.venv/bin/martenweave trace ATTR-PRODUCT-NAME --repo examples/simple_product_model
 
 # Impact analysis
-.venv/bin/modelops impact DOMAIN-PRODUCT --repo examples/simple_product_model
+.venv/bin/martenweave impact DOMAIN-PRODUCT --repo examples/simple_product_model
 ```
 
 ## 5. Profile a dataset
 
 ```bash
-.venv/bin/modelops profile-dataset \
+.venv/bin/martenweave profile-dataset \
   examples/simple_product_model/data/samples/product_sample.csv \
   --repo examples/simple_product_model
 ```
@@ -74,7 +74,7 @@ This creates:
 ## 6. Detect gaps
 
 ```bash
-.venv/bin/modelops gaps \
+.venv/bin/martenweave gaps \
   examples/simple_product_model/data/samples/product_sample.csv \
   --repo examples/simple_product_model
 ```
@@ -86,15 +86,15 @@ This compares dataset columns against your model's FieldEndpoints and reports ma
 If a PatchProposal exists in `model/patch-proposals/`:
 
 ```bash
-.venv/bin/modelops proposal list --repo examples/simple_product_model
-.venv/bin/modelops proposal diff PP-001 --repo examples/simple_product_model
-.venv/bin/modelops proposal apply PP-001 --repo examples/simple_product_model --dry-run
+.venv/bin/martenweave proposal list --repo examples/simple_product_model
+.venv/bin/martenweave proposal diff PP-001 --repo examples/simple_product_model
+.venv/bin/martenweave proposal apply PP-001 --repo examples/simple_product_model --dry-run
 ```
 
 ## 8. Health check
 
 ```bash
-.venv/bin/modelops health --repo examples/simple_product_model
+.venv/bin/martenweave health --repo examples/simple_product_model
 ```
 
 ---

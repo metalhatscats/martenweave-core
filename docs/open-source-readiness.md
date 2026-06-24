@@ -39,8 +39,8 @@ Before making the repository public or announcing a release:
 
 ```bash
 git status --short
-.venv/bin/modelops config-guard --repo . --json
-.venv/bin/modelops config-guard --repo . --mode release --json
+.venv/bin/martenweave config-guard --repo . --json
+.venv/bin/martenweave config-guard --repo . --mode release --json
 .venv/bin/python -m ruff check .
 .venv/bin/python -m pytest
 bash scripts/release_smoke.sh

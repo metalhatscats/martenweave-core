@@ -16,8 +16,8 @@
 
 6. **Reuse existing architecture.** Prefer extending existing services over introducing new subsystems.
 7. **Dry-run first.** For any command that mutates files or indexes, test `--dry-run` before `--apply`.
-8. **Clean generated artifacts.** Run `modelops clean --dry-run` to preview, then `modelops clean` to remove stale `generated/` files before rebuilding.
-9. **Validate before indexing.** Always run `modelops validate` before `modelops build-index`.
+8. **Clean generated artifacts.** Run `martenweave clean --dry-run` to preview, then `martenweave clean` to remove stale `generated/` files before rebuilding.
+9. **Validate before indexing.** Always run `martenweave validate` before `martenweave build-index`.
 10. **Never commit generated files.** The `generated/` directory contains rebuildable artifacts. Only canonical files in `model/` are source of truth.
 11. **Test every new behavior.** Add tests for happy paths and negative/safety cases. Run narrow tests first, then the full suite.
 12. **Keep machine-readable output stable.** CLI commands should emit predictable JSON when passed `--json`. Do not break existing JSON contracts without updating tests.

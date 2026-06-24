@@ -166,7 +166,7 @@ When a source is imported as a PatchProposal, the proposal's `affected_objects` 
 Stale sources can be surfaced in the health report:
 
 ```text
-$ modelops health --repo ./my-model
+$ martenweave health --repo ./my-model
 
 Stale source warnings:
   - sales_data_2026.csv has changed since last profile (5 days ago)

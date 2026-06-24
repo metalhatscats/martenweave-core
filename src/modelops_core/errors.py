@@ -1,4 +1,4 @@
-"""Domain exceptions for ModelOps MDM Core."""
+"""Domain exceptions for Martenweave Core."""
 
 from __future__ import annotations
 

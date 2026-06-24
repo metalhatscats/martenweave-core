@@ -1,4 +1,4 @@
-"""Configuration loader for ModelOps MDM Core."""
+"""Configuration loader for Martenweave Core."""
 
 from __future__ import annotations
 

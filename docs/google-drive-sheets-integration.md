@@ -285,7 +285,7 @@ integrations:
 - All Drive/Sheet interactions are triggered by explicit CLI commands:
   ```bash
   modelops import-drive <file-id> --repo ./my-model
-  modelops export-sheets --repo ./my-model --sheet-id <id>
+  martenweave export-sheets --repo ./my-model --sheet-id <id>
   modelops profile-sheet <sheet-id> --range A1:Z100
   ```
 - No automatic background sync, polling, or two-way replication.

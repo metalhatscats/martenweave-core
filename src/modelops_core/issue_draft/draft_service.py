@@ -117,7 +117,7 @@ def create_draft_from_change_request(model_path: Path, cr_id: str) -> DraftResul
         lines.append(
             "1. Review affected objects and linked proposals.\n"
             "2. Confirm approvers are available.\n"
-            "3. Run `modelops change-request approve {cr_id} --approver <id>`."
+            "3. Run `martenweave change-request approve {cr_id} --approver <id>`."
         )
     else:
         lines.append(
@@ -240,12 +240,12 @@ def create_draft_from_proposal(
             "1. Review operations and impact.\n"
             "2. Create a ChangeRequest linking to this proposal.\n"
             "3. Obtain approval before applying.\n"
-            "4. Run `modelops proposal apply {proposal_id} --apply`."
+            "4. Run `martenweave proposal apply {proposal_id} --apply`."
         )
     else:
         lines.append(
             "1. Validate the proposal.\n"
-            "2. Run `modelops proposal apply {proposal_id} --apply` if acceptable."
+            "2. Run `martenweave proposal apply {proposal_id} --apply` if acceptable."
         )
     lines.append("")
 
@@ -314,7 +314,7 @@ def create_draft_from_validation(
     lines.append(
         "1. Review errors and warnings above.\n"
         "2. Fix individual objects or create PatchProposals.\n"
-        "3. Re-run `modelops validate` to confirm resolution."
+        "3. Re-run `martenweave validate` to confirm resolution."
     )
     lines.append("")
 

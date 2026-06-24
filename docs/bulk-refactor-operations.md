@@ -359,8 +359,8 @@ modelops bulk rename --old-id ATTR-CUST-GROUP --new-id ATTR-CUSTOMER-GROUP --rep
 modelops bulk rename --old-id ATTR-CUST-GROUP --new-id ATTR-CUSTOMER-GROUP --repo ./my-model --apply
 
 # Review and approve
-modelops validate --repo ./my-model
-modelops impact ATTR-CUSTOMER-GROUP --repo ./my-model
+martenweave validate --repo ./my-model
+martenweave impact ATTR-CUSTOMER-GROUP --repo ./my-model
 ```
 
 ### 7.2 Enterprise Business Partner cleanup
@@ -384,7 +384,7 @@ modelops bulk deprecate \
   --apply
 
 # Step 3: Review all generated proposals
-modelops proposals list --repo ./my-model
+martenweave proposals list --repo ./my-model
 ```
 
 ---

@@ -37,7 +37,7 @@ Why not D3:
 
 **Purpose:** Show all objects reachable from a given object via lineage edges.
 
-**Data source:** `modelops trace <id> --json`
+**Data source:** `martenweave trace <id> --json`
 
 **Visual conventions:**
 - Root object centered or highlighted.
@@ -72,7 +72,7 @@ Why not D3:
 
 **Purpose:** Show upstream and downstream impact of changing an object.
 
-**Data source:** `modelops impact <id> --json`
+**Data source:** `martenweave impact <id> --json`
 
 **Visual conventions:**
 - Root object in the center.
@@ -171,6 +171,6 @@ The UI may add computed fields without mutating the backend contract:
 
 ## Future Work
 
-- Add a `modelops serve` command that exposes a read-only HTTP API for graph data, enabling the UI to fetch nodes and edges on demand.
+- Add a `martenweave serve` command that exposes a read-only HTTP API for graph data, enabling the UI to fetch nodes and edges on demand.
 - Add filtering parameters to graph export (e.g., `--depth 3`, `--types Attribute,FieldEndpoint`).
 - Evaluate WebSocket push for incremental graph updates when canonical files change.

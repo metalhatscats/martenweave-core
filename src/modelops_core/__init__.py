@@ -1,4 +1,4 @@
-"""ModelOps MDM Core — backend-first model registry."""
+"""Martenweave Core — backend-first model registry."""
 
 from modelops_core.__version__ import __version__
 

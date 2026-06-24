@@ -229,17 +229,17 @@ mappings:
 ### Running Validation
 
 ```bash
-modelops validate --repo ./my-model
+martenweave validate --repo ./my-model
 ```
 
 ### Fixing Errors
 
 ```bash
 # See detailed errors
-modelops validate --repo ./my-model --json
+martenweave validate --repo ./my-model --json
 
 # Build index even with warnings
-modelops build-index --repo ./my-model --allow-invalid
+martenweave build-index --repo ./my-model --allow-invalid
 ```
 
 ---
@@ -258,10 +258,10 @@ Lineage is generated automatically from references in canonical files:
 
 ```bash
 # Full trace upstream and downstream
-modelops trace FEP-S4-KNVV-KDGRP --direction both --repo ./my-model
+martenweave trace FEP-S4-KNVV-KDGRP --direction both --repo ./my-model
 
 # Impact analysis
-modelops impact FEP-S4-KNVV-KDGRP --repo ./my-model
+martenweave impact FEP-S4-KNVV-KDGRP --repo ./my-model
 ```
 
 ---
@@ -311,12 +311,12 @@ description: "15 active attributes lack business_owner"
 1. Write a note describing the desired change
 2. Generate a PatchProposal
    ```bash
-   modelops propose-patch --from ./my-note.md --repo ./my-model
+   martenweave propose-patch --from ./my-note.md --repo ./my-model
    ```
 3. Review the proposal
    ```bash
-   modelops proposal impact PP-001 --repo ./my-model
-   modelops proposal validate PP-001 --repo ./my-model
+   martenweave proposal impact PP-001 --repo ./my-model
+   martenweave proposal validate PP-001 --repo ./my-model
    ```
 
 ### Creating a ChangeRequest
@@ -337,8 +337,8 @@ modelops change-request create \
 modelops change-request approve CR-001 --repo ./my-model
 
 # Apply (dry-run first)
-modelops proposal apply PP-001 --dry-run --repo ./my-model
-modelops proposal apply PP-001 --repo ./my-model
+martenweave proposal apply PP-001 --dry-run --repo ./my-model
+martenweave proposal apply PP-001 --repo ./my-model
 ```
 
 ---
@@ -348,7 +348,7 @@ modelops proposal apply PP-001 --repo ./my-model
 ### Scorecard
 
 ```bash
-modelops scorecard --repo ./my-model
+martenweave scorecard --repo ./my-model
 ```
 
 Outputs readiness metrics:
@@ -380,7 +380,7 @@ Before declaring a model "production ready":
 
 1. Export model to Excel
    ```bash
-   modelops export-model --format xlsx --business-review --repo ./my-model
+   martenweave export-model --format xlsx --business-review --repo ./my-model
    ```
 2. Share workbook with business owners
 3. Collect comments in Excel
@@ -391,22 +391,22 @@ Before declaring a model "production ready":
 
 ```bash
 # Export to Google Sheets
-modelops export-sheets --repo ./my-model
+martenweave export-sheets --repo ./my-model
 
 # Import changes back from Google Sheets by spreadsheet ID
 modelops import-sheet <spreadsheet-id> --repo ./my-model
 
 # Import an edited XLSX/CSV model review workbook
-modelops import-model-sheet ./updated_sheet.xlsx --repo ./my-model
+martenweave import-model-sheet ./updated_sheet.xlsx --repo ./my-model
 ```
 
 ### GitHub PR Review
 
 1. Create a branch for model changes
 2. Edit canonical files
-3. Run `modelops validate` and `modelops build-index`
+3. Run `martenweave validate` and `martenweave build-index`
 4. Open a PR
-5. Reviewers use `modelops trace` and `modelops impact` to assess changes
+5. Reviewers use `martenweave trace` and `martenweave impact` to assess changes
 6. Merge after approval
 
 ---
@@ -446,7 +446,7 @@ modelops import-model-sheet ./updated_sheet.xlsx --repo ./my-model
 | Direct table names as entity names | Business users cannot read the model | Use business language for entities |
 | Storing data values in canonical files | Bloats model; privacy risk | Store only definitions and mappings |
 | Editing `generated/` files | Lost on next `build-index` | Edit `model/` only |
-| Skipping validation before commit | Broken references propagate | Run `modelops validate` before every PR |
+| Skipping validation before commit | Broken references propagate | Run `martenweave validate` before every PR |
 | One person proposes and approves | No governance | Separate proposer and approver |
 | Ignoring audit events | No traceability for compliance | Review `generated/audit_events.jsonl` regularly |
 
@@ -465,9 +465,9 @@ For a single migration object, create these files in `model/`:
 Then run:
 
 ```bash
-modelops validate --repo ./my-model
-modelops build-index --repo ./my-model --jsonl
-modelops scorecard --repo ./my-model
+martenweave validate --repo ./my-model
+martenweave build-index --repo ./my-model --jsonl
+martenweave scorecard --repo ./my-model
 ```
 
 You now have a searchable, valid, scorecarded model.

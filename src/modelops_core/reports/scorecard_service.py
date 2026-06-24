@@ -147,7 +147,7 @@ def generate_scorecard(
             generated_at=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             readiness_level="seed",
             object_count=0,
-            summary="No index found. Run `modelops build-index` first.",
+            summary="No index found. Run `martenweave build-index` first.",
         )
 
     conn = sqlite3.connect(str(db_path))
@@ -492,7 +492,9 @@ def generate_scorecard(
                     else "Index build timestamp unknown."
                 ),
                 suggested_action=(
-                    "Run `modelops build-index` to refresh the index." if hours_old > 24 else None
+                    "Run `martenweave build-index` to refresh the index."
+                    if hours_old > 24
+                    else None
                 ),
             )
         )

@@ -12,7 +12,7 @@ Status: Draft for implementation
 
 This document defines the **GitHub publishing workflow** for Martenweave. It describes how model repositories use Git and GitHub as a **versioning, review, and publishing layer** while preserving the principle that canonical model files are the source of truth.
 
-GitHub is not a runtime database, not a model store, and not a replacement for the local `modelops build-index` workflow. It is a collaboration layer where teams review model changes through Pull Requests, track issues, and publish generated documentation.
+GitHub is not a runtime database, not a model store, and not a replacement for the local `martenweave build-index` workflow. It is a collaboration layer where teams review model changes through Pull Requests, track issues, and publish generated documentation.
 
 ---
 
@@ -50,7 +50,7 @@ GitHub is not a runtime database, not a model store, and not a replacement for t
 │  └─────────┘  └─────────┘  └─────────┘  └─────────────────────────┘   │
 │                                                                          │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │  modelops validate && modelops build-index && modelops health   │   │
+│  │  martenweave validate && martenweave build-index && martenweave health   │   │
 │  └─────────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -90,7 +90,7 @@ PatchProposal  ──►  validation  ──►  human review  ──►  Change
 ### 3.1 Initialize a model repo locally
 
 ```bash
-modelops init ./my-model
+martenweave init ./my-model
 ```
 
 **What happens:**
@@ -111,8 +111,8 @@ modelops init ./my-model
 ### 3.2 Validate and build generated index locally
 
 ```bash
-modelops validate --repo ./my-model
-modelops build-index --repo ./my-model --jsonl
+martenweave validate --repo ./my-model
+martenweave build-index --repo ./my-model --jsonl
 ```
 
 **What happens:**
@@ -125,8 +125,8 @@ modelops build-index --repo ./my-model --jsonl
 
 ```bash
 pytest && ruff check .
-modelops validate --repo ./my-model
-modelops build-index --repo ./my-model --jsonl
+martenweave validate --repo ./my-model
+martenweave build-index --repo ./my-model --jsonl
 ```
 
 ### 3.3 Create a GitHub-ready commit summary
@@ -285,8 +285,8 @@ docs-update-<description>
 
 Every model change PR should include:
 
-- [ ] `modelops validate` passes with zero errors.
-- [ ] `modelops build-index --jsonl` succeeds.
+- [ ] `martenweave validate` passes with zero errors.
+- [ ] `martenweave build-index --jsonl` succeeds.
 - [ ] `pytest` passes.
 - [ ] Affected object IDs are listed in the PR description.
 - [ ] Impact analysis is included for changes affecting >5 objects.
@@ -306,16 +306,16 @@ Every model change PR should include:
 
 ### Validation
 
-<!-- Paste `modelops validate` summary -->
+<!-- Paste `martenweave validate` summary -->
 
 ### Impact
 
-<!-- Paste `modelops impact` output for key objects -->
+<!-- Paste `martenweave impact` output for key objects -->
 
 ### Checklist
 
-- [ ] `modelops validate` passes
-- [ ] `modelops build-index --jsonl` succeeds
+- [ ] `martenweave validate` passes
+- [ ] `martenweave build-index --jsonl` succeeds
 - [ ] `pytest` passes
 ```
 
@@ -348,8 +348,8 @@ jobs:
       - run: pip install -e .
       - run: pytest
       - run: ruff check .
-      - run: modelops validate --repo .
-      - run: modelops build-index --repo . --jsonl
+      - run: martenweave validate --repo .
+      - run: martenweave build-index --repo . --jsonl
 ```
 
 **Note:** Issue #42 tracks adding this workflow. It is currently blocked by PAT scope limitations in the project's automation account.

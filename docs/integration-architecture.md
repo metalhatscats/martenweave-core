@@ -199,7 +199,7 @@ All exports (Excel, Sheets, JSONL, reports) are derived from canonical files. Th
 
 ### 4.4 External writes require explicit user action
 
-No automatic background sync. Every write to an external system is triggered by an explicit CLI command (e.g., `modelops export-excel`, future `modelops export-sheets`).
+No automatic background sync. Every write to an external system is triggered by an explicit CLI command (e.g., `martenweave export-excel`, future `martenweave export-sheets`).
 
 ### 4.5 Provider credentials are handled outside canonical model files
 
@@ -283,7 +283,7 @@ Generated review view
 Canonical model files
       │
       ▼
-modelops validate && modelops build-index
+martenweave validate && martenweave build-index
       │
       ▼
 modelops git-bundle <proposal-id>

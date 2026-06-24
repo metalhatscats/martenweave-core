@@ -14,7 +14,7 @@ SAP migration and Master Data Management are the **first domain pack** and proof
 | Working with SAP Business Partner / Customer master data | `examples/customer_bp_model` | Full canonical model slice with real SAP context (KNVV, KNB1, KNVP, BUT000). |
 | Working with SAP Supplier / Vendor master data | `examples/supplier_vendor_model` | Second domain pack with LFA1, LFB1, LFM1 context. |
 | Building a generic product or item model from scratch | `examples/generic_product_model` | Slightly broader than simple_product_model, with more attribute types. |
-| Starting a brand-new model repository | `templates/model_spines` + `modelops init` | Scaffold a clean repo and copy a template spine as your starting structure. |
+| Starting a brand-new model repository | `templates/model_spines` + `martenweave init` | Scaffold a clean repo and copy a template spine as your starting structure. |
 
 ---
 
@@ -47,7 +47,7 @@ SAP migration and Master Data Management are the **first domain pack** and proof
 The `templates/model_spines/` directory contains starting structures for new repositories. Use them after running:
 
 ```bash
-modelops init ./my-model
+martenweave init ./my-model
 ```
 
 Copy a template spine into `./my-model/model/` and edit IDs, names, and domains to match your project.

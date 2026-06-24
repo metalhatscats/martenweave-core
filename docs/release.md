@@ -32,8 +32,8 @@ Both must match before a release commit.
 - [ ] `docs/release.md` is still accurate
 - [ ] Known limitations are current: `docs/known-limitations.md`
 - [ ] Open-source docs exist: `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, `SUPPORT.md`
-- [ ] Local config guard reviewed: `.venv/bin/modelops config-guard --repo . --json`
-- [ ] Release config guard passes: `.venv/bin/modelops config-guard --repo . --mode release --json`
+- [ ] Local config guard reviewed: `.venv/bin/martenweave config-guard --repo . --json`
+- [ ] Release config guard passes: `.venv/bin/martenweave config-guard --repo . --mode release --json`
 - [ ] No secrets or raw sensitive data in commits
 - [ ] Package builds locally:
   ```bash

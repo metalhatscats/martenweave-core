@@ -8,7 +8,7 @@
 Running:
 
 ```bash
-modelops assessment run --repo examples/customer_bp_model --out ./assessment
+martenweave assessment run --repo examples/customer_bp_model --out ./assessment
 ```
 
 Produces:
@@ -100,7 +100,7 @@ Includes an executive summary and a numbered next-steps list.
 Re-run the assessment after each sprint:
 
 ```bash
-modelops assessment run --repo . --out assessment/v2
+martenweave assessment run --repo . --out assessment/v2
 ```
 
 Compare gap scores and readiness levels across versions.

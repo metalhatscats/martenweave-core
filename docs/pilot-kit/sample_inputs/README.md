@@ -61,12 +61,12 @@ Free-text Markdown notes can be turned into structured PatchProposals:
 The Customer Group field (KNVV-KDGRP) does not have a value mapping defined for the new sales org 2000.
 ```
 
-Use `modelops propose-patch --from note.md --repo <repo>` to generate a proposal.
+Use `martenweave propose-patch --from note.md --repo <repo>` to generate a proposal.
 
 ## Getting Started
 
 1. Copy `examples/customer_bp_model` as a starting point.
 2. Replace objects with your own migration scope.
-3. Run `modelops validate` to check correctness.
-4. Run `modelops build-index` to create the SQLite index.
-5. Run `modelops assessment run` to generate the output package.
+3. Run `martenweave validate` to check correctness.
+4. Run `martenweave build-index` to create the SQLite index.
+5. Run `martenweave assessment run` to generate the output package.

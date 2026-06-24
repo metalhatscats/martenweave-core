@@ -134,10 +134,10 @@ Because lineage edges are stored in the same `object_relationships` table as all
 
 ```bash
 # Trace a field through the system landscape
-modelops trace SYSTEM-ERP --repo ./my-model --json
+martenweave trace SYSTEM-ERP --repo ./my-model --json
 
 # Impact analysis for a transformation rule
-modelops impact TRULE-PRODUCT-PRICE-FORMAT --repo ./my-model --json
+martenweave impact TRULE-PRODUCT-PRICE-FORMAT --repo ./my-model --json
 ```
 
 The BFS traversal walks `flows_from` / `flows_to`, `part_of_flow`, `preceded_by` / `followed_by`, and all other relationship types naturally.

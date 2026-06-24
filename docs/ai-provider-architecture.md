@@ -299,4 +299,4 @@ def test_kimi_adapter_timeout_fallback(monkeypatch):
 - Implement `GoogleADKAdapter` (issue #37)
 - Add `OllamaAdapter` for local inference
 - Add provider health-check command: `modelops ai-provider health`
-- Add provider-switch CLI flag: `modelops propose-patch --provider kimi`
+- Add provider-switch CLI flag: `martenweave propose-patch --provider kimi`

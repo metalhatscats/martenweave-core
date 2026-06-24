@@ -36,38 +36,38 @@ Validate Martenweave with minimal commitment:
 1. **Clone or install Martenweave**
    ```bash
    pip install martenweave-core
-   modelops init ./pilot-model --name "Pilot Customer Domain"
+   martenweave init ./pilot-model --name "Pilot Customer Domain"
    ```
 
 2. **Profile source and target datasets**
    ```bash
-   modelops profile-dataset ./source_sample.csv --repo ./pilot-model
-   modelops profile-dataset ./target_sample.csv --repo ./pilot-model
+   martenweave profile-dataset ./source_sample.csv --repo ./pilot-model
+   martenweave profile-dataset ./target_sample.csv --repo ./pilot-model
    ```
 
 3. **Infer draft model objects**
    ```bash
-   modelops infer-model ./pilot-model/generated/dataset_profiles/source_sample.json --repo ./pilot-model
-   modelops infer-model ./pilot-model/generated/dataset_profiles/target_sample.json --repo ./pilot-model
+   martenweave infer-model ./pilot-model/generated/dataset_profiles/source_sample.json --repo ./pilot-model
+   martenweave infer-model ./pilot-model/generated/dataset_profiles/target_sample.json --repo ./pilot-model
    ```
    Review the generated PatchProposals in `model/patch-proposals/`.
 
 4. **Import existing mapping sheet (if available)**
    ```bash
-   modelops import-model-sheet ./legacy_mappings.xlsx --repo ./pilot-model
+   martenweave import-model-sheet ./legacy_mappings.xlsx --repo ./pilot-model
    ```
 
 ### Day 3–4: Validate and Enrich
 
 1. **Validate the model**
    ```bash
-   modelops validate --repo ./pilot-model
+   martenweave validate --repo ./pilot-model
    ```
    Fix any broken references or missing IDs.
 
 2. **Build the index**
    ```bash
-   modelops build-index --repo ./pilot-model --jsonl
+   martenweave build-index --repo ./pilot-model --jsonl
    ```
 
 3. **Add ownership and context**
@@ -76,7 +76,7 @@ Validate Martenweave with minimal commitment:
 
 4. **Trace a key field**
    ```bash
-   modelops trace FEP-S4-KNVV-KDGRP --repo ./pilot-model
+   martenweave trace FEP-S4-KNVV-KDGRP --repo ./pilot-model
    ```
    Verify upstream and downstream relationships are visible.
 
@@ -84,22 +84,22 @@ Validate Martenweave with minimal commitment:
 
 1. **Generate health report**
    ```bash
-   modelops health --repo ./pilot-model
+   martenweave health --repo ./pilot-model
    ```
 
 2. **Generate scorecard**
    ```bash
-   modelops scorecard --repo ./pilot-model
+   martenweave scorecard --repo ./pilot-model
    ```
 
 3. **Export review workbook**
    ```bash
-   modelops export-model --format xlsx --business-review --repo ./pilot-model
+   martenweave export-model --format xlsx --business-review --repo ./pilot-model
    ```
 
 4. **Run impact analysis on a proposed change**
    ```bash
-   modelops impact ATTR-CUST-SALES-CUSTOMER-GROUP --repo ./pilot-model
+   martenweave impact ATTR-CUST-SALES-CUSTOMER-GROUP --repo ./pilot-model
    ```
 
 ---
@@ -110,10 +110,10 @@ Measure before and after where possible.
 
 | Metric | Before (Baseline) | After (Pilot) | How to Measure |
 |---|---|---|---|
-| **Documentation coverage** | % of fields documented in existing sheet | % of fields with canonical objects | `modelops scorecard` |
-| **Ownership coverage** | % of objects with named owner | % of objects with named owner | `modelops scorecard` |
-| **Traceability** | Time to trace a field manually | Time via `modelops trace` | Stopwatch test |
-| **Gaps identified** | Unknown | Count of undocumented mappings or missing context | `modelops health` + manual review |
+| **Documentation coverage** | % of fields documented in existing sheet | % of fields with canonical objects | `martenweave scorecard` |
+| **Ownership coverage** | % of objects with named owner | % of objects with named owner | `martenweave scorecard` |
+| **Traceability** | Time to trace a field manually | Time via `martenweave trace` | Stopwatch test |
+| **Gaps identified** | Unknown | Count of undocumented mappings or missing context | `martenweave health` + manual review |
 | **Change readiness** | No structured change process | PatchProposals + ChangeRequests created | Count in `model/` |
 | **Team onboarding** | Days to explain model | Minutes to search model | New team member test |
 
@@ -159,7 +159,7 @@ At the end of the pilot, the prospect receives:
 3. An Excel review workbook (`generated/model_export.xlsx`)
 4. A health report and scorecard (JSON or CLI output)
 5. A list of identified gaps and recommended next steps
-6. Optional: a Git bundle for sharing (`modelops git-bundle`)
+6. Optional: a Git bundle for sharing (`martenweave git-bundle`)
 
 ---
 

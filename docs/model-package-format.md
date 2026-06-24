@@ -161,7 +161,7 @@ modelops package create --repo ./my-model --output ./my-model-0.1.0.zip
 
 **Behavior:**
 
-1. Run `modelops validate` and `modelops build-index --jsonl`.
+1. Run `martenweave validate` and `martenweave build-index --jsonl`.
 2. Collect validation report and object counts.
 3. Build `manifest.json` with checksums.
 4. Create zip archive with selected contents.

@@ -55,7 +55,7 @@ All keys are optional. Unspecified keys use the defaults above.
 
 ## Overriding Limits Safely
 
-- **CLI flags**: Some commands accept direct overrides (e.g. `modelops trace --max-depth 10`). CLI overrides take precedence over config file values.
+- **CLI flags**: Some commands accept direct overrides (e.g. `martenweave trace --max-depth 10`). CLI overrides take precedence over config file values.
 - **Environment variables**: Not supported for resource limits in v1. Use `modelops.config.yaml`.
 - **Programmatic use**: Service functions accept explicit parameters (e.g. `build_index(..., max_objects=20_000)`).
 

@@ -11,8 +11,8 @@ Use this checklist before a public GitHub release, package publish, or release-c
 .venv/bin/python -m pytest
 bash scripts/smoke_test.sh
 bash scripts/release_smoke.sh
-.venv/bin/modelops config-guard --repo . --json
-.venv/bin/modelops config-guard --repo . --mode release --json
+.venv/bin/martenweave config-guard --repo . --json
+.venv/bin/martenweave config-guard --repo . --mode release --json
 .venv/bin/python -m build
 ```
 
@@ -27,9 +27,9 @@ for repo in \
   examples/supplier_vendor_model \
   examples/generic_product_model
 do
-  .venv/bin/modelops validate --repo "$repo"
-  .venv/bin/modelops build-index --repo "$repo" --jsonl
-  .venv/bin/modelops index-fresh --repo "$repo"
+  .venv/bin/martenweave validate --repo "$repo"
+  .venv/bin/martenweave build-index --repo "$repo" --jsonl
+  .venv/bin/martenweave index-fresh --repo "$repo"
 done
 ```
 

@@ -250,14 +250,14 @@ Audit events are append-only and written to `generated/audit_events.jsonl`.
 
 | Workflow step | Planned CLI command |
 |---|---|
-| Create PatchProposal | `modelops propose-patch --from <note>` |
+| Create PatchProposal | `martenweave propose-patch --from <note>` |
 | Create ChangeRequest | `modelops change-request create --title <title> --affected-object <id>` |
 | List ChangeRequests | `modelops change-request list` |
 | Show ChangeRequest | `modelops change-request show <id>` |
 | Update status | `modelops change-request update-status <id> --status <status>` |
 | Approve | `modelops change-request approve <id> --approver <person>` |
 | Reject | `modelops change-request reject <id> --reason <reason>` |
-| Apply proposal | `modelops proposal apply <id>` |
-| Preview impact | `modelops impact <object-id>` |
-| Validate | `modelops validate --repo <repo>` |
-| Build index | `modelops build-index --repo <repo>` |
+| Apply proposal | `martenweave proposal apply <id>` |
+| Preview impact | `martenweave impact <object-id>` |
+| Validate | `martenweave validate --repo <repo>` |
+| Build index | `martenweave build-index --repo <repo>` |

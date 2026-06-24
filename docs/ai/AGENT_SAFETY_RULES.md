@@ -32,7 +32,7 @@ Direct edits to canonical example models are allowed only for explicit repositor
 
 ## Secret Handling
 
-Run `modelops config-guard --repo . --json` when touching config, AI providers, generated artifacts, or docs that mention credentials. If it fails because local ignored `.env` contains secrets, report that fact without printing secret values.
+Run `martenweave config-guard --repo . --json` when touching config, AI providers, generated artifacts, or docs that mention credentials. If it fails because local ignored `.env` contains secrets, report that fact without printing secret values.
 
 ### Validation ladder
 

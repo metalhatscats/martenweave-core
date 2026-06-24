@@ -1,4 +1,4 @@
-"""Canonical schemas for ModelOps MDM Core."""
+"""Canonical schemas for Martenweave Core."""
 
 from modelops_core.schemas.common import BaseObject, GeneralStatus, ObjectType
 from modelops_core.schemas.registry import (

@@ -14,17 +14,17 @@
 
 | Item | Regenerate Command |
 |---|---|
-| `generated/modelops.db` | `modelops build-index` |
-| `generated/*.jsonl` | `modelops build-index --jsonl` |
-| Exports and workbooks | `modelops export` |
+| `generated/modelops.db` | `martenweave build-index` |
+| `generated/*.jsonl` | `martenweave build-index --jsonl` |
+| Exports and workbooks | `martenweave export` |
 | Static docs | `modelops generate-docs` |
 
 ## Restore Process
 
 1. Restore canonical files and config
-2. Run `modelops validate`
-3. Run `modelops build-index`
-4. Run `modelops health` to verify scorecard
+2. Run `martenweave validate`
+3. Run `martenweave build-index`
+4. Run `martenweave health` to verify scorecard
 5. Check audit log continuity
 
 ## Future Commands

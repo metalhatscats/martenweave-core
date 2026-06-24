@@ -43,7 +43,9 @@ def generate_static_docs(
         db_path = repo_root / "generated" / "modelops.db"
 
     if not db_path.exists():
-        raise FileNotFoundError(f"No index found at {db_path}. Run `modelops build-index` first.")
+        raise FileNotFoundError(
+            f"No index found at {db_path}. Run `martenweave build-index` first."
+        )
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -104,7 +106,7 @@ def _write_index_md(
         "> **Generated view** — This documentation is a generated view over the "
         "canonical model files. The canonical Markdown + YAML frontmatter objects "
         "in `model/` are the source of truth. This site can be rebuilt at any time "
-        "with `modelops build-index` and `modelops docs-build`.",
+        "with `martenweave build-index` and `martenweave docs-build`.",
         "",
         "## Overview",
         "",

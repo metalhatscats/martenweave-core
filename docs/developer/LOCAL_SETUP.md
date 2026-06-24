@@ -21,7 +21,7 @@ python3.11 -m venv .venv
 ## Smoke Check
 
 ```bash
-.venv/bin/modelops --help
+.venv/bin/martenweave --help
 .venv/bin/python -m pytest --collect-only -q
 .venv/bin/python -m ruff check .
 ```
@@ -31,5 +31,5 @@ python3.11 -m venv .venv
 Do not commit `.env`. Use `.env.example` for placeholders only. Run:
 
 ```bash
-.venv/bin/modelops config-guard --repo . --json
+.venv/bin/martenweave config-guard --repo . --json
 ```

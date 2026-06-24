@@ -49,7 +49,7 @@ Operations involving these object types are marked high-risk:
 - ValueMapping
 
 High-risk proposals require:
-1. Impact analysis (`modelops proposal impact`)
+1. Impact analysis (`martenweave proposal impact`)
 2. Validation pass
 3. Explicit approval
 4. Audit logging
@@ -62,7 +62,7 @@ Only metadata, column names, row counts, and model objects are included.
 To include raw sample values, explicitly opt in with `--include-raw-samples`:
 
 ```bash
-modelops propose-patch --from note.md --include-raw-samples
+martenweave propose-patch --from note.md --include-raw-samples
 ```
 
 When this flag is used, the CLI prints a warning that raw dataset rows may leave

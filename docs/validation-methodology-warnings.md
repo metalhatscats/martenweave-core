@@ -182,7 +182,7 @@ schema_version: "1.0"
 For simple models or early-stage repositories, methodology warnings can be noisy. Use `--suppress-methodology-warnings` to hide them without affecting structural errors or ownership warnings.
 
 ```bash
-modelops validate --repo ./my-model --suppress-methodology-warnings
+martenweave validate --repo ./my-model --suppress-methodology-warnings
 ```
 
 Suppressed codes:
@@ -195,10 +195,10 @@ Error-level results and other warning codes (e.g., `OWNERSHIP_MISSING`, `REFEREN
 
 ## Strict mode
 
-Use `modelops validate --strict` to treat warnings as failures (exit code 2). This is useful for CI pipelines that want to enforce methodology completeness.
+Use `martenweave validate --strict` to treat warnings as failures (exit code 2). This is useful for CI pipelines that want to enforce methodology completeness.
 
 ```bash
-modelops validate --repo ./my-model --strict
+martenweave validate --repo ./my-model --strict
 ```
 
 ## See also

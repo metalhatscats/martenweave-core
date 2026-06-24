@@ -73,14 +73,14 @@ Entry point: `validate_objects(parsed_objects, enabled_domain_packs)` in `src/mo
 ## Key CLI Commands
 
 ```bash
-modelops init ./my-model
-modelops validate --repo ./my-model
-modelops build-index --repo ./my-model --jsonl
-modelops health --repo ./my-model
-modelops impact <OBJECT_ID> --repo ./my-model
-modelops propose-patch --from ./note.md --repo ./my-model
-modelops proposal accept <PP-ID> --reviewer <name> [--skip-cr-creation]
-modelops export-schema --type Attribute --output schema.json
+martenweave init ./my-model
+martenweave validate --repo ./my-model
+martenweave build-index --repo ./my-model --jsonl
+martenweave health --repo ./my-model
+martenweave impact <OBJECT_ID> --repo ./my-model
+martenweave propose-patch --from ./note.md --repo ./my-model
+martenweave proposal accept <PP-ID> --reviewer <name> [--skip-cr-creation]
+martenweave export-schema --type Attribute --output schema.json
 ```
 
 ---

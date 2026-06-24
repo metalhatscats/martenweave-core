@@ -17,7 +17,7 @@ Teams collaborate by editing Markdown/YAML files, opening GitHub PRs, and review
 ### Model Maintainer
 
 - **Responsibility**: Keeps the canonical model consistent, valid, and indexed
-- **Actions**: Runs `modelops validate`, `build-index`, reviews PRs, resolves conflicts
+- **Actions**: Runs `martenweave validate`, `build-index`, reviews PRs, resolves conflicts
 - **Maps to**: `OwnershipRole.maintainer` on `MasterDataDomain` or repository level
 - **Tooling**: CLI, Git, GitHub PR review
 
@@ -78,11 +78,11 @@ Teams collaborate by editing Markdown/YAML files, opening GitHub PRs, and review
 
 ```
 1. Agent or human creates a PatchProposal
-   └─ modelops propose-patch --from note.md
+   └─ martenweave propose-patch --from note.md
 
 2. Reviewer inspects the proposal
-   └─ modelops proposal impact PP-001
-   └─ modelops proposal validate PP-001
+   └─ martenweave proposal impact PP-001
+   └─ martenweave proposal validate PP-001
 
 3. Reviewer creates a ChangeRequest for governance
    └─ modelops change-request create --id CR-001 --title "Update Customer Group"
@@ -91,11 +91,11 @@ Teams collaborate by editing Markdown/YAML files, opening GitHub PRs, and review
    └─ modelops change-request approve CR-001
 
 5. Maintainer applies the proposal
-   └─ modelops proposal apply PP-001
+   └─ martenweave proposal apply PP-001
 
 6. System emits audit events and rebuilds index
    └─ generated/audit_events.jsonl
-   └─ modelops build-index
+   └─ martenweave build-index
 ```
 
 ### Parallel Edit and Conflict Resolution
@@ -106,7 +106,7 @@ Because canonical files are plain text in Git:
 2. Two stewards edit the same object → Git merge conflict; maintainers resolve manually
 3. One steward edits while another builds index → No conflict; index is disposable
 
-**Rule**: `generated/` is never manually edited. If there is a conflict in `model/`, resolve it in the text file and re-run `modelops validate`.
+**Rule**: `generated/` is never manually edited. If there is a conflict in `model/`, resolve it in the text file and re-run `martenweave validate`.
 
 ### Notification and Watching
 

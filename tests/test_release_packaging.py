@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -20,6 +21,16 @@ class TestVersion:
         pyproject = Path(__file__).resolve().parent.parent / "pyproject.toml"
         content = pyproject.read_text()
         assert f'version = "{__version__}"' in content
+
+
+class TestConsoleScripts:
+    def test_console_scripts_include_branded_alias_and_legacy_command(self) -> None:
+        pyproject = Path(__file__).resolve().parent.parent / "pyproject.toml"
+        data = tomllib.loads(pyproject.read_text())
+        scripts = data["project"]["scripts"]
+
+        assert scripts["martenweave"] == "modelops_core.cli:app"
+        assert scripts["modelops"] == "modelops_core.cli:app"
 
 
 class TestBuild:

@@ -22,8 +22,8 @@ Generated artifacts are rebuildable outputs, usually under a repository's `gener
 ## Commands
 
 ```bash
-.venv/bin/modelops build-index --repo examples/customer_bp_model --jsonl
-.venv/bin/modelops build-index --repo examples/simple_product_model --jsonl
+.venv/bin/martenweave build-index --repo examples/customer_bp_model --jsonl
+.venv/bin/martenweave build-index --repo examples/simple_product_model --jsonl
 ```
 
 Index build must fail clearly when canonical files contain blocking validation errors, unless an explicit allow-invalid path is used for diagnostics.

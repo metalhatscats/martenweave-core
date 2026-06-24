@@ -7,13 +7,13 @@ This is the public demo path for technical evaluators. It uses the bundled SAP C
 ```bash
 python -m venv .venv
 .venv/bin/python -m pip install -e ".[dev]"
-.venv/bin/modelops --version
+.venv/bin/martenweave --version
 ```
 
 ## 1. Validate Canonical Model Files
 
 ```bash
-.venv/bin/modelops validate --repo examples/customer_bp_model
+.venv/bin/martenweave validate --repo examples/customer_bp_model
 ```
 
 Expected result: zero validation errors. Methodology warnings may appear because the example intentionally leaves some enrichment gaps for reporting demos.
@@ -21,8 +21,8 @@ Expected result: zero validation errors. Methodology warnings may appear because
 ## 2. Build Generated Indexes
 
 ```bash
-.venv/bin/modelops build-index --repo examples/customer_bp_model --jsonl
-.venv/bin/modelops index-fresh --repo examples/customer_bp_model
+.venv/bin/martenweave build-index --repo examples/customer_bp_model --jsonl
+.venv/bin/martenweave index-fresh --repo examples/customer_bp_model
 ```
 
 Expected generated artifacts:
@@ -36,8 +36,8 @@ These files are disposable and rebuildable.
 ## 3. Search and Query
 
 ```bash
-.venv/bin/modelops search "Customer Group" --repo examples/customer_bp_model
-.venv/bin/modelops query --type Attribute --repo examples/customer_bp_model
+.venv/bin/martenweave search "Customer Group" --repo examples/customer_bp_model
+.venv/bin/martenweave query --type Attribute --repo examples/customer_bp_model
 ```
 
 Use this to show that canonical files can be indexed and searched without a UI or SaaS service.
@@ -45,8 +45,8 @@ Use this to show that canonical files can be indexed and searched without a UI o
 ## 4. Trace and Impact
 
 ```bash
-.venv/bin/modelops trace ATTR-CUST-SALES-CUSTOMER-GROUP --repo examples/customer_bp_model
-.venv/bin/modelops impact FEP-S4-KNVV-KDGRP --repo examples/customer_bp_model
+.venv/bin/martenweave trace ATTR-CUST-SALES-CUSTOMER-GROUP --repo examples/customer_bp_model
+.venv/bin/martenweave impact FEP-S4-KNVV-KDGRP --repo examples/customer_bp_model
 ```
 
 Use this to show how a business attribute, physical SAP field endpoint, mappings, issues, decisions, and evidence stay connected.
@@ -54,9 +54,9 @@ Use this to show how a business attribute, physical SAP field endpoint, mappings
 ## 5. Health and Governance Scorecard
 
 ```bash
-.venv/bin/modelops health --repo examples/customer_bp_model
-.venv/bin/modelops scorecard --repo examples/customer_bp_model
-.venv/bin/modelops gap-report --repo examples/customer_bp_model
+.venv/bin/martenweave health --repo examples/customer_bp_model
+.venv/bin/martenweave scorecard --repo examples/customer_bp_model
+.venv/bin/martenweave gap-report --repo examples/customer_bp_model
 ```
 
 Use this to show what works today: deterministic checks, model coverage reporting, ownership/readiness signals, and model-side gaps.
@@ -64,7 +64,7 @@ Use this to show what works today: deterministic checks, model coverage reportin
 ## 6. Dataset Gaps
 
 ```bash
-.venv/bin/modelops gaps \
+.venv/bin/martenweave gaps \
   examples/customer_bp_model/data/samples/customer_sales_area_sample.csv \
   --repo examples/customer_bp_model \
   --check-model
@@ -80,7 +80,7 @@ Update CUSTOMER GROUP mapping for KNVV-KDGRP based on the CH01-A17 decision.
 Keep the change as a reviewable PatchProposal.
 NOTE
 
-.venv/bin/modelops propose-patch \
+.venv/bin/martenweave propose-patch \
   --from /tmp/martenweave-note.md \
   --repo examples/customer_bp_model \
   --dry-run

@@ -57,8 +57,8 @@ A practical checklist for reviewing model readiness before approval or implement
 ## Commands (Future)
 
 ```bash
-modelops review-checklist --repo ./my-model --object DOMAIN-1
-modelops review-checklist --repo ./my-model --release wave-3
+martenweave review-checklist --repo ./my-model --object DOMAIN-1
+martenweave review-checklist --repo ./my-model --release wave-3
 ```
 
 ## Gap → Action

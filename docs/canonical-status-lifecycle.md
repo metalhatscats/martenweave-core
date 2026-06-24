@@ -56,7 +56,7 @@ pending_review → accepted → (apply operation creates ChangeRequest)
 pending_review → rejected
 ```
 
-A proposal must be `accepted` before `modelops proposal apply` will write any files.
+A proposal must be `accepted` before `martenweave proposal apply` will write any files.
 
 ---
 

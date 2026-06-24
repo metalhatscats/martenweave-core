@@ -17,21 +17,21 @@ Environment:
 
 | Command | Result | Evidence |
 |---|---|---|
-| `.venv/bin/modelops --version` | Passed | `modelops 0.4.1` |
+| `.venv/bin/martenweave --version` | Passed | `martenweave-core 0.4.1` |
 | `.venv/bin/python -m ruff check .` | Passed | `All checks passed!` |
 | `.venv/bin/python -m ruff format --check .` | Passed | `209 files already formatted` |
 | `.venv/bin/python -m pytest` | Passed | `1302 passed, 3 skipped, 7 warnings in 63.72s` |
 | `bash scripts/smoke_test.sh` | Passed | `Smoke Test Complete — All JSON contracts stable` |
 | `bash scripts/release_smoke.sh` | Passed | `Release smoke checks passed` — all bundled examples validated, indexed, checked fresh, and exercised through search, query, trace, impact, gaps, gap report, proposal dry-run, and config guard release mode |
-| `.venv/bin/modelops config-guard --repo . --mode release --json` | Passed | Reported ignored local `.env` `api_key` findings with `file_status: "ignored"` and exited 0 |
+| `.venv/bin/martenweave config-guard --repo . --mode release --json` | Passed | Reported ignored local `.env` `api_key` findings with `file_status: "ignored"` and exited 0 |
 | `.venv/bin/python -m build` | Passed | Produced `martenweave_core-0.4.1.tar.gz` and `martenweave_core-0.4.1-py3-none-any.whl`; wheel METADATA reports `Version: 0.4.1` |
 
 ## Config Guard
 
 | Command | Result | Evidence |
 |---|---|---|
-| `.venv/bin/modelops config-guard --repo . --json` | Failed locally | Detected three potential `api_key` secrets in ignored local `.env` at lines 1, 2, and 4; no `repo_config`, `gitignore`, or `repo_secrets` findings |
-| `.venv/bin/modelops config-guard --repo . --mode release --json` | Passed | Reported the same ignored `.env` findings with `file_status: "ignored"` and exited 0 |
+| `.venv/bin/martenweave config-guard --repo . --json` | Failed locally | Detected three potential `api_key` secrets in ignored local `.env` at lines 1, 2, and 4; no `repo_config`, `gitignore`, or `repo_secrets` findings |
+| `.venv/bin/martenweave config-guard --repo . --mode release --json` | Passed | Reported the same ignored `.env` findings with `file_status: "ignored"` and exited 0 |
 
 Interpretation: default local mode still reports ignored local `.env` secrets. Release mode can pass
 when findings are limited to ignored local-only files, while tracked or untracked repository secret

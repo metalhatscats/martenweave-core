@@ -70,17 +70,17 @@ Sales-area-dependent customer grouping used in sales processes.
 
 ```bash
 # Scaffold a new repository
-modelops init ./my-model
+martenweave init ./my-model
 ```
 
 ### Dataset → Model
 
 ```bash
 # Profile a CSV or XLSX file
-modelops profile-dataset customer_sample.csv --repo ./my-model
+martenweave profile-dataset customer_sample.csv --repo ./my-model
 
 # Infer draft model objects from the profile
-modelops infer-model generated/dataset_profiles/customer_sample.json --repo ./my-model
+martenweave infer-model generated/dataset_profiles/customer_sample.json --repo ./my-model
 ```
 
 ### Model-Side Gaps
@@ -88,7 +88,7 @@ modelops infer-model generated/dataset_profiles/customer_sample.json --repo ./my
 Detect missing source links and ownership gaps inside the model itself:
 
 ```bash
-modelops gaps --check-model --repo ./my-model
+martenweave gaps --check-model --repo ./my-model
 ```
 
 This reports `MODEL_ATTRIBUTE_MISSING_SOURCE` (critical) and `MISSING_OWNER` (warning) without requiring a dataset file. See [Model-Side Gap Detection](model-side-gaps.md) for details and fix examples.
@@ -97,16 +97,16 @@ This reports `MODEL_ATTRIBUTE_MISSING_SOURCE` (critical) and `MISSING_OWNER` (wa
 
 ```bash
 # Validate all canonical files
-modelops validate --repo ./my-model
+martenweave validate --repo ./my-model
 
 # Strict mode — fail on warnings (exit 2) as well as errors (exit 1)
-modelops validate --repo ./my-model --strict
+martenweave validate --repo ./my-model --strict
 
 # Suppress noisy methodology warnings for simple models
-modelops validate --repo ./my-model --suppress-methodology-warnings
+martenweave validate --repo ./my-model --suppress-methodology-warnings
 
 # Show repository health
-modelops health --repo ./my-model
+martenweave health --repo ./my-model
 ```
 
 **Exit codes:**
@@ -118,62 +118,62 @@ modelops health --repo ./my-model
 
 ```bash
 # Build SQLite index and optional JSONL exports
-modelops build-index --repo ./my-model --jsonl
+martenweave build-index --repo ./my-model --jsonl
 ```
 
 ### Impact Analysis
 
 ```bash
 # Show what depends on an object
-modelops impact FEP-S4-KNVV-KDGRP --repo ./my-model
+martenweave impact FEP-S4-KNVV-KDGRP --repo ./my-model
 ```
 
 ### Proposal Review and Apply
 
 ```bash
 # List proposals
-modelops proposal list --repo ./my-model
+martenweave proposal list --repo ./my-model
 
 # Show proposal details
-modelops proposal show PP-001 --repo ./my-model
+martenweave proposal show PP-001 --repo ./my-model
 
 # Validate a proposal
-modelops proposal validate PP-001 --repo ./my-model
+martenweave proposal validate PP-001 --repo ./my-model
 
 # Review bundle: report + impact + validation in one view
-modelops proposal review-bundle PP-001 --repo ./my-model
+martenweave proposal review-bundle PP-001 --repo ./my-model
 
 # Preview changes without writing files
-modelops proposal apply PP-001 --repo ./my-model --dry-run
+martenweave proposal apply PP-001 --repo ./my-model --dry-run
 
 # Apply an accepted proposal
-modelops proposal apply PP-001 --repo ./my-model --apply
+martenweave proposal apply PP-001 --repo ./my-model --apply
 ```
 
 ### Export and Import
 
 ```bash
 # Export model to CSV (one file per type)
-modelops export-model --repo ./my-model --format csv
+martenweave export-model --repo ./my-model --format csv
 
 # Export model to XLSX (one workbook, one sheet per type)
-modelops export-model --repo ./my-model --format xlsx
+martenweave export-model --repo ./my-model --format xlsx
 
 # Export JSON Schema for all canonical object types
-modelops export-schema --repo ./my-model --type all --output generated/schemas/canonical_objects.json
+martenweave export-schema --repo ./my-model --type all --output generated/schemas/canonical_objects.json
 
 # Export JSON Schema for a single type
-modelops export-schema --repo ./my-model --type Attribute --json
+martenweave export-schema --repo ./my-model --type Attribute --json
 
 # Import spreadsheet edits as a new PatchProposal
-modelops import-model-sheet generated/exports/csv --repo ./my-model --json
+martenweave import-model-sheet generated/exports/csv --repo ./my-model --json
 ```
 
 ### API Server
 
 ```bash
 # Start the local API for UI integration
-modelops serve --repo ./my-model --host 127.0.0.1 --port 8000
+martenweave serve --repo ./my-model --host 127.0.0.1 --port 8000
 ```
 
 ---
@@ -183,8 +183,8 @@ modelops serve --repo ./my-model --host 127.0.0.1 --port 8000
 Starting from a dataset:
 
 1. Place `customer_sample.csv` in `data/samples/`.
-2. Run `modelops profile-dataset` to generate a deterministic JSON profile.
-3. Run `modelops infer-model` to create a `PatchProposal` with draft:
+2. Run `martenweave profile-dataset` to generate a deterministic JSON profile.
+3. Run `martenweave infer-model` to create a `PatchProposal` with draft:
    - `Dataset`
    - `BusinessEntity`
    - `Attribute`
@@ -192,7 +192,7 @@ Starting from a dataset:
    - `Mapping`
 4. Review the proposal in `model/patch-proposals/PP-INFER-...md`.
 5. Transition status to `accepted` when ready.
-6. Apply with `modelops proposal apply --apply`.
+6. Apply with `martenweave proposal apply --apply`.
 
 The inferred proposal includes:
 - **Assumptions** the agent made (e.g., "all columns treated as strings")
@@ -220,7 +220,7 @@ Every model edit goes through the same safe path:
 The `proposal review-bundle` command combines three review steps into a single output:
 
 ```bash
-modelops proposal review-bundle PP-001 --repo ./my-model
+martenweave proposal review-bundle PP-001 --repo ./my-model
 ```
 
 It prints:
@@ -232,7 +232,7 @@ It prints:
 Use `--json` to consume the bundle programmatically:
 
 ```bash
-modelops proposal review-bundle PP-001 --repo ./my-model --json
+martenweave proposal review-bundle PP-001 --repo ./my-model --json
 ```
 
 The review bundle is read-only and does not modify any files. Run it before approval to confirm a proposal is safe and its scope is understood.
@@ -245,7 +245,7 @@ Martenweave treats spreadsheets as **views**, not sources of truth.
 
 ### Export
 ```bash
-modelops export-model --repo ./my-model --format xlsx
+martenweave export-model --repo ./my-model --format xlsx
 # → generated/exports/model.xlsx
 ```
 
@@ -254,7 +254,7 @@ Open the workbook, edit names, descriptions, or statuses, then save.
 
 ### Import
 ```bash
-modelops import-model-sheet generated/exports/csv --repo ./my-model --json
+martenweave import-model-sheet generated/exports/csv --repo ./my-model --json
 # → Generates a new PatchProposal with update_object and create_object ops
 ```
 
@@ -285,15 +285,15 @@ Invalid objects are blocked from the index by default. Use `--allow-invalid` to 
 
 | Task | Command |
 |---|---|
-| Initialize repo | `modelops init <path>` |
-| Profile dataset | `modelops profile-dataset <file> --repo <path>` |
-| Infer model | `modelops infer-model <profile> --repo <path>` |
-| Validate | `modelops validate --repo <path>` |
-| Build index | `modelops build-index --repo <path> --jsonl` |
-| List proposals | `modelops proposal list --repo <path>` |
-| Dry-run apply | `modelops proposal apply <id> --repo <path> --dry-run` |
-| Apply proposal | `modelops proposal apply <id> --repo <path> --apply` |
-| Export CSV | `modelops export-model --repo <path> --format csv` |
-| Export XLSX | `modelops export-model --repo <path> --format xlsx` |
-| Import sheet | `modelops import-model-sheet <path> --repo <path> --json` |
-| Start API | `modelops serve --repo <path> --host 127.0.0.1 --port 8000` |
+| Initialize repo | `martenweave init <path>` |
+| Profile dataset | `martenweave profile-dataset <file> --repo <path>` |
+| Infer model | `martenweave infer-model <profile> --repo <path>` |
+| Validate | `martenweave validate --repo <path>` |
+| Build index | `martenweave build-index --repo <path> --jsonl` |
+| List proposals | `martenweave proposal list --repo <path>` |
+| Dry-run apply | `martenweave proposal apply <id> --repo <path> --dry-run` |
+| Apply proposal | `martenweave proposal apply <id> --repo <path> --apply` |
+| Export CSV | `martenweave export-model --repo <path> --format csv` |
+| Export XLSX | `martenweave export-model --repo <path> --format xlsx` |
+| Import sheet | `martenweave import-model-sheet <path> --repo <path> --json` |
+| Start API | `martenweave serve --repo <path> --host 127.0.0.1 --port 8000` |

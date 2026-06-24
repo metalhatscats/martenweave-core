@@ -36,15 +36,15 @@ Recommended evaluator path:
 ```bash
 python -m venv .venv
 .venv/bin/python -m pip install -e ".[dev]"
-.venv/bin/modelops validate --repo examples/customer_bp_model
-.venv/bin/modelops build-index --repo examples/customer_bp_model --jsonl
-.venv/bin/modelops search "Customer Group" --repo examples/customer_bp_model
-.venv/bin/modelops trace ATTR-CUST-SALES-CUSTOMER-GROUP --repo examples/customer_bp_model
-.venv/bin/modelops impact FEP-S4-KNVV-KDGRP --repo examples/customer_bp_model
-.venv/bin/modelops gaps examples/customer_bp_model/data/samples/customer_sales_area_sample.csv \
+.venv/bin/martenweave validate --repo examples/customer_bp_model
+.venv/bin/martenweave build-index --repo examples/customer_bp_model --jsonl
+.venv/bin/martenweave search "Customer Group" --repo examples/customer_bp_model
+.venv/bin/martenweave trace ATTR-CUST-SALES-CUSTOMER-GROUP --repo examples/customer_bp_model
+.venv/bin/martenweave impact FEP-S4-KNVV-KDGRP --repo examples/customer_bp_model
+.venv/bin/martenweave gaps examples/customer_bp_model/data/samples/customer_sales_area_sample.csv \
   --repo examples/customer_bp_model \
   --check-model
-.venv/bin/modelops propose-patch --from /tmp/martenweave-note.md \
+.venv/bin/martenweave propose-patch --from /tmp/martenweave-note.md \
   --repo examples/customer_bp_model \
   --dry-run
 bash scripts/release_smoke.sh
@@ -62,7 +62,7 @@ For a fuller walkthrough, use `docs/first-15-minutes.md` and
 - Bundled examples intentionally include some warnings so health, scorecard, ownership, and gap
   reporting have visible material.
 - Some integration docs describe design direction or optional surfaces; verify current command
-  availability with `modelops --help`.
+  availability with `martenweave --help`.
 
 ## License And Commercial Use
 

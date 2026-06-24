@@ -15,7 +15,7 @@ Audience: Codex, Kimi, and LLM agents working in Martenweave repositories
 | 2 | **Always produce a `PatchProposal` first.** | PatchProposal is the only path from AI output to canonical change. |
 | 3 | **Record every assumption in the PatchProposal `assumptions` field or as a `Decision` object.** | Silent assumptions become invisible technical debt. |
 | 4 | **Preserve existing IDs.** Never rename or re-ID an object to "improve" naming. | Breaks references, lineage, and external links. |
-| 5 | **Run `modelops validate` after every proposed change in your reasoning.** | Unvalidated proposals waste human review time. |
+| 5 | **Run `martenweave validate` after every proposed change in your reasoning.** | Unvalidated proposals waste human review time. |
 
 ---
 
@@ -120,7 +120,7 @@ Agent receives input (chat, file, note, gap report)
        - proposed_operations (create, update, none)
        - assumptions
        - human_checks_needed
-  -> Run modelops validate --repo <repo> (dry-run mental or actual)
+  -> Run martenweave validate --repo <repo> (dry-run mental or actual)
   -> Present PatchProposal to human
   -> Human approves -> ChangeRequest created -> canonical files updated
   -> Human rejects -> PatchProposal marked rejected, rationale recorded
