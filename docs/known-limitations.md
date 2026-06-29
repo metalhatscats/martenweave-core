@@ -4,10 +4,14 @@ Martenweave Core is useful today, but it is still an early backend-first project
 
 ## Product Scope
 
-- No production UI is included.
+- No production or hosted UI is included. `docs-build` can generate a local static read-only viewer,
+  but it is disposable output from the SQLite index, not an editable application.
 - No hosted SaaS tenant, login system, or managed workflow engine is included.
+- No SAP write-back, browser editing, workflow approvals, or AI auto-mutation path exists in the
+  generated viewer.
 - SAP migration and MDM examples are starter scenarios, not an official SAP partnership or SAP-certified product claim.
-- Generated indexes are local artifacts, not a shared production database service.
+- Generated indexes and generated viewer files are local artifacts, not a shared production database
+  service.
 
 ## AI and Automation
 
