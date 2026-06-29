@@ -10,7 +10,10 @@ Turns data models into a structured, traceable, validated, AI-ready model knowle
 
 SAP migration and Master Data Management are the **first domain pack** and proof case, not the product boundary. The core works for generic data models: domains, entities, attributes, relationships, datasets, mappings, rules, evidence, decisions, and change proposals.
 
-**No user-facing UI is included.** This is a CLI-driven, backend/core library designed to be embedded in pipelines, IDEs, local API processes, MCP servers, and agent workflows.
+**No hosted or editable product UI is included.** This is a CLI-driven, backend/core library
+designed to be embedded in pipelines, IDEs, local API processes, MCP servers, and agent workflows.
+It can generate a local static read-only viewer from the disposable SQLite index for inspection and
+demo purposes.
 
 ## Status
 
@@ -122,6 +125,9 @@ Option B. `.venv/bin/modelops` and `modelops` still work as compatibility aliase
 .venv/bin/martenweave search "Customer Group" --repo ./my-model
 .venv/bin/martenweave query --type Attribute --repo ./my-model
 
+# Generate local static Markdown docs and read-only HTML viewer
+.venv/bin/martenweave docs-build --repo ./my-model --site /tmp/martenweave-viewer
+
 # Diff against another repository
 .venv/bin/martenweave diff ./my-model ./other-model
 
@@ -174,7 +180,7 @@ For a release-grade demo path that exercises validation, indexing, search, trace
 | `publish-pr` | Publish a git bundle as a GitHub pull request |
 | `audit-log` | Query the append-only audit log |
 | `usage-report` | Show aggregated usage report from telemetry |
-| `docs-build` | Generate static Markdown docs from the index |
+| `docs-build` | Generate static Markdown docs and a local read-only HTML viewer from the index |
 | `config-guard` | Scan for secrets and configuration guardrail issues |
 | `diff` | Compare two model repositories |
 | `search` | Search indexed objects by keyword |
@@ -186,6 +192,11 @@ For a release-grade demo path that exercises validation, indexing, search, trace
 | `decisions` | Browse and inspect Decision objects |
 | `proposal` | Review and apply PatchProposals |
 | `assessment` | Run migration model readiness assessment workflows |
+
+`docs-build` produces disposable generated files such as `index.html`, `objects.html`,
+`gaps.html`, `decisions.html`, `owners.html`, object detail pages, `search-index.json`, and
+`viewer-manifest.json`. The viewer is static and read-only: canonical files remain authoritative,
+and there is no hosted UI, login, editing workflow, SAP write-back, or AI auto-mutation path.
 
 `serve` and `mcp` are local integration surfaces for APIs, tools, and agents. They do not provide a
 hosted product UI or browser application.
@@ -289,6 +300,7 @@ Release and public-readiness docs:
 - [docs/release-validation-evidence.md](docs/release-validation-evidence.md)
 - [docs/open-source-readiness.md](docs/open-source-readiness.md)
 - [docs/known-limitations.md](docs/known-limitations.md)
+- [docs/local-static-viewer.md](docs/local-static-viewer.md)
 
 ## Licensing and commercial use
 

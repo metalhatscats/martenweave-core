@@ -24,7 +24,7 @@
 | `commands/audit.py` | `audit-log` | Append-only audit log queries. |
 | `commands/serve.py` | `serve` | Local FastAPI server. |
 | `commands/mcp.py` | `mcp` | MCP server for agent integration. |
-| `commands/docs.py` | `docs-build` | Static documentation generation. |
+| `commands/docs.py` | `docs-build` | Static Markdown docs and local read-only viewer generation. |
 | `commands/guardrails.py` | `config-guard` | Secrets and configuration guardrails. |
 | `commands/gap.py` | `gaps` | Dataset-to-model gap detection. |
 | `commands/notifications.py` | `notifications *` | Notification preview and list. |

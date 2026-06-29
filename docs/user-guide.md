@@ -119,7 +119,27 @@ martenweave health --repo ./my-model
 ```bash
 # Build SQLite index and optional JSONL exports
 martenweave build-index --repo ./my-model --jsonl
+
+# Generate Markdown docs and the local static read-only HTML viewer
+martenweave docs-build --repo ./my-model --site /tmp/martenweave-viewer
 ```
+
+The viewer is generated from `generated/modelops.db` and includes `index.html`, `objects.html`,
+per-object detail pages, `gaps.html`, `decisions.html`, `owners.html`, `search-index.json`, and
+`viewer-manifest.json`. It is local/static/read-only and disposable. Use it to inspect the current
+index, not to edit the model.
+
+Boundaries:
+
+- Canonical files in `model/` remain the source of truth.
+- The viewer has no hosted service, login, editor, workflow engine, SAP write-back, or AI
+  auto-mutation path.
+- If the index is stale, the viewer still builds but shows a stale-index warning and records the
+  freshness state in `viewer-manifest.json`.
+- If the index is missing, `docs-build` fails clearly; run `martenweave build-index` first.
+
+See [Local Static Viewer](local-static-viewer.md) for the full generated-file list and preview
+commands.
 
 ### Impact Analysis
 

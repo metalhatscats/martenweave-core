@@ -5076,11 +5076,12 @@ def docs_build(
     output: str = typer.Option(
         "generated/docs_site",
         "--output",
+        "--site",
         help="Output directory for generated docs.",
     ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
-    """Generate static Markdown documentation from the model index."""
+    """Generate static Markdown docs and a local read-only HTML viewer from the model index."""
     repo_root = _resolve_repo(repo)
     output_path = repo_root / output
 
@@ -5093,12 +5094,23 @@ def docs_build(
             console.print(f"[yellow]{exc}[/yellow]")
         raise typer.Exit(code=1) from None
 
-    files = sorted(f.name for f in result.iterdir() if f.suffix == ".md")
+    files = sorted(str(f.relative_to(result)) for f in result.rglob("*") if f.is_file())
+    markdown_files = [name for name in files if name.endswith(".md")]
+    viewer_files = [name for name in files if name.endswith((".html", ".json", ".css", ".js"))]
+    manifest_path = result / "viewer-manifest.json"
+    viewer_manifest = None
+    if manifest_path.exists():
+        viewer_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
     if json_output:
         print(
             json.dumps(
-                {"output_dir": str(result), "files": files},
+                {
+                    "output_dir": str(result),
+                    "files": files,
+                    "viewer_files": viewer_files,
+                    "viewer_manifest": viewer_manifest,
+                },
                 indent=2,
                 default=str,
             )
@@ -5106,9 +5118,10 @@ def docs_build(
         raise typer.Exit()
 
     console.print(f"[bold]Documentation generated[/bold] at {result}")
-    console.print(f"  {len(files)} Markdown file(s):")
-    for name in files:
+    console.print(f"  {len(markdown_files)} Markdown file(s):")
+    for name in markdown_files:
         console.print(f"    - {name}")
+    console.print(f"  {len(viewer_files)} viewer file(s), including index.html")
 
 
 @app.command("config-guard")

@@ -134,6 +134,23 @@ run_step "gap-report customer_bp_model"
 assert_jq "${SMOKE_DIR}/customer-gap-report.json" \
     '.total_gap_count >= 0 and (.gaps_by_type | type == "object")'
 
+run_step "docs-build local viewer customer_bp_model"
+VIEWER_DIR="${SMOKE_DIR}/customer-viewer"
+"${MODELOPS}" docs-build --repo examples/customer_bp_model --site "${VIEWER_DIR}" --json \
+    >"${SMOKE_DIR}/customer-viewer.json"
+assert_jq "${SMOKE_DIR}/customer-viewer.json" \
+    '.files | index("index.html") and index("objects.html") and index("gaps.html")'
+assert_jq "${SMOKE_DIR}/customer-viewer.json" \
+    '.files | index("decisions.html") and index("owners.html") and index("search-index.json")'
+assert_jq "${SMOKE_DIR}/customer-viewer.json" \
+    '.viewer_manifest.product_boundary.local_static_read_only == true'
+test -f "${VIEWER_DIR}/assets/viewer.css"
+test -f "${VIEWER_DIR}/assets/viewer.js"
+test -f "${VIEWER_DIR}/objects/fep-s4-knvv-kdgrp.html"
+grep -q "Customer Group" "${VIEWER_DIR}/search-index.json"
+grep -q "KNVV" "${VIEWER_DIR}/search-index.json"
+grep -q "KDGRP" "${VIEWER_DIR}/search-index.json"
+
 run_step "propose-patch dry-run customer_bp_model"
 cat >"${SMOKE_DIR}/note.md" <<'NOTE'
 Update CUSTOMER GROUP mapping for KNVV-KDGRP based on the CH01-A17 decision.

@@ -42,7 +42,28 @@ These files are disposable and rebuildable.
 
 Use this to show that canonical files can be indexed and searched without a UI or SaaS service.
 
-## 4. Trace and Impact
+## 4. Generate Local Static Viewer
+
+```bash
+.venv/bin/martenweave docs-build \
+  --repo examples/customer_bp_model \
+  --site /tmp/martenweave-viewer
+```
+
+Open `/tmp/martenweave-viewer/index.html` directly or serve it locally:
+
+```bash
+cd /tmp/martenweave-viewer
+python3 -m http.server 8000
+```
+
+Expected viewer outputs include `index.html`, `objects.html`, object detail pages,
+`gaps.html`, `decisions.html`, `owners.html`, `assets/viewer.css`, `assets/viewer.js`,
+`search-index.json`, and `viewer-manifest.json`. The viewer is static, local, read-only, and
+generated from `modelops.db`; canonical files remain the source of truth. It does not add a hosted
+UI, login, editor, SAP write-back, or AI auto-mutation path.
+
+## 5. Trace and Impact
 
 ```bash
 .venv/bin/martenweave trace ATTR-CUST-SALES-CUSTOMER-GROUP --repo examples/customer_bp_model
@@ -51,7 +72,7 @@ Use this to show that canonical files can be indexed and searched without a UI o
 
 Use this to show how a business attribute, physical SAP field endpoint, mappings, issues, decisions, and evidence stay connected.
 
-## 5. Health and Governance Scorecard
+## 6. Health and Governance Scorecard
 
 ```bash
 .venv/bin/martenweave health --repo examples/customer_bp_model
@@ -61,7 +82,7 @@ Use this to show how a business attribute, physical SAP field endpoint, mappings
 
 Use this to show what works today: deterministic checks, model coverage reporting, ownership/readiness signals, and model-side gaps.
 
-## 6. Dataset Gaps
+## 7. Dataset Gaps
 
 ```bash
 .venv/bin/martenweave gaps \
@@ -72,7 +93,7 @@ Use this to show what works today: deterministic checks, model coverage reportin
 
 Use this before mock loads or data readiness reviews to compare sample datasets with expected field endpoints.
 
-## 7. Proposal-First AI Flow
+## 8. Proposal-First AI Flow
 
 ```bash
 cat >/tmp/martenweave-note.md <<'NOTE'

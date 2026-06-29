@@ -43,7 +43,18 @@ This creates:
 - `generated/search_documents.jsonl` — search export
 - `generated/lineage_edges.jsonl` — lineage export
 
-## 3. Search and query
+## 3. Generate the local viewer
+
+```bash
+.venv/bin/martenweave docs-build --repo examples/simple_product_model --site docs_site
+```
+
+This creates generated Markdown plus a static read-only HTML viewer with `index.html`,
+`objects.html`, object detail pages, `gaps.html`, `decisions.html`, `owners.html`,
+`search-index.json`, and `viewer-manifest.json`. It is a disposable view over `modelops.db`;
+canonical files in `model/` remain authoritative.
+
+## 4. Search and query
 
 ```bash
 # Keyword search
@@ -53,7 +64,7 @@ This creates:
 .venv/bin/martenweave query --type Attribute --repo examples/simple_product_model
 ```
 
-## 4. Trace and impact
+## 5. Trace and impact
 
 ```bash
 # Trace relationships for an object
@@ -63,7 +74,7 @@ This creates:
 .venv/bin/martenweave impact DOMAIN-PRODUCT --repo examples/simple_product_model
 ```
 
-## 5. Profile a dataset
+## 6. Profile a dataset
 
 ```bash
 .venv/bin/martenweave profile-dataset \
@@ -71,7 +82,7 @@ This creates:
   --repo examples/simple_product_model
 ```
 
-## 6. Detect gaps
+## 7. Detect gaps
 
 ```bash
 .venv/bin/martenweave gaps \
@@ -81,7 +92,7 @@ This creates:
 
 This compares dataset columns against your model's FieldEndpoints and reports matches, gaps, and coverage.
 
-## 7. Review a proposal (dry-run)
+## 8. Review a proposal (dry-run)
 
 If a PatchProposal exists in `model/patch-proposals/`:
 
@@ -91,7 +102,7 @@ If a PatchProposal exists in `model/patch-proposals/`:
 .venv/bin/martenweave proposal apply PP-001 --repo examples/simple_product_model --dry-run
 ```
 
-## 8. Health check
+## 9. Health check
 
 ```bash
 .venv/bin/martenweave health --repo examples/simple_product_model
@@ -103,11 +114,13 @@ If a PatchProposal exists in `model/patch-proposals/`:
 
 - A validated canonical model
 - A searchable SQLite index
+- A generated local static read-only viewer
 - Dataset profiles and gap reports
 - A feel for traceability and impact analysis
 
 ## Next steps
 
+- Read the [Local Static Viewer](local-static-viewer.md) guide for the exact `/tmp/martenweave-viewer` demo command and product boundaries.
 - Read the [User Guide](user-guide.md) for the full Dataset → Model workflow.
 - Try the [Pilot Package](pilot-package.md) for a 1–2 week team onboarding plan.
 - Explore the [SAP starter](https://github.com/metalhatscats/martenweave-core/tree/main/examples/customer_bp_model) if you are working with Business Partner master data.

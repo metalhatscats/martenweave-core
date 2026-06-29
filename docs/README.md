@@ -13,6 +13,7 @@
 | [docs/first-15-minutes.md](first-15-minutes.md) | Step-by-step first workflow from clone to insight |
 | [docs/demo-quickstart-flow.md](demo-quickstart-flow.md) | Public demo flow for validating, indexing, search, trace, impact, gaps, and proposals |
 | [docs/user-guide.md](user-guide.md) | Day-to-day CLI usage patterns and examples |
+| [docs/local-static-viewer.md](local-static-viewer.md) | Generate and inspect the local static read-only viewer |
 | [docs/martenweave-data-model-book.md](martenweave-data-model-book.md) | How to create, maintain, and govern models correctly |
 | [docs/pilot-package.md](pilot-package.md) | 1–2 week pilot workflow for new teams |
 
