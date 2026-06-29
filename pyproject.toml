@@ -1,7 +1,7 @@
 [project]
 name = "martenweave-core"
 version = "0.4.1"
-description = "Backend-first agentic data model registry core."
+description = "Open-source data model registry core for SAP migration, MDM, and data governance."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
@@ -10,8 +10,16 @@ keywords = [
   "data-quality",
   "data-modeling",
   "mdm",
+  "master-data-management",
   "sap-migration",
   "model-registry",
+  "data-model-registry",
+  "open-source-model-registry",
+  "lineage",
+  "impact-analysis",
+  "dataset-validation",
+  "field-mapping",
+  "ai-governance",
 ]
 classifiers = [
   "Development Status :: 3 - Alpha",
