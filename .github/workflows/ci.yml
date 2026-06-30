@@ -93,6 +93,9 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+      - name: Test frontend
+        run: npm test
+
       - name: Lint frontend (if configured)
         run: |
           if grep -q '"lint"' package.json; then
