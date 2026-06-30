@@ -171,7 +171,7 @@ function Sidebar({ route, navigate, open, onClose }) {
   );
 }
 
-function Topbar({ route, navigate, onMenu }) {
+function Topbar({ route, navigate, title, onMenu }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -204,7 +204,7 @@ function Topbar({ route, navigate, onMenu }) {
         <div className="breadcrumb">
           <span>Customer migration</span>
           <CaretRight size={13} />
-          <strong>{ROUTE_TITLES[route] || "Workspace"}</strong>
+          <strong>{title || ROUTE_TITLES[route] || "Workspace"}</strong>
         </div>
       </div>
       <div className="topbar-actions">
@@ -253,7 +253,7 @@ function Topbar({ route, navigate, onMenu }) {
   );
 }
 
-function AppShell({ route, navigate, children }) {
+function AppShell({ route, navigate, title, children }) {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <div className="app-shell">
@@ -264,7 +264,7 @@ function AppShell({ route, navigate, children }) {
         onClose={() => setMenuOpen(false)}
       />
       <div className="app-stage">
-        <Topbar route={route} navigate={navigate} onMenu={() => setMenuOpen(true)} />
+        <Topbar route={route} navigate={navigate} title={title} onMenu={() => setMenuOpen(true)} />
         <main className={`app-main route-${route}`}>{children}</main>
       </div>
     </div>
@@ -308,6 +308,7 @@ function HomeScreen({ navigate }) {
   const [prompt, setPrompt] = useState("");
   const [submittedPrompt, setSubmittedPrompt] = useState("");
   const [isThinking, setIsThinking] = useState(false);
+  const recommendedProposal = proposals.find((proposal) => proposal.status === "In review") || proposals[0];
   const suggestions = [
     "Show high-risk gaps in Business Partner",
     "Trace TAX_NUMBER across source systems",
@@ -409,9 +410,9 @@ function HomeScreen({ navigate }) {
                       <strong>3 systems</strong>
                       <small>Sales Order, MDM, Analytics</small>
                     </button>
-                    <button onClick={() => navigate("proposal")}>
+                    <button onClick={() => navigate("proposal", { id: recommendedProposal.id })}>
                       <span><ShieldCheck size={19} /> Recommended action</span>
-                      <strong>Review Proposal #27</strong>
+                      <strong>Review Proposal #{recommendedProposal.id}</strong>
                       <small>All required evidence is attached</small>
                     </button>
                   </div>
@@ -438,7 +439,7 @@ function HomeScreen({ navigate }) {
       <aside className="home-rail">
         <RailSection title="Recent objects" action="View all" onAction={() => navigate("models")}>
           {modelObjects.slice(0, 4).map((item) => (
-            <button className="rail-item" key={item.id} onClick={() => navigate("object")}>
+            <button className="rail-item" key={item.id} onClick={() => navigate("object", { id: item.id })}>
               <IconTile type={item.label} size={34} />
               <span><strong>{item.name}</strong><small>{item.label}</small></span>
               <CaretRight size={14} />
@@ -592,7 +593,7 @@ function ModelsScreen({ navigate }) {
             <button
               className="result-row"
               key={item.id}
-              onClick={() => navigate(item.label === "Proposal" ? "proposal" : "object")}
+              onClick={() => navigate(item.label === "Proposal" ? "proposal" : "object", { id: item.id })}
             >
               <IconTile type={item.label} />
               <span className="result-copy">
@@ -669,12 +670,22 @@ function ModelsScreen({ navigate }) {
   );
 }
 
-function ObjectScreen({ navigate }) {
+const OBJECT_TYPE_LABELS = {
+  Domain: "Master data domain",
+  Attribute: "Attribute",
+  Entity: "Business entity",
+  Mapping: "Mapping",
+  Proposal: "Proposal",
+};
+
+function ObjectScreen({ navigate, params }) {
   const [tab, setTab] = useState("Overview");
   const [copied, setCopied] = useState(false);
   const tabs = ["Overview", "Fields", "Relationships", "Governance"];
+  const objectId = params.get("id");
+  const object = modelObjects.find((item) => item.id === objectId) || modelObjects[0];
   const copyId = async () => {
-    await navigator.clipboard?.writeText("DOMAIN-CUSTOMER-BP");
+    await navigator.clipboard?.writeText(object.id);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1200);
   };
@@ -686,15 +697,15 @@ function ObjectScreen({ navigate }) {
       </button>
       <div className="object-hero">
         <div className="object-identity">
-          <IconTile type="Domain" size={58} />
+          <IconTile type={object.label} size={58} />
           <div>
             <div className="object-type-row">
-              <Badge tone="domain">Master data domain</Badge>
-              <Badge tone="green"><CheckCircle size={13} /> Validated</Badge>
+              <Badge tone={object.label.toLowerCase()}>{OBJECT_TYPE_LABELS[object.label] || object.label}</Badge>
+              <Badge tone="green"><CheckCircle size={13} /> {object.status}</Badge>
             </div>
-            <h1>Business Partner</h1>
+            <h1>{object.name}</h1>
             <button className="copy-id" onClick={copyId}>
-              DOMAIN-CUSTOMER-BP {copied ? <Check size={14} /> : <Copy size={14} />}
+              {object.id} {copied ? <Check size={14} /> : <Copy size={14} />}
             </button>
           </div>
         </div>
@@ -706,10 +717,7 @@ function ObjectScreen({ navigate }) {
           <button className="icon-button bordered"><DotsThreeVertical size={20} /></button>
         </div>
       </div>
-      <p className="object-lead">
-        Canonical representation of organizations and people that participate in commercial
-        relationships. This domain connects SAP customer, vendor, CRM, MDM, and analytics models.
-      </p>
+      <p className="object-lead">{object.fullDescription}</p>
       <div className="object-tabs">
         {tabs.map((item) => (
           <button className={tab === item ? "is-active" : ""} key={item} onClick={() => setTab(item)}>
@@ -719,7 +727,7 @@ function ObjectScreen({ navigate }) {
         ))}
       </div>
 
-      {tab === "Overview" && <ObjectOverview navigate={navigate} />}
+      {tab === "Overview" && <ObjectOverview navigate={navigate} object={object} />}
       {tab === "Fields" && <FieldsTable />}
       {tab === "Relationships" && <Relationships navigate={navigate} />}
       {tab === "Governance" && <GovernancePanel />}
@@ -727,29 +735,25 @@ function ObjectScreen({ navigate }) {
   );
 }
 
-function ObjectOverview({ navigate }) {
+function ObjectOverview({ navigate, object }) {
   return (
     <div className="object-grid">
       <div className="object-main-column">
         <section className="surface overview-section">
           <div className="section-title"><div><h2>Model overview</h2><p>Canonical scope and operating context</p></div></div>
           <div className="definition-grid">
-            <div><small>Business owner</small><strong>Customer Data Office</strong></div>
-            <div><small>Technical steward</small><strong>Priya Nair</strong></div>
-            <div><small>Lifecycle</small><strong>Active</strong></div>
-            <div><small>Last validated</small><strong>Today, 10:18</strong></div>
+            <div><small>Business owner</small><strong>{object.businessOwner}</strong></div>
+            <div><small>Technical steward</small><strong>{object.technicalSteward}</strong></div>
+            <div><small>Lifecycle</small><strong>{object.lifecycle}</strong></div>
+            <div><small>Last validated</small><strong>{object.lastValidated}</strong></div>
           </div>
           <div className="narrative-block">
             <h3>Business definition</h3>
-            <p>
-              Business Partner is the canonical master record for any organization or person with
-              whom the enterprise conducts business. It provides a stable semantic layer above
-              source-system-specific customer and vendor structures.
-            </p>
+            <p>{object.fullDescription}</p>
           </div>
           <div className="tag-row">
             <Tag size={16} />
-            <Badge>SAP migration</Badge><Badge>MDM</Badge><Badge>Customer</Badge><Badge>Vendor</Badge>
+            {object.tags.map((tag) => <Badge key={tag}>{tag}</Badge>)}
           </div>
         </section>
         <section className="surface">
@@ -773,22 +777,22 @@ function ObjectOverview({ navigate }) {
         <section className="surface health-card">
           <div className="section-title"><div><h2>Model health</h2><p>Deterministic validation</p></div></div>
           <div className="health-score">
-            <strong>93%</strong>
-            <span>Validated</span>
+            <strong>{object.health}%</strong>
+            <span>{object.status}</span>
           </div>
-          <div className="progress-track"><span style={{ width: "93%" }} /></div>
+          <div className="progress-track"><span style={{ width: `${object.health}%` }} /></div>
           <ul>
-            <li><CheckCircle size={17} /> 24 valid objects <strong>100%</strong></li>
-            <li><WarningCircle size={17} /> 3 open field gaps <strong>Review</strong></li>
-            <li><ShieldCheck size={17} /> Ownership coverage <strong>96%</strong></li>
+            <li><CheckCircle size={17} /> {object.label} health <strong>{object.health}%</strong></li>
+            <li><WarningCircle size={17} /> Open field gaps <strong>Review</strong></li>
+            <li><ShieldCheck size={17} /> Ownership coverage <strong>{object.owners * 32}%</strong></li>
           </ul>
           <button className="secondary-button full-width" onClick={() => navigate("gaps")}>
             Review open gaps
           </button>
         </section>
         <section className="surface">
-          <div className="section-title"><div><h2>Connected systems</h2><p>8 upstream and downstream</p></div></div>
-          {["SAP S/4HANA", "Salesforce CRM", "Informatica MDM", "Customer analytics"].map((system, index) => (
+          <div className="section-title"><div><h2>Connected systems</h2><p>{object.systemsList.length} upstream and downstream</p></div></div>
+          {object.systemsList.map((system, index) => (
             <button className="system-row" key={system} onClick={() => navigate("lineage")}>
               <span className={`system-icon system-${index}`}><Database size={17} /></span>
               <span><strong>{system}</strong><small>{index < 2 ? "Source" : "Target"}</small></span>
@@ -969,6 +973,7 @@ function GapsScreen({ navigate }) {
   const [severity, setSeverity] = useState("All severities");
   const [sort, setSort] = useState("Risk first");
   const [expandedId, setExpandedId] = useState(1);
+  const recommendedProposal = proposals.find((proposal) => proposal.status === "In review") || proposals[0];
   const shown = gaps.filter((gap) => {
     const matchesQuery = `${gap.title} ${gap.object} ${gap.source}`.toLowerCase().includes(query.toLowerCase());
     return matchesQuery && (severity === "All severities" || gap.severity === severity);
@@ -1013,8 +1018,8 @@ function GapsScreen({ navigate }) {
                     <div><small>Proposal</small><strong>{gap.proposal}</strong></div>
                     <div className="gap-detail-actions">
                       <button className="secondary-button">View details</button>
-                      <button className="primary-button" onClick={() => navigate(gap.proposal === "—" ? "proposals" : "proposal")}>
-                        {gap.proposal === "—" ? "Create proposal" : "Review proposal"}
+                      <button className="primary-button" onClick={() => navigate(gap.proposalId ? "proposal" : "proposals", gap.proposalId ? { id: gap.proposalId } : undefined)}>
+                        {gap.proposalId ? "Review proposal" : "Create proposal"}
                       </button>
                     </div>
                   </div>
@@ -1045,9 +1050,9 @@ function GapsScreen({ navigate }) {
             <span className="assistant-mark"><Sparkle size={17} weight="fill" /></span>
             <h2>Recommended next step</h2>
             <div>
-              <strong>Review Proposal #27</strong>
+              <strong>Review Proposal #{recommendedProposal.id}</strong>
               <p>It addresses the highest-risk gap and includes all required evidence.</p>
-              <button className="primary-button full-width" onClick={() => navigate("proposal")}>Review proposal</button>
+              <button className="primary-button full-width" onClick={() => navigate("proposal", { id: recommendedProposal.id })}>Review proposal</button>
             </div>
           </section>
         </aside>
@@ -1079,7 +1084,7 @@ function ProposalsScreen({ navigate }) {
       </div>
       <div className="proposal-list">
         {shown.map((proposal) => (
-          <button className="proposal-row" key={proposal.id} onClick={() => navigate("proposal")}>
+          <button className="proposal-row" key={proposal.id} onClick={() => navigate("proposal", { id: proposal.id })}>
             <span className="proposal-number">#{proposal.id}</span>
             <span className="proposal-copy">
               <span><Badge tone={proposal.status === "In review" ? "violet" : "neutral"}>{proposal.status}</Badge><Badge tone={proposal.risk.toLowerCase()}>{proposal.risk} risk</Badge></span>
@@ -1095,11 +1100,13 @@ function ProposalsScreen({ navigate }) {
   );
 }
 
-function ProposalScreen({ navigate }) {
+function ProposalScreen({ navigate, params }) {
   const [tab, setTab] = useState("Changes");
   const [decision, setDecision] = useState(null);
   const [comment, setComment] = useState("");
   const [savedComment, setSavedComment] = useState("");
+  const proposalId = params.get("id");
+  const proposal = proposals.find((item) => String(item.id) === proposalId) || proposals[0];
 
   return (
     <div className="proposal-review-page">
@@ -1107,9 +1114,9 @@ function ProposalScreen({ navigate }) {
         <button className="back-link" onClick={() => navigate("proposals")}><CaretLeft size={15} /> Back to proposals</button>
         <div className="proposal-title-row">
           <div>
-            <div className="object-type-row"><Badge tone="violet">In review</Badge><Badge tone="high">High impact</Badge></div>
-            <h1>Customer alternative key mapping</h1>
-            <p>Proposal #27 · Created by Martenweave AI · Updated 18 minutes ago</p>
+            <div className="object-type-row"><Badge tone="violet">{proposal.status}</Badge><Badge tone={proposal.risk.toLowerCase()}>{proposal.risk} impact</Badge></div>
+            <h1>{proposal.title}</h1>
+            <p>Proposal #{proposal.id} · Created by {proposal.author} · Updated {proposal.updated}</p>
           </div>
           <div className="page-actions">
             <button className="danger-button" onClick={() => setDecision("reject")}><XCircle size={17} /> Request changes</button>
@@ -1120,29 +1127,29 @@ function ProposalScreen({ navigate }) {
       <div className="proposal-review-body">
         <div className="review-main">
           <section className="proposal-summary-strip">
-            <div><small>Risk classification</small><strong><WarningCircle size={16} /> High</strong></div>
-            <div><small>Canonical objects</small><strong>2 affected</strong></div>
-            <div><small>Proposed changes</small><strong>4 changes</strong></div>
-            <div><small>Validation</small><strong><CheckCircle size={16} /> Passed</strong></div>
+            <div><small>Risk classification</small><strong><WarningCircle size={16} /> {proposal.risk}</strong></div>
+            <div><small>Canonical objects</small><strong>{proposal.impactObjects} affected</strong></div>
+            <div><small>Proposed changes</small><strong>{proposal.changes} changes</strong></div>
+            <div><small>Validation</small><strong><CheckCircle size={16} /> {proposal.validationStatus}</strong></div>
           </section>
           <div className="review-tabs">
             {["Changes", "Impact", "Validation", "Activity"].map((item) => <button className={tab === item ? "is-active" : ""} key={item} onClick={() => setTab(item)}>{item}</button>)}
           </div>
           {tab === "Changes" && <ProposalChanges />}
-          {tab === "Impact" && <ProposalImpact navigate={navigate} />}
-          {tab === "Validation" && <ProposalValidation />}
+          {tab === "Impact" && <ProposalImpact navigate={navigate} proposal={proposal} />}
+          {tab === "Validation" && <ProposalValidation proposal={proposal} />}
           {tab === "Activity" && <ProposalActivity />}
         </div>
         <aside className="review-sidebar">
           <section className="surface">
             <div className="section-title"><div><h2>Review context</h2><p>Why this change exists</p></div></div>
             <p className="review-context">
-              TAX_NUMBER is missing from the Business Partner mapping. The proposal adds a canonical
-              endpoint and links SAP field KNVV.STCD1 with deterministic transform evidence.
+              {proposal.linkedGap} is driving this proposal. The change adds or modifies canonical
+              endpoints with deterministic transform evidence.
             </p>
             <button className="linked-gap" onClick={() => navigate("gaps")}>
               <WarningCircle size={18} />
-              <span><small>Linked gap</small><strong>Missing mapping for TAX_NUMBER</strong></span>
+              <span><small>Linked gap</small><strong>{proposal.linkedGap}</strong></span>
               <CaretRight size={15} />
             </button>
           </section>
@@ -1162,7 +1169,7 @@ function ProposalScreen({ navigate }) {
         </aside>
       </div>
       {decision && (
-        <DecisionDialog type={decision} onClose={() => setDecision(null)} onConfirm={() => { setDecision(null); navigate("proposals"); }} />
+        <DecisionDialog type={decision} proposalId={proposal.id} onClose={() => setDecision(null)} onConfirm={() => { setDecision(null); navigate("proposals"); }} />
       )}
     </div>
   );
@@ -1227,12 +1234,12 @@ reporting and partner matching.`}</pre>
   );
 }
 
-function ProposalImpact({ navigate }) {
+function ProposalImpact({ navigate, proposal }) {
   return (
     <section className="change-section">
       <div className="change-section-heading"><div><h2>Impact analysis</h2><p>Deterministic BFS traversal from changed objects.</p></div><button className="secondary-button" onClick={() => navigate("lineage")}><ShareNetwork size={17} /> Open lineage</button></div>
       <div className="impact-grid">
-        {[["Directly changed", "2", FileText], ["Downstream objects", "6", GitBranch], ["Source systems", "3", Database], ["High-risk paths", "1", WarningCircle]].map(([label, value, Icon]) => (
+        {[["Directly changed", String(proposal.impactObjects), FileText], ["Downstream objects", String(proposal.impactObjects + 4), GitBranch], ["Source systems", "3", Database], ["High-risk paths", proposal.risk === "High" ? "1" : "0", WarningCircle]].map(([label, value, Icon]) => (
           <div className="surface" key={label}><Icon size={20} /><strong>{value}</strong><span>{label}</span></div>
         ))}
       </div>
@@ -1244,18 +1251,18 @@ function ProposalImpact({ navigate }) {
   );
 }
 
-function ProposalValidation() {
+function ProposalValidation({ proposal }) {
   return (
     <section className="change-section">
-      <div className="change-section-heading"><div><h2>Validation evidence</h2><p>Deterministic checks executed before review.</p></div><Badge tone="green"><CheckCircle size={14} /> All checks passed</Badge></div>
+      <div className="change-section-heading"><div><h2>Validation evidence</h2><p>Deterministic checks executed before review.</p></div><Badge tone={proposal.validationStatus === "Passed" ? "green" : "high"}><CheckCircle size={14} /> {proposal.validationStatus === "Passed" ? "All checks passed" : "Checks failed"}</Badge></div>
       <div className="validation-list">
         {[
           ["Schema validation", "Object structure matches the registered Attribute and Mapping schemas."],
           ["Reference integrity", "All proposed object references resolve to valid canonical IDs."],
-          ["SAP context", "KNVV source endpoint matches the customer_sales_area context."],
+          ["SAP context", "Source endpoint context matches the registered domain pack rules."],
           ["ID uniqueness", "No duplicate stable IDs were found in the repository."],
         ].map(([title, description]) => (
-          <div className="surface validation-row" key={title}><span className="validation-check"><Check size={16} weight="bold" /></span><span><strong>{title}</strong><small>{description}</small></span><Badge tone="green">Passed</Badge></div>
+          <div className="surface validation-row" key={title}><span className="validation-check"><Check size={16} weight="bold" /></span><span><strong>{title}</strong><small>{description}</small></span><Badge tone={proposal.validationStatus === "Passed" ? "green" : "high"}>{proposal.validationStatus}</Badge></div>
         ))}
       </div>
     </section>
@@ -1280,7 +1287,7 @@ function ProposalActivity() {
   );
 }
 
-function DecisionDialog({ type, onClose, onConfirm }) {
+function DecisionDialog({ type, proposalId, onClose, onConfirm }) {
   const approve = type === "approve";
   const [reason, setReason] = useState("");
   return (
@@ -1288,7 +1295,7 @@ function DecisionDialog({ type, onClose, onConfirm }) {
       <div className="decision-dialog" role="dialog" aria-modal="true" aria-labelledby="decision-title" onMouseDown={(event) => event.stopPropagation()}>
         <button className="icon-button dialog-close" onClick={onClose}><X size={18} /></button>
         <span className={`dialog-icon ${approve ? "approve" : "reject"}`}>{approve ? <SealCheck size={24} /> : <XCircle size={24} />}</span>
-        <h2 id="decision-title">{approve ? "Approve Proposal #27?" : "Request changes?"}</h2>
+        <h2 id="decision-title">{approve ? `Approve Proposal #${proposalId}?` : "Request changes?"}</h2>
         <p>{approve ? "Approval creates a governed change request. Canonical files are not modified until that change request is applied." : "Send the proposal back with a clear reason for the author."}</p>
         <label><span>{approve ? "Approval note (optional)" : "Required changes"}</span><textarea rows={3} value={reason} onChange={(event) => setReason(event.target.value)} placeholder={approve ? "Add a short review note…" : "Explain what must change…"} /></label>
         <div className="dialog-actions">
@@ -1303,6 +1310,17 @@ function DecisionDialog({ type, onClose, onConfirm }) {
 export function App() {
   const [route, params, navigate] = useRoute();
   const [notice, setNotice] = useState("");
+  const routeTitle = (() => {
+    if (route === "object") {
+      const id = params.get("id");
+      return modelObjects.find((item) => item.id === id)?.name || "Object detail";
+    }
+    if (route === "proposal") {
+      const id = params.get("id");
+      return proposals.find((item) => String(item.id) === id)?.title || "Proposal review";
+    }
+    return ROUTE_TITLES[route] || "Workspace";
+  })();
   const utilityActions = {
     Export: "Export prepared for the current workspace.",
     "Create issue": "Issue draft opened with the current gap context.",
@@ -1333,7 +1351,7 @@ export function App() {
         window.setTimeout(() => setNotice(""), 2400);
       }}
     >
-      <AppShell route={route} navigate={navigate}>{screen}</AppShell>
+      <AppShell route={route} navigate={navigate} title={routeTitle}>{screen}</AppShell>
       {notice && <div className="app-toast" role="status"><CheckCircle size={18} /> {notice}</div>}
     </div>
   );
