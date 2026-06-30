@@ -180,6 +180,15 @@ export const gaps = [
     proposal: "Proposal #27",
     proposalId: 27,
     detected: "18m ago",
+    recommendation:
+      "Map SAP field KNVV.STCD1 to canonical TAX_NUMBER and attach lineage evidence from the source table to the target attribute.",
+    linkedObjectId: "DOMAIN-CUSTOMER-BP",
+    linkedProposalId: 27,
+    evidence: [
+      "Source field KNVV.STCD1 is present in SAP S/4HANA Sales Order.",
+      "Canonical Tax Number attribute is undefined in the Business Partner model.",
+      "Gap impacts migration validation, reporting, and downstream customer processes.",
+    ],
   },
   {
     id: 2,
@@ -195,6 +204,15 @@ export const gaps = [
     proposal: "Proposal #31",
     proposalId: 31,
     detected: "2h ago",
+    recommendation:
+      "Standardize LANGUAGE to the ISO-639-1 code list and update the mapping transform to convert source strings before canonical mapping.",
+    linkedObjectId: "ENTITY-CUSTOMER-SALES-AREA",
+    linkedProposalId: 31,
+    evidence: [
+      "Source column LANGUAGE is free-text in SAP Sales Order.",
+      "Target model expects a controlled ISO-639-1 language code.",
+      "Three downstream systems read the canonical language attribute.",
+    ],
   },
   {
     id: 3,
@@ -210,6 +228,15 @@ export const gaps = [
     proposal: "Proposal #29",
     proposalId: 29,
     detected: "1h ago",
+    recommendation:
+      "Normalize country values to ISO-3166-1 alpha-2 in the source dataset before canonical mapping.",
+    linkedObjectId: "ATTR-CUST-COUNTRY",
+    linkedProposalId: 29,
+    evidence: [
+      "Source dataset uses mixed country naming and three-letter codes.",
+      "Canonical COUNTRY attribute is validated against ISO-3166-1 alpha-2.",
+      "Standardization avoids tax-jurisdiction and regional-segmentation errors.",
+    ],
   },
   {
     id: 4,
@@ -225,6 +252,15 @@ export const gaps = [
     proposal: "—",
     proposalId: null,
     detected: "3h ago",
+    recommendation:
+      "Add EMAIL_ADDRESS to the canonical Business Partner model and map it from Legacy CRM with a format-validation rule.",
+    linkedObjectId: "DOMAIN-CUSTOMER-BP",
+    linkedProposalId: null,
+    evidence: [
+      "Legacy CRM stores EMAIL_ADDRESS for 94% of business partners.",
+      "Canonical model has no EMAIL_ADDRESS attribute defined.",
+      "Missing email contact reduces downstream communication and compliance coverage.",
+    ],
   },
   {
     id: 5,
@@ -240,6 +276,15 @@ export const gaps = [
     proposal: "—",
     proposalId: null,
     detected: "5h ago",
+    recommendation:
+      "Add INDUSTRY to the canonical Business Partner model and map it from the customer SQL source using a standardized industry classification.",
+    linkedObjectId: "DOMAIN-CUSTOMER-BP",
+    linkedProposalId: null,
+    evidence: [
+      "Customer SQL source contains INDUSTRY values for active accounts.",
+      "Canonical Business Partner does not yet model industry classification.",
+      "Sales operations and analytics depend on industry segmentation.",
+    ],
   },
 ];
 

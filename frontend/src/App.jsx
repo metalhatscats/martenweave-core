@@ -1077,11 +1077,16 @@ function LineageScreen({ navigate }) {
   );
 }
 
-function GapsScreen({ navigate }) {
+function GapsScreen({ navigate, params }) {
   const [query, setQuery] = useState("");
   const [severity, setSeverity] = useState("All severities");
   const [sort, setSort] = useState("Risk first");
   const [expandedId, setExpandedId] = useState(1);
+
+  useEffect(() => {
+    const gapParam = params.get("gap");
+    setExpandedId(gapParam ? Number(gapParam) : 1);
+  }, [params]);
   const recommendedProposal = proposals.find((proposal) => proposal.status === "In review") || proposals[0];
   const shown = useMemo(() => {
     const filtered = gaps.filter((gap) => {
@@ -1098,6 +1103,8 @@ function GapsScreen({ navigate }) {
     }
     return list;
   }, [query, severity, sort]);
+
+  const selectedGap = gaps.find((gap) => gap.id === expandedId) || gaps[0];
 
   return (
     <div className="page-pad gaps-page">
@@ -1153,7 +1160,6 @@ function GapsScreen({ navigate }) {
                     <div><small>Source → target</small><strong>{gap.source} <ArrowRight size={13} /> {gap.target}</strong></div>
                     <div><small>Proposal</small><strong>{gap.proposal}</strong></div>
                     <div className="gap-detail-actions">
-                      <button className="secondary-button">View details</button>
                       <button className="primary-button" onClick={() => navigate(gap.proposalId ? "proposal" : "proposals", gap.proposalId ? { id: gap.proposalId } : undefined)}>
                         {gap.proposalId ? "Review proposal" : "Create proposal"}
                       </button>
@@ -1189,6 +1195,41 @@ function GapsScreen({ navigate }) {
             </div>
             <div className="summary-stat"><span>Proposals linked</span><strong>60%</strong></div>
             <div className="summary-stat"><span>Validation risk</span><Badge tone="high">High</Badge></div>
+          </section>
+          <section className="surface gap-detail-panel">
+            <div className="section-title">
+              <div>
+                <h2>{selectedGap.title}</h2>
+                <p><Badge tone={selectedGap.severity.toLowerCase()}>{selectedGap.severity}</Badge></p>
+              </div>
+            </div>
+            <p className="gap-detail-note">{selectedGap.note}</p>
+            <div className="gap-detail-block">
+              <small>Recommendation</small>
+              <p>{selectedGap.recommendation}</p>
+            </div>
+            <div className="gap-detail-block">
+              <small>Evidence</small>
+              <ul className="gap-evidence-list">
+                {selectedGap.evidence.map((item, index) => (
+                  <li key={index}><CheckCircle size={14} /> {item}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="gap-detail-actions">
+              <button className="secondary-button full-width" onClick={() => navigate("object", { id: selectedGap.linkedObjectId })}>
+                Open object
+              </button>
+              {selectedGap.linkedProposalId ? (
+                <button className="primary-button full-width" onClick={() => navigate("proposal", { id: selectedGap.linkedProposalId })}>
+                  Review proposal
+                </button>
+              ) : (
+                <DisabledButton className="primary-button full-width" label="Review proposal" reason="No proposal linked">
+                  Review proposal
+                </DisabledButton>
+              )}
+            </div>
           </section>
           <section className="surface assistant-suggestion">
             <span className="assistant-mark"><Sparkle size={17} weight="fill" /></span>
