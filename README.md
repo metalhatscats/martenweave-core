@@ -4,11 +4,16 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Backend-first agentic data model registry.
+Backend-first, open-source model governance pipeline for SAP migration and Master Data Management.
 
-Turns data models into a structured, traceable, validated, AI-ready model knowledge layer. This repository contains the canonical model registry, deterministic validation, generated SQLite index, safe AI patch proposals, and Git-friendly model files.
+Martenweave turns spreadsheets, datasets, tickets, validation reports, decisions, and SAP context
+into canonical model files, deterministic validation, dataset gap reports, lineage, impact
+analysis, and human-approved AI patch proposals. The model registry is the source-of-truth layer
+inside this pipeline, not the whole product category.
 
-SAP migration and Master Data Management are the **first domain pack** and proof case, not the product boundary. The core works for generic data models: domains, entities, attributes, relationships, datasets, mappings, rules, evidence, decisions, and change proposals.
+SAP migration and Master Data Management are the **first domain pack** and proof case, not the
+product boundary. The open-source core also works with generic data models: domains, entities,
+attributes, relationships, datasets, mappings, rules, evidence, decisions, and change proposals.
 
 **No hosted or editable product UI is included.** This is a CLI-driven, backend/core library
 designed to be embedded in pipelines, IDEs, local API processes, MCP servers, and agent workflows.
@@ -46,11 +51,40 @@ supported for backward compatibility with scripts, CI jobs, and early adopters.
 
 | Is | Is not |
 |---|---|
-| A backend-first model registry for data modeling, migration, and governance | A SAP-only tool |
-| A canonical file store with generated indexes | A database-first MDM platform |
-| A validator-gated, proposal-first editing workflow | A workflow engine |
-| A local-first CLI and embeddable library | A SaaS platform |
-| AI-assisted, with human approval required for changes | An autonomous AI agent that mutates models |
+| A backend-first model governance pipeline | A generic workflow platform |
+| A canonical file registry with disposable generated indexes | A hosted MDM platform |
+| A validator-gated, proposal-first model change workflow | A workflow engine or n8n/Zapier/Dify competitor |
+| A local-first CLI and embeddable open-source core | Generic B2B SaaS or a chatbot |
+| AI-assisted, with human approval required for changes | Autonomous mutation or direct SAP write-back |
+
+## Why pipeline, not SaaS
+
+Martenweave is built for controlled model change workflows:
+
+```text
+evidence → proposal → validation → gaps/impact → review → GitHub issue/PR
+```
+
+It coordinates existing CLI services around canonical files and Git. It does not add a hosted
+editable UI, tenant platform, generic workflow engine, or direct SAP write-back path.
+
+**Agents propose. Validators verify. Humans approve. Git records.**
+
+## Pipeline workflow
+
+1. Import or profile source evidence.
+2. Validate canonical model files.
+3. Build the generated SQLite and search index.
+4. Detect dataset/model gaps.
+5. Run lineage and impact analysis.
+6. Generate AI patch proposals.
+7. Publish a GitHub issue or pull request only for human review.
+
+Proposed roadmap workflow — this command is **not implemented**:
+
+```bash
+martenweave run dataset-readiness --repo ./model --dataset customers.xlsx --out ./reports/readiness
+```
 
 ## Quickstart
 

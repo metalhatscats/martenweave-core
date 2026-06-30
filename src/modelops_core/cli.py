@@ -131,7 +131,7 @@ from modelops_core.trace import trace_object
 from modelops_core.validation import validate_objects
 
 app = typer.Typer(
-    help="Martenweave Core — backend-first model registry CLI.",
+    help="Martenweave Core — backend-first model governance pipeline CLI.",
     no_args_is_help=True,
 )
 _base_console = Console()

@@ -1,7 +1,7 @@
 [project]
 name = "martenweave-core"
 version = "0.4.1"
-description = "Open-source data model registry core for SAP migration, MDM, and data governance."
+description = "Open-source model governance pipeline core for SAP migration, MDM, and data governance."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
@@ -12,6 +12,7 @@ keywords = [
   "mdm",
   "master-data-management",
   "sap-migration",
+  "model-governance-pipeline",
   "model-registry",
   "data-model-registry",
   "open-source-model-registry",
