@@ -109,3 +109,41 @@ These actions currently use local state or demo data. A production implementatio
 7. **Lineage filters / More filters** — query lineage edges and gap metadata from the backend.
 8. **Add note** — persist proposal review comments.
 9. **Gap → proposal navigation** — resolve linked proposal IDs from backend data.
+
+## Final implementation status
+
+Validation run on 2026-06-30:
+
+- `npm run build` — passed
+- `npm test` — 5/5 passed
+- Manual browser walkthrough — desktop and mobile flows verified
+- Browser console — no avoidable errors
+
+### Implemented / wired
+- Hash-based ID routing for object, proposal, and gap detail states.
+- Home recent objects, Models result rows, Proposals rows, and gap linked proposals navigate to the correct detail.
+- Object detail renders per-object demo data; proposal review renders per-proposal demo data.
+- "View all fields" on object overview navigates to the Fields tab.
+- Models sort "Relevance" and Gaps sort "Risk first"/"Recently detected"/"Object name" reorder results.
+- Lineage search filters nodes locally and hides orphaned edges.
+- Profile menu and mobile sidebar close on Escape and outside click.
+- Gap detail panel shows recommendation, evidence, and linked object/proposal navigation.
+- Empty states added to Proposals and Gaps lists.
+- Home AI answer loading state preserved with `aria-live="polite"`.
+
+### Disabled with explanation
+- Notifications, Profile/Preferences/Switch repository, Attach context, Context, Export (object and lineage), More options, Lineage Filters, Gaps Create issue / More filters, Gap summary info, Proposals New proposal.
+- Repo-switcher row disabled with `title` explaining backend dependency.
+
+### Removed
+- Environment pill was never interactive; left as read-only badge.
+- Repo-switcher `CaretDown` removed because it had no action.
+
+### Remaining backend-dependent actions
+- Real global search against canonical index.
+- Notifications, profile/preferences, repository switching.
+- AI prompt answer generation.
+- Export file generation.
+- Create issue / new proposal / approve / request changes against canonical files.
+- Lineage depth filter and advanced filters.
+- Persistent review notes.
