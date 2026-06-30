@@ -118,6 +118,21 @@ function useRoute() {
   return [route, params, navigate];
 }
 
+function DisabledButton({ className, icon: Icon, label, reason, children }) {
+  return (
+    <button
+      type="button"
+      className={className}
+      disabled
+      title={reason}
+      aria-label={`${label} — ${reason}`}
+    >
+      {Icon && <Icon size={17} />}
+      {children}
+    </button>
+  );
+}
+
 function Brand() {
   return (
     <div className="brand">
@@ -158,14 +173,13 @@ function Sidebar({ route, navigate, open, onClose }) {
             ))}
           </nav>
         </div>
-        <div className="repo-switcher">
+        <button className="repo-switcher" type="button" disabled title="Repository switcher requires backend">
           <span className="status-dot" />
           <span>
             <strong>Customer migration</strong>
             <small>Production · v2.4.1</small>
           </span>
-          <CaretDown size={16} />
-        </div>
+        </button>
       </aside>
     </>
   );
@@ -227,10 +241,12 @@ function Topbar({ route, navigate, title, onMenu }) {
           <span className="status-dot" />
           Production
         </span>
-        <button className="icon-button notification-button" aria-label="Notifications">
-          <Bell size={19} />
-          <span />
-        </button>
+        <DisabledButton
+          className="icon-button notification-button"
+          icon={Bell}
+          label="Notifications"
+          reason="No local notification feed"
+        />
         <div className="profile-wrap" ref={profileRef}>
           <button className="profile-button" onClick={() => setProfileOpen((value) => !value)}>
             <span className="avatar">AC</span>
@@ -242,9 +258,15 @@ function Topbar({ route, navigate, title, onMenu }) {
           </button>
           {profileOpen && (
             <div className="profile-menu">
-              <button><UserCircle size={18} /> Profile</button>
-              <button><SlidersHorizontal size={18} /> Preferences</button>
-              <button><Archive size={18} /> Switch repository</button>
+              <DisabledButton icon={UserCircle} label="Profile" reason="Requires backend identity service">
+                Profile
+              </DisabledButton>
+              <DisabledButton icon={SlidersHorizontal} label="Preferences" reason="Requires backend identity service">
+                Preferences
+              </DisabledButton>
+              <DisabledButton icon={Archive} label="Switch repository" reason="Requires backend identity service">
+                Switch repository
+              </DisabledButton>
             </div>
           )}
         </div>
@@ -344,13 +366,20 @@ function HomeScreen({ navigate }) {
           />
           <div className="prompt-toolbar">
             <div>
-              <button type="button" className="icon-button" aria-label="Attach context">
-                <Paperclip size={19} />
-              </button>
-              <button type="button" className="context-button">
-                <SlidersHorizontal size={18} />
+              <DisabledButton
+                className="icon-button"
+                icon={Paperclip}
+                label="Attach context"
+                reason="Attach canonical objects after backend index is available"
+              />
+              <DisabledButton
+                className="context-button"
+                icon={SlidersHorizontal}
+                label="Context"
+                reason="Attach model/lineage context after backend index is available"
+              >
                 Context
-              </button>
+              </DisabledButton>
             </div>
             <button className="send-button" aria-label="Ask Martenweave" disabled={!prompt.trim()}>
               <ArrowUp size={18} weight="bold" />
@@ -710,11 +739,23 @@ function ObjectScreen({ navigate, params }) {
           </div>
         </div>
         <div className="page-actions">
-          <button className="secondary-button"><Export size={17} /> Export</button>
+          <DisabledButton
+            className="secondary-button"
+            icon={Export}
+            label="Export"
+            reason="Export requires generated index (backend)"
+          >
+            Export
+          </DisabledButton>
           <button className="primary-button" onClick={() => navigate("lineage")}>
             <ShareNetwork size={17} /> Trace lineage
           </button>
-          <button className="icon-button bordered"><DotsThreeVertical size={20} /></button>
+          <DisabledButton
+            className="icon-button bordered"
+            icon={DotsThreeVertical}
+            label="More options"
+            reason="Object actions require backend"
+          />
         </div>
       </div>
       <p className="object-lead">{object.fullDescription}</p>
@@ -727,7 +768,7 @@ function ObjectScreen({ navigate, params }) {
         ))}
       </div>
 
-      {tab === "Overview" && <ObjectOverview navigate={navigate} object={object} />}
+      {tab === "Overview" && <ObjectOverview navigate={navigate} object={object} onViewFields={() => setTab("Fields")} />}
       {tab === "Fields" && <FieldsTable />}
       {tab === "Relationships" && <Relationships navigate={navigate} />}
       {tab === "Governance" && <GovernancePanel />}
@@ -735,7 +776,7 @@ function ObjectScreen({ navigate, params }) {
   );
 }
 
-function ObjectOverview({ navigate, object }) {
+function ObjectOverview({ navigate, object, onViewFields }) {
   return (
     <div className="object-grid">
       <div className="object-main-column">
@@ -759,7 +800,7 @@ function ObjectOverview({ navigate, object }) {
         <section className="surface">
           <div className="section-title">
             <div><h2>Key fields</h2><p>Frequently referenced canonical attributes</p></div>
-            <button>View all {fields.length} <ArrowRight size={14} /></button>
+            <button onClick={onViewFields}>View all {fields.length} <ArrowRight size={14} /></button>
           </div>
           <div className="compact-field-list">
             {fields.slice(0, 4).map((field) => (
@@ -887,10 +928,18 @@ function LineageScreen({ navigate }) {
   const [depth, setDepth] = useState("2 levels");
   const [selected, setSelected] = useState("canonical");
   const [panelOpen, setPanelOpen] = useState(false);
+  const [nodeQuery, setNodeQuery] = useState("");
 
   useEffect(() => {
-    setNodes((current) => current.map((node) => ({ ...node, selected: node.id === selected })));
-  }, [selected, setNodes]);
+    const query = nodeQuery.trim().toLowerCase();
+    setNodes((current) =>
+      current.map((node) => ({
+        ...node,
+        hidden: query ? !(`${node.data.label} ${node.data.meta}`.toLowerCase().includes(query)) : false,
+        selected: node.id === selected,
+      })),
+    );
+  }, [nodeQuery, selected, setNodes]);
 
   return (
     <div className="lineage-page">
@@ -900,15 +949,36 @@ function LineageScreen({ navigate }) {
           description="Trace systems, transformations, canonical objects, and downstream impact."
           actions={
             <>
-              <button className="secondary-button"><Export size={17} /> Export</button>
+              <DisabledButton
+                className="secondary-button"
+                icon={Export}
+                label="Export"
+                reason="Export requires generated lineage (backend)"
+              >
+                Export
+              </DisabledButton>
               <button className="primary-button" onClick={() => navigate("object")}><Eye size={17} /> View object</button>
             </>
           }
         />
         <div className="lineage-toolbar">
-          <label className="inline-search wide"><MagnifyingGlass size={17} /><input placeholder="Find a node or field…" /></label>
+          <label className="inline-search wide">
+            <MagnifyingGlass size={17} />
+            <input
+              value={nodeQuery}
+              onChange={(event) => setNodeQuery(event.target.value)}
+              placeholder="Find a node or field…"
+            />
+          </label>
           <label className="select-control"><span>Depth</span><select value={depth} onChange={(event) => setDepth(event.target.value)}><option>1 level</option><option>2 levels</option><option>All levels</option></select></label>
-          <button className="secondary-button"><Funnel size={17} /> Filters</button>
+          <DisabledButton
+            className="secondary-button"
+            icon={Funnel}
+            label="Filters"
+            reason="Lineage filters require backend"
+          >
+            Filters
+          </DisabledButton>
           <button className={`icon-button bordered ${panelOpen ? "is-active" : ""}`} onClick={() => setPanelOpen((value) => !value)}><SidebarSimple size={18} /></button>
         </div>
       </div>
@@ -984,7 +1054,16 @@ function GapsScreen({ navigate }) {
       <PageHeader
         title="Open gaps"
         description="Review missing mappings, inconsistent types, and unresolved model coverage."
-        actions={<button className="primary-button"><Plus size={17} /> Create issue</button>}
+        actions={
+          <DisabledButton
+            className="primary-button"
+            icon={Plus}
+            label="Create issue"
+            reason="Creating issues requires backend PatchProposal service"
+          >
+            Create issue
+          </DisabledButton>
+        }
       />
       <div className="gap-controls">
         <label className="inline-search wide"><MagnifyingGlass size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search gaps by field, object, or source…" /></label>
@@ -994,7 +1073,14 @@ function GapsScreen({ navigate }) {
         <select value={sort} onChange={(event) => setSort(event.target.value)}>
           <option>Risk first</option><option>Recently detected</option><option>Object name</option>
         </select>
-        <button className="secondary-button"><Funnel size={17} /> More filters</button>
+        <DisabledButton
+          className="secondary-button"
+          icon={Funnel}
+          label="More filters"
+          reason="Additional filters require backend"
+        >
+          More filters
+        </DisabledButton>
       </div>
       <div className="gaps-layout">
         <section className="gap-list">
@@ -1035,7 +1121,15 @@ function GapsScreen({ navigate }) {
         </section>
         <aside className="gaps-rail">
           <section className="surface gap-summary">
-            <div className="section-title"><div><h2>Gap summary</h2><p>Current model coverage</p></div><Info size={17} /></div>
+            <div className="section-title">
+              <div><h2>Gap summary</h2><p>Current model coverage</p></div>
+              <DisabledButton
+                className="icon-button"
+                icon={Info}
+                label="Gap summary details"
+                reason="Summary details require backend"
+              />
+            </div>
             <strong className="summary-number">5</strong>
             <span className="summary-label">Total open gaps</span>
             <div className="severity-list">
@@ -1074,7 +1168,16 @@ function ProposalsScreen({ navigate }) {
       <PageHeader
         title="Proposals"
         description="Review AI-assisted model changes before they become canonical."
-        actions={<button className="primary-button"><Plus size={17} /> New proposal</button>}
+        actions={
+          <DisabledButton
+            className="primary-button"
+            icon={Plus}
+            label="New proposal"
+            reason="New proposals are created in core CLI/API"
+          >
+            New proposal
+          </DisabledButton>
+        }
       />
       <div className="proposal-toolbar">
         <div className="segmented-control">
