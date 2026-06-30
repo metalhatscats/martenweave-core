@@ -962,23 +962,40 @@ function ModelNode({ data, selected }) {
 const nodeTypes = { model: ModelNode };
 
 function LineageScreen({ navigate }) {
-  const [nodes, setNodes, onNodesChange] = useNodesState(lineageNodes);
-  const [edges, , onEdgesChange] = useEdgesState(lineageEdges);
+  const [allNodes, , onNodesChange] = useNodesState(lineageNodes);
+  const [allEdges, , onEdgesChange] = useEdgesState(lineageEdges);
   const [depth, setDepth] = useState("2 levels");
   const [selected, setSelected] = useState("canonical");
   const [panelOpen, setPanelOpen] = useState(false);
   const [nodeQuery, setNodeQuery] = useState("");
 
-  useEffect(() => {
+  const visibleNodeIds = useMemo(() => {
     const query = nodeQuery.trim().toLowerCase();
-    setNodes((current) =>
-      current.map((node) => ({
+    return new Set(
+      allNodes
+        .filter((node) => !query || `${node.data.label} ${node.data.meta}`.toLowerCase().includes(query))
+        .map((node) => node.id),
+    );
+  }, [allNodes, nodeQuery]);
+
+  const nodes = useMemo(
+    () =>
+      allNodes.map((node) => ({
         ...node,
-        hidden: query ? !(`${node.data.label} ${node.data.meta}`.toLowerCase().includes(query)) : false,
+        hidden: !visibleNodeIds.has(node.id),
         selected: node.id === selected,
       })),
-    );
-  }, [nodeQuery, selected, setNodes]);
+    [allNodes, visibleNodeIds, selected],
+  );
+
+  const edges = useMemo(
+    () =>
+      allEdges.map((edge) => ({
+        ...edge,
+        hidden: !(visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target)),
+      })),
+    [allEdges, visibleNodeIds],
+  );
 
   return (
     <div className="lineage-page">
@@ -1085,7 +1102,16 @@ function GapsScreen({ navigate, params }) {
 
   useEffect(() => {
     const gapParam = params.get("gap");
-    setExpandedId(gapParam ? Number(gapParam) : 1);
+    if (!gapParam) {
+      setExpandedId(1);
+      return;
+    }
+    const id = Number(gapParam);
+    if (!Number.isInteger(id) || !gaps.some((gap) => gap.id === id)) {
+      setExpandedId(null);
+    } else {
+      setExpandedId(id);
+    }
   }, [params]);
   const recommendedProposal = proposals.find((proposal) => proposal.status === "In review") || proposals[0];
   const shown = useMemo(() => {
