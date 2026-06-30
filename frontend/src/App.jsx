@@ -1167,39 +1167,47 @@ function GapsScreen({ navigate, params }) {
       </div>
       <div className="gaps-layout">
         <section className="gap-list">
-          {shown.map((gap) => {
-            const expanded = expandedId === gap.id;
-            return (
-              <article className={`gap-card ${expanded ? "is-expanded" : ""}`} key={gap.id}>
-                <button className="gap-card-main" onClick={() => setExpandedId(expanded ? null : gap.id)}>
-                  <span className="gap-index">{gap.id}</span>
-                  <span className="gap-title">
-                    <span><strong>{gap.title}</strong><Badge tone={gap.severity.toLowerCase()}>{gap.severity}</Badge></span>
-                    <small>{gap.note}</small>
-                  </span>
-                  <span className="gap-owner"><span className="avatar avatar-soft">{gap.initials}</span><span><small>Owner</small><strong>{gap.owner}</strong></span></span>
-                  <CaretDown className={expanded ? "rotate" : ""} size={17} />
-                </button>
-                {expanded && (
-                  <div className="gap-detail">
-                    <div><small>Impacted object</small><strong><Cube size={15} /> {gap.object}</strong></div>
-                    <div><small>Source → target</small><strong>{gap.source} <ArrowRight size={13} /> {gap.target}</strong></div>
-                    <div><small>Proposal</small><strong>{gap.proposal}</strong></div>
-                    <div className="gap-detail-actions">
-                      <button className="primary-button" onClick={() => navigate(gap.proposalId ? "proposal" : "proposals", gap.proposalId ? { id: gap.proposalId } : undefined)}>
-                        {gap.proposalId ? "Review proposal" : "Create proposal"}
-                      </button>
+          {shown.length === 0 ? (
+            <div className="empty-state">
+              <Warning size={30} />
+              <h3>No gaps match the current filters</h3>
+              <button onClick={() => { setQuery(""); setSeverity("All severities"); }}>Clear filters</button>
+            </div>
+          ) : (
+            shown.map((gap) => {
+              const expanded = expandedId === gap.id;
+              return (
+                <article className={`gap-card ${expanded ? "is-expanded" : ""}`} key={gap.id}>
+                  <button className="gap-card-main" onClick={() => setExpandedId(expanded ? null : gap.id)}>
+                    <span className="gap-index">{gap.id}</span>
+                    <span className="gap-title">
+                      <span><strong>{gap.title}</strong><Badge tone={gap.severity.toLowerCase()}>{gap.severity}</Badge></span>
+                      <small>{gap.note}</small>
+                    </span>
+                    <span className="gap-owner"><span className="avatar avatar-soft">{gap.initials}</span><span><small>Owner</small><strong>{gap.owner}</strong></span></span>
+                    <CaretDown className={expanded ? "rotate" : ""} size={17} />
+                  </button>
+                  {expanded && (
+                    <div className="gap-detail">
+                      <div><small>Impacted object</small><strong><Cube size={15} /> {gap.object}</strong></div>
+                      <div><small>Source → target</small><strong>{gap.source} <ArrowRight size={13} /> {gap.target}</strong></div>
+                      <div><small>Proposal</small><strong>{gap.proposal}</strong></div>
+                      <div className="gap-detail-actions">
+                        <button className="primary-button" onClick={() => navigate(gap.proposalId ? "proposal" : "proposals", gap.proposalId ? { id: gap.proposalId } : undefined)}>
+                          {gap.proposalId ? "Review proposal" : "Create proposal"}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
-                <footer>
-                  <span>Proposal <Badge tone={gap.status === "In review" ? "violet" : "neutral"}>{gap.status}</Badge></span>
-                  <span>{gap.proposal}</span>
-                  <span>Detected {gap.detected}</span>
-                </footer>
-              </article>
-            );
-          })}
+                  )}
+                  <footer>
+                    <span>Proposal <Badge tone={gap.status === "In review" ? "violet" : "neutral"}>{gap.status}</Badge></span>
+                    <span>{gap.proposal}</span>
+                    <span>Detected {gap.detected}</span>
+                  </footer>
+                </article>
+              );
+            })
+          )}
         </section>
         <aside className="gaps-rail">
           <section className="surface gap-summary">
@@ -1303,18 +1311,27 @@ function ProposalsScreen({ navigate }) {
         <label className="inline-search"><MagnifyingGlass size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search proposals" /></label>
       </div>
       <div className="proposal-list">
-        {shown.map((proposal) => (
-          <button className="proposal-row" key={proposal.id} onClick={() => navigate("proposal", { id: proposal.id })}>
-            <span className="proposal-number">#{proposal.id}</span>
-            <span className="proposal-copy">
-              <span><Badge tone={proposal.status === "In review" ? "violet" : "neutral"}>{proposal.status}</Badge><Badge tone={proposal.risk.toLowerCase()}>{proposal.risk} risk</Badge></span>
-              <strong>{proposal.title}</strong>
-              <p>{proposal.summary}</p>
-              <small>{proposal.changes} proposed changes · {proposal.author} · Updated {proposal.updated}</small>
-            </span>
-            <span className="proposal-review">Review <ArrowRight size={16} /></span>
-          </button>
-        ))}
+        {shown.length === 0 ? (
+          <div className="empty-state">
+            <NotePencil size={30} />
+            <h3>No proposals match</h3>
+            <p>Try a different status tab or clear the search.</p>
+            <button onClick={() => { setTab("All"); setQuery(""); }}>Clear filters</button>
+          </div>
+        ) : (
+          shown.map((proposal) => (
+            <button className="proposal-row" key={proposal.id} onClick={() => navigate("proposal", { id: proposal.id })}>
+              <span className="proposal-number">#{proposal.id}</span>
+              <span className="proposal-copy">
+                <span><Badge tone={proposal.status === "In review" ? "violet" : "neutral"}>{proposal.status}</Badge><Badge tone={proposal.risk.toLowerCase()}>{proposal.risk} risk</Badge></span>
+                <strong>{proposal.title}</strong>
+                <p>{proposal.summary}</p>
+                <small>{proposal.changes} proposed changes · {proposal.author} · Updated {proposal.updated}</small>
+              </span>
+              <span className="proposal-review">Review <ArrowRight size={16} /></span>
+            </button>
+          ))
+        )}
       </div>
     </div>
   );
