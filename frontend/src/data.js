@@ -288,6 +288,8 @@ export const proposals = [
   },
 ];
 
+export const severityWeight = { High: 3, Medium: 2, Low: 1 };
+
 export const recentActivity = [
   ["Validation completed", "Business Partner", "2m ago"],
   ["Proposal #27 updated", "Customer alternative key mapping", "18m ago"],

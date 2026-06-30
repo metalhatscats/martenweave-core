@@ -71,6 +71,7 @@ import {
   modelObjects,
   proposals,
   recentActivity,
+  severityWeight,
 } from "./data.js";
 
 const NAV_ITEMS = [
@@ -198,8 +199,15 @@ function Topbar({ route, navigate, title, onMenu }) {
         setProfileOpen(false);
       }
     };
+    const onKey = (event) => {
+      if (event.key === "Escape") setProfileOpen(false);
+    };
     document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [profileOpen]);
 
   const submit = (event) => {
@@ -277,6 +285,16 @@ function Topbar({ route, navigate, title, onMenu }) {
 
 function AppShell({ route, navigate, title, children }) {
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (event) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
   return (
     <div className="app-shell">
       <Sidebar
@@ -524,6 +542,7 @@ function ModelsScreen({ navigate }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [selectedStatuses, setSelectedStatuses] = useState([]);
+  const searchRef = useRef(null);
   const tabs = ["All", "Objects", "Fields", "Mappings", "Proposals"];
   const typeFilters = ["Domain", "Attribute", "Entity", "Mapping", "Proposal"];
   const statusFilters = ["Validated", "In review", "Draft"];
@@ -544,7 +563,21 @@ function ModelsScreen({ navigate }) {
       return matchesQuery && matchesTab && matchesType && matchesStatus;
     });
     const list = [...filtered];
-    if (sort === "Name") {
+    const q = query.trim().toLowerCase();
+    if (sort === "Relevance") {
+      if (!q) {
+        list.sort((a, b) => updatedMinutes(b.updated) - updatedMinutes(a.updated));
+      } else {
+        list.sort((a, b) => {
+          const aName = a.name.toLowerCase().includes(q);
+          const bName = b.name.toLowerCase().includes(q);
+          if (aName !== bName) return bName - aName;
+          const aDesc = a.description.toLowerCase().includes(q);
+          const bDesc = b.description.toLowerCase().includes(q);
+          return bDesc - aDesc;
+        });
+      }
+    } else if (sort === "Name") {
       list.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sort === "Recently updated") {
       list.sort((a, b) => updatedMinutes(b.updated) - updatedMinutes(a.updated));
@@ -558,9 +591,15 @@ function ModelsScreen({ navigate }) {
         title="Global model search"
         description="Search across canonical objects, fields, mappings, datasets, and proposals."
       />
-      <form className="global-search" onSubmit={(event) => event.preventDefault()}>
+      <form
+        className="global-search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!query.trim()) searchRef.current?.focus();
+        }}
+      >
         <MagnifyingGlass size={21} />
-        <input value={query} onChange={(event) => setQuery(event.target.value)} />
+        <input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} />
         {query && <button type="button" onClick={() => setQuery("")}><X size={17} /></button>}
         <button type="submit" className="search-submit"><ArrowUp size={18} weight="bold" /></button>
       </form>
@@ -1044,10 +1083,21 @@ function GapsScreen({ navigate }) {
   const [sort, setSort] = useState("Risk first");
   const [expandedId, setExpandedId] = useState(1);
   const recommendedProposal = proposals.find((proposal) => proposal.status === "In review") || proposals[0];
-  const shown = gaps.filter((gap) => {
-    const matchesQuery = `${gap.title} ${gap.object} ${gap.source}`.toLowerCase().includes(query.toLowerCase());
-    return matchesQuery && (severity === "All severities" || gap.severity === severity);
-  });
+  const shown = useMemo(() => {
+    const filtered = gaps.filter((gap) => {
+      const matchesQuery = `${gap.title} ${gap.object} ${gap.source}`.toLowerCase().includes(query.toLowerCase());
+      return matchesQuery && (severity === "All severities" || gap.severity === severity);
+    });
+    const list = [...filtered];
+    if (sort === "Risk first") {
+      list.sort((a, b) => severityWeight[b.severity] - severityWeight[a.severity]);
+    } else if (sort === "Recently detected") {
+      list.sort((a, b) => updatedMinutes(b.detected) - updatedMinutes(a.detected));
+    } else if (sort === "Object name") {
+      list.sort((a, b) => a.object.localeCompare(b.object));
+    }
+    return list;
+  }, [query, severity, sort]);
 
   return (
     <div className="page-pad gaps-page">
