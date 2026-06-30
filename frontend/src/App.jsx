@@ -14,23 +14,19 @@ import {
   CheckCircle,
   CircleNotch,
   ClockCounterClockwise,
-  Code,
   Columns,
   Copy,
   Cube,
   Database,
   DotsThreeVertical,
   Export,
-  Eye,
   FileText,
   Funnel,
   GitBranch,
   GitDiff,
   House,
   Info,
-  LinkSimple,
   List,
-  LockKey,
   MagnifyingGlass,
   NotePencil,
   Paperclip,
@@ -41,10 +37,7 @@ import {
   SidebarSimple,
   SlidersHorizontal,
   Sparkle,
-  Table,
   Tag,
-  Target,
-  TreeStructure,
   UserCircle,
   Users,
   Warning,
@@ -215,6 +208,7 @@ function Topbar({ route, navigate, title, onMenu }) {
     const search = query.trim() ? `search=${encodeURIComponent(query.trim())}` : "";
     navigate("models", search);
     setSearchOpen(false);
+    setQuery("");
   };
 
   return (
@@ -535,7 +529,7 @@ function getHashSearchParam() {
   return new URLSearchParams(hash.slice(queryIndex + 1)).get("search") || "";
 }
 
-function ModelsScreen({ navigate }) {
+function ModelsScreen({ navigate, params }) {
   const [query, setQuery] = useState(() => getHashSearchParam() || "business partner");
   const [activeTab, setActiveTab] = useState("All");
   const [sort, setSort] = useState("Relevance");
@@ -543,6 +537,10 @@ function ModelsScreen({ navigate }) {
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [selectedStatuses, setSelectedStatuses] = useState([]);
   const searchRef = useRef(null);
+
+  useEffect(() => {
+    setQuery(params.get("search") || "business partner");
+  }, [params]);
   const tabs = ["All", "Objects", "Fields", "Mappings", "Proposals"];
   const typeFilters = ["Domain", "Attribute", "Entity", "Mapping", "Proposal"];
   const statusFilters = ["Validated", "In review", "Draft"];
@@ -969,6 +967,24 @@ function LineageScreen({ navigate }) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [nodeQuery, setNodeQuery] = useState("");
 
+  const selectedNode = useMemo(
+    () => allNodes.find((node) => node.id === selected),
+    [allNodes, selected],
+  );
+
+  const selectedObjectId = useMemo(() => {
+    if (selectedNode?.id === "canonical") return "DOMAIN-CUSTOMER-BP";
+    const found = modelObjects.find((obj) => obj.name === selectedNode?.data?.label);
+    return found?.id || "DOMAIN-CUSTOMER-BP";
+  }, [selectedNode]);
+
+  const inspectorTone =
+    selectedNode?.data?.tone === "canonical"
+      ? "domain"
+      : selectedNode?.data?.tone === "mapping"
+        ? "mapping"
+        : "neutral";
+
   const visibleNodeIds = useMemo(() => {
     const query = nodeQuery.trim().toLowerCase();
     return new Set(
@@ -1013,7 +1029,7 @@ function LineageScreen({ navigate }) {
               >
                 Export
               </DisabledButton>
-              <button className="primary-button" onClick={() => navigate("object")}><Eye size={17} /> View object</button>
+              <button className="primary-button" onClick={() => navigate("object", { id: selectedObjectId })}><ArrowRight size={17} /> View object</button>
             </>
           }
         />
@@ -1065,13 +1081,13 @@ function LineageScreen({ navigate }) {
         {panelOpen && (
           <aside className="lineage-inspector">
             <div className="inspector-heading">
-              <span><Badge tone="domain">Canonical model</Badge><h2>Business Partner</h2></span>
+              <span><Badge tone={inspectorTone}>{selectedNode?.data?.meta || "Node"}</Badge><h2>{selectedNode?.data?.label || "Object"}</h2></span>
               <button className="icon-button" onClick={() => setPanelOpen(false)}><X size={18} /></button>
             </div>
             <p>Selected node details, validation context, and visible path evidence.</p>
             <div className="inspector-block">
               <small>Object ID</small>
-              <code>DOMAIN-CUSTOMER-BP</code>
+              <code>{selectedObjectId}</code>
             </div>
             <div className="inspector-block">
               <small>Visible impact</small>
@@ -1085,7 +1101,7 @@ function LineageScreen({ navigate }) {
                 <li><CheckCircle size={16} /> BP staging → Canonical</li>
               </ul>
             </div>
-            <button className="primary-button full-width" onClick={() => navigate("object")}>Open object details</button>
+            <button className="primary-button full-width" onClick={() => navigate("object", { id: selectedObjectId })}>Open object details</button>
             <button className="secondary-button full-width" onClick={() => navigate("gaps")}>Review related gaps</button>
           </aside>
         )}
@@ -1384,7 +1400,7 @@ function ProposalScreen({ navigate, params }) {
               {proposal.linkedGap} is driving this proposal. The change adds or modifies canonical
               endpoints with deterministic transform evidence.
             </p>
-            <button className="linked-gap" onClick={() => navigate("gaps")}>
+            <button className="linked-gap" onClick={() => navigate("gaps", { gap: proposal.linkedGapId })}>
               <WarningCircle size={18} />
               <span><small>Linked gap</small><strong>{proposal.linkedGap}</strong></span>
               <CaretRight size={15} />
@@ -1546,7 +1562,6 @@ function DecisionDialog({ type, proposalId, onClose, onConfirm }) {
 
 export function App() {
   const [route, params, navigate] = useRoute();
-  const [notice, setNotice] = useState("");
   const routeTitle = (() => {
     if (route === "object") {
       const id = params.get("id");
@@ -1558,17 +1573,9 @@ export function App() {
     }
     return ROUTE_TITLES[route] || "Workspace";
   })();
-  const utilityActions = {
-    Export: "Export prepared for the current workspace.",
-    "Create issue": "Issue draft opened with the current gap context.",
-    "More filters": "Additional source, owner, and status filters are ready.",
-    "New proposal": "New proposal workspace opened in draft mode.",
-    Context: "Model, lineage, and validation context are attached.",
-    "Attach context": "Choose model evidence to attach to this question.",
-  };
   const screen = {
     home: <HomeScreen navigate={navigate} />,
-    models: <ModelsScreen navigate={navigate} />,
+    models: <ModelsScreen navigate={navigate} params={params} />,
     object: <ObjectScreen navigate={navigate} params={params} />,
     lineage: <LineageScreen navigate={navigate} params={params} />,
     gaps: <GapsScreen navigate={navigate} params={params} />,
@@ -1577,19 +1584,6 @@ export function App() {
   }[route] || <HomeScreen navigate={navigate} />;
 
   return (
-    <div
-      onClickCapture={(event) => {
-        const button = event.target.closest("button");
-        if (!button) return;
-        const label = button.getAttribute("aria-label") || button.textContent.trim();
-        const message = utilityActions[label];
-        if (!message) return;
-        setNotice(message);
-        window.setTimeout(() => setNotice(""), 2400);
-      }}
-    >
-      <AppShell route={route} navigate={navigate} title={routeTitle}>{screen}</AppShell>
-      {notice && <div className="app-toast" role="status"><CheckCircle size={18} /> {notice}</div>}
-    </div>
+    <AppShell route={route} navigate={navigate} title={routeTitle}>{screen}</AppShell>
   );
 }

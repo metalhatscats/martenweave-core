@@ -1,6 +1,11 @@
-import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { describe, it, expect, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import { App } from "./App";
+
+afterEach(() => {
+  cleanup();
+  window.location.hash = "#/";
+});
 
 describe("App routing", () => {
   it("renders home by default", () => {
