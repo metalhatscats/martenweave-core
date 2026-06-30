@@ -80,7 +80,7 @@ This document inventories every interactive control in the Batch 1 frontend prot
 | Gaps | Gap card expand/collapse | Toggles `expandedId` | Keep — local expand | No |
 | Gaps | View details | No-op button | Wire to gap detail when it exists | No |
 | Gaps | Review proposal / Create proposal | `navigate("proposal")` / `navigate("proposals")` | **Wire** to linked proposal ID | Yes (proposal lookup) |
-| Gaps | Recommended Review proposal | `navigate("proposal")` | **Wire** to proposal #27 ID | No |
+| Gaps | Recommended Review proposal | `navigate("proposal")` | **Wire** to the dynamic recommended proposal ID (`recommendedProposal.id`) | No |
 | Proposals | All / In review / Draft / Approved tabs | Filters by status | Keep — local status filter | No |
 | Proposals | Search proposals input | Filters local proposals | Keep — local proposal search | No |
 | Proposals | New proposal | Shows toast | Disable or wire to proposal creation | Yes |

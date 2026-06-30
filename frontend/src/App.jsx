@@ -593,7 +593,7 @@ function ModelsScreen({ navigate }) {
             <button
               className="result-row"
               key={item.id}
-              onClick={() => navigate(item.label === "Proposal" ? "proposal" : "object", { id: item.id })}
+              onClick={() => navigate(item.label === "Proposal" ? "proposal" : "object", { id: item.proposalId || item.id })}
             >
               <IconTile type={item.label} />
               <span className="result-copy">
@@ -601,7 +601,7 @@ function ModelsScreen({ navigate }) {
                 <span className="result-description">{item.description}</span>
                 <span className="result-meta">
                   <span><Users size={14} /> {item.owners} owners</span>
-                  <span><Database size={14} /> {item.systems} systems</span>
+                  <span><Database size={14} /> {item.systems.length} systems</span>
                   <span><CheckCircle size={14} /> {item.status}</span>
                 </span>
               </span>
@@ -791,8 +791,8 @@ function ObjectOverview({ navigate, object }) {
           </button>
         </section>
         <section className="surface">
-          <div className="section-title"><div><h2>Connected systems</h2><p>{object.systemsList.length} upstream and downstream</p></div></div>
-          {object.systemsList.map((system, index) => (
+          <div className="section-title"><div><h2>Connected systems</h2><p>{object.systems.length} upstream and downstream</p></div></div>
+          {object.systems.map((system, index) => (
             <button className="system-row" key={system} onClick={() => navigate("lineage")}>
               <span className={`system-icon system-${index}`}><Database size={17} /></span>
               <span><strong>{system}</strong><small>{index < 2 ? "Source" : "Target"}</small></span>
@@ -1105,8 +1105,8 @@ function ProposalScreen({ navigate, params }) {
   const [decision, setDecision] = useState(null);
   const [comment, setComment] = useState("");
   const [savedComment, setSavedComment] = useState("");
-  const proposalId = params.get("id");
-  const proposal = proposals.find((item) => String(item.id) === proposalId) || proposals[0];
+  const proposalId = Number(params.get("id"));
+  const proposal = proposals.find((item) => item.id === proposalId) || proposals[0];
 
   return (
     <div className="proposal-review-page">
@@ -1317,7 +1317,7 @@ export function App() {
     }
     if (route === "proposal") {
       const id = params.get("id");
-      return proposals.find((item) => String(item.id) === id)?.title || "Proposal review";
+      return proposals.find((item) => item.id === Number(id))?.title || "Proposal review";
     }
     return ROUTE_TITLES[route] || "Workspace";
   })();
