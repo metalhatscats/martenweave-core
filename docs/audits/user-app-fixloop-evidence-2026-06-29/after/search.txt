@@ -1,0 +1,119 @@
+Search Results (55)
+┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ ID           ┃ Type          ┃ Name         ┃ Status ┃ Score ┃ Matched       ┃
+┡━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ CTX-CUSTOME… │ EntityContext │ S/4HANA      │ active │ 4     │ name,         │
+│              │               │ Customer     │        │       │ description,  │
+│              │               │ Sales Area   │        │       │ body,         │
+│              │               │              │        │       │ context_cate… │
+│ FEP-MIGFILE… │ FieldEndpoint │ Migration    │ active │ 4     │ name,         │
+│              │               │ file         │        │       │ description,  │
+│              │               │ Customer     │        │       │ body,         │
+│              │               │ Group column │        │       │ column_name   │
+│ ATTR-CUST-S… │ Attribute     │ Customer     │ active │ 3     │ name,         │
+│              │               │ Group        │        │       │ description,  │
+│              │               │              │        │       │ body          │
+│ CTX-BP-COMP… │ EntityContext │ Customer     │ active │ 3     │ name, body,   │
+│              │               │ Company Code │        │       │ context_cate… │
+│              │               │ S/4 Context  │        │       │               │
+│ CTX-BP-CUST… │ EntityContext │ Customer S/4 │ active │ 3     │ name, body,   │
+│              │               │ Context      │        │       │ context_cate… │
+│ DEC-CH01-A1… │ Decision      │ Customer     │ active │ 3     │ title,        │
+│              │               │ Group CH01 / │        │       │ description,  │
+│              │               │ A17 handling │        │       │ body          │
+│              │               │ decision     │        │       │               │
+│ DOMAIN-CUST… │ MasterDataDo… │ Business     │ active │ 3     │ name,         │
+│              │               │ Partner /    │        │       │ description,  │
+│              │               │ Customer     │        │       │ body          │
+│ ENTITY-CUST… │ BusinessEnti… │ Customer     │ active │ 3     │ name,         │
+│              │               │ Sales Area   │        │       │ description,  │
+│              │               │              │        │       │ body          │
+│ FEP-LEGACY-… │ FieldEndpoint │ Legacy       │ active │ 3     │ name,         │
+│              │               │ Customer     │        │       │ description,  │
+│              │               │ Group        │        │       │ body          │
+│ FEP-S4-KNVV… │ FieldEndpoint │ KNVV         │ active │ 3     │ name,         │
+│              │               │ Customer     │        │       │ description,  │
+│              │               │ Group        │        │       │ body          │
+│ ISS-CH01-A1… │ Issue         │ CH01 / A17   │ open   │ 3     │ title,        │
+│              │               │ Customer     │        │       │ description,  │
+│              │               │ Group        │        │       │ body          │
+│              │               │ configurati… │        │       │               │
+│              │               │ gap          │        │       │               │
+│ MAP-CUST-GR… │ Mapping       │ Legacy       │ draft  │ 3     │ name,         │
+│              │               │ Customer     │        │       │ description,  │
+│              │               │ Group to     │        │       │ body          │
+│              │               │ KNVV-KDGRP   │        │       │               │
+│ MAPSET-CUST… │ MappingSet    │ Customer BP  │ active │ 3     │ name,         │
+│              │               │ Mapping Set  │        │       │ description,  │
+│              │               │              │        │       │ body          │
+│ MIGOBJ-CUST… │ MigrationObj… │ Customer BP  │ active │ 3     │ name,         │
+│              │               │ Migration    │        │       │ description,  │
+│              │               │              │        │       │ body          │
+│ USE-CUST-SA… │ AttributeUsa… │ Customer     │ active │ 3     │ name,         │
+│              │               │ Group in S/4 │        │       │ description,  │
+│              │               │ Customer     │        │       │ body          │
+│              │               │ Sales Area   │        │       │               │
+│ VAL-CUST-GR… │ ValidationRu… │ Customer     │ active │ 3     │ name,         │
+│              │               │ Group        │        │       │ description,  │
+│              │               │ Allowed      │        │       │ body          │
+│              │               │ Values       │        │       │               │
+│ VLIST-LEGAC… │ ValueList     │ Legacy       │ active │ 3     │ name,         │
+│              │               │ Customer     │        │       │ description,  │
+│              │               │ Group Values │        │       │ body          │
+│ VLIST-S4-CU… │ ValueList     │ S/4 Customer │ active │ 3     │ name,         │
+│              │               │ Group Values │        │       │ description,  │
+│              │               │              │        │       │ body          │
+│ VMAP-CUST-G… │ ValueMapping  │ Customer     │ draft  │ 3     │ name,         │
+│              │               │ Group        │        │       │ description,  │
+│              │               │ Legacy-to-S… │        │       │ body          │
+│              │               │ Value        │        │       │               │
+│              │               │ Mapping      │        │       │               │
+│ DEC-ARCH-00… │ Decision      │ Business     │ active │ 2     │ description,  │
+│              │               │ Partner      │        │       │ body          │
+│              │               │ Central as   │        │       │               │
+│              │               │ canonical    │        │       │               │
+│              │               │ master       │        │       │               │
+│              │               │ entity       │        │       │               │
+│ ENTITY-BP-C… │ BusinessEnti… │ Customer     │ active │ 2     │ name, body    │
+│ EVI-CH01-A1… │ Evidence      │ CH01 / A17   │ active │ 2     │ title, body   │
+│              │               │ Customer     │        │       │               │
+│              │               │ Group Gap    │        │       │               │
+│              │               │ Analysis     │        │       │               │
+│              │               │ Evidence     │        │       │               │
+│ MAP-BP-CUST… │ Mapping       │ MAP-BP-CUST… │ active │ 2     │ name, body    │
+│ SYS-LEGACY-… │ System        │ Legacy CRM   │ active │ 2     │ description,  │
+│              │               │              │        │       │ body          │
+│ USE-BP-CUST… │ AttributeUsa… │ USE-BP-CUST… │ active │ 2     │ name, body    │
+│ USE-BP-CUST… │ AttributeUsa… │ USE-BP-CUST… │ active │ 2     │ name, body    │
+│ USE-BP-CUST… │ AttributeUsa… │ USE-BP-CUST… │ active │ 2     │ name, body    │
+│ VAL-BP-CUST… │ ValidationRu… │ VAL-BP-CUST… │ active │ 2     │ name, body    │
+│ ATTR-BP-COM… │ Attribute     │ Dunning      │ active │ 1     │ body          │
+│              │               │ Procedure    │        │       │               │
+│ ATTR-BP-COM… │ Attribute     │ Payment      │ active │ 1     │ body          │
+│              │               │ Terms        │        │       │               │
+│ ATTR-BP-COM… │ Attribute     │ Reconciliat… │ active │ 1     │ body          │
+│              │               │ Account      │        │       │               │
+│ ATTR-BP-CUS… │ Attribute     │ Industry     │ active │ 1     │ body          │
+│ ATTR-BP-CUS… │ Attribute     │ Tax Number   │ active │ 1     │ body          │
+│ ATTR-BP-SAL… │ Attribute     │ Price Group  │ active │ 1     │ body          │
+│ ATTR-BP-SAL… │ Attribute     │ Shipping     │ active │ 1     │ body          │
+│              │               │ Conditions   │        │       │               │
+│ ENTITY-BUSI… │ BusinessEnti… │ Business     │ active │ 1     │ body          │
+│              │               │ Partner      │        │       │               │
+│ FEP-S4-KNA1… │ FieldEndpoint │ BRSCH        │ active │ 1     │ context_cate… │
+│ FEP-S4-KNA1… │ FieldEndpoint │ STCD1        │ active │ 1     │ context_cate… │
+│ FEP-S4-KNA1… │ FieldEndpoint │ STCEG        │ active │ 1     │ context_cate… │
+│ FEP-S4-KNB1… │ FieldEndpoint │ AKONT        │ active │ 1     │ context_cate… │
+│ FEP-S4-KNB1… │ FieldEndpoint │ MABER        │ active │ 1     │ context_cate… │
+│ FEP-S4-KNB1… │ FieldEndpoint │ VZSKZ        │ active │ 1     │ context_cate… │
+│ FEP-S4-KNB1… │ FieldEndpoint │ ZTERM        │ active │ 1     │ body          │
+│ FEP-S4-KNVP… │ FieldEndpoint │ PARVW        │ active │ 1     │ context_cate… │
+│ FEP-S4-KNVV… │ FieldEndpoint │ INCO1        │ active │ 1     │ context_cate… │
+│ FEP-S4-KNVV… │ FieldEndpoint │ PLTYP        │ active │ 1     │ context_cate… │
+│ FEP-S4-KNVV… │ FieldEndpoint │ VSBED        │ active │ 1     │ context_cate… │
+│ PERSON-BUSI… │ Person        │ Business     │ active │ 1     │ body          │
+│              │               │ Owner        │        │       │               │
+│ PERSON-DATA… │ Person        │ Alex Data    │ active │ 1     │ body          │
+│              │               │ Steward      │        │       │               │
+│ SYS-S4HANA   │ System        │ S/4HANA      │ active │ 1     │ body          │
+└──────────────┴───────────────┴──────────────┴────────┴───────┴───────────────┘

@@ -1,0 +1,8 @@
+Documentation generated at /tmp/martenweave-fixloop-viewer
+  5 Markdown file(s):
+    - attribute.md
+    - businessentity.md
+    - index.md
+    - masterdatadomain.md
+    - objects.md
+  14 viewer file(s), including index.html

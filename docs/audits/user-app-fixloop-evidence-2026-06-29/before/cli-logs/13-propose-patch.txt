@@ -1,0 +1,2 @@
+Candidate has no operations.
+EXIT:1

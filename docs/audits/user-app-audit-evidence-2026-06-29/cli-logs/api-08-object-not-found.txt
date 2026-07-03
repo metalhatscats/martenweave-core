@@ -1,0 +1,2 @@
+{"detail":"Object NONEXISTENT-ID not found"}
+HTTP_STATUS:404

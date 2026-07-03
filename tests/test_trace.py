@@ -153,3 +153,36 @@ def test_trace_upstream_downstream_empty_when_no_index(temp_model_dir: Path) -> 
     result = trace_object(db_path, "DOMAIN-TEST", max_depth=3)
     assert result.upstream == []
     assert result.downstream == []
+
+
+def test_trace_cli_unknown_object_id(sample_repo: Path) -> None:
+    """CLI trace on an unknown ID must fail loudly instead of returning empty output."""
+    from typer.testing import CliRunner
+
+    from modelops_core.cli import app
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        ["trace", "DOES-NOT-EXIST", "--repo", str(sample_repo)],
+    )
+    assert result.exit_code == 1
+    assert "Object not found: DOES-NOT-EXIST" in result.output
+
+
+def test_trace_cli_unknown_object_id_json(sample_repo: Path) -> None:
+    """CLI trace --json on an unknown ID must include a structured error."""
+    import json
+
+    from typer.testing import CliRunner
+
+    from modelops_core.cli import app
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        ["trace", "DOES-NOT-EXIST", "--repo", str(sample_repo), "--json"],
+    )
+    assert result.exit_code == 1
+    data = json.loads(result.output.strip())
+    assert data["error"] == "Object not found: DOES-NOT-EXIST"

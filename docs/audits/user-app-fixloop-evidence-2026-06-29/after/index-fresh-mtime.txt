@@ -1,0 +1,8 @@
+Index freshness: fresh
+  DB: /private/tmp/martenweave-fixloop-repo/generated/modelops.db
+  DB mtime: 2026-06-29 17:45:35
+  Newest source: 2026-06-29 17:45:37
+  Stored hash:   5f10d54ddd065571
+  Current hash:  5f10d54ddd065571
+  Sources newer than index: 1 file(s) (content hash matches; no rebuild needed)
+    model/ATTR-CUST-SALES-CUSTOMER-GROUP.md

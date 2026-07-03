@@ -1,0 +1,8 @@
+Dry-run: proposal preview
+  ID:    PP-SCAFFOLD-001
+  Ops:   1
+  Safe:  True
+Assumptions:
+  • No AI provider is configured. This is a deterministic scaffold proposal.
+Human checks:
+  • Verify the proposed objects and fields match your intent.

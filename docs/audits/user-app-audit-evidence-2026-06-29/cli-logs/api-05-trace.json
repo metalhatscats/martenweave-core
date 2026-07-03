@@ -1,0 +1,436 @@
+{
+    "root_object_id": "ATTR-PRODUCT-NAME",
+    "root_object_type": "Attribute",
+    "root_object_name": "Product Name",
+    "nodes": [
+        {
+            "object_id": "DOMAIN-PRODUCT",
+            "object_type": "MasterDataDomain",
+            "object_name": "Product Domain",
+            "source_file": "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/model/DOMAIN-PRODUCT.md",
+            "depth": 1
+        },
+        {
+            "object_id": "ENTITY-PRODUCT",
+            "object_type": "BusinessEntity",
+            "object_name": "Product",
+            "source_file": "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/model/ENTITY-PRODUCT.md",
+            "depth": 1
+        },
+        {
+            "object_id": "FEP-PRODUCT-NAME",
+            "object_type": "FieldEndpoint",
+            "object_name": "name",
+            "source_file": "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/model/FEP-PRODUCT-NAME.md",
+            "depth": 1
+        },
+        {
+            "object_id": "ATTR-PRODUCT-ACTIVE",
+            "object_type": "Attribute",
+            "object_name": "Active",
+            "source_file": "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/model/ATTR-PRODUCT-ACTIVE.md",
+            "depth": 2
+        },
+        {
+            "object_id": "ATTR-PRODUCT-CATEGORY",
+            "object_type": "Attribute",
+            "object_name": "Category",
+            "source_file": "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/model/ATTR-PRODUCT-CATEGORY.md",
+            "depth": 2
+        },
+        {
+            "object_id": "ATTR-PRODUCT-ID",
+            "object_type": "Attribute",
+            "object_name": "Product ID",
+            "source_file": "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/model/ATTR-PRODUCT-ID.md",
+            "depth": 2
+        },
+        {
+            "object_id": "ATTR-PRODUCT-UNIT-PRICE",
+            "object_type": "Attribute",
+            "object_name": "Unit Price",
+            "source_file": "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/model/ATTR-PRODUCT-UNIT-PRICE.md",
+            "depth": 2
+        },
+        {
+            "object_id": "DS-PRODUCT-CSV",
+            "object_type": "Dataset",
+            "object_name": "product_sample.csv",
+            "source_file": "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/model/DS-PRODUCT-CSV.md",
+            "depth": 2
+        },
+        {
+            "object_id": "FEP-PRODUCT-ACTIVE",
+            "object_type": "FieldEndpoint",
+            "object_name": "active",
+            "source_file": "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/model/FEP-PRODUCT-ACTIVE.md",
+            "depth": 2
+        },
+        {
+            "object_id": "FEP-PRODUCT-CATEGORY",
+            "object_type": "FieldEndpoint",
+            "object_name": "category",
+            "source_file": "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/model/FEP-PRODUCT-CATEGORY.md",
+            "depth": 2
+        },
+        {
+            "object_id": "FEP-PRODUCT-ID",
+            "object_type": "FieldEndpoint",
+            "object_name": "product_id",
+            "source_file": "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/model/FEP-PRODUCT-ID.md",
+            "depth": 2
+        },
+        {
+            "object_id": "FEP-PRODUCT-UNIT-PRICE",
+            "object_type": "FieldEndpoint",
+            "object_name": "unit_price",
+            "source_file": "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/model/FEP-PRODUCT-UNIT-PRICE.md",
+            "depth": 2
+        },
+        {
+            "object_id": "VLIST-PRODUCT-CATEGORY",
+            "object_type": "ValueList",
+            "object_name": "Product Categories",
+            "source_file": "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/model/VLIST-PRODUCT-CATEGORY.md",
+            "depth": 2
+        }
+    ],
+    "edges": [
+        {
+            "from_object_id": "ATTR-PRODUCT-NAME",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-NAME",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-NAME",
+            "to_object_id": "ATTR-PRODUCT-NAME",
+            "relationship_type": "has_attribute",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-ACTIVE",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-CATEGORY",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-ID",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-NAME",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-UNIT-PRICE",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "DS-PRODUCT-CSV",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "ENTITY-PRODUCT",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-ACTIVE",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-CATEGORY",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-ID",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-NAME",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-UNIT-PRICE",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "VLIST-PRODUCT-CATEGORY",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "ENTITY-PRODUCT",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-ACTIVE",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-CATEGORY",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-ID",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-NAME",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-UNIT-PRICE",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-ACTIVE",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-CATEGORY",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-ID",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-NAME",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-UNIT-PRICE",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-NAME",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-NAME",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-NAME",
+            "to_object_id": "ATTR-PRODUCT-NAME",
+            "relationship_type": "has_attribute",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-ACTIVE",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-ACTIVE",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-ACTIVE",
+            "to_object_id": "ATTR-PRODUCT-ACTIVE",
+            "relationship_type": "has_attribute",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-CATEGORY",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-CATEGORY",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-CATEGORY",
+            "to_object_id": "ATTR-PRODUCT-CATEGORY",
+            "relationship_type": "has_attribute",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-ID",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-ID",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-ID",
+            "to_object_id": "ATTR-PRODUCT-ID",
+            "relationship_type": "has_attribute",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-UNIT-PRICE",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "ATTR-PRODUCT-UNIT-PRICE",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-UNIT-PRICE",
+            "to_object_id": "ATTR-PRODUCT-UNIT-PRICE",
+            "relationship_type": "has_attribute",
+            "direction": "upstream"
+        },
+        {
+            "from_object_id": "DS-PRODUCT-CSV",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-ACTIVE",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-ACTIVE",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-ACTIVE",
+            "to_object_id": "ATTR-PRODUCT-ACTIVE",
+            "relationship_type": "has_attribute",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-CATEGORY",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-CATEGORY",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-CATEGORY",
+            "to_object_id": "ATTR-PRODUCT-CATEGORY",
+            "relationship_type": "has_attribute",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-ID",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-ID",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-ID",
+            "to_object_id": "ATTR-PRODUCT-ID",
+            "relationship_type": "has_attribute",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-UNIT-PRICE",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-UNIT-PRICE",
+            "to_object_id": "ENTITY-PRODUCT",
+            "relationship_type": "belongs_to_entity",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "FEP-PRODUCT-UNIT-PRICE",
+            "to_object_id": "ATTR-PRODUCT-UNIT-PRICE",
+            "relationship_type": "has_attribute",
+            "direction": "downstream"
+        },
+        {
+            "from_object_id": "VLIST-PRODUCT-CATEGORY",
+            "to_object_id": "DOMAIN-PRODUCT",
+            "relationship_type": "belongs_to_domain",
+            "direction": "downstream"
+        }
+    ]
+}

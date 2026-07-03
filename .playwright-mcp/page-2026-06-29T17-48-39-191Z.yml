@@ -1,0 +1,910 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Objects" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Generated local static read-only viewer over the SQLite index.
+    - navigation "Viewer navigation" [ref=e7]:
+      - link "Dashboard" [ref=e8] [cursor=pointer]:
+        - /url: index.html
+      - link "Objects" [ref=e9] [cursor=pointer]:
+        - /url: objects.html
+      - link "Gaps" [ref=e10] [cursor=pointer]:
+        - /url: gaps.html
+      - link "Decisions" [ref=e11] [cursor=pointer]:
+        - /url: decisions.html
+      - link "Owners" [ref=e12] [cursor=pointer]:
+        - /url: owners.html
+      - link "Manifest" [ref=e13] [cursor=pointer]:
+        - /url: viewer-manifest.json
+  - generic [ref=e14]:
+    - text: "Index freshness:"
+    - strong [ref=e15]: fresh
+    - text: . Viewer content is generated from the current SQLite index.
+  - generic [ref=e16]:
+    - text: Read-only generated artifact. Canonical files in
+    - code [ref=e17]: model/
+    - text: remain the source of truth; this viewer can be deleted and rebuilt at any time.
+  - generic [ref=e18]:
+    - heading "Searchable objects" [level=2] [ref=e19]
+    - textbox "Search objects" [ref=e20]:
+      - /placeholder: Search IDs, labels, Customer Group, KNVV, KDGRP, owners, related terms...
+    - paragraph [ref=e21]: 85 objects shown. Search is local and works from file:// because the rows contain their own search terms.
+    - generic [ref=e22]:
+      - generic [ref=e23]: Attribute
+      - generic [ref=e24]: AttributeUsage
+      - generic [ref=e25]: BusinessEntity
+      - generic [ref=e26]: Decision
+      - generic [ref=e27]: EntityContext
+      - generic [ref=e28]: Evidence
+      - generic [ref=e29]: FieldEndpoint
+      - generic [ref=e30]: Issue
+      - generic [ref=e31]: Mapping
+      - generic [ref=e32]: MappingSet
+      - generic [ref=e33]: MasterDataDomain
+      - generic [ref=e34]: MigrationObject
+      - generic [ref=e35]: Person
+      - generic [ref=e36]: System
+      - generic [ref=e37]: ValidationRule
+      - generic [ref=e38]: ValueList
+      - generic [ref=e39]: ValueMapping
+    - table [ref=e40]:
+      - rowgroup [ref=e41]:
+        - row "ID Type Label Status Owners Hints" [ref=e42]:
+          - columnheader "ID" [ref=e43]
+          - columnheader "Type" [ref=e44]
+          - columnheader "Label" [ref=e45]
+          - columnheader "Status" [ref=e46]
+          - columnheader "Owners" [ref=e47]
+          - columnheader "Hints" [ref=e48]
+      - rowgroup [ref=e49]:
+        - row "ATTR-BP-CENTRAL-FOUNDATION-DATE Attribute Foundation Date active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e50]:
+          - cell "ATTR-BP-CENTRAL-FOUNDATION-DATE" [ref=e51]:
+            - link "ATTR-BP-CENTRAL-FOUNDATION-DATE" [ref=e52] [cursor=pointer]:
+              - /url: objects/attr-bp-central-foundation-date.html
+              - code [ref=e53]: ATTR-BP-CENTRAL-FOUNDATION-DATE
+          - cell "Attribute" [ref=e54]
+          - cell "Foundation Date" [ref=e55]
+          - cell "active" [ref=e56]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e57]
+          - cell [ref=e58]
+        - row "ATTR-BP-CENTRAL-LEGAL-FORM Attribute Legal Form active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e59]:
+          - cell "ATTR-BP-CENTRAL-LEGAL-FORM" [ref=e60]:
+            - link "ATTR-BP-CENTRAL-LEGAL-FORM" [ref=e61] [cursor=pointer]:
+              - /url: objects/attr-bp-central-legal-form.html
+              - code [ref=e62]: ATTR-BP-CENTRAL-LEGAL-FORM
+          - cell "Attribute" [ref=e63]
+          - cell "Legal Form" [ref=e64]
+          - cell "active" [ref=e65]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e66]
+          - cell [ref=e67]
+        - row "ATTR-BP-CENTRAL-NAME Attribute BP Central Name active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e68]:
+          - cell "ATTR-BP-CENTRAL-NAME" [ref=e69]:
+            - link "ATTR-BP-CENTRAL-NAME" [ref=e70] [cursor=pointer]:
+              - /url: objects/attr-bp-central-name.html
+              - code [ref=e71]: ATTR-BP-CENTRAL-NAME
+          - cell "Attribute" [ref=e72]
+          - cell "BP Central Name" [ref=e73]
+          - cell "active" [ref=e74]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e75]
+          - cell [ref=e76]
+        - row "ATTR-BP-CENTRAL-SEARCH-TERM Attribute Search Term active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e77]:
+          - cell "ATTR-BP-CENTRAL-SEARCH-TERM" [ref=e78]:
+            - link "ATTR-BP-CENTRAL-SEARCH-TERM" [ref=e79] [cursor=pointer]:
+              - /url: objects/attr-bp-central-search-term.html
+              - code [ref=e80]: ATTR-BP-CENTRAL-SEARCH-TERM
+          - cell "Attribute" [ref=e81]
+          - cell "Search Term" [ref=e82]
+          - cell "active" [ref=e83]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e84]
+          - cell [ref=e85]
+        - row "ATTR-BP-COMPANY-CODE-DUNNING-PROC Attribute Dunning Procedure active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e86]:
+          - cell "ATTR-BP-COMPANY-CODE-DUNNING-PROC" [ref=e87]:
+            - link "ATTR-BP-COMPANY-CODE-DUNNING-PROC" [ref=e88] [cursor=pointer]:
+              - /url: objects/attr-bp-company-code-dunning-proc.html
+              - code [ref=e89]: ATTR-BP-COMPANY-CODE-DUNNING-PROC
+          - cell "Attribute" [ref=e90]
+          - cell "Dunning Procedure" [ref=e91]
+          - cell "active" [ref=e92]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e93]
+          - cell [ref=e94]
+        - row "ATTR-BP-COMPANY-CODE-INTEREST-IND Attribute Interest Indicator active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e95]:
+          - cell "ATTR-BP-COMPANY-CODE-INTEREST-IND" [ref=e96]:
+            - link "ATTR-BP-COMPANY-CODE-INTEREST-IND" [ref=e97] [cursor=pointer]:
+              - /url: objects/attr-bp-company-code-interest-ind.html
+              - code [ref=e98]: ATTR-BP-COMPANY-CODE-INTEREST-IND
+          - cell "Attribute" [ref=e99]
+          - cell "Interest Indicator" [ref=e100]
+          - cell "active" [ref=e101]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e102]
+          - cell [ref=e103]
+        - row "ATTR-BP-COMPANY-CODE-PAYMENT-TERMS Attribute Payment Terms active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e104]:
+          - cell "ATTR-BP-COMPANY-CODE-PAYMENT-TERMS" [ref=e105]:
+            - link "ATTR-BP-COMPANY-CODE-PAYMENT-TERMS" [ref=e106] [cursor=pointer]:
+              - /url: objects/attr-bp-company-code-payment-terms.html
+              - code [ref=e107]: ATTR-BP-COMPANY-CODE-PAYMENT-TERMS
+          - cell "Attribute" [ref=e108]
+          - cell "Payment Terms" [ref=e109]
+          - cell "active" [ref=e110]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e111]
+          - cell [ref=e112]
+        - row "ATTR-BP-COMPANY-CODE-RECON-ACCT Attribute Reconciliation Account active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e113]:
+          - cell "ATTR-BP-COMPANY-CODE-RECON-ACCT" [ref=e114]:
+            - link "ATTR-BP-COMPANY-CODE-RECON-ACCT" [ref=e115] [cursor=pointer]:
+              - /url: objects/attr-bp-company-code-recon-acct.html
+              - code [ref=e116]: ATTR-BP-COMPANY-CODE-RECON-ACCT
+          - cell "Attribute" [ref=e117]
+          - cell "Reconciliation Account" [ref=e118]
+          - cell "active" [ref=e119]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e120]
+          - cell [ref=e121]
+        - row "ATTR-BP-CUSTOMER-INDUSTRY Attribute Industry active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e122]:
+          - cell "ATTR-BP-CUSTOMER-INDUSTRY" [ref=e123]:
+            - link "ATTR-BP-CUSTOMER-INDUSTRY" [ref=e124] [cursor=pointer]:
+              - /url: objects/attr-bp-customer-industry.html
+              - code [ref=e125]: ATTR-BP-CUSTOMER-INDUSTRY
+          - cell "Attribute" [ref=e126]
+          - cell "Industry" [ref=e127]
+          - cell "active" [ref=e128]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e129]
+          - cell [ref=e130]
+        - row "ATTR-BP-CUSTOMER-TAX-NUMBER Attribute Tax Number active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e131]:
+          - cell "ATTR-BP-CUSTOMER-TAX-NUMBER" [ref=e132]:
+            - link "ATTR-BP-CUSTOMER-TAX-NUMBER" [ref=e133] [cursor=pointer]:
+              - /url: objects/attr-bp-customer-tax-number.html
+              - code [ref=e134]: ATTR-BP-CUSTOMER-TAX-NUMBER
+          - cell "Attribute" [ref=e135]
+          - cell "Tax Number" [ref=e136]
+          - cell "active" [ref=e137]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e138]
+          - cell [ref=e139]
+        - row "ATTR-BP-CUSTOMER-VAT-REG Attribute VAT Registration active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e140]:
+          - cell "ATTR-BP-CUSTOMER-VAT-REG" [ref=e141]:
+            - link "ATTR-BP-CUSTOMER-VAT-REG" [ref=e142] [cursor=pointer]:
+              - /url: objects/attr-bp-customer-vat-reg.html
+              - code [ref=e143]: ATTR-BP-CUSTOMER-VAT-REG
+          - cell "Attribute" [ref=e144]
+          - cell "VAT Registration" [ref=e145]
+          - cell "active" [ref=e146]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e147]
+          - cell [ref=e148]
+        - row "ATTR-BP-PARTNER-FUNCTION-SOLD-TO Attribute Sold-To Party active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e149]:
+          - cell "ATTR-BP-PARTNER-FUNCTION-SOLD-TO" [ref=e150]:
+            - link "ATTR-BP-PARTNER-FUNCTION-SOLD-TO" [ref=e151] [cursor=pointer]:
+              - /url: objects/attr-bp-partner-function-sold-to.html
+              - code [ref=e152]: ATTR-BP-PARTNER-FUNCTION-SOLD-TO
+          - cell "Attribute" [ref=e153]
+          - cell "Sold-To Party" [ref=e154]
+          - cell "active" [ref=e155]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e156]
+          - cell [ref=e157]
+        - row "ATTR-BP-SALES-AREA-INCOTERMS Attribute Incoterms active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e158]:
+          - cell "ATTR-BP-SALES-AREA-INCOTERMS" [ref=e159]:
+            - link "ATTR-BP-SALES-AREA-INCOTERMS" [ref=e160] [cursor=pointer]:
+              - /url: objects/attr-bp-sales-area-incoterms.html
+              - code [ref=e161]: ATTR-BP-SALES-AREA-INCOTERMS
+          - cell "Attribute" [ref=e162]
+          - cell "Incoterms" [ref=e163]
+          - cell "active" [ref=e164]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e165]
+          - cell [ref=e166]
+        - row "ATTR-BP-SALES-AREA-PRICE-GROUP Attribute Price Group active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e167]:
+          - cell "ATTR-BP-SALES-AREA-PRICE-GROUP" [ref=e168]:
+            - link "ATTR-BP-SALES-AREA-PRICE-GROUP" [ref=e169] [cursor=pointer]:
+              - /url: objects/attr-bp-sales-area-price-group.html
+              - code [ref=e170]: ATTR-BP-SALES-AREA-PRICE-GROUP
+          - cell "Attribute" [ref=e171]
+          - cell "Price Group" [ref=e172]
+          - cell "active" [ref=e173]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e174]
+          - cell [ref=e175]
+        - row "ATTR-BP-SALES-AREA-SHIPPING-COND Attribute Shipping Conditions active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e176]:
+          - cell "ATTR-BP-SALES-AREA-SHIPPING-COND" [ref=e177]:
+            - link "ATTR-BP-SALES-AREA-SHIPPING-COND" [ref=e178] [cursor=pointer]:
+              - /url: objects/attr-bp-sales-area-shipping-cond.html
+              - code [ref=e179]: ATTR-BP-SALES-AREA-SHIPPING-COND
+          - cell "Attribute" [ref=e180]
+          - cell "Shipping Conditions" [ref=e181]
+          - cell "active" [ref=e182]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e183]
+          - cell [ref=e184]
+        - row "ATTR-CUST-SALES-CUSTOMER-GROUP Attribute Customer Group active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e185]:
+          - cell "ATTR-CUST-SALES-CUSTOMER-GROUP" [ref=e186]:
+            - link "ATTR-CUST-SALES-CUSTOMER-GROUP" [ref=e187] [cursor=pointer]:
+              - /url: objects/attr-cust-sales-customer-group.html
+              - code [ref=e188]: ATTR-CUST-SALES-CUSTOMER-GROUP
+          - cell "Attribute" [ref=e189]
+          - cell "Customer Group" [ref=e190]
+          - cell "active" [ref=e191]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e192]
+          - cell [ref=e193]
+        - row "USE-BP-CENTRAL-FOUNDATION-DATE-S4 AttributeUsage USE-BP-CENTRAL-FOUNDATION-DATE-S4 active" [ref=e194]:
+          - cell "USE-BP-CENTRAL-FOUNDATION-DATE-S4" [ref=e195]:
+            - link "USE-BP-CENTRAL-FOUNDATION-DATE-S4" [ref=e196] [cursor=pointer]:
+              - /url: objects/use-bp-central-foundation-date-s4.html
+              - code [ref=e197]: USE-BP-CENTRAL-FOUNDATION-DATE-S4
+          - cell "AttributeUsage" [ref=e198]
+          - cell "USE-BP-CENTRAL-FOUNDATION-DATE-S4" [ref=e199]
+          - cell "active" [ref=e200]
+          - cell [ref=e201]
+          - cell [ref=e202]
+        - row "USE-BP-CENTRAL-LEGAL-FORM-S4 AttributeUsage USE-BP-CENTRAL-LEGAL-FORM-S4 active" [ref=e203]:
+          - cell "USE-BP-CENTRAL-LEGAL-FORM-S4" [ref=e204]:
+            - link "USE-BP-CENTRAL-LEGAL-FORM-S4" [ref=e205] [cursor=pointer]:
+              - /url: objects/use-bp-central-legal-form-s4.html
+              - code [ref=e206]: USE-BP-CENTRAL-LEGAL-FORM-S4
+          - cell "AttributeUsage" [ref=e207]
+          - cell "USE-BP-CENTRAL-LEGAL-FORM-S4" [ref=e208]
+          - cell "active" [ref=e209]
+          - cell [ref=e210]
+          - cell [ref=e211]
+        - row "USE-BP-CENTRAL-SEARCH-TERM-S4 AttributeUsage USE-BP-CENTRAL-SEARCH-TERM-S4 active" [ref=e212]:
+          - cell "USE-BP-CENTRAL-SEARCH-TERM-S4" [ref=e213]:
+            - link "USE-BP-CENTRAL-SEARCH-TERM-S4" [ref=e214] [cursor=pointer]:
+              - /url: objects/use-bp-central-search-term-s4.html
+              - code [ref=e215]: USE-BP-CENTRAL-SEARCH-TERM-S4
+          - cell "AttributeUsage" [ref=e216]
+          - cell "USE-BP-CENTRAL-SEARCH-TERM-S4" [ref=e217]
+          - cell "active" [ref=e218]
+          - cell [ref=e219]
+          - cell [ref=e220]
+        - row "USE-BP-COMPANY-CODE-DUNNING-PROC-S4 AttributeUsage USE-BP-COMPANY-CODE-DUNNING-PROC-S4 active" [ref=e221]:
+          - cell "USE-BP-COMPANY-CODE-DUNNING-PROC-S4" [ref=e222]:
+            - link "USE-BP-COMPANY-CODE-DUNNING-PROC-S4" [ref=e223] [cursor=pointer]:
+              - /url: objects/use-bp-company-code-dunning-proc-s4.html
+              - code [ref=e224]: USE-BP-COMPANY-CODE-DUNNING-PROC-S4
+          - cell "AttributeUsage" [ref=e225]
+          - cell "USE-BP-COMPANY-CODE-DUNNING-PROC-S4" [ref=e226]
+          - cell "active" [ref=e227]
+          - cell [ref=e228]
+          - cell [ref=e229]
+        - row "USE-BP-COMPANY-CODE-INTEREST-IND-S4 AttributeUsage USE-BP-COMPANY-CODE-INTEREST-IND-S4 active" [ref=e230]:
+          - cell "USE-BP-COMPANY-CODE-INTEREST-IND-S4" [ref=e231]:
+            - link "USE-BP-COMPANY-CODE-INTEREST-IND-S4" [ref=e232] [cursor=pointer]:
+              - /url: objects/use-bp-company-code-interest-ind-s4.html
+              - code [ref=e233]: USE-BP-COMPANY-CODE-INTEREST-IND-S4
+          - cell "AttributeUsage" [ref=e234]
+          - cell "USE-BP-COMPANY-CODE-INTEREST-IND-S4" [ref=e235]
+          - cell "active" [ref=e236]
+          - cell [ref=e237]
+          - cell [ref=e238]
+        - row "USE-BP-COMPANY-CODE-RECON-ACCT-S4 AttributeUsage USE-BP-COMPANY-CODE-RECON-ACCT-S4 active" [ref=e239]:
+          - cell "USE-BP-COMPANY-CODE-RECON-ACCT-S4" [ref=e240]:
+            - link "USE-BP-COMPANY-CODE-RECON-ACCT-S4" [ref=e241] [cursor=pointer]:
+              - /url: objects/use-bp-company-code-recon-acct-s4.html
+              - code [ref=e242]: USE-BP-COMPANY-CODE-RECON-ACCT-S4
+          - cell "AttributeUsage" [ref=e243]
+          - cell "USE-BP-COMPANY-CODE-RECON-ACCT-S4" [ref=e244]
+          - cell "active" [ref=e245]
+          - cell [ref=e246]
+          - cell [ref=e247]
+        - row "USE-BP-CUSTOMER-INDUSTRY-S4 AttributeUsage USE-BP-CUSTOMER-INDUSTRY-S4 active" [ref=e248]:
+          - cell "USE-BP-CUSTOMER-INDUSTRY-S4" [ref=e249]:
+            - link "USE-BP-CUSTOMER-INDUSTRY-S4" [ref=e250] [cursor=pointer]:
+              - /url: objects/use-bp-customer-industry-s4.html
+              - code [ref=e251]: USE-BP-CUSTOMER-INDUSTRY-S4
+          - cell "AttributeUsage" [ref=e252]
+          - cell "USE-BP-CUSTOMER-INDUSTRY-S4" [ref=e253]
+          - cell "active" [ref=e254]
+          - cell [ref=e255]
+          - cell [ref=e256]
+        - row "USE-BP-CUSTOMER-TAX-NUMBER-S4 AttributeUsage USE-BP-CUSTOMER-TAX-NUMBER-S4 active" [ref=e257]:
+          - cell "USE-BP-CUSTOMER-TAX-NUMBER-S4" [ref=e258]:
+            - link "USE-BP-CUSTOMER-TAX-NUMBER-S4" [ref=e259] [cursor=pointer]:
+              - /url: objects/use-bp-customer-tax-number-s4.html
+              - code [ref=e260]: USE-BP-CUSTOMER-TAX-NUMBER-S4
+          - cell "AttributeUsage" [ref=e261]
+          - cell "USE-BP-CUSTOMER-TAX-NUMBER-S4" [ref=e262]
+          - cell "active" [ref=e263]
+          - cell [ref=e264]
+          - cell [ref=e265]
+        - row "USE-BP-CUSTOMER-VAT-REG-S4 AttributeUsage USE-BP-CUSTOMER-VAT-REG-S4 active" [ref=e266]:
+          - cell "USE-BP-CUSTOMER-VAT-REG-S4" [ref=e267]:
+            - link "USE-BP-CUSTOMER-VAT-REG-S4" [ref=e268] [cursor=pointer]:
+              - /url: objects/use-bp-customer-vat-reg-s4.html
+              - code [ref=e269]: USE-BP-CUSTOMER-VAT-REG-S4
+          - cell "AttributeUsage" [ref=e270]
+          - cell "USE-BP-CUSTOMER-VAT-REG-S4" [ref=e271]
+          - cell "active" [ref=e272]
+          - cell [ref=e273]
+          - cell [ref=e274]
+        - row "USE-BP-PARTNER-FUNCTION-SOLD-TO-S4 AttributeUsage USE-BP-PARTNER-FUNCTION-SOLD-TO-S4 active" [ref=e275]:
+          - cell "USE-BP-PARTNER-FUNCTION-SOLD-TO-S4" [ref=e276]:
+            - link "USE-BP-PARTNER-FUNCTION-SOLD-TO-S4" [ref=e277] [cursor=pointer]:
+              - /url: objects/use-bp-partner-function-sold-to-s4.html
+              - code [ref=e278]: USE-BP-PARTNER-FUNCTION-SOLD-TO-S4
+          - cell "AttributeUsage" [ref=e279]
+          - cell "USE-BP-PARTNER-FUNCTION-SOLD-TO-S4" [ref=e280]
+          - cell "active" [ref=e281]
+          - cell [ref=e282]
+          - cell [ref=e283]
+        - row "USE-BP-SALES-AREA-INCOTERMS-S4 AttributeUsage USE-BP-SALES-AREA-INCOTERMS-S4 active" [ref=e284]:
+          - cell "USE-BP-SALES-AREA-INCOTERMS-S4" [ref=e285]:
+            - link "USE-BP-SALES-AREA-INCOTERMS-S4" [ref=e286] [cursor=pointer]:
+              - /url: objects/use-bp-sales-area-incoterms-s4.html
+              - code [ref=e287]: USE-BP-SALES-AREA-INCOTERMS-S4
+          - cell "AttributeUsage" [ref=e288]
+          - cell "USE-BP-SALES-AREA-INCOTERMS-S4" [ref=e289]
+          - cell "active" [ref=e290]
+          - cell [ref=e291]
+          - cell [ref=e292]
+        - row "USE-BP-SALES-AREA-PRICE-GROUP-S4 AttributeUsage USE-BP-SALES-AREA-PRICE-GROUP-S4 active" [ref=e293]:
+          - cell "USE-BP-SALES-AREA-PRICE-GROUP-S4" [ref=e294]:
+            - link "USE-BP-SALES-AREA-PRICE-GROUP-S4" [ref=e295] [cursor=pointer]:
+              - /url: objects/use-bp-sales-area-price-group-s4.html
+              - code [ref=e296]: USE-BP-SALES-AREA-PRICE-GROUP-S4
+          - cell "AttributeUsage" [ref=e297]
+          - cell "USE-BP-SALES-AREA-PRICE-GROUP-S4" [ref=e298]
+          - cell "active" [ref=e299]
+          - cell [ref=e300]
+          - cell [ref=e301]
+        - row "USE-BP-SALES-AREA-SHIPPING-COND-S4 AttributeUsage USE-BP-SALES-AREA-SHIPPING-COND-S4 active" [ref=e302]:
+          - cell "USE-BP-SALES-AREA-SHIPPING-COND-S4" [ref=e303]:
+            - link "USE-BP-SALES-AREA-SHIPPING-COND-S4" [ref=e304] [cursor=pointer]:
+              - /url: objects/use-bp-sales-area-shipping-cond-s4.html
+              - code [ref=e305]: USE-BP-SALES-AREA-SHIPPING-COND-S4
+          - cell "AttributeUsage" [ref=e306]
+          - cell "USE-BP-SALES-AREA-SHIPPING-COND-S4" [ref=e307]
+          - cell "active" [ref=e308]
+          - cell [ref=e309]
+          - cell [ref=e310]
+        - row "USE-CUST-SALES-CUSTOMER-GROUP-S4 AttributeUsage Customer Group in S/4 Customer Sales Area active" [ref=e311]:
+          - cell "USE-CUST-SALES-CUSTOMER-GROUP-S4" [ref=e312]:
+            - link "USE-CUST-SALES-CUSTOMER-GROUP-S4" [ref=e313] [cursor=pointer]:
+              - /url: objects/use-cust-sales-customer-group-s4.html
+              - code [ref=e314]: USE-CUST-SALES-CUSTOMER-GROUP-S4
+          - cell "AttributeUsage" [ref=e315]
+          - cell "Customer Group in S/4 Customer Sales Area" [ref=e316]
+          - cell "active" [ref=e317]
+          - cell [ref=e318]
+          - cell [ref=e319]
+        - row "ENTITY-BP-CENTRAL BusinessEntity Business Partner Central active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e320]:
+          - cell "ENTITY-BP-CENTRAL" [ref=e321]:
+            - link "ENTITY-BP-CENTRAL" [ref=e322] [cursor=pointer]:
+              - /url: objects/entity-bp-central.html
+              - code [ref=e323]: ENTITY-BP-CENTRAL
+          - cell "BusinessEntity" [ref=e324]
+          - cell "Business Partner Central" [ref=e325]
+          - cell "active" [ref=e326]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e327]
+          - cell [ref=e328]
+        - row "ENTITY-BP-CUSTOMER BusinessEntity Customer active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e329]:
+          - cell "ENTITY-BP-CUSTOMER" [ref=e330]:
+            - link "ENTITY-BP-CUSTOMER" [ref=e331] [cursor=pointer]:
+              - /url: objects/entity-bp-customer.html
+              - code [ref=e332]: ENTITY-BP-CUSTOMER
+          - cell "BusinessEntity" [ref=e333]
+          - cell "Customer" [ref=e334]
+          - cell "active" [ref=e335]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e336]
+          - cell [ref=e337]
+        - row "ENTITY-BUSINESS-PARTNER BusinessEntity Business Partner active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e338]:
+          - cell "ENTITY-BUSINESS-PARTNER" [ref=e339]:
+            - link "ENTITY-BUSINESS-PARTNER" [ref=e340] [cursor=pointer]:
+              - /url: objects/entity-business-partner.html
+              - code [ref=e341]: ENTITY-BUSINESS-PARTNER
+          - cell "BusinessEntity" [ref=e342]
+          - cell "Business Partner" [ref=e343]
+          - cell "active" [ref=e344]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e345]
+          - cell [ref=e346]
+        - row "ENTITY-CUSTOMER-SALES-AREA BusinessEntity Customer Sales Area active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e347]:
+          - cell "ENTITY-CUSTOMER-SALES-AREA" [ref=e348]:
+            - link "ENTITY-CUSTOMER-SALES-AREA" [ref=e349] [cursor=pointer]:
+              - /url: objects/entity-customer-sales-area.html
+              - code [ref=e350]: ENTITY-CUSTOMER-SALES-AREA
+          - cell "BusinessEntity" [ref=e351]
+          - cell "Customer Sales Area" [ref=e352]
+          - cell "active" [ref=e353]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e354]
+          - cell [ref=e355]
+        - row "DEC-ARCH-001-BP-CENTRAL Decision Business Partner Central as canonical master entity active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e356]:
+          - cell "DEC-ARCH-001-BP-CENTRAL" [ref=e357]:
+            - link "DEC-ARCH-001-BP-CENTRAL" [ref=e358] [cursor=pointer]:
+              - /url: objects/dec-arch-001-bp-central.html
+              - code [ref=e359]: DEC-ARCH-001-BP-CENTRAL
+          - cell "Decision" [ref=e360]
+          - cell "Business Partner Central as canonical master entity" [ref=e361]
+          - cell "active" [ref=e362]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e363]
+          - cell [ref=e364]
+        - row "DEC-CH01-A17-CUSTOMER-GROUP Decision Customer Group CH01 / A17 handling decision active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e365]:
+          - cell "DEC-CH01-A17-CUSTOMER-GROUP" [ref=e366]:
+            - link "DEC-CH01-A17-CUSTOMER-GROUP" [ref=e367] [cursor=pointer]:
+              - /url: objects/dec-ch01-a17-customer-group.html
+              - code [ref=e368]: DEC-CH01-A17-CUSTOMER-GROUP
+          - cell "Decision" [ref=e369]
+          - cell "Customer Group CH01 / A17 handling decision" [ref=e370]
+          - cell "active" [ref=e371]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e372]
+          - cell [ref=e373]
+        - row "CTX-BP-CENTRAL-S4 EntityContext BP Central S/4 Context active" [ref=e374]:
+          - cell "CTX-BP-CENTRAL-S4" [ref=e375]:
+            - link "CTX-BP-CENTRAL-S4" [ref=e376] [cursor=pointer]:
+              - /url: objects/ctx-bp-central-s4.html
+              - code [ref=e377]: CTX-BP-CENTRAL-S4
+          - cell "EntityContext" [ref=e378]
+          - cell "BP Central S/4 Context" [ref=e379]
+          - cell "active" [ref=e380]
+          - cell [ref=e381]
+          - cell [ref=e382]
+        - row "CTX-BP-COMPANY-CODE-S4 EntityContext Customer Company Code S/4 Context active" [ref=e383]:
+          - cell "CTX-BP-COMPANY-CODE-S4" [ref=e384]:
+            - link "CTX-BP-COMPANY-CODE-S4" [ref=e385] [cursor=pointer]:
+              - /url: objects/ctx-bp-company-code-s4.html
+              - code [ref=e386]: CTX-BP-COMPANY-CODE-S4
+          - cell "EntityContext" [ref=e387]
+          - cell "Customer Company Code S/4 Context" [ref=e388]
+          - cell "active" [ref=e389]
+          - cell [ref=e390]
+          - cell [ref=e391]
+        - row "CTX-BP-CUSTOMER-S4 EntityContext Customer S/4 Context active" [ref=e392]:
+          - cell "CTX-BP-CUSTOMER-S4" [ref=e393]:
+            - link "CTX-BP-CUSTOMER-S4" [ref=e394] [cursor=pointer]:
+              - /url: objects/ctx-bp-customer-s4.html
+              - code [ref=e395]: CTX-BP-CUSTOMER-S4
+          - cell "EntityContext" [ref=e396]
+          - cell "Customer S/4 Context" [ref=e397]
+          - cell "active" [ref=e398]
+          - cell [ref=e399]
+          - cell [ref=e400]
+        - row "CTX-CUSTOMER-SALES-AREA-S4 EntityContext S/4HANA Customer Sales Area active KNVV" [ref=e401]:
+          - cell "CTX-CUSTOMER-SALES-AREA-S4" [ref=e402]:
+            - link "CTX-CUSTOMER-SALES-AREA-S4" [ref=e403] [cursor=pointer]:
+              - /url: objects/ctx-customer-sales-area-s4.html
+              - code [ref=e404]: CTX-CUSTOMER-SALES-AREA-S4
+          - cell "EntityContext" [ref=e405]
+          - cell "S/4HANA Customer Sales Area" [ref=e406]
+          - cell "active" [ref=e407]
+          - cell [ref=e408]
+          - cell "KNVV" [ref=e409]
+        - row "EVI-CH01-A17-ANALYSIS Evidence CH01 / A17 Customer Group Gap Analysis Evidence active" [ref=e410]:
+          - cell "EVI-CH01-A17-ANALYSIS" [ref=e411]:
+            - link "EVI-CH01-A17-ANALYSIS" [ref=e412] [cursor=pointer]:
+              - /url: objects/evi-ch01-a17-analysis.html
+              - code [ref=e413]: EVI-CH01-A17-ANALYSIS
+          - cell "Evidence" [ref=e414]
+          - cell "CH01 / A17 Customer Group Gap Analysis Evidence" [ref=e415]
+          - cell "active" [ref=e416]
+          - cell [ref=e417]
+          - cell [ref=e418]
+        - row "FEP-LEGACY-CUST-GROUP FieldEndpoint Legacy Customer Group active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD legacy_table_field" [ref=e419]:
+          - cell "FEP-LEGACY-CUST-GROUP" [ref=e420]:
+            - link "FEP-LEGACY-CUST-GROUP" [ref=e421] [cursor=pointer]:
+              - /url: objects/fep-legacy-cust-group.html
+              - code [ref=e422]: FEP-LEGACY-CUST-GROUP
+          - cell "FieldEndpoint" [ref=e423]
+          - cell "Legacy Customer Group" [ref=e424]
+          - cell "active" [ref=e425]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e426]
+          - cell "legacy_table_field" [ref=e427]
+        - row "FEP-MIGFILE-CUSTOMER-GROUP FieldEndpoint Migration file Customer Group column active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD dataset_column" [ref=e428]:
+          - cell "FEP-MIGFILE-CUSTOMER-GROUP" [ref=e429]:
+            - link "FEP-MIGFILE-CUSTOMER-GROUP" [ref=e430] [cursor=pointer]:
+              - /url: objects/fep-migfile-customer-group.html
+              - code [ref=e431]: FEP-MIGFILE-CUSTOMER-GROUP
+          - cell "FieldEndpoint" [ref=e432]
+          - cell "Migration file Customer Group column" [ref=e433]
+          - cell "active" [ref=e434]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e435]
+          - cell "dataset_column" [ref=e436]
+        - row "FEP-S4-BUT000-BU-SORT1 FieldEndpoint BU_SORT1 active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD sap_table_field" [ref=e437]:
+          - cell "FEP-S4-BUT000-BU-SORT1" [ref=e438]:
+            - link "FEP-S4-BUT000-BU-SORT1" [ref=e439] [cursor=pointer]:
+              - /url: objects/fep-s4-but000-bu-sort1.html
+              - code [ref=e440]: FEP-S4-BUT000-BU-SORT1
+          - cell "FieldEndpoint" [ref=e441]
+          - cell "BU_SORT1" [ref=e442]
+          - cell "active" [ref=e443]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e444]
+          - cell "sap_table_field" [ref=e445]
+        - row "FEP-S4-BUT000-FOUND-DAT FieldEndpoint FOUND_DAT active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD sap_table_field" [ref=e446]:
+          - cell "FEP-S4-BUT000-FOUND-DAT" [ref=e447]:
+            - link "FEP-S4-BUT000-FOUND-DAT" [ref=e448] [cursor=pointer]:
+              - /url: objects/fep-s4-but000-found-dat.html
+              - code [ref=e449]: FEP-S4-BUT000-FOUND-DAT
+          - cell "FieldEndpoint" [ref=e450]
+          - cell "FOUND_DAT" [ref=e451]
+          - cell "active" [ref=e452]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e453]
+          - cell "sap_table_field" [ref=e454]
+        - row "FEP-S4-BUT000-LEGAL-ENTY FieldEndpoint LEGAL_ENTY active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD sap_table_field" [ref=e455]:
+          - cell "FEP-S4-BUT000-LEGAL-ENTY" [ref=e456]:
+            - link "FEP-S4-BUT000-LEGAL-ENTY" [ref=e457] [cursor=pointer]:
+              - /url: objects/fep-s4-but000-legal-enty.html
+              - code [ref=e458]: FEP-S4-BUT000-LEGAL-ENTY
+          - cell "FieldEndpoint" [ref=e459]
+          - cell "LEGAL_ENTY" [ref=e460]
+          - cell "active" [ref=e461]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e462]
+          - cell "sap_table_field" [ref=e463]
+        - row "FEP-S4-BUT000-NAME-ORG1 FieldEndpoint NAME_ORG1 active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD BUT000, NAME_ORG1, sap_table_field" [ref=e464]:
+          - cell "FEP-S4-BUT000-NAME-ORG1" [ref=e465]:
+            - link "FEP-S4-BUT000-NAME-ORG1" [ref=e466] [cursor=pointer]:
+              - /url: objects/fep-s4-but000-name-org1.html
+              - code [ref=e467]: FEP-S4-BUT000-NAME-ORG1
+          - cell "FieldEndpoint" [ref=e468]
+          - cell "NAME_ORG1" [ref=e469]
+          - cell "active" [ref=e470]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e471]
+          - cell "BUT000, NAME_ORG1, sap_table_field" [ref=e472]
+        - row "FEP-S4-KNA1-BRSCH FieldEndpoint BRSCH active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD sap_table_field" [ref=e473]:
+          - cell "FEP-S4-KNA1-BRSCH" [ref=e474]:
+            - link "FEP-S4-KNA1-BRSCH" [ref=e475] [cursor=pointer]:
+              - /url: objects/fep-s4-kna1-brsch.html
+              - code [ref=e476]: FEP-S4-KNA1-BRSCH
+          - cell "FieldEndpoint" [ref=e477]
+          - cell "BRSCH" [ref=e478]
+          - cell "active" [ref=e479]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e480]
+          - cell "sap_table_field" [ref=e481]
+        - row "FEP-S4-KNA1-STCD1 FieldEndpoint STCD1 active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD sap_table_field" [ref=e482]:
+          - cell "FEP-S4-KNA1-STCD1" [ref=e483]:
+            - link "FEP-S4-KNA1-STCD1" [ref=e484] [cursor=pointer]:
+              - /url: objects/fep-s4-kna1-stcd1.html
+              - code [ref=e485]: FEP-S4-KNA1-STCD1
+          - cell "FieldEndpoint" [ref=e486]
+          - cell "STCD1" [ref=e487]
+          - cell "active" [ref=e488]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e489]
+          - cell "sap_table_field" [ref=e490]
+        - row "FEP-S4-KNA1-STCEG FieldEndpoint STCEG active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD sap_table_field" [ref=e491]:
+          - cell "FEP-S4-KNA1-STCEG" [ref=e492]:
+            - link "FEP-S4-KNA1-STCEG" [ref=e493] [cursor=pointer]:
+              - /url: objects/fep-s4-kna1-stceg.html
+              - code [ref=e494]: FEP-S4-KNA1-STCEG
+          - cell "FieldEndpoint" [ref=e495]
+          - cell "STCEG" [ref=e496]
+          - cell "active" [ref=e497]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e498]
+          - cell "sap_table_field" [ref=e499]
+        - row "FEP-S4-KNB1-AKONT FieldEndpoint AKONT active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD sap_table_field" [ref=e500]:
+          - cell "FEP-S4-KNB1-AKONT" [ref=e501]:
+            - link "FEP-S4-KNB1-AKONT" [ref=e502] [cursor=pointer]:
+              - /url: objects/fep-s4-knb1-akont.html
+              - code [ref=e503]: FEP-S4-KNB1-AKONT
+          - cell "FieldEndpoint" [ref=e504]
+          - cell "AKONT" [ref=e505]
+          - cell "active" [ref=e506]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e507]
+          - cell "sap_table_field" [ref=e508]
+        - row "FEP-S4-KNB1-MABER FieldEndpoint MABER active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD sap_table_field" [ref=e509]:
+          - cell "FEP-S4-KNB1-MABER" [ref=e510]:
+            - link "FEP-S4-KNB1-MABER" [ref=e511] [cursor=pointer]:
+              - /url: objects/fep-s4-knb1-maber.html
+              - code [ref=e512]: FEP-S4-KNB1-MABER
+          - cell "FieldEndpoint" [ref=e513]
+          - cell "MABER" [ref=e514]
+          - cell "active" [ref=e515]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e516]
+          - cell "sap_table_field" [ref=e517]
+        - row "FEP-S4-KNB1-VZSKZ FieldEndpoint VZSKZ active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD sap_table_field" [ref=e518]:
+          - cell "FEP-S4-KNB1-VZSKZ" [ref=e519]:
+            - link "FEP-S4-KNB1-VZSKZ" [ref=e520] [cursor=pointer]:
+              - /url: objects/fep-s4-knb1-vzskz.html
+              - code [ref=e521]: FEP-S4-KNB1-VZSKZ
+          - cell "FieldEndpoint" [ref=e522]
+          - cell "VZSKZ" [ref=e523]
+          - cell "active" [ref=e524]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e525]
+          - cell "sap_table_field" [ref=e526]
+        - row "FEP-S4-KNB1-ZTERM FieldEndpoint ZTERM active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD KNB1, ZTERM, sap_table_field" [ref=e527]:
+          - cell "FEP-S4-KNB1-ZTERM" [ref=e528]:
+            - link "FEP-S4-KNB1-ZTERM" [ref=e529] [cursor=pointer]:
+              - /url: objects/fep-s4-knb1-zterm.html
+              - code [ref=e530]: FEP-S4-KNB1-ZTERM
+          - cell "FieldEndpoint" [ref=e531]
+          - cell "ZTERM" [ref=e532]
+          - cell "active" [ref=e533]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e534]
+          - cell "KNB1, ZTERM, sap_table_field" [ref=e535]
+        - row "FEP-S4-KNVP-PARVW FieldEndpoint PARVW active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD sap_table_field" [ref=e536]:
+          - cell "FEP-S4-KNVP-PARVW" [ref=e537]:
+            - link "FEP-S4-KNVP-PARVW" [ref=e538] [cursor=pointer]:
+              - /url: objects/fep-s4-knvp-parvw.html
+              - code [ref=e539]: FEP-S4-KNVP-PARVW
+          - cell "FieldEndpoint" [ref=e540]
+          - cell "PARVW" [ref=e541]
+          - cell "active" [ref=e542]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e543]
+          - cell "sap_table_field" [ref=e544]
+        - row "FEP-S4-KNVV-INCO1 FieldEndpoint INCO1 active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD sap_table_field" [ref=e545]:
+          - cell "FEP-S4-KNVV-INCO1" [ref=e546]:
+            - link "FEP-S4-KNVV-INCO1" [ref=e547] [cursor=pointer]:
+              - /url: objects/fep-s4-knvv-inco1.html
+              - code [ref=e548]: FEP-S4-KNVV-INCO1
+          - cell "FieldEndpoint" [ref=e549]
+          - cell "INCO1" [ref=e550]
+          - cell "active" [ref=e551]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e552]
+          - cell "sap_table_field" [ref=e553]
+        - row "FEP-S4-KNVV-KDGRP FieldEndpoint KNVV Customer Group active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD KNVV, KDGRP, KNVV-KDGRP, sap_table_field" [ref=e554]:
+          - cell "FEP-S4-KNVV-KDGRP" [ref=e555]:
+            - link "FEP-S4-KNVV-KDGRP" [ref=e556] [cursor=pointer]:
+              - /url: objects/fep-s4-knvv-kdgrp.html
+              - code [ref=e557]: FEP-S4-KNVV-KDGRP
+          - cell "FieldEndpoint" [ref=e558]
+          - cell "KNVV Customer Group" [ref=e559]
+          - cell "active" [ref=e560]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e561]
+          - cell "KNVV, KDGRP, KNVV-KDGRP, sap_table_field" [ref=e562]
+        - row "FEP-S4-KNVV-PLTYP FieldEndpoint PLTYP active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD sap_table_field" [ref=e563]:
+          - cell "FEP-S4-KNVV-PLTYP" [ref=e564]:
+            - link "FEP-S4-KNVV-PLTYP" [ref=e565] [cursor=pointer]:
+              - /url: objects/fep-s4-knvv-pltyp.html
+              - code [ref=e566]: FEP-S4-KNVV-PLTYP
+          - cell "FieldEndpoint" [ref=e567]
+          - cell "PLTYP" [ref=e568]
+          - cell "active" [ref=e569]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e570]
+          - cell "sap_table_field" [ref=e571]
+        - row "FEP-S4-KNVV-VSBED FieldEndpoint VSBED active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD sap_table_field" [ref=e572]:
+          - cell "FEP-S4-KNVV-VSBED" [ref=e573]:
+            - link "FEP-S4-KNVV-VSBED" [ref=e574] [cursor=pointer]:
+              - /url: objects/fep-s4-knvv-vsbed.html
+              - code [ref=e575]: FEP-S4-KNVV-VSBED
+          - cell "FieldEndpoint" [ref=e576]
+          - cell "VSBED" [ref=e577]
+          - cell "active" [ref=e578]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e579]
+          - cell "sap_table_field" [ref=e580]
+        - row "ISS-CH01-A17-CONFIG-GAP Issue CH01 / A17 Customer Group configuration gap open" [ref=e581]:
+          - cell "ISS-CH01-A17-CONFIG-GAP" [ref=e582]:
+            - link "ISS-CH01-A17-CONFIG-GAP" [ref=e583] [cursor=pointer]:
+              - /url: objects/iss-ch01-a17-config-gap.html
+              - code [ref=e584]: ISS-CH01-A17-CONFIG-GAP
+          - cell "Issue" [ref=e585]
+          - cell "CH01 / A17 Customer Group configuration gap" [ref=e586]
+          - cell "open" [ref=e587]
+          - cell [ref=e588]
+          - cell [ref=e589]
+        - row "MAP-BP-CENTRAL-SEARCH-TERM Mapping MAP-BP-CENTRAL-SEARCH-TERM active PERSON-BUSINESS-OWNER" [ref=e590]:
+          - cell "MAP-BP-CENTRAL-SEARCH-TERM" [ref=e591]:
+            - link "MAP-BP-CENTRAL-SEARCH-TERM" [ref=e592] [cursor=pointer]:
+              - /url: objects/map-bp-central-search-term.html
+              - code [ref=e593]: MAP-BP-CENTRAL-SEARCH-TERM
+          - cell "Mapping" [ref=e594]
+          - cell "MAP-BP-CENTRAL-SEARCH-TERM" [ref=e595]
+          - cell "active" [ref=e596]
+          - cell "PERSON-BUSINESS-OWNER" [ref=e597]
+          - cell [ref=e598]
+        - row "MAP-BP-COMPANY-CODE-RECON-ACCT Mapping MAP-BP-COMPANY-CODE-RECON-ACCT active PERSON-BUSINESS-OWNER" [ref=e599]:
+          - cell "MAP-BP-COMPANY-CODE-RECON-ACCT" [ref=e600]:
+            - link "MAP-BP-COMPANY-CODE-RECON-ACCT" [ref=e601] [cursor=pointer]:
+              - /url: objects/map-bp-company-code-recon-acct.html
+              - code [ref=e602]: MAP-BP-COMPANY-CODE-RECON-ACCT
+          - cell "Mapping" [ref=e603]
+          - cell "MAP-BP-COMPANY-CODE-RECON-ACCT" [ref=e604]
+          - cell "active" [ref=e605]
+          - cell "PERSON-BUSINESS-OWNER" [ref=e606]
+          - cell [ref=e607]
+        - row "MAP-BP-CUSTOMER-INDUSTRY Mapping MAP-BP-CUSTOMER-INDUSTRY active PERSON-BUSINESS-OWNER" [ref=e608]:
+          - cell "MAP-BP-CUSTOMER-INDUSTRY" [ref=e609]:
+            - link "MAP-BP-CUSTOMER-INDUSTRY" [ref=e610] [cursor=pointer]:
+              - /url: objects/map-bp-customer-industry.html
+              - code [ref=e611]: MAP-BP-CUSTOMER-INDUSTRY
+          - cell "Mapping" [ref=e612]
+          - cell "MAP-BP-CUSTOMER-INDUSTRY" [ref=e613]
+          - cell "active" [ref=e614]
+          - cell "PERSON-BUSINESS-OWNER" [ref=e615]
+          - cell [ref=e616]
+        - row "MAP-BP-SALES-AREA-INCOTERMS Mapping MAP-BP-SALES-AREA-INCOTERMS active PERSON-BUSINESS-OWNER" [ref=e617]:
+          - cell "MAP-BP-SALES-AREA-INCOTERMS" [ref=e618]:
+            - link "MAP-BP-SALES-AREA-INCOTERMS" [ref=e619] [cursor=pointer]:
+              - /url: objects/map-bp-sales-area-incoterms.html
+              - code [ref=e620]: MAP-BP-SALES-AREA-INCOTERMS
+          - cell "Mapping" [ref=e621]
+          - cell "MAP-BP-SALES-AREA-INCOTERMS" [ref=e622]
+          - cell "active" [ref=e623]
+          - cell "PERSON-BUSINESS-OWNER" [ref=e624]
+          - cell [ref=e625]
+        - row "MAP-CUST-GROUP-LEGACY-TO-KNVV-KDGRP Mapping Legacy Customer Group to KNVV-KDGRP draft PERSON-BUSINESS-OWNER" [ref=e626]:
+          - cell "MAP-CUST-GROUP-LEGACY-TO-KNVV-KDGRP" [ref=e627]:
+            - link "MAP-CUST-GROUP-LEGACY-TO-KNVV-KDGRP" [ref=e628] [cursor=pointer]:
+              - /url: objects/map-cust-group-legacy-to-knvv-kdgrp.html
+              - code [ref=e629]: MAP-CUST-GROUP-LEGACY-TO-KNVV-KDGRP
+          - cell "Mapping" [ref=e630]
+          - cell "Legacy Customer Group to KNVV-KDGRP" [ref=e631]
+          - cell "draft" [ref=e632]
+          - cell "PERSON-BUSINESS-OWNER" [ref=e633]
+          - cell [ref=e634]
+        - row "MAPSET-CUSTOMER-BP MappingSet Customer BP Mapping Set active PERSON-BUSINESS-OWNER" [ref=e635]:
+          - cell "MAPSET-CUSTOMER-BP" [ref=e636]:
+            - link "MAPSET-CUSTOMER-BP" [ref=e637] [cursor=pointer]:
+              - /url: objects/mapset-customer-bp.html
+              - code [ref=e638]: MAPSET-CUSTOMER-BP
+          - cell "MappingSet" [ref=e639]
+          - cell "Customer BP Mapping Set" [ref=e640]
+          - cell "active" [ref=e641]
+          - cell "PERSON-BUSINESS-OWNER" [ref=e642]
+          - cell [ref=e643]
+        - row "DOMAIN-CUSTOMER-BP MasterDataDomain Business Partner / Customer active" [ref=e644]:
+          - cell "DOMAIN-CUSTOMER-BP" [ref=e645]:
+            - link "DOMAIN-CUSTOMER-BP" [ref=e646] [cursor=pointer]:
+              - /url: objects/domain-customer-bp.html
+              - code [ref=e647]: DOMAIN-CUSTOMER-BP
+          - cell "MasterDataDomain" [ref=e648]
+          - cell "Business Partner / Customer" [ref=e649]
+          - cell "active" [ref=e650]
+          - cell [ref=e651]
+          - cell [ref=e652]
+        - row "MIGOBJ-CUSTOMER-BP MigrationObject Customer BP Migration active" [ref=e653]:
+          - cell "MIGOBJ-CUSTOMER-BP" [ref=e654]:
+            - link "MIGOBJ-CUSTOMER-BP" [ref=e655] [cursor=pointer]:
+              - /url: objects/migobj-customer-bp.html
+              - code [ref=e656]: MIGOBJ-CUSTOMER-BP
+          - cell "MigrationObject" [ref=e657]
+          - cell "Customer BP Migration" [ref=e658]
+          - cell "active" [ref=e659]
+          - cell [ref=e660]
+          - cell [ref=e661]
+        - row "PERSON-BUSINESS-OWNER Person Business Owner active" [ref=e662]:
+          - cell "PERSON-BUSINESS-OWNER" [ref=e663]:
+            - link "PERSON-BUSINESS-OWNER" [ref=e664] [cursor=pointer]:
+              - /url: objects/person-business-owner.html
+              - code [ref=e665]: PERSON-BUSINESS-OWNER
+          - cell "Person" [ref=e666]
+          - cell "Business Owner" [ref=e667]
+          - cell "active" [ref=e668]
+          - cell [ref=e669]
+          - cell [ref=e670]
+        - row "PERSON-DATA-STEWARD Person Alex Data Steward active" [ref=e671]:
+          - cell "PERSON-DATA-STEWARD" [ref=e672]:
+            - link "PERSON-DATA-STEWARD" [ref=e673] [cursor=pointer]:
+              - /url: objects/person-data-steward.html
+              - code [ref=e674]: PERSON-DATA-STEWARD
+          - cell "Person" [ref=e675]
+          - cell "Alex Data Steward" [ref=e676]
+          - cell "active" [ref=e677]
+          - cell [ref=e678]
+          - cell [ref=e679]
+        - row "SYS-LEGACY-CRM System Legacy CRM active crm" [ref=e680]:
+          - cell "SYS-LEGACY-CRM" [ref=e681]:
+            - link "SYS-LEGACY-CRM" [ref=e682] [cursor=pointer]:
+              - /url: objects/sys-legacy-crm.html
+              - code [ref=e683]: SYS-LEGACY-CRM
+          - cell "System" [ref=e684]
+          - cell "Legacy CRM" [ref=e685]
+          - cell "active" [ref=e686]
+          - cell [ref=e687]
+          - cell "crm" [ref=e688]
+        - row "SYS-MIGRATION-FILE System Migration File Feed active file" [ref=e689]:
+          - cell "SYS-MIGRATION-FILE" [ref=e690]:
+            - link "SYS-MIGRATION-FILE" [ref=e691] [cursor=pointer]:
+              - /url: objects/sys-migration-file.html
+              - code [ref=e692]: SYS-MIGRATION-FILE
+          - cell "System" [ref=e693]
+          - cell "Migration File Feed" [ref=e694]
+          - cell "active" [ref=e695]
+          - cell [ref=e696]
+          - cell "file" [ref=e697]
+        - row "SYS-S4HANA System S/4HANA active erp" [ref=e698]:
+          - cell "SYS-S4HANA" [ref=e699]:
+            - link "SYS-S4HANA" [ref=e700] [cursor=pointer]:
+              - /url: objects/sys-s4hana.html
+              - code [ref=e701]: SYS-S4HANA
+          - cell "System" [ref=e702]
+          - cell "S/4HANA" [ref=e703]
+          - cell "active" [ref=e704]
+          - cell [ref=e705]
+          - cell "erp" [ref=e706]
+        - row "VAL-BP-CENTRAL-SEARCH-TERM-REQUIRED ValidationRule VAL-BP-CENTRAL-SEARCH-TERM-REQUIRED active PERSON-BUSINESS-OWNER" [ref=e707]:
+          - cell "VAL-BP-CENTRAL-SEARCH-TERM-REQUIRED" [ref=e708]:
+            - link "VAL-BP-CENTRAL-SEARCH-TERM-REQUIRED" [ref=e709] [cursor=pointer]:
+              - /url: objects/val-bp-central-search-term-required.html
+              - code [ref=e710]: VAL-BP-CENTRAL-SEARCH-TERM-REQUIRED
+          - cell "ValidationRule" [ref=e711]
+          - cell "VAL-BP-CENTRAL-SEARCH-TERM-REQUIRED" [ref=e712]
+          - cell "active" [ref=e713]
+          - cell "PERSON-BUSINESS-OWNER" [ref=e714]
+          - cell [ref=e715]
+        - row "VAL-BP-COMPANY-CODE-RECON-ACCT-VALID ValidationRule VAL-BP-COMPANY-CODE-RECON-ACCT-VALID active PERSON-BUSINESS-OWNER" [ref=e716]:
+          - cell "VAL-BP-COMPANY-CODE-RECON-ACCT-VALID" [ref=e717]:
+            - link "VAL-BP-COMPANY-CODE-RECON-ACCT-VALID" [ref=e718] [cursor=pointer]:
+              - /url: objects/val-bp-company-code-recon-acct-valid.html
+              - code [ref=e719]: VAL-BP-COMPANY-CODE-RECON-ACCT-VALID
+          - cell "ValidationRule" [ref=e720]
+          - cell "VAL-BP-COMPANY-CODE-RECON-ACCT-VALID" [ref=e721]
+          - cell "active" [ref=e722]
+          - cell "PERSON-BUSINESS-OWNER" [ref=e723]
+          - cell [ref=e724]
+        - row "VAL-BP-CUSTOMER-INDUSTRY-ALLOWED ValidationRule VAL-BP-CUSTOMER-INDUSTRY-ALLOWED active PERSON-BUSINESS-OWNER" [ref=e725]:
+          - cell "VAL-BP-CUSTOMER-INDUSTRY-ALLOWED" [ref=e726]:
+            - link "VAL-BP-CUSTOMER-INDUSTRY-ALLOWED" [ref=e727] [cursor=pointer]:
+              - /url: objects/val-bp-customer-industry-allowed.html
+              - code [ref=e728]: VAL-BP-CUSTOMER-INDUSTRY-ALLOWED
+          - cell "ValidationRule" [ref=e729]
+          - cell "VAL-BP-CUSTOMER-INDUSTRY-ALLOWED" [ref=e730]
+          - cell "active" [ref=e731]
+          - cell "PERSON-BUSINESS-OWNER" [ref=e732]
+          - cell [ref=e733]
+        - row "VAL-BP-SALES-AREA-INCOTERMS-ALLOWED ValidationRule VAL-BP-SALES-AREA-INCOTERMS-ALLOWED active PERSON-BUSINESS-OWNER" [ref=e734]:
+          - cell "VAL-BP-SALES-AREA-INCOTERMS-ALLOWED" [ref=e735]:
+            - link "VAL-BP-SALES-AREA-INCOTERMS-ALLOWED" [ref=e736] [cursor=pointer]:
+              - /url: objects/val-bp-sales-area-incoterms-allowed.html
+              - code [ref=e737]: VAL-BP-SALES-AREA-INCOTERMS-ALLOWED
+          - cell "ValidationRule" [ref=e738]
+          - cell "VAL-BP-SALES-AREA-INCOTERMS-ALLOWED" [ref=e739]
+          - cell "active" [ref=e740]
+          - cell "PERSON-BUSINESS-OWNER" [ref=e741]
+          - cell [ref=e742]
+        - row "VAL-CUST-GROUP-ALLOWED-VALUES ValidationRule Customer Group Allowed Values active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e743]:
+          - cell "VAL-CUST-GROUP-ALLOWED-VALUES" [ref=e744]:
+            - link "VAL-CUST-GROUP-ALLOWED-VALUES" [ref=e745] [cursor=pointer]:
+              - /url: objects/val-cust-group-allowed-values.html
+              - code [ref=e746]: VAL-CUST-GROUP-ALLOWED-VALUES
+          - cell "ValidationRule" [ref=e747]
+          - cell "Customer Group Allowed Values" [ref=e748]
+          - cell "active" [ref=e749]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e750]
+          - cell [ref=e751]
+        - row "VLIST-INDUSTRY-CODES ValueList SAP Industry Codes active PERSON-BUSINESS-OWNER" [ref=e752]:
+          - cell "VLIST-INDUSTRY-CODES" [ref=e753]:
+            - link "VLIST-INDUSTRY-CODES" [ref=e754] [cursor=pointer]:
+              - /url: objects/vlist-industry-codes.html
+              - code [ref=e755]: VLIST-INDUSTRY-CODES
+          - cell "ValueList" [ref=e756]
+          - cell "SAP Industry Codes" [ref=e757]
+          - cell "active" [ref=e758]
+          - cell "PERSON-BUSINESS-OWNER" [ref=e759]
+          - cell [ref=e760]
+        - row "VLIST-LEGACY-CUST-GROUP ValueList Legacy Customer Group Values active PERSON-DATA-STEWARD" [ref=e761]:
+          - cell "VLIST-LEGACY-CUST-GROUP" [ref=e762]:
+            - link "VLIST-LEGACY-CUST-GROUP" [ref=e763] [cursor=pointer]:
+              - /url: objects/vlist-legacy-cust-group.html
+              - code [ref=e764]: VLIST-LEGACY-CUST-GROUP
+          - cell "ValueList" [ref=e765]
+          - cell "Legacy Customer Group Values" [ref=e766]
+          - cell "active" [ref=e767]
+          - cell "PERSON-DATA-STEWARD" [ref=e768]
+          - cell [ref=e769]
+        - row "VLIST-PARTNER-FUNCTIONS ValueList SAP Partner Functions active PERSON-BUSINESS-OWNER" [ref=e770]:
+          - cell "VLIST-PARTNER-FUNCTIONS" [ref=e771]:
+            - link "VLIST-PARTNER-FUNCTIONS" [ref=e772] [cursor=pointer]:
+              - /url: objects/vlist-partner-functions.html
+              - code [ref=e773]: VLIST-PARTNER-FUNCTIONS
+          - cell "ValueList" [ref=e774]
+          - cell "SAP Partner Functions" [ref=e775]
+          - cell "active" [ref=e776]
+          - cell "PERSON-BUSINESS-OWNER" [ref=e777]
+          - cell [ref=e778]
+        - row "VLIST-S4-CUST-GROUP ValueList S/4 Customer Group Values active PERSON-DATA-STEWARD" [ref=e779]:
+          - cell "VLIST-S4-CUST-GROUP" [ref=e780]:
+            - link "VLIST-S4-CUST-GROUP" [ref=e781] [cursor=pointer]:
+              - /url: objects/vlist-s4-cust-group.html
+              - code [ref=e782]: VLIST-S4-CUST-GROUP
+          - cell "ValueList" [ref=e783]
+          - cell "S/4 Customer Group Values" [ref=e784]
+          - cell "active" [ref=e785]
+          - cell "PERSON-DATA-STEWARD" [ref=e786]
+          - cell [ref=e787]
+        - row "VMAP-CUST-GROUP-LEGACY-TO-S4 ValueMapping Customer Group Legacy-to-S/4 Value Mapping draft PERSON-DATA-STEWARD, PERSON-DATA-STEWARD" [ref=e788]:
+          - cell "VMAP-CUST-GROUP-LEGACY-TO-S4" [ref=e789]:
+            - link "VMAP-CUST-GROUP-LEGACY-TO-S4" [ref=e790] [cursor=pointer]:
+              - /url: objects/vmap-cust-group-legacy-to-s4.html
+              - code [ref=e791]: VMAP-CUST-GROUP-LEGACY-TO-S4
+          - cell "ValueMapping" [ref=e792]
+          - cell "Customer Group Legacy-to-S/4 Value Mapping" [ref=e793]
+          - cell "draft" [ref=e794]
+          - cell "PERSON-DATA-STEWARD, PERSON-DATA-STEWARD" [ref=e795]
+          - cell [ref=e796]
+        - row "VMAP-INDUSTRY-CODES-TO-S4 ValueMapping Industry Codes to S4 active PERSON-BUSINESS-OWNER" [ref=e797]:
+          - cell "VMAP-INDUSTRY-CODES-TO-S4" [ref=e798]:
+            - link "VMAP-INDUSTRY-CODES-TO-S4" [ref=e799] [cursor=pointer]:
+              - /url: objects/vmap-industry-codes-to-s4.html
+              - code [ref=e800]: VMAP-INDUSTRY-CODES-TO-S4
+          - cell "ValueMapping" [ref=e801]
+          - cell "Industry Codes to S4" [ref=e802]
+          - cell "active" [ref=e803]
+          - cell "PERSON-BUSINESS-OWNER" [ref=e804]
+          - cell [ref=e805]
+        - row "VMAP-PARTNER-FUNCTIONS-TO-S4 ValueMapping Partner Functions to S4 active PERSON-BUSINESS-OWNER" [ref=e806]:
+          - cell "VMAP-PARTNER-FUNCTIONS-TO-S4" [ref=e807]:
+            - link "VMAP-PARTNER-FUNCTIONS-TO-S4" [ref=e808] [cursor=pointer]:
+              - /url: objects/vmap-partner-functions-to-s4.html
+              - code [ref=e809]: VMAP-PARTNER-FUNCTIONS-TO-S4
+          - cell "ValueMapping" [ref=e810]
+          - cell "Partner Functions to S4" [ref=e811]
+          - cell "active" [ref=e812]
+          - cell "PERSON-BUSINESS-OWNER" [ref=e813]
+          - cell [ref=e814]
+  - generic [ref=e815]: Generated output is disposable. Canonical Markdown + YAML files remain authoritative. No hosted UI, login, editor, SAP write-back, or AI auto-mutation is included.

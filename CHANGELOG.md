@@ -2,6 +2,33 @@
 
 All notable changes to Martenweave Core.
 
+## [Unreleased] — 2026-07-03
+
+### Added
+
+- **Model Ledger workbench**: added a canonical model workspace with searchable model objects,
+  evidence coverage, impact context, ownership, validation state, and detailed object views.
+- **Operational workflows**: added guided model import, configurable exports, reports, workspace
+  settings, keyboard shortcuts, and a command palette.
+- **Governance views**: expanded lineage, gaps, and proposal review with source, mapping, decision,
+  evidence, and approval context.
+- **Website changelog**: added an in-product changelog so operators can review notable workspace
+  changes alongside repository release history.
+
+### Changed
+
+- **Workspace home**: reframed the initial experience around the canonical model ledger and active
+  migration work instead of a chat-first surface.
+- **Proposal safety**: made deterministic validation, human approval, and local audit behavior
+  explicit throughout review flows.
+- **Core integration surfaces**: updated API, CLI, static documentation, impact analysis, index
+  freshness, trace behavior, and AI proposal services with broader regression coverage.
+
+### Validation
+
+- Frontend component tests, production build, browser interaction checks, full Python test suite,
+  and Ruff checks pass for this worktree.
+
 ## [0.4.1] — 2026-06-23
 
 ### Added

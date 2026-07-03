@@ -1,0 +1,66 @@
+Gap Summary Report
+  Total objects: 14
+  Total gaps: 67
+  Gap score: 1.0
+  Sources checked: model_gaps, analysis_report, health_report, scorecard, 
+validation_results
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Gap Type                         ┃ Count ┃ Sample Objects                    ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ missing_owner                    │ 13    │ ATTR-PRODUCT-ACTIVE,              │
+│                                  │       │ ATTR-PRODUCT-CATEGORY,            │
+│                                  │       │ ATTR-PRODUCT-ID,                  │
+│                                  │       │ ATTR-PRODUCT-NAME,                │
+│                                  │       │ ATTR-PRODUCT-UNIT-PRICE           │
+│ validation_ownership_missing     │ 13    │ ATTR-PRODUCT-ACTIVE,              │
+│                                  │       │ ATTR-PRODUCT-CATEGORY,            │
+│                                  │       │ ATTR-PRODUCT-ID,                  │
+│                                  │       │ ATTR-PRODUCT-NAME,                │
+│                                  │       │ ATTR-PRODUCT-UNIT-PRICE           │
+│ MISSING_OWNER                    │ 10    │ ATTR-PRODUCT-ACTIVE,              │
+│                                  │       │ ATTR-PRODUCT-CATEGORY,            │
+│                                  │       │ ATTR-PRODUCT-ID,                  │
+│                                  │       │ ATTR-PRODUCT-NAME,                │
+│                                  │       │ ATTR-PRODUCT-UNIT-PRICE           │
+│ MODEL_ATTRIBUTE_MISSING_SOURCE   │ 5     │ ATTR-PRODUCT-ACTIVE,              │
+│                                  │       │ ATTR-PRODUCT-CATEGORY,            │
+│                                  │       │ ATTR-PRODUCT-ID,                  │
+│                                  │       │ ATTR-PRODUCT-NAME,                │
+│                                  │       │ ATTR-PRODUCT-UNIT-PRICE           │
+│ attribute_without_field          │ 5     │ ATTR-PRODUCT-ACTIVE,              │
+│                                  │       │ ATTR-PRODUCT-CATEGORY,            │
+│                                  │       │ ATTR-PRODUCT-ID,                  │
+│                                  │       │ ATTR-PRODUCT-NAME,                │
+│                                  │       │ ATTR-PRODUCT-UNIT-PRICE           │
+│ missing_lov                      │ 5     │ FEP-PRODUCT-ACTIVE,               │
+│                                  │       │ FEP-PRODUCT-CATEGORY,             │
+│                                  │       │ FEP-PRODUCT-ID, FEP-PRODUCT-NAME, │
+│                                  │       │ FEP-PRODUCT-UNIT-PRICE            │
+│ missing_validation_rule          │ 5     │ ATTR-PRODUCT-ACTIVE,              │
+│                                  │       │ ATTR-PRODUCT-CATEGORY,            │
+│                                  │       │ ATTR-PRODUCT-ID,                  │
+│                                  │       │ ATTR-PRODUCT-NAME,                │
+│                                  │       │ ATTR-PRODUCT-UNIT-PRICE           │
+│ orphan_field                     │ 5     │ FEP-PRODUCT-ACTIVE,               │
+│                                  │       │ FEP-PRODUCT-CATEGORY,             │
+│                                  │       │ FEP-PRODUCT-ID, FEP-PRODUCT-NAME, │
+│                                  │       │ FEP-PRODUCT-UNIT-PRICE            │
+│ validation_field_endpoint_missi… │ 5     │ FEP-PRODUCT-ACTIVE,               │
+│                                  │       │ FEP-PRODUCT-CATEGORY,             │
+│                                  │       │ FEP-PRODUCT-ID, FEP-PRODUCT-NAME, │
+│                                  │       │ FEP-PRODUCT-UNIT-PRICE            │
+│ missing_profile                  │ 1     │ DS-PRODUCT-CSV                    │
+└──────────────────────────────────┴───────┴───────────────────────────────────┘
+
+Top affected objects
+  FEP-PRODUCT-ACTIVE
+  FEP-PRODUCT-CATEGORY
+  FEP-PRODUCT-ID
+  FEP-PRODUCT-NAME
+  FEP-PRODUCT-UNIT-PRICE
+  ATTR-PRODUCT-ACTIVE
+  ATTR-PRODUCT-CATEGORY
+  ATTR-PRODUCT-ID
+  ATTR-PRODUCT-NAME
+  ATTR-PRODUCT-UNIT-PRICE

@@ -1,0 +1,6 @@
+Documentation generated at /tmp/martenweave-viewer-empty
+  3 Markdown file(s):
+    - index.md
+    - masterdatadomain.md
+    - objects.md
+  10 viewer file(s), including index.html

@@ -80,10 +80,6 @@ class NoProviderAdapter:
         note = context.note.upper()
         operations: list[dict[str, Any]] = []
         affected_objects: list[str] = []
-        assumptions: list[str] = [
-            "No AI provider is configured. This is a deterministic scaffold proposal."
-        ]
-        human_checks: list[str] = ["Verify the proposed objects and fields match your intent."]
 
         if "CUSTOMER GROUP" in note or "KNVV-KDGRP" in note:
             affected_objects = ["ATTR-CUST-SALES-CUSTOMER-GROUP", "FEP-S4-KNVV-KDGRP"]
@@ -97,6 +93,11 @@ class NoProviderAdapter:
                     "reason": "Note indicates a change to Customer Group semantics.",
                 }
             )
+
+        assumptions: list[str] = [
+            "No AI provider is configured. This is a deterministic scaffold proposal."
+        ]
+        human_checks: list[str] = ["Verify the proposed objects and fields match your intent."]
 
         proposal_id = "PP-SCAFFOLD-001"
         return [

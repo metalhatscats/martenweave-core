@@ -1,0 +1,14 @@
+Starting API server at http://127.0.0.1:8004
+  Repository: /private/tmp/martenweave-fixloop-repo
+INFO:     Started server process [39723]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8004 (Press CTRL+C to quit)
+INFO:     127.0.0.1:56272 - "GET /health?repo=/tmp/martenweave-fixloop-repo HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56273 - "GET /impact/DOMAIN-CUSTOMER-BP?repo=/tmp/martenweave-fixloop-repo HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56274 - "GET /impact/DOES-NOT-EXIST?repo=/tmp/martenweave-fixloop-repo HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56275 - "GET /trace/DOES-NOT-EXIST?repo=/tmp/martenweave-fixloop-repo HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [39723]

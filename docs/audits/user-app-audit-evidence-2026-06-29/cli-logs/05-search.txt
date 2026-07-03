@@ -1,0 +1,20 @@
+Search Results (13)
+┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
+┃ ID            ┃ Type           ┃ Name          ┃ Status ┃ Score ┃ Matched    ┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
+│ ATTR-PRODUCT… │ Attribute      │ Product ID    │ active │ 2     │ name, body │
+│ ATTR-PRODUCT… │ Attribute      │ Product Name  │ active │ 2     │ name, body │
+│ DOMAIN-PRODU… │ MasterDataDom… │ Product       │ active │ 2     │ name, body │
+│               │                │ Domain        │        │       │            │
+│ DS-PRODUCT-C… │ Dataset        │ product_samp… │ active │ 2     │ name, body │
+│ ENTITY-PRODU… │ BusinessEntity │ Product       │ active │ 2     │ name, body │
+│ FEP-PRODUCT-… │ FieldEndpoint  │ product_id    │ active │ 2     │ name, body │
+│ VLIST-PRODUC… │ ValueList      │ Product       │ active │ 2     │ name, body │
+│               │                │ Categories    │        │       │            │
+│ ATTR-PRODUCT… │ Attribute      │ Active        │ active │ 1     │ body       │
+│ ATTR-PRODUCT… │ Attribute      │ Category      │ active │ 1     │ body       │
+│ FEP-PRODUCT-… │ FieldEndpoint  │ active        │ active │ 1     │ body       │
+│ FEP-PRODUCT-… │ FieldEndpoint  │ category      │ active │ 1     │ body       │
+│ FEP-PRODUCT-… │ FieldEndpoint  │ name          │ active │ 1     │ body       │
+│ FEP-PRODUCT-… │ FieldEndpoint  │ unit_price    │ active │ 1     │ body       │
+└───────────────┴────────────────┴───────────────┴────────┴───────┴────────────┘

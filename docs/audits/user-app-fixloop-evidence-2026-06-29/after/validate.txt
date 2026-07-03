@@ -1,0 +1,427 @@
+Validation Results:
+  Errors:   0
+  Warnings: 50
+  Info:     0
+  Valid:    True
+
+By code:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┓
+┃ Code                              ┃ Severity ┃ Count ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━┩
+│ ATTRIBUTE_MISSING_CONTEXT         │ WARNING  │ 15    │
+│ ATTRIBUTE_USAGE_MISSING_TYPE      │ WARNING  │ 13    │
+│ FIELD_ENDPOINT_MISSING_ENRICHMENT │ WARNING  │ 18    │
+│ LOV_EMPTY                         │ WARNING  │ 2     │
+│ VALUE_MAPPING_EMPTY               │ WARNING  │ 2     │
+└───────────────────────────────────┴──────────┴───────┘
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Severity ┃ Code           ┃ Object         ┃ Message        ┃ Fix            ┃
+┡━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ WARNING  │ LOV_EMPTY      │ VLIST-INDUSTR… │ ValueList      │ Add at least   │
+│          │                │                │ 'VLIST-INDUST… │ one entry to   │
+│          │                │                │ has no         │ the value      │
+│          │                │                │ entries.       │ list.          │
+│ WARNING  │ LOV_EMPTY      │ VLIST-PARTNER… │ ValueList      │ Add at least   │
+│          │                │                │ 'VLIST-PARTNE… │ one entry to   │
+│          │                │                │ has no         │ the value      │
+│          │                │                │ entries.       │ list.          │
+│ WARNING  │ VALUE_MAPPING… │ VMAP-INDUSTRY… │ ValueMapping   │ Add at least   │
+│          │                │                │ 'VMAP-INDUSTR… │ one mapping    │
+│          │                │                │ has no         │ entry.         │
+│          │                │                │ entries.       │                │
+│ WARNING  │ VALUE_MAPPING… │ VMAP-PARTNER-… │ ValueMapping   │ Add at least   │
+│          │                │                │ 'VMAP-PARTNER… │ one mapping    │
+│          │                │                │ has no         │ entry.         │
+│          │                │                │ entries.       │                │
+│ WARNING  │ ATTRIBUTE_MIS… │ ATTR-BP-CENTR… │ Attribute      │ Add            │
+│          │                │                │ 'ATTR-BP-CENT… │ 'entity_conte… │
+│          │                │                │ has no         │ to link this   │
+│          │                │                │ entity_contex… │ attribute to a │
+│          │                │                │ In enterprise  │ system/busine… │
+│          │                │                │ models,        │ grain.         │
+│          │                │                │ attributes     │                │
+│          │                │                │ should be      │                │
+│          │                │                │ contextualize… │                │
+│ WARNING  │ ATTRIBUTE_MIS… │ ATTR-BP-CENTR… │ Attribute      │ Add            │
+│          │                │                │ 'ATTR-BP-CENT… │ 'entity_conte… │
+│          │                │                │ has no         │ to link this   │
+│          │                │                │ entity_contex… │ attribute to a │
+│          │                │                │ In enterprise  │ system/busine… │
+│          │                │                │ models,        │ grain.         │
+│          │                │                │ attributes     │                │
+│          │                │                │ should be      │                │
+│          │                │                │ contextualize… │                │
+│ WARNING  │ ATTRIBUTE_MIS… │ ATTR-BP-CENTR… │ Attribute      │ Add            │
+│          │                │                │ 'ATTR-BP-CENT… │ 'entity_conte… │
+│          │                │                │ has no         │ to link this   │
+│          │                │                │ entity_contex… │ attribute to a │
+│          │                │                │ In enterprise  │ system/busine… │
+│          │                │                │ models,        │ grain.         │
+│          │                │                │ attributes     │                │
+│          │                │                │ should be      │                │
+│          │                │                │ contextualize… │                │
+│ WARNING  │ ATTRIBUTE_MIS… │ ATTR-BP-CENTR… │ Attribute      │ Add            │
+│          │                │                │ 'ATTR-BP-CENT… │ 'entity_conte… │
+│          │                │                │ has no         │ to link this   │
+│          │                │                │ entity_contex… │ attribute to a │
+│          │                │                │ In enterprise  │ system/busine… │
+│          │                │                │ models,        │ grain.         │
+│          │                │                │ attributes     │                │
+│          │                │                │ should be      │                │
+│          │                │                │ contextualize… │                │
+│ WARNING  │ ATTRIBUTE_MIS… │ ATTR-BP-COMPA… │ Attribute      │ Add            │
+│          │                │                │ 'ATTR-BP-COMP… │ 'entity_conte… │
+│          │                │                │ has no         │ to link this   │
+│          │                │                │ entity_contex… │ attribute to a │
+│          │                │                │ In enterprise  │ system/busine… │
+│          │                │                │ models,        │ grain.         │
+│          │                │                │ attributes     │                │
+│          │                │                │ should be      │                │
+│          │                │                │ contextualize… │                │
+│ WARNING  │ ATTRIBUTE_MIS… │ ATTR-BP-COMPA… │ Attribute      │ Add            │
+│          │                │                │ 'ATTR-BP-COMP… │ 'entity_conte… │
+│          │                │                │ has no         │ to link this   │
+│          │                │                │ entity_contex… │ attribute to a │
+│          │                │                │ In enterprise  │ system/busine… │
+│          │                │                │ models,        │ grain.         │
+│          │                │                │ attributes     │                │
+│          │                │                │ should be      │                │
+│          │                │                │ contextualize… │                │
+│ WARNING  │ ATTRIBUTE_MIS… │ ATTR-BP-COMPA… │ Attribute      │ Add            │
+│          │                │                │ 'ATTR-BP-COMP… │ 'entity_conte… │
+│          │                │                │ has no         │ to link this   │
+│          │                │                │ entity_contex… │ attribute to a │
+│          │                │                │ In enterprise  │ system/busine… │
+│          │                │                │ models,        │ grain.         │
+│          │                │                │ attributes     │                │
+│          │                │                │ should be      │                │
+│          │                │                │ contextualize… │                │
+│ WARNING  │ ATTRIBUTE_MIS… │ ATTR-BP-CUSTO… │ Attribute      │ Add            │
+│          │                │                │ 'ATTR-BP-CUST… │ 'entity_conte… │
+│          │                │                │ has no         │ to link this   │
+│          │                │                │ entity_contex… │ attribute to a │
+│          │                │                │ In enterprise  │ system/busine… │
+│          │                │                │ models,        │ grain.         │
+│          │                │                │ attributes     │                │
+│          │                │                │ should be      │                │
+│          │                │                │ contextualize… │                │
+│ WARNING  │ ATTRIBUTE_MIS… │ ATTR-BP-CUSTO… │ Attribute      │ Add            │
+│          │                │                │ 'ATTR-BP-CUST… │ 'entity_conte… │
+│          │                │                │ has no         │ to link this   │
+│          │                │                │ entity_contex… │ attribute to a │
+│          │                │                │ In enterprise  │ system/busine… │
+│          │                │                │ models,        │ grain.         │
+│          │                │                │ attributes     │                │
+│          │                │                │ should be      │                │
+│          │                │                │ contextualize… │                │
+│ WARNING  │ ATTRIBUTE_MIS… │ ATTR-BP-CUSTO… │ Attribute      │ Add            │
+│          │                │                │ 'ATTR-BP-CUST… │ 'entity_conte… │
+│          │                │                │ has no         │ to link this   │
+│          │                │                │ entity_contex… │ attribute to a │
+│          │                │                │ In enterprise  │ system/busine… │
+│          │                │                │ models,        │ grain.         │
+│          │                │                │ attributes     │                │
+│          │                │                │ should be      │                │
+│          │                │                │ contextualize… │                │
+│ WARNING  │ ATTRIBUTE_MIS… │ ATTR-BP-PARTN… │ Attribute      │ Add            │
+│          │                │                │ 'ATTR-BP-PART… │ 'entity_conte… │
+│          │                │                │ has no         │ to link this   │
+│          │                │                │ entity_contex… │ attribute to a │
+│          │                │                │ In enterprise  │ system/busine… │
+│          │                │                │ models,        │ grain.         │
+│          │                │                │ attributes     │                │
+│          │                │                │ should be      │                │
+│          │                │                │ contextualize… │                │
+│ WARNING  │ ATTRIBUTE_MIS… │ ATTR-BP-SALES… │ Attribute      │ Add            │
+│          │                │                │ 'ATTR-BP-SALE… │ 'entity_conte… │
+│          │                │                │ has no         │ to link this   │
+│          │                │                │ entity_contex… │ attribute to a │
+│          │                │                │ In enterprise  │ system/busine… │
+│          │                │                │ models,        │ grain.         │
+│          │                │                │ attributes     │                │
+│          │                │                │ should be      │                │
+│          │                │                │ contextualize… │                │
+│ WARNING  │ ATTRIBUTE_MIS… │ ATTR-BP-SALES… │ Attribute      │ Add            │
+│          │                │                │ 'ATTR-BP-SALE… │ 'entity_conte… │
+│          │                │                │ has no         │ to link this   │
+│          │                │                │ entity_contex… │ attribute to a │
+│          │                │                │ In enterprise  │ system/busine… │
+│          │                │                │ models,        │ grain.         │
+│          │                │                │ attributes     │                │
+│          │                │                │ should be      │                │
+│          │                │                │ contextualize… │                │
+│ WARNING  │ ATTRIBUTE_MIS… │ ATTR-BP-SALES… │ Attribute      │ Add            │
+│          │                │                │ 'ATTR-BP-SALE… │ 'entity_conte… │
+│          │                │                │ has no         │ to link this   │
+│          │                │                │ entity_contex… │ attribute to a │
+│          │                │                │ In enterprise  │ system/busine… │
+│          │                │                │ models,        │ grain.         │
+│          │                │                │ attributes     │                │
+│          │                │                │ should be      │                │
+│          │                │                │ contextualize… │                │
+│ WARNING  │ ATTRIBUTE_MIS… │ ATTR-CUST-SAL… │ Attribute      │ Add            │
+│          │                │                │ 'ATTR-CUST-SA… │ 'entity_conte… │
+│          │                │                │ has no         │ to link this   │
+│          │                │                │ entity_contex… │ attribute to a │
+│          │                │                │ In enterprise  │ system/busine… │
+│          │                │                │ models,        │ grain.         │
+│          │                │                │ attributes     │                │
+│          │                │                │ should be      │                │
+│          │                │                │ contextualize… │                │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-LEGACY-CU… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-LEGACY-C… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list.    │ rule coverage  │
+│          │                │                │                │ where          │
+│          │                │                │                │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-MIGFILE-C… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-MIGFILE-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list,    │ rule coverage  │
+│          │                │                │ mapping.       │ where          │
+│          │                │                │                │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-S4-BUT000… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-S4-BUT00… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list,    │ rule coverage  │
+│          │                │                │ mapping,       │ where          │
+│          │                │                │ validation_ru… │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-S4-BUT000… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-S4-BUT00… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list,    │ rule coverage  │
+│          │                │                │ mapping,       │ where          │
+│          │                │                │ validation_ru… │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-S4-BUT000… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-S4-BUT00… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list,    │ rule coverage  │
+│          │                │                │ mapping,       │ where          │
+│          │                │                │ validation_ru… │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-S4-BUT000… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-S4-BUT00… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list,    │ rule coverage  │
+│          │                │                │ mapping,       │ where          │
+│          │                │                │ validation_ru… │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-S4-KNA1-B… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-S4-KNA1-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list,    │ rule coverage  │
+│          │                │                │ mapping,       │ where          │
+│          │                │                │ validation_ru… │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-S4-KNA1-S… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-S4-KNA1-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list,    │ rule coverage  │
+│          │                │                │ mapping,       │ where          │
+│          │                │                │ validation_ru… │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-S4-KNA1-S… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-S4-KNA1-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list,    │ rule coverage  │
+│          │                │                │ mapping,       │ where          │
+│          │                │                │ validation_ru… │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-S4-KNB1-A… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-S4-KNB1-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list,    │ rule coverage  │
+│          │                │                │ mapping,       │ where          │
+│          │                │                │ validation_ru… │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-S4-KNB1-M… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-S4-KNB1-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list,    │ rule coverage  │
+│          │                │                │ mapping,       │ where          │
+│          │                │                │ validation_ru… │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-S4-KNB1-V… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-S4-KNB1-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list,    │ rule coverage  │
+│          │                │                │ mapping,       │ where          │
+│          │                │                │ validation_ru… │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-S4-KNB1-Z… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-S4-KNB1-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list,    │ rule coverage  │
+│          │                │                │ mapping,       │ where          │
+│          │                │                │ validation_ru… │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-S4-KNVP-P… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-S4-KNVP-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list,    │ rule coverage  │
+│          │                │                │ mapping,       │ where          │
+│          │                │                │ validation_ru… │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-S4-KNVV-I… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-S4-KNVV-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list,    │ rule coverage  │
+│          │                │                │ mapping,       │ where          │
+│          │                │                │ validation_ru… │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-S4-KNVV-K… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-S4-KNVV-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list.    │ rule coverage  │
+│          │                │                │                │ where          │
+│          │                │                │                │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-S4-KNVV-P… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-S4-KNVV-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list,    │ rule coverage  │
+│          │                │                │ mapping,       │ where          │
+│          │                │                │ validation_ru… │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-S4-KNVV-V… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-S4-KNVV-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list,    │ rule coverage  │
+│          │                │                │ mapping,       │ where          │
+│          │                │                │ validation_ru… │ relevant.      │
+│ WARNING  │ ATTRIBUTE_USA… │ USE-BP-CENTRA… │ AttributeUsage │ Add            │
+│          │                │                │ 'USE-BP-CENTR… │ 'usage_type'   │
+│          │                │                │ has no         │ (e.g. primary, │
+│          │                │                │ usage_type.    │ secondary,     │
+│          │                │                │ Consider       │ derived,       │
+│          │                │                │ adding         │ reference) to  │
+│          │                │                │ usage_type to  │ this           │
+│          │                │                │ clarify how    │ AttributeUsag… │
+│          │                │                │ the attribute  │                │
+│          │                │                │ is used.       │                │
+│ WARNING  │ ATTRIBUTE_USA… │ USE-BP-CENTRA… │ AttributeUsage │ Add            │
+│          │                │                │ 'USE-BP-CENTR… │ 'usage_type'   │
+│          │                │                │ has no         │ (e.g. primary, │
+│          │                │                │ usage_type.    │ secondary,     │
+│          │                │                │ Consider       │ derived,       │
+│          │                │                │ adding         │ reference) to  │
+│          │                │                │ usage_type to  │ this           │
+│          │                │                │ clarify how    │ AttributeUsag… │
+│          │                │                │ the attribute  │                │
+│          │                │                │ is used.       │                │
+│ WARNING  │ ATTRIBUTE_USA… │ USE-BP-CENTRA… │ AttributeUsage │ Add            │
+│          │                │                │ 'USE-BP-CENTR… │ 'usage_type'   │
+│          │                │                │ has no         │ (e.g. primary, │
+│          │                │                │ usage_type.    │ secondary,     │
+│          │                │                │ Consider       │ derived,       │
+│          │                │                │ adding         │ reference) to  │
+│          │                │                │ usage_type to  │ this           │
+│          │                │                │ clarify how    │ AttributeUsag… │
+│          │                │                │ the attribute  │                │
+│          │                │                │ is used.       │                │
+│ WARNING  │ ATTRIBUTE_USA… │ USE-BP-COMPAN… │ AttributeUsage │ Add            │
+│          │                │                │ 'USE-BP-COMPA… │ 'usage_type'   │
+│          │                │                │ has no         │ (e.g. primary, │
+│          │                │                │ usage_type.    │ secondary,     │
+│          │                │                │ Consider       │ derived,       │
+│          │                │                │ adding         │ reference) to  │
+│          │                │                │ usage_type to  │ this           │
+│          │                │                │ clarify how    │ AttributeUsag… │
+│          │                │                │ the attribute  │                │
+│          │                │                │ is used.       │                │
+│ WARNING  │ ATTRIBUTE_USA… │ USE-BP-COMPAN… │ AttributeUsage │ Add            │
+│          │                │                │ 'USE-BP-COMPA… │ 'usage_type'   │
+│          │                │                │ has no         │ (e.g. primary, │
+│          │                │                │ usage_type.    │ secondary,     │
+│          │                │                │ Consider       │ derived,       │
+│          │                │                │ adding         │ reference) to  │
+│          │                │                │ usage_type to  │ this           │
+│          │                │                │ clarify how    │ AttributeUsag… │
+│          │                │                │ the attribute  │                │
+│          │                │                │ is used.       │                │
+│ WARNING  │ ATTRIBUTE_USA… │ USE-BP-COMPAN… │ AttributeUsage │ Add            │
+│          │                │                │ 'USE-BP-COMPA… │ 'usage_type'   │
+│          │                │                │ has no         │ (e.g. primary, │
+│          │                │                │ usage_type.    │ secondary,     │
+│          │                │                │ Consider       │ derived,       │
+│          │                │                │ adding         │ reference) to  │
+│          │                │                │ usage_type to  │ this           │
+│          │                │                │ clarify how    │ AttributeUsag… │
+│          │                │                │ the attribute  │                │
+│          │                │                │ is used.       │                │
+│ WARNING  │ ATTRIBUTE_USA… │ USE-BP-CUSTOM… │ AttributeUsage │ Add            │
+│          │                │                │ 'USE-BP-CUSTO… │ 'usage_type'   │
+│          │                │                │ has no         │ (e.g. primary, │
+│          │                │                │ usage_type.    │ secondary,     │
+│          │                │                │ Consider       │ derived,       │
+│          │                │                │ adding         │ reference) to  │
+│          │                │                │ usage_type to  │ this           │
+│          │                │                │ clarify how    │ AttributeUsag… │
+│          │                │                │ the attribute  │                │
+│          │                │                │ is used.       │                │
+│ WARNING  │ ATTRIBUTE_USA… │ USE-BP-CUSTOM… │ AttributeUsage │ Add            │
+│          │                │                │ 'USE-BP-CUSTO… │ 'usage_type'   │
+│          │                │                │ has no         │ (e.g. primary, │
+│          │                │                │ usage_type.    │ secondary,     │
+│          │                │                │ Consider       │ derived,       │
+│          │                │                │ adding         │ reference) to  │
+│          │                │                │ usage_type to  │ this           │
+│          │                │                │ clarify how    │ AttributeUsag… │
+│          │                │                │ the attribute  │                │
+│          │                │                │ is used.       │                │
+│ WARNING  │ ATTRIBUTE_USA… │ USE-BP-CUSTOM… │ AttributeUsage │ Add            │
+│          │                │                │ 'USE-BP-CUSTO… │ 'usage_type'   │
+│          │                │                │ has no         │ (e.g. primary, │
+│          │                │                │ usage_type.    │ secondary,     │
+│          │                │                │ Consider       │ derived,       │
+│          │                │                │ adding         │ reference) to  │
+│          │                │                │ usage_type to  │ this           │
+│          │                │                │ clarify how    │ AttributeUsag… │
+│          │                │                │ the attribute  │                │
+│          │                │                │ is used.       │                │
+│ WARNING  │ ATTRIBUTE_USA… │ USE-BP-PARTNE… │ AttributeUsage │ Add            │
+│          │                │                │ 'USE-BP-PARTN… │ 'usage_type'   │
+│          │                │                │ has no         │ (e.g. primary, │
+│          │                │                │ usage_type.    │ secondary,     │
+│          │                │                │ Consider       │ derived,       │
+│          │                │                │ adding         │ reference) to  │
+│          │                │                │ usage_type to  │ this           │
+│          │                │                │ clarify how    │ AttributeUsag… │
+│          │                │                │ the attribute  │                │
+│          │                │                │ is used.       │                │
+│ WARNING  │ ATTRIBUTE_USA… │ USE-BP-SALES-… │ AttributeUsage │ Add            │
+│          │                │                │ 'USE-BP-SALES… │ 'usage_type'   │
+│          │                │                │ has no         │ (e.g. primary, │
+│          │                │                │ usage_type.    │ secondary,     │
+│          │                │                │ Consider       │ derived,       │
+│          │                │                │ adding         │ reference) to  │
+│          │                │                │ usage_type to  │ this           │
+│          │                │                │ clarify how    │ AttributeUsag… │
+│          │                │                │ the attribute  │                │
+│          │                │                │ is used.       │                │
+│ WARNING  │ ATTRIBUTE_USA… │ USE-BP-SALES-… │ AttributeUsage │ Add            │
+│          │                │                │ 'USE-BP-SALES… │ 'usage_type'   │
+│          │                │                │ has no         │ (e.g. primary, │
+│          │                │                │ usage_type.    │ secondary,     │
+│          │                │                │ Consider       │ derived,       │
+│          │                │                │ adding         │ reference) to  │
+│          │                │                │ usage_type to  │ this           │
+│          │                │                │ clarify how    │ AttributeUsag… │
+│          │                │                │ the attribute  │                │
+│          │                │                │ is used.       │                │
+│ WARNING  │ ATTRIBUTE_USA… │ USE-BP-SALES-… │ AttributeUsage │ Add            │
+│          │                │                │ 'USE-BP-SALES… │ 'usage_type'   │
+│          │                │                │ has no         │ (e.g. primary, │
+│          │                │                │ usage_type.    │ secondary,     │
+│          │                │                │ Consider       │ derived,       │
+│          │                │                │ adding         │ reference) to  │
+│          │                │                │ usage_type to  │ this           │
+│          │                │                │ clarify how    │ AttributeUsag… │
+│          │                │                │ the attribute  │                │
+│          │                │                │ is used.       │                │
+└──────────┴────────────────┴────────────────┴────────────────┴────────────────┘

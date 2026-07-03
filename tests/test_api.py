@@ -113,6 +113,13 @@ def test_api_impact_success(sample_repo: Path) -> None:
     assert isinstance(data["downstream"], list)
 
 
+def test_api_impact_not_found(sample_repo: Path) -> None:
+    """Unknown object IDs must yield a clear 404, not an empty 200 report."""
+    response = client.get("/impact/DOES-NOT-EXIST", params={"repo": str(sample_repo)})
+    assert response.status_code == 404
+    assert "not found" in response.json()["detail"].lower()
+
+
 def test_api_impact_missing_index(temp_model_dir: Path) -> None:
     repo = str(temp_model_dir.parent)
     response = client.get("/impact/DOMAIN-TEST", params={"repo": repo})
@@ -142,6 +149,13 @@ def test_api_trace_missing_index(temp_model_dir: Path) -> None:
     response = client.get("/trace/DOMAIN-TEST", params={"repo": repo})
     assert response.status_code == 400
     assert "Index not found" in response.json()["detail"]
+
+
+def test_api_trace_not_found(sample_repo: Path) -> None:
+    """Unknown object IDs on the trace endpoint must yield a clear 404."""
+    response = client.get("/trace/DOES-NOT-EXIST", params={"repo": str(sample_repo)})
+    assert response.status_code == 404
+    assert "not found" in response.json()["detail"].lower()
 
 
 # ---------------------------------------------------------------------------

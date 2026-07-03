@@ -1,0 +1,3 @@
+Impact Report for ATTR-PRODUCT-NAME
+  Type: Attribute
+  Affected objects: 0

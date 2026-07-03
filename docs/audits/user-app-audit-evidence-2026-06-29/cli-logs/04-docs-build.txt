@@ -1,0 +1,11 @@
+Documentation generated at /tmp/martenweave-viewer-simple
+  8 Markdown file(s):
+    - attribute.md
+    - businessentity.md
+    - dataset.md
+    - fieldendpoint.md
+    - index.md
+    - masterdatadomain.md
+    - objects.md
+    - valuelist.md
+  23 viewer file(s), including index.html

@@ -1347,11 +1347,22 @@ def index_fresh(
     if report.reason:
         console.print(f"  Reason: {report.reason}")
     if report.stale_sources:
-        console.print(f"  Stale sources: {len(report.stale_sources)} file(s)")
-        for src in report.stale_sources[:10]:
-            console.print(f"    [dim]{src}[/dim]")
-        if len(report.stale_sources) > 10:
-            console.print(f"    ... and {len(report.stale_sources) - 10} more")
+        if report.fresh:
+            # Content hash still matches; mtime differences are diagnostic only.
+            console.print(
+                f"  Sources newer than index: {len(report.stale_sources)} file(s) "
+                "(content hash matches; no rebuild needed)"
+            )
+            for src in report.stale_sources[:10]:
+                console.print(f"    [dim]{src}[/dim]")
+            if len(report.stale_sources) > 10:
+                console.print(f"    ... and {len(report.stale_sources) - 10} more")
+        else:
+            console.print(f"  Stale sources: {len(report.stale_sources)} file(s)")
+            for src in report.stale_sources[:10]:
+                console.print(f"    [dim]{src}[/dim]")
+            if len(report.stale_sources) > 10:
+                console.print(f"    ... and {len(report.stale_sources) - 10} more")
 
 
 @app.command()
@@ -1941,6 +1952,8 @@ def trace(
     ),
 ) -> None:
     """Trace upstream and downstream relationships for an object."""
+    import json
+
     repo_root = _resolve_repo(repo)
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
@@ -1958,9 +1971,23 @@ def trace(
         relationship_class=relationship_class,
     )
 
-    if json_output:
-        import json
+    if result.root_object_type is None:
+        if json_output:
+            print(
+                json.dumps(
+                    {
+                        "stale_index_warning": stale,
+                        "error": f"Object not found: {object_id}",
+                    },
+                    indent=2,
+                    default=str,
+                )
+            )
+        else:
+            console.print(f"[red]Object not found: {object_id}[/red]")
+        raise typer.Exit(code=1)
 
+    if json_output:
         data = {
             "stale_index_warning": stale,
             "root_object_id": result.root_object_id,
@@ -2059,6 +2086,22 @@ def impact(
         direction=direction,
         relationship_class=relationship_class,
     )
+
+    if report.root_object_type is None:
+        if json_output or fmt.lower() == "json":
+            content = json.dumps(
+                {"stale_index_warning": stale, "error": f"Object not found: {object_id}"},
+                indent=2,
+                default=str,
+            )
+            if output is not None:
+                output.write_text(content, encoding="utf-8")
+                console.print(f"[green]Report written to {output}[/green]")
+            else:
+                print(content)
+        else:
+            console.print(f"[red]Object not found: {object_id}[/red]")
+        raise typer.Exit(code=1)
 
     # Legacy --json flag takes precedence
     if json_output or fmt.lower() == "json":
@@ -2193,6 +2236,10 @@ def propose_patch(
             print(json.dumps(result, indent=2, default=str))
         else:
             console.print("[red]No proposal generated.[/red]")
+            for assumption in result.get("assumptions", []):
+                console.print(f"  • {assumption}")
+            for check in result.get("human_checks", []):
+                console.print(f"  → {check}")
         raise typer.Exit(code=1)
 
     path = None

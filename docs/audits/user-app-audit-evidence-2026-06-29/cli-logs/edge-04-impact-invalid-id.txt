@@ -1,0 +1,3 @@
+Impact Report for NONEXISTENT-ID
+  Type: Unknown
+  Affected objects: 0

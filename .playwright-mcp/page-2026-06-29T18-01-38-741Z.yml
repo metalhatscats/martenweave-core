@@ -1,0 +1,138 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - banner [ref=e3]:
+    - navigation "Primary navigation" [ref=e4]:
+      - link "Martenweave home" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e6]: Martenweave
+      - generic [ref=e7]:
+        - link "Docs" [ref=e8] [cursor=pointer]:
+          - /url: /docs.html
+        - link "GitHub" [ref=e9] [cursor=pointer]:
+          - /url: https://github.com/metalhatscats/martenweave-core
+        - link "PyPI" [ref=e10] [cursor=pointer]:
+          - /url: https://pypi.org/project/martenweave-core/
+  - main [ref=e11]:
+    - region "Short docs for evaluating the model registry." [ref=e12]:
+      - generic [ref=e13]:
+        - paragraph [ref=e14]: Public docs
+        - heading "Short docs for evaluating the model registry." [level=1] [ref=e15]
+        - paragraph [ref=e16]: Start with the product explanation, then go deeper into workflow, import/export maturity, governance practices, architecture, examples, and AI approval gates.
+        - generic [ref=e17]:
+          - link "Start with product docs" [ref=e18] [cursor=pointer]:
+            - /url: /docs/product.html
+          - link "Run quickstart" [ref=e19] [cursor=pointer]:
+            - /url: /docs/quickstart.html
+          - link "Open core repo" [ref=e20] [cursor=pointer]:
+            - /url: https://github.com/metalhatscats/martenweave-core
+    - region "The homepage gives the overview. These pages hold the detail." [ref=e21]:
+      - generic [ref=e22]:
+        - paragraph [ref=e23]: Documentation map
+        - heading "The homepage gives the overview. These pages hold the detail." [level=2] [ref=e24]
+      - generic [ref=e25]:
+        - link "product What Martenweave is Plain-English positioning, audience, maturity, and what it is not. Read product docs" [ref=e26] [cursor=pointer]:
+          - /url: /docs/product.html
+          - generic [ref=e27]: product
+          - strong [ref=e28]: What Martenweave is
+          - paragraph [ref=e29]: Plain-English positioning, audience, maturity, and what it is not.
+          - emphasis [ref=e30]: Read product docs
+        - link "workflow How it works Input artifacts, model objects, validation, indexing, gaps, impact, and approval. Follow the workflow" [ref=e31] [cursor=pointer]:
+          - /url: /docs/how-it-works.html
+          - generic [ref=e32]: workflow
+          - strong [ref=e33]: How it works
+          - paragraph [ref=e34]: Input artifacts, model objects, validation, indexing, gaps, impact, and approval.
+          - emphasis [ref=e35]: Follow the workflow
+        - link "import/export Available now vs planned Honest notes on dataset profiling, sheet review flows, exports, and integration direction. Read maturity notes" [ref=e36] [cursor=pointer]:
+          - /url: /docs/import-export.html
+          - generic [ref=e37]: import/export
+          - strong [ref=e38]: Available now vs planned
+          - paragraph [ref=e39]: Honest notes on dataset profiling, sheet review flows, exports, and integration direction.
+          - emphasis [ref=e40]: Read maturity notes
+        - link "governance Practical data management principles Definitions, ownership, metadata, lineage, quality, stewardship, and change control. Read governance notes" [ref=e41] [cursor=pointer]:
+          - /url: /docs/governance.html
+          - generic [ref=e42]: governance
+          - strong [ref=e43]: Practical data management principles
+          - paragraph [ref=e44]: Definitions, ownership, metadata, lineage, quality, stewardship, and change control.
+          - emphasis [ref=e45]: Read governance notes
+        - link "quickstart Run the core workflow Install locally, validate examples, build indexes, search, trace, impact, and smoke-test. Run quickstart" [ref=e46] [cursor=pointer]:
+          - /url: /docs/quickstart.html
+          - generic [ref=e47]: quickstart
+          - strong [ref=e48]: Run the core workflow
+          - paragraph [ref=e49]: Install locally, validate examples, build indexes, search, trace, impact, and smoke-test.
+          - emphasis [ref=e50]: Run quickstart
+        - link "local viewer Generate a read-only viewer Build static pages from the SQLite index for local inspection without hosting or editing. Read viewer boundaries" [ref=e51] [cursor=pointer]:
+          - /url: /docs/local-viewer.html
+          - generic [ref=e52]: local viewer
+          - strong [ref=e53]: Generate a read-only viewer
+          - paragraph [ref=e54]: Build static pages from the SQLite index for local inspection without hosting or editing.
+          - emphasis [ref=e55]: Read viewer boundaries
+        - link "examples Choose a bundled model Customer / BP, Supplier / Vendor, simple product, and generic product examples. Review examples" [ref=e56] [cursor=pointer]:
+          - /url: /docs/examples.html
+          - generic [ref=e57]: examples
+          - strong [ref=e58]: Choose a bundled model
+          - paragraph [ref=e59]: Customer / BP, Supplier / Vendor, simple product, and generic product examples.
+          - emphasis [ref=e60]: Review examples
+        - link "use cases Where it helps Migration, MDM, governance, validation, AMS, and AI-assisted maintenance scenarios. Read use cases" [ref=e61] [cursor=pointer]:
+          - /url: /docs/use-cases.html
+          - generic [ref=e62]: use cases
+          - strong [ref=e63]: Where it helps
+          - paragraph [ref=e64]: Migration, MDM, governance, validation, AMS, and AI-assisted maintenance scenarios.
+          - emphasis [ref=e65]: Read use cases
+        - link "architecture How the backend layer works Canonical files, validation, generated indexes, lineage, reports, and approval flow. Read architecture" [ref=e66] [cursor=pointer]:
+          - /url: /docs/architecture.html
+          - generic [ref=e67]: architecture
+          - strong [ref=e68]: How the backend layer works
+          - paragraph [ref=e69]: Canonical files, validation, generated indexes, lineage, reports, and approval flow.
+          - emphasis [ref=e70]: Read architecture
+        - link "AI governance AI proposes. Humans approve. Evidence extraction, patch proposals, issue drafts, impact explanations, and gates. Read AI rules" [ref=e71] [cursor=pointer]:
+          - /url: /docs/ai-governance.html
+          - generic [ref=e72]: AI governance
+          - strong [ref=e73]: AI proposes. Humans approve.
+          - paragraph [ref=e74]: Evidence extraction, patch proposals, issue drafts, impact explanations, and gates.
+          - emphasis [ref=e75]: Read AI rules
+        - link "FAQ Short answers for evaluators MDM, Excel, SAP scope, import/export, AI behavior, users, and open-source boundaries. Read FAQ" [ref=e76] [cursor=pointer]:
+          - /url: /docs/faq.html
+          - generic [ref=e77]: FAQ
+          - strong [ref=e78]: Short answers for evaluators
+          - paragraph [ref=e79]: MDM, Excel, SAP scope, import/export, AI behavior, users, and open-source boundaries.
+          - emphasis [ref=e80]: Read FAQ
+        - link "open source Contribution path What to contribute, what not to claim, and how to keep issues useful. Read open-source guide" [ref=e81] [cursor=pointer]:
+          - /url: /docs/open-source.html
+          - generic [ref=e82]: open source
+          - strong [ref=e83]: Contribution path
+          - paragraph [ref=e84]: What to contribute, what not to claim, and how to keep issues useful.
+          - emphasis [ref=e85]: Read open-source guide
+        - link "roadmap What exists and what comes next Core registry, model intelligence, AI workflows, starter packs, and optional workbench. Read roadmap" [ref=e86] [cursor=pointer]:
+          - /url: /docs/roadmap.html
+          - generic [ref=e87]: roadmap
+          - strong [ref=e88]: What exists and what comes next
+          - paragraph [ref=e89]: Core registry, model intelligence, AI workflows, starter packs, and optional workbench.
+          - emphasis [ref=e90]: Read roadmap
+      - paragraph [ref=e91]:
+        - text: Deep implementation docs live in
+        - link "the core repository docs" [ref=e92] [cursor=pointer]:
+          - /url: https://github.com/metalhatscats/martenweave-core/tree/main/docs
+        - text: . These website docs stay decision-maker friendly.
+  - contentinfo [ref=e93]:
+    - link "Martenweave home" [ref=e94] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e95]: Martenweave
+    - navigation "Footer navigation" [ref=e96]:
+      - link "GitHub" [ref=e97] [cursor=pointer]:
+        - /url: https://github.com/metalhatscats/martenweave-core
+      - link "PyPI" [ref=e98] [cursor=pointer]:
+        - /url: https://pypi.org/project/martenweave-core/
+      - link "Docs" [ref=e99] [cursor=pointer]:
+        - /url: /docs.html
+      - link "AI disclosure" [ref=e100] [cursor=pointer]:
+        - /url: /ai.txt
+      - link "License" [ref=e101] [cursor=pointer]:
+        - /url: https://github.com/metalhatscats/martenweave-core/blob/main/LICENSE
+      - link "llms.txt" [ref=e102] [cursor=pointer]:
+        - /url: /llms.txt
+      - link "humans.txt" [ref=e103] [cursor=pointer]:
+        - /url: /humans.txt
+      - link "Website source" [ref=e104] [cursor=pointer]:
+        - /url: https://github.com/Martenweave/martenweave.github.io
+    - paragraph [ref=e105]: AI proposes. Validators verify. Humans approve.

@@ -1,0 +1,25 @@
+Query Results (16)
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+┃ ID               ┃ Type      ┃ Name             ┃ Status ┃ Domain            ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+│ ATTR-BP-CENTRAL… │ Attribute │ Foundation Date  │ active │ DOMAIN-CUSTOMER-… │
+│ ATTR-BP-CENTRAL… │ Attribute │ Legal Form       │ active │ DOMAIN-CUSTOMER-… │
+│ ATTR-BP-CENTRAL… │ Attribute │ BP Central Name  │ active │ DOMAIN-CUSTOMER-… │
+│ ATTR-BP-CENTRAL… │ Attribute │ Search Term      │ active │ DOMAIN-CUSTOMER-… │
+│ ATTR-BP-COMPANY… │ Attribute │ Dunning          │ active │ DOMAIN-CUSTOMER-… │
+│                  │           │ Procedure        │        │                   │
+│ ATTR-BP-COMPANY… │ Attribute │ Interest         │ active │ DOMAIN-CUSTOMER-… │
+│                  │           │ Indicator        │        │                   │
+│ ATTR-BP-COMPANY… │ Attribute │ Payment Terms    │ active │ DOMAIN-CUSTOMER-… │
+│ ATTR-BP-COMPANY… │ Attribute │ Reconciliation   │ active │ DOMAIN-CUSTOMER-… │
+│                  │           │ Account          │        │                   │
+│ ATTR-BP-CUSTOME… │ Attribute │ Industry         │ active │ DOMAIN-CUSTOMER-… │
+│ ATTR-BP-CUSTOME… │ Attribute │ Tax Number       │ active │ DOMAIN-CUSTOMER-… │
+│ ATTR-BP-CUSTOME… │ Attribute │ VAT Registration │ active │ DOMAIN-CUSTOMER-… │
+│ ATTR-BP-PARTNER… │ Attribute │ Sold-To Party    │ active │ DOMAIN-CUSTOMER-… │
+│ ATTR-BP-SALES-A… │ Attribute │ Incoterms        │ active │ DOMAIN-CUSTOMER-… │
+│ ATTR-BP-SALES-A… │ Attribute │ Price Group      │ active │ DOMAIN-CUSTOMER-… │
+│ ATTR-BP-SALES-A… │ Attribute │ Shipping         │ active │ DOMAIN-CUSTOMER-… │
+│                  │           │ Conditions       │        │                   │
+│ ATTR-CUST-SALES… │ Attribute │ Customer Group   │ active │ DOMAIN-CUSTOMER-… │
+└──────────────────┴───────────┴──────────────────┴────────┴───────────────────┘

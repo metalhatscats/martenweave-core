@@ -1,0 +1,229 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Local Static Viewer" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Generated local static read-only viewer over the SQLite index.
+    - navigation "Viewer navigation" [ref=e7]:
+      - link "Dashboard" [ref=e8] [cursor=pointer]:
+        - /url: index.html
+      - link "Objects" [ref=e9] [cursor=pointer]:
+        - /url: objects.html
+      - link "Gaps" [ref=e10] [cursor=pointer]:
+        - /url: gaps.html
+      - link "Decisions" [ref=e11] [cursor=pointer]:
+        - /url: decisions.html
+      - link "Owners" [ref=e12] [cursor=pointer]:
+        - /url: owners.html
+      - link "Manifest" [ref=e13] [cursor=pointer]:
+        - /url: viewer-manifest.json
+  - generic [ref=e14]:
+    - text: "Index freshness:"
+    - strong [ref=e15]: fresh
+    - text: . Viewer content is generated from the current SQLite index.
+  - generic [ref=e16]:
+    - text: Read-only generated artifact. Canonical files in
+    - code [ref=e17]: model/
+    - text: remain the source of truth; this viewer can be deleted and rebuilt at any time.
+  - generic [ref=e18]:
+    - generic [ref=e19]:
+      - heading "Objects" [level=3] [ref=e20]
+      - generic [ref=e21]: "14"
+      - generic [ref=e22]: Indexed canonical objects
+    - generic [ref=e23]:
+      - heading "Object types" [level=3] [ref=e24]
+      - generic [ref=e25]: "6"
+      - generic [ref=e26]: Types represented in the index
+    - generic [ref=e27]:
+      - heading "Validation findings" [level=3] [ref=e28]
+      - generic [ref=e29]: "18"
+      - generic [ref=e30]: "WARNING: 18"
+    - generic [ref=e31]:
+      - heading "Index freshness" [level=3] [ref=e32]
+      - generic [ref=e33]: Fresh
+      - generic [ref=e34]: Hash matches canonical source
+  - generic [ref=e35]:
+    - heading "Repository" [level=2] [ref=e36]
+    - table [ref=e37]:
+      - rowgroup [ref=e38]:
+        - row "Repository Simple Product Model" [ref=e39]:
+          - rowheader "Repository" [ref=e40]
+          - cell "Simple Product Model" [ref=e41]
+        - row "Repository version unknown" [ref=e42]:
+          - rowheader "Repository version" [ref=e43]
+          - cell "unknown" [ref=e44]
+        - row "Schema version 1.0" [ref=e45]:
+          - rowheader "Schema version" [ref=e46]
+          - cell "1.0" [ref=e47]
+        - row "Martenweave package 0.4.1" [ref=e48]:
+          - rowheader "Martenweave package" [ref=e49]
+          - cell "0.4.1" [ref=e50]
+        - row "Index built unknown" [ref=e51]:
+          - rowheader "Index built" [ref=e52]
+          - cell "unknown" [ref=e53]
+        - row "Viewer generated 2026-06-29T17:01:22+00:00" [ref=e54]:
+          - rowheader "Viewer generated" [ref=e55]
+          - cell "2026-06-29T17:01:22+00:00" [ref=e56]
+  - generic [ref=e57]:
+    - heading "Type counts" [level=2] [ref=e58]
+    - table [ref=e59]:
+      - rowgroup [ref=e60]:
+        - row "Type Count" [ref=e61]:
+          - columnheader "Type" [ref=e62]
+          - columnheader "Count" [ref=e63]
+      - rowgroup [ref=e64]:
+        - row "Attribute 5" [ref=e65]:
+          - cell "Attribute" [ref=e66]
+          - cell "5" [ref=e67]
+        - row "BusinessEntity 1" [ref=e68]:
+          - cell "BusinessEntity" [ref=e69]
+          - cell "1" [ref=e70]
+        - row "Dataset 1" [ref=e71]:
+          - cell "Dataset" [ref=e72]
+          - cell "1" [ref=e73]
+        - row "FieldEndpoint 5" [ref=e74]:
+          - cell "FieldEndpoint" [ref=e75]
+          - cell "5" [ref=e76]
+        - row "MasterDataDomain 1" [ref=e77]:
+          - cell "MasterDataDomain" [ref=e78]
+          - cell "1" [ref=e79]
+        - row "ValueList 1" [ref=e80]:
+          - cell "ValueList" [ref=e81]
+          - cell "1" [ref=e82]
+  - generic [ref=e83]:
+    - heading "Quick search" [level=2] [ref=e84]
+    - textbox "Filter objects by Customer Group, KNVV, KDGRP, owner, type..." [ref=e85]
+    - paragraph [ref=e86]: 12 objects shown. Search runs locally from embedded rows and does not require network access.
+    - table [ref=e87]:
+      - rowgroup [ref=e88]:
+        - row "ID Type Label Status Owners Hints" [ref=e89]:
+          - columnheader "ID" [ref=e90]
+          - columnheader "Type" [ref=e91]
+          - columnheader "Label" [ref=e92]
+          - columnheader "Status" [ref=e93]
+          - columnheader "Owners" [ref=e94]
+          - columnheader "Hints" [ref=e95]
+      - rowgroup [ref=e96]:
+        - row "ATTR-PRODUCT-ACTIVE Attribute Active active" [ref=e97]:
+          - cell "ATTR-PRODUCT-ACTIVE" [ref=e98]:
+            - link "ATTR-PRODUCT-ACTIVE" [ref=e99] [cursor=pointer]:
+              - /url: objects/attr-product-active.html
+              - code [ref=e100]: ATTR-PRODUCT-ACTIVE
+          - cell "Attribute" [ref=e101]
+          - cell "Active" [ref=e102]
+          - cell "active" [ref=e103]
+          - cell [ref=e104]
+          - cell [ref=e105]
+        - row "ATTR-PRODUCT-CATEGORY Attribute Category active" [ref=e106]:
+          - cell "ATTR-PRODUCT-CATEGORY" [ref=e107]:
+            - link "ATTR-PRODUCT-CATEGORY" [ref=e108] [cursor=pointer]:
+              - /url: objects/attr-product-category.html
+              - code [ref=e109]: ATTR-PRODUCT-CATEGORY
+          - cell "Attribute" [ref=e110]
+          - cell "Category" [ref=e111]
+          - cell "active" [ref=e112]
+          - cell [ref=e113]
+          - cell [ref=e114]
+        - row "ATTR-PRODUCT-ID Attribute Product ID active" [ref=e115]:
+          - cell "ATTR-PRODUCT-ID" [ref=e116]:
+            - link "ATTR-PRODUCT-ID" [ref=e117] [cursor=pointer]:
+              - /url: objects/attr-product-id.html
+              - code [ref=e118]: ATTR-PRODUCT-ID
+          - cell "Attribute" [ref=e119]
+          - cell "Product ID" [ref=e120]
+          - cell "active" [ref=e121]
+          - cell [ref=e122]
+          - cell [ref=e123]
+        - row "ATTR-PRODUCT-NAME Attribute Product Name active" [ref=e124]:
+          - cell "ATTR-PRODUCT-NAME" [ref=e125]:
+            - link "ATTR-PRODUCT-NAME" [ref=e126] [cursor=pointer]:
+              - /url: objects/attr-product-name.html
+              - code [ref=e127]: ATTR-PRODUCT-NAME
+          - cell "Attribute" [ref=e128]
+          - cell "Product Name" [ref=e129]
+          - cell "active" [ref=e130]
+          - cell [ref=e131]
+          - cell [ref=e132]
+        - row "ATTR-PRODUCT-UNIT-PRICE Attribute Unit Price active" [ref=e133]:
+          - cell "ATTR-PRODUCT-UNIT-PRICE" [ref=e134]:
+            - link "ATTR-PRODUCT-UNIT-PRICE" [ref=e135] [cursor=pointer]:
+              - /url: objects/attr-product-unit-price.html
+              - code [ref=e136]: ATTR-PRODUCT-UNIT-PRICE
+          - cell "Attribute" [ref=e137]
+          - cell "Unit Price" [ref=e138]
+          - cell "active" [ref=e139]
+          - cell [ref=e140]
+          - cell [ref=e141]
+        - row "ENTITY-PRODUCT BusinessEntity Product active" [ref=e142]:
+          - cell "ENTITY-PRODUCT" [ref=e143]:
+            - link "ENTITY-PRODUCT" [ref=e144] [cursor=pointer]:
+              - /url: objects/entity-product.html
+              - code [ref=e145]: ENTITY-PRODUCT
+          - cell "BusinessEntity" [ref=e146]
+          - cell "Product" [ref=e147]
+          - cell "active" [ref=e148]
+          - cell [ref=e149]
+          - cell [ref=e150]
+        - row "DS-PRODUCT-CSV Dataset product_sample.csv active" [ref=e151]:
+          - cell "DS-PRODUCT-CSV" [ref=e152]:
+            - link "DS-PRODUCT-CSV" [ref=e153] [cursor=pointer]:
+              - /url: objects/ds-product-csv.html
+              - code [ref=e154]: DS-PRODUCT-CSV
+          - cell "Dataset" [ref=e155]
+          - cell "product_sample.csv" [ref=e156]
+          - cell "active" [ref=e157]
+          - cell [ref=e158]
+          - cell [ref=e159]
+        - row "FEP-PRODUCT-ACTIVE FieldEndpoint active active file_column" [ref=e160]:
+          - cell "FEP-PRODUCT-ACTIVE" [ref=e161]:
+            - link "FEP-PRODUCT-ACTIVE" [ref=e162] [cursor=pointer]:
+              - /url: objects/fep-product-active.html
+              - code [ref=e163]: FEP-PRODUCT-ACTIVE
+          - cell "FieldEndpoint" [ref=e164]
+          - cell "active" [ref=e165]
+          - cell "active" [ref=e166]
+          - cell [ref=e167]
+          - cell "file_column" [ref=e168]
+        - row "FEP-PRODUCT-CATEGORY FieldEndpoint category active file_column" [ref=e169]:
+          - cell "FEP-PRODUCT-CATEGORY" [ref=e170]:
+            - link "FEP-PRODUCT-CATEGORY" [ref=e171] [cursor=pointer]:
+              - /url: objects/fep-product-category.html
+              - code [ref=e172]: FEP-PRODUCT-CATEGORY
+          - cell "FieldEndpoint" [ref=e173]
+          - cell "category" [ref=e174]
+          - cell "active" [ref=e175]
+          - cell [ref=e176]
+          - cell "file_column" [ref=e177]
+        - row "FEP-PRODUCT-ID FieldEndpoint product_id active file_column" [ref=e178]:
+          - cell "FEP-PRODUCT-ID" [ref=e179]:
+            - link "FEP-PRODUCT-ID" [ref=e180] [cursor=pointer]:
+              - /url: objects/fep-product-id.html
+              - code [ref=e181]: FEP-PRODUCT-ID
+          - cell "FieldEndpoint" [ref=e182]
+          - cell "product_id" [ref=e183]
+          - cell "active" [ref=e184]
+          - cell [ref=e185]
+          - cell "file_column" [ref=e186]
+        - row "FEP-PRODUCT-NAME FieldEndpoint name active file_column" [ref=e187]:
+          - cell "FEP-PRODUCT-NAME" [ref=e188]:
+            - link "FEP-PRODUCT-NAME" [ref=e189] [cursor=pointer]:
+              - /url: objects/fep-product-name.html
+              - code [ref=e190]: FEP-PRODUCT-NAME
+          - cell "FieldEndpoint" [ref=e191]
+          - cell "name" [ref=e192]
+          - cell "active" [ref=e193]
+          - cell [ref=e194]
+          - cell "file_column" [ref=e195]
+        - row "FEP-PRODUCT-UNIT-PRICE FieldEndpoint unit_price active file_column" [ref=e196]:
+          - cell "FEP-PRODUCT-UNIT-PRICE" [ref=e197]:
+            - link "FEP-PRODUCT-UNIT-PRICE" [ref=e198] [cursor=pointer]:
+              - /url: objects/fep-product-unit-price.html
+              - code [ref=e199]: FEP-PRODUCT-UNIT-PRICE
+          - cell "FieldEndpoint" [ref=e200]
+          - cell "unit_price" [ref=e201]
+          - cell "active" [ref=e202]
+          - cell [ref=e203]
+          - cell "file_column" [ref=e204]
+    - paragraph [ref=e205]:
+      - link "Open full searchable object list" [ref=e206] [cursor=pointer]:
+        - /url: objects.html
+  - generic [ref=e207]: Generated output is disposable. Canonical Markdown + YAML files remain authoritative. No hosted UI, login, editor, SAP write-back, or AI auto-mutation is included.

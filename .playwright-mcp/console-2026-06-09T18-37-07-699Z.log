@@ -1,0 +1,16 @@
+[     428ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://github.com/metalhatscats/martenweave-core/pull/436:0
+[     894ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ https://collector.github.com/github/collect:0
+[     897ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ https://collector.github.com/github/collect:0
+[     936ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ https://collector.github.com/github/collect:0
+[    2125ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ https://collector.github.com/github/collect:0
+[    2753ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ https://collector.github.com/github/collect:0
+[    2769ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ https://collector.github.com/github/collect:0
+[    5570ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://github.com/metalhatscats/martenweave-core/pull/436:0
+[    5716ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ https://collector.github.com/github/collect:0
+[    5716ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ https://collector.github.com/github/collect:0
+[    8908ms] [WARNING] The resource https://github.githubassets.com/assets/global-banner-disable-7d723d7ca7c7142f.js was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://github.com/metalhatscats/martenweave-core/pull/436:0
+[   10699ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ https://collector.github.com/github/collect:0
+[   13701ms] [WARNING] The resource https://github.githubassets.com/assets/global-banner-disable-7d723d7ca7c7142f.js was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://github.com/metalhatscats/martenweave-core/pull/436:0
+[   25165ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ https://collector.github.com/github/collect:0
+[   25197ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ https://collector.github.com/github/collect:0
+[   28198ms] [WARNING] The resource https://github.githubassets.com/assets/global-banner-disable-7d723d7ca7c7142f.js was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally. @ https://github.com/metalhatscats/martenweave-core/pull/436:0

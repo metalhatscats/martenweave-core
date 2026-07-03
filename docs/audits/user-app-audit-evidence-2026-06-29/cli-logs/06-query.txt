@@ -1,0 +1,10 @@
+Query Results (5)
+┏━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ ID                      ┃ Type      ┃ Name         ┃ Status ┃ Domain         ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ ATTR-PRODUCT-ACTIVE     │ Attribute │ Active       │ active │ DOMAIN-PRODUCT │
+│ ATTR-PRODUCT-CATEGORY   │ Attribute │ Category     │ active │ DOMAIN-PRODUCT │
+│ ATTR-PRODUCT-ID         │ Attribute │ Product ID   │ active │ DOMAIN-PRODUCT │
+│ ATTR-PRODUCT-NAME       │ Attribute │ Product Name │ active │ DOMAIN-PRODUCT │
+│ ATTR-PRODUCT-UNIT-PRICE │ Attribute │ Unit Price   │ active │ DOMAIN-PRODUCT │
+└─────────────────────────┴───────────┴──────────────┴────────┴────────────────┘

@@ -49,11 +49,15 @@ class TestBuildPatchProposalFromNote:
         proposal = result["proposal"]
         assert proposal["operations"][0]["object_id"] == "ATTR-CUST-SALES-CUSTOMER-GROUP"
 
-    def test_generic_note_raises_validation_error(self) -> None:
-        """NoProviderAdapter returns empty operations for generic notes;
-        ProviderOutputValidator rejects them."""
-        with pytest.raises(AIOutputValidationError, match="no operations"):
-            build_patch_proposal_from_note("This note has no relevant keywords")
+    def test_generic_note_explains_missing_provider(self) -> None:
+        """NoProviderAdapter returns no candidates for generic notes;
+        the service surfaces a provider-configuration hint instead of
+        the low-level 'Candidate has no operations' message."""
+        result = build_patch_proposal_from_note("This note has no relevant keywords")
+        assert result["is_safe"] is False
+        assert result["proposal"] is None
+        assert any("No AI provider is configured" in a for a in result["assumptions"])
+        assert any("Set an AI provider" in h for h in result["human_checks"])
 
     def test_include_raw_samples_false(self) -> None:
         received: list[AIContextBundle] = []
@@ -109,11 +113,12 @@ class TestBuildPatchProposalFromNote:
         assert result["assumptions"] == ["Custom assumption"]
         assert result["human_checks"] == ["Custom check"]
 
-    def test_no_candidates_returns_safe_false(self) -> None:
+    def test_no_candidates_returns_safe_false(self, monkeypatch) -> None:
         class EmptyAdapter:
             def generate_candidates(self, context: AIContextBundle) -> list[AICandidateOutput]:
                 return []
 
+        monkeypatch.setenv("MARTENWEAVE_AI_PROVIDER", "test")
         result = build_patch_proposal_from_note("any note", adapter=EmptyAdapter())
         assert result["is_safe"] is False
         assert result["proposal"] is None
@@ -399,3 +404,32 @@ class TestProposePatchPrivacyCli:
         )
         assert result.exit_code == 0
         assert "raw dataset rows may leave the local environment" not in result.output
+
+    def test_cli_dry_run_generic_note_explains_provider_config(
+        self, tmp_path: Path, temp_model_dir: Path
+    ) -> None:
+        """Generic notes with no provider must not show 'Candidate has no operations'."""
+        from typer.testing import CliRunner
+
+        from modelops_core.cli import app
+
+        note_file = tmp_path / "note.md"
+        note_file.write_text("This note has no relevant keywords", encoding="utf-8")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            app,
+            [
+                "propose-patch",
+                "--from",
+                str(note_file),
+                "--repo",
+                str(temp_model_dir.parent),
+                "--dry-run",
+            ],
+        )
+        assert result.exit_code == 1
+        assert "No proposal generated" in result.output
+        assert "No AI provider is configured" in result.output
+        assert "Set an AI provider" in result.output
+        assert "Candidate has no operations" not in result.output

@@ -1,0 +1,7 @@
+Query Results (2)
+┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+┃ ID                ┃ Type      ┃ Name         ┃ Status ┃ Domain ┃
+┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+│ ATTR-PRODUCT-ID   │ Attribute │ Product ID   │ active │ —      │
+│ ATTR-PRODUCT-NAME │ Attribute │ Product Name │ active │ —      │
+└───────────────────┴───────────┴──────────────┴────────┴────────┘

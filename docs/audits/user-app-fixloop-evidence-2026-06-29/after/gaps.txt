@@ -1,0 +1,40 @@
+
+Coverage
+  Total columns:      6
+  Matched columns:    1
+  Unmatched columns:  5
+  Duplicate columns:  0
+  Match rate:         16.7%
+
+Gaps found for customer_sales_area_sample (5)
+┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
+┃ Column            ┃ Code              ┃ Severity ┃ Message           ┃ Sheet ┃
+┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
+│ CUSTOMER_ID       │ UNMODELED_DATASE… │ warning  │ Dataset column    │ —     │
+│                   │                   │          │ 'CUSTOMER_ID' has │       │
+│                   │                   │          │ no matching       │       │
+│                   │                   │          │ FieldEndpoint.    │       │
+│ SALES_ORG         │ UNMODELED_DATASE… │ warning  │ Dataset column    │ —     │
+│                   │                   │          │ 'SALES_ORG' has   │       │
+│                   │                   │          │ no matching       │       │
+│                   │                   │          │ FieldEndpoint.    │       │
+│ DISTRIBUTION_CHA… │ UNMODELED_DATASE… │ warning  │ Dataset column    │ —     │
+│                   │                   │          │ 'DISTRIBUTION_CH… │       │
+│                   │                   │          │ has no matching   │       │
+│                   │                   │          │ FieldEndpoint.    │       │
+│ DIVISION          │ UNMODELED_DATASE… │ warning  │ Dataset column    │ —     │
+│                   │                   │          │ 'DIVISION' has no │       │
+│                   │                   │          │ matching          │       │
+│                   │                   │          │ FieldEndpoint.    │       │
+│ UNKNOWN_LEGACY_F… │ UNMODELED_DATASE… │ warning  │ Dataset column    │ —     │
+│                   │                   │          │ 'UNKNOWN_LEGACY_… │       │
+│                   │                   │          │ has no matching   │       │
+│                   │                   │          │ FieldEndpoint.    │       │
+└───────────────────┴───────────────────┴──────────┴───────────────────┴───────┘
+
+Matches (1)
+┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━┓
+┃ Column         ┃ Endpoint                   ┃ Match Type ┃ Sheet ┃
+┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━┩
+│ CUSTOMER_GROUP │ FEP-MIGFILE-CUSTOMER-GROUP │ exact      │ —     │
+└────────────────┴────────────────────────────┴────────────┴───────┘

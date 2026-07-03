@@ -54,6 +54,13 @@ _FACT_FIELDS = (
     "risk_level",
 )
 
+_VIEWER_FAVICON = (
+    """<link rel="icon" href="data:image/svg+xml,"""
+    """%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20"""
+    """viewBox%3D%270%200%20100%20100%27%3E%3Ctext%20y%3D%27.9em%27%20"""
+    """font-size%3D%2790%27%3E%F0%9F%A7%B6%3C%2Ftext%3E%3C%2Fsvg%3E">"""
+)
+
 _VIEWER_CSS = """
 :root {
   color-scheme: light;
@@ -684,7 +691,8 @@ def _write_dashboard(context: dict[str, Any]) -> None:
             "</div>",
             '<div class="section card">',
             "<h2>Quick search</h2>",
-            '<input class="searchbox" data-viewer-search '
+            '<input class="searchbox" data-viewer-search id="viewer-search" '
+            'aria-label="Filter objects" '
             'placeholder="Filter objects by Customer Group, KNVV, KDGRP, owner, type...">',
             '<p class="muted"><span data-result-count></span> shown. '
             "Search runs locally from embedded rows and does not require network access.</p>",
@@ -702,7 +710,8 @@ def _write_objects_html(context: dict[str, Any]) -> None:
         _read_only_notice(),
         '<div class="card">',
         "<h2>Searchable objects</h2>",
-        '<input class="searchbox" data-viewer-search '
+        '<input class="searchbox" data-viewer-search id="viewer-search" '
+        'aria-label="Search objects" '
         'placeholder="Search IDs, labels, Customer Group, KNVV, KDGRP, owners, related terms...">',
         '<p class="muted"><span data-result-count></span> shown. Search is local and works from '
         "file:// because the rows contain their own search terms.</p>",
@@ -1059,6 +1068,7 @@ def _write_page(
             '<meta charset="utf-8">',
             '<meta name="viewport" content="width=device-width, initial-scale=1">',
             f"<title>{_e(title)} · Martenweave Viewer</title>",
+            _VIEWER_FAVICON,
             f'<link rel="stylesheet" href="{depth}assets/viewer.css">',
             f'<script defer src="{depth}assets/viewer.js"></script>',
             "</head>",

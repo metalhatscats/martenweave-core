@@ -1,0 +1,4 @@
+Initialized model repository at /private/tmp/martenweave-audit-empty-repo
+  Config:   /private/tmp/martenweave-audit-empty-repo/modelops.config.yaml
+  Model:    /private/tmp/martenweave-audit-empty-repo/model
+  Generated: /private/tmp/martenweave-audit-empty-repo/generated

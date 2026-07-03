@@ -1,0 +1,7 @@
+Index built at /private/tmp/martenweave-audit-empty-repo/generated/modelops.db
+  Objects: 1
+  Valid:   True
+  JSONL:   
+/private/tmp/martenweave-audit-empty-repo/generated/search_documents.jsonl
+  JSONL:   
+/private/tmp/martenweave-audit-empty-repo/generated/lineage_edges.jsonl

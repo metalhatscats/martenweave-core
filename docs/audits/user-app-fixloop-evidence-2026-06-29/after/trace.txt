@@ -1,0 +1,121 @@
+Trace: FEP-S4-KNVV-KDGRP
+  Name: KNVV Customer Group
+  Direction: both
+  Max depth: 5
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
+┃ ID               ┃ Type             ┃ Name              ┃ Depth ┃ Direction  ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
+│ DOMAIN-CUSTOMER… │ MasterDataDomain │ Business Partner  │ 1     │ upstream   │
+│                  │                  │ / Customer        │       │            │
+│ CTX-CUSTOMER-SA… │ EntityContext    │ S/4HANA Customer  │ 1     │ upstream   │
+│                  │                  │ Sales Area        │       │            │
+│ PERSON-BUSINESS… │ Person           │ Business Owner    │ 1     │ upstream   │
+│ PERSON-DATA-STE… │ Person           │ Alex Data Steward │ 1     │ upstream   │
+│ SYS-S4HANA       │ System           │ S/4HANA           │ 1     │ upstream   │
+│ ATTR-CUST-SALES… │ Attribute        │ Customer Group    │ 1     │ upstream   │
+│ ISS-CH01-A17-CO… │ Issue            │ —                 │ 1     │ downstream │
+│ MAP-CUST-GROUP-… │ Mapping          │ Legacy Customer   │ 1     │ upstream   │
+│                  │                  │ Group to          │       │            │
+│                  │                  │ KNVV-KDGRP        │       │            │
+│ ATTR-BP-CENTRAL… │ Attribute        │ Foundation Date   │ 2     │ upstream   │
+│ ATTR-BP-CENTRAL… │ Attribute        │ Legal Form        │ 2     │ upstream   │
+│ ATTR-BP-CENTRAL… │ Attribute        │ BP Central Name   │ 2     │ upstream   │
+│ ATTR-BP-CENTRAL… │ Attribute        │ Search Term       │ 2     │ upstream   │
+│ ATTR-BP-COMPANY… │ Attribute        │ Dunning Procedure │ 2     │ upstream   │
+│ ATTR-BP-COMPANY… │ Attribute        │ Interest          │ 2     │ upstream   │
+│                  │                  │ Indicator         │       │            │
+│ ATTR-BP-COMPANY… │ Attribute        │ Payment Terms     │ 2     │ upstream   │
+│ ATTR-BP-COMPANY… │ Attribute        │ Reconciliation    │ 2     │ upstream   │
+│                  │                  │ Account           │       │            │
+│ ATTR-BP-CUSTOME… │ Attribute        │ Industry          │ 2     │ upstream   │
+│ ATTR-BP-CUSTOME… │ Attribute        │ Tax Number        │ 2     │ upstream   │
+│ ATTR-BP-CUSTOME… │ Attribute        │ VAT Registration  │ 2     │ upstream   │
+│ ATTR-BP-PARTNER… │ Attribute        │ Sold-To Party     │ 2     │ upstream   │
+│ ATTR-BP-SALES-A… │ Attribute        │ Incoterms         │ 2     │ upstream   │
+│ ATTR-BP-SALES-A… │ Attribute        │ Price Group       │ 2     │ upstream   │
+│ ATTR-BP-SALES-A… │ Attribute        │ Shipping          │ 2     │ upstream   │
+│                  │                  │ Conditions        │       │            │
+│ CTX-BP-CENTRAL-… │ EntityContext    │ BP Central S/4    │ 2     │ upstream   │
+│                  │                  │ Context           │       │            │
+│ CTX-BP-COMPANY-… │ EntityContext    │ Customer Company  │ 2     │ upstream   │
+│                  │                  │ Code S/4 Context  │       │            │
+│ CTX-BP-CUSTOMER… │ EntityContext    │ Customer S/4      │ 2     │ upstream   │
+│                  │                  │ Context           │       │            │
+│ DEC-ARCH-001-BP… │ Decision         │ —                 │ 2     │ downstream │
+│ DEC-CH01-A17-CU… │ Decision         │ —                 │ 2     │ downstream │
+│ ENTITY-BP-CENTR… │ BusinessEntity   │ Business Partner  │ 2     │ upstream   │
+│                  │                  │ Central           │       │            │
+│ ENTITY-BP-CUSTO… │ BusinessEntity   │ Customer          │ 2     │ upstream   │
+│ ENTITY-BUSINESS… │ BusinessEntity   │ Business Partner  │ 2     │ upstream   │
+│ ENTITY-CUSTOMER… │ BusinessEntity   │ Customer Sales    │ 2     │ downstream │
+│                  │                  │ Area              │       │            │
+│ EVI-CH01-A17-AN… │ Evidence         │ —                 │ 2     │ upstream   │
+│ FEP-MIGFILE-CUS… │ FieldEndpoint    │ Migration file    │ 2     │ downstream │
+│                  │                  │ Customer Group    │       │            │
+│                  │                  │ column            │       │            │
+│ FEP-S4-BUT000-N… │ FieldEndpoint    │ NAME_ORG1         │ 2     │ downstream │
+│ FEP-S4-KNB1-ZTE… │ FieldEndpoint    │ ZTERM             │ 2     │ downstream │
+│ MIGOBJ-CUSTOMER… │ MigrationObject  │ Customer BP       │ 2     │ downstream │
+│                  │                  │ Migration         │       │            │
+│ USE-CUST-SALES-… │ AttributeUsage   │ Customer Group in │ 2     │ downstream │
+│                  │                  │ S/4 Customer      │       │            │
+│                  │                  │ Sales Area        │       │            │
+│ VAL-CUST-GROUP-… │ ValidationRule   │ Customer Group    │ 2     │ upstream   │
+│                  │                  │ Allowed Values    │       │            │
+│ VLIST-LEGACY-CU… │ ValueList        │ Legacy Customer   │ 2     │ upstream   │
+│                  │                  │ Group Values      │       │            │
+│ VLIST-S4-CUST-G… │ ValueList        │ S/4 Customer      │ 2     │ upstream   │
+│                  │                  │ Group Values      │       │            │
+│ VMAP-CUST-GROUP… │ ValueMapping     │ Customer Group    │ 2     │ upstream   │
+│                  │                  │ Legacy-to-S/4     │       │            │
+│                  │                  │ Value Mapping     │       │            │
+│ USE-BP-SALES-AR… │ AttributeUsage   │ USE-BP-SALES-ARE… │ 2     │ downstream │
+│ USE-BP-SALES-AR… │ AttributeUsage   │ USE-BP-SALES-ARE… │ 2     │ downstream │
+│ USE-BP-SALES-AR… │ AttributeUsage   │ USE-BP-SALES-ARE… │ 2     │ downstream │
+│ FEP-LEGACY-CUST… │ FieldEndpoint    │ Legacy Customer   │ 2     │ upstream   │
+│                  │                  │ Group             │       │            │
+│ FEP-S4-BUT000-B… │ FieldEndpoint    │ BU_SORT1          │ 2     │ upstream   │
+│ FEP-S4-BUT000-F… │ FieldEndpoint    │ FOUND_DAT         │ 2     │ upstream   │
+│ FEP-S4-BUT000-L… │ FieldEndpoint    │ LEGAL_ENTY        │ 2     │ upstream   │
+│ FEP-S4-KNA1-BRS… │ FieldEndpoint    │ BRSCH             │ 2     │ upstream   │
+│ FEP-S4-KNA1-STC… │ FieldEndpoint    │ STCD1             │ 2     │ upstream   │
+│ FEP-S4-KNA1-STC… │ FieldEndpoint    │ STCEG             │ 2     │ upstream   │
+│ FEP-S4-KNB1-AKO… │ FieldEndpoint    │ AKONT             │ 2     │ upstream   │
+│ FEP-S4-KNB1-MAB… │ FieldEndpoint    │ MABER             │ 2     │ upstream   │
+│ FEP-S4-KNB1-VZS… │ FieldEndpoint    │ VZSKZ             │ 2     │ upstream   │
+│ FEP-S4-KNVP-PAR… │ FieldEndpoint    │ PARVW             │ 2     │ upstream   │
+│ FEP-S4-KNVV-INC… │ FieldEndpoint    │ INCO1             │ 2     │ upstream   │
+│ FEP-S4-KNVV-PLT… │ FieldEndpoint    │ PLTYP             │ 2     │ upstream   │
+│ FEP-S4-KNVV-VSB… │ FieldEndpoint    │ VSBED             │ 2     │ upstream   │
+│ MAP-BP-CENTRAL-… │ Mapping          │ MAP-BP-CENTRAL-S… │ 2     │ downstream │
+│ MAP-BP-COMPANY-… │ Mapping          │ MAP-BP-COMPANY-C… │ 2     │ downstream │
+│ MAP-BP-CUSTOMER… │ Mapping          │ MAP-BP-CUSTOMER-… │ 2     │ downstream │
+│ MAP-BP-SALES-AR… │ Mapping          │ MAP-BP-SALES-ARE… │ 2     │ downstream │
+│ MAPSET-CUSTOMER… │ MappingSet       │ Customer BP       │ 2     │ downstream │
+│                  │                  │ Mapping Set       │       │            │
+│ VAL-BP-CENTRAL-… │ ValidationRule   │ VAL-BP-CENTRAL-S… │ 2     │ downstream │
+│ VAL-BP-COMPANY-… │ ValidationRule   │ VAL-BP-COMPANY-C… │ 2     │ downstream │
+│ VAL-BP-CUSTOMER… │ ValidationRule   │ VAL-BP-CUSTOMER-… │ 2     │ downstream │
+│ VAL-BP-SALES-AR… │ ValidationRule   │ VAL-BP-SALES-ARE… │ 2     │ downstream │
+│ VLIST-INDUSTRY-… │ ValueList        │ SAP Industry      │ 2     │ upstream   │
+│                  │                  │ Codes             │       │            │
+│ VLIST-PARTNER-F… │ ValueList        │ SAP Partner       │ 2     │ upstream   │
+│                  │                  │ Functions         │       │            │
+│ VMAP-INDUSTRY-C… │ ValueMapping     │ Industry Codes to │ 2     │ downstream │
+│                  │                  │ S4                │       │            │
+│ VMAP-PARTNER-FU… │ ValueMapping     │ Partner Functions │ 2     │ downstream │
+│                  │                  │ to S4             │       │            │
+│ USE-BP-CENTRAL-… │ AttributeUsage   │ USE-BP-CENTRAL-F… │ 3     │ downstream │
+│ USE-BP-CENTRAL-… │ AttributeUsage   │ USE-BP-CENTRAL-L… │ 3     │ downstream │
+│ USE-BP-CENTRAL-… │ AttributeUsage   │ USE-BP-CENTRAL-S… │ 3     │ downstream │
+│ USE-BP-COMPANY-… │ AttributeUsage   │ USE-BP-COMPANY-C… │ 3     │ downstream │
+│ USE-BP-COMPANY-… │ AttributeUsage   │ USE-BP-COMPANY-C… │ 3     │ downstream │
+│ USE-BP-COMPANY-… │ AttributeUsage   │ USE-BP-COMPANY-C… │ 3     │ downstream │
+│ USE-BP-CUSTOMER… │ AttributeUsage   │ USE-BP-CUSTOMER-… │ 3     │ downstream │
+│ USE-BP-CUSTOMER… │ AttributeUsage   │ USE-BP-CUSTOMER-… │ 3     │ downstream │
+│ USE-BP-CUSTOMER… │ AttributeUsage   │ USE-BP-CUSTOMER-… │ 3     │ downstream │
+│ USE-BP-PARTNER-… │ AttributeUsage   │ USE-BP-PARTNER-F… │ 3     │ downstream │
+│ SYS-MIGRATION-F… │ System           │ Migration File    │ 3     │ upstream   │
+│                  │                  │ Feed              │       │            │
+│ SYS-LEGACY-CRM   │ System           │ Legacy CRM        │ 3     │ upstream   │
+└──────────────────┴──────────────────┴───────────────────┴───────┴────────────┘

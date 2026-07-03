@@ -1,0 +1,12 @@
+[
+    {
+        "id": "DOMAIN-EXAMPLE",
+        "type": "MasterDataDomain",
+        "status": "draft",
+        "schema_version": "1.0",
+        "name": "Example Domain",
+        "created_at": "2026-06-29T17:02:06.137142+00:00",
+        "updated_at": "2026-06-29T17:02:06.137192+00:00",
+        "source_file": "DOMAIN-EXAMPLE.md"
+    }
+]

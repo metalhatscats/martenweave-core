@@ -1,0 +1,67 @@
+[
+    {
+        "schema_version": "1.0",
+        "id": "ATTR-PRODUCT-ACTIVE",
+        "type": "Attribute",
+        "status": "active",
+        "name": "Active",
+        "domain": "DOMAIN-PRODUCT",
+        "entity": "ENTITY-PRODUCT",
+        "semantic_category": "flag",
+        "created_at": "2026-05-25T12:11:42.178546+00:00",
+        "updated_at": "2026-05-25T12:11:42.178950+00:00",
+        "source_file": "ATTR-PRODUCT-ACTIVE.md"
+    },
+    {
+        "schema_version": "1.0",
+        "id": "ATTR-PRODUCT-CATEGORY",
+        "type": "Attribute",
+        "status": "active",
+        "name": "Category",
+        "domain": "DOMAIN-PRODUCT",
+        "entity": "ENTITY-PRODUCT",
+        "semantic_category": "text",
+        "created_at": "2026-05-25T12:11:42.179029+00:00",
+        "updated_at": "2026-05-25T12:11:42.179867+00:00",
+        "source_file": "ATTR-PRODUCT-CATEGORY.md"
+    },
+    {
+        "schema_version": "1.0",
+        "id": "ATTR-PRODUCT-ID",
+        "type": "Attribute",
+        "status": "active",
+        "name": "Product ID",
+        "domain": "DOMAIN-PRODUCT",
+        "entity": "ENTITY-PRODUCT",
+        "semantic_category": "identifier",
+        "created_at": "2026-05-25T12:11:42.179961+00:00",
+        "updated_at": "2026-05-25T12:11:42.180848+00:00",
+        "source_file": "ATTR-PRODUCT-ID.md"
+    },
+    {
+        "schema_version": "1.0",
+        "id": "ATTR-PRODUCT-NAME",
+        "type": "Attribute",
+        "status": "active",
+        "name": "Product Name",
+        "domain": "DOMAIN-PRODUCT",
+        "entity": "ENTITY-PRODUCT",
+        "semantic_category": "text",
+        "created_at": "2026-05-25T12:11:42.180947+00:00",
+        "updated_at": "2026-05-25T12:11:42.181885+00:00",
+        "source_file": "ATTR-PRODUCT-NAME.md"
+    },
+    {
+        "schema_version": "1.0",
+        "id": "ATTR-PRODUCT-UNIT-PRICE",
+        "type": "Attribute",
+        "status": "active",
+        "name": "Unit Price",
+        "domain": "DOMAIN-PRODUCT",
+        "entity": "ENTITY-PRODUCT",
+        "semantic_category": "monetary",
+        "created_at": "2026-05-25T12:11:42.181971+00:00",
+        "updated_at": "2026-05-25T12:11:42.182341+00:00",
+        "source_file": "ATTR-PRODUCT-UNIT-PRICE.md"
+    }
+]

@@ -1,0 +1,135 @@
+- generic [ref=f2e4]:
+  - complementary [ref=f2e5]:
+    - generic [ref=f2e6]:
+      - generic [ref=f2e9]:
+        - strong [ref=f2e10]: Martenweave
+        - generic [ref=f2e11]: Model intelligence
+      - navigation "Primary navigation" [ref=f2e12]:
+        - button "Home" [ref=f2e13] [cursor=pointer]:
+          - img [ref=f2e14]
+          - generic [ref=f2e16]: Home
+        - button "Models" [ref=f2e17] [cursor=pointer]:
+          - img [ref=f2e18]
+          - generic [ref=f2e20]: Models
+        - button "Lineage" [ref=f2e21] [cursor=pointer]:
+          - img [ref=f2e22]
+          - generic [ref=f2e24]: Lineage
+        - button "Gaps 5" [ref=f2e25] [cursor=pointer]:
+          - img [ref=f2e26]
+          - generic [ref=f2e28]: Gaps
+          - generic [ref=f2e29]: "5"
+        - button "Proposals" [ref=f2e30] [cursor=pointer]:
+          - img [ref=f2e31]
+          - generic [ref=f2e33]: Proposals
+    - generic [ref=f2e34]:
+      - generic [ref=f2e36]:
+        - strong [ref=f2e37]: Customer migration
+        - generic [ref=f2e38]: Production · v2.4.1
+      - img [ref=f2e39]
+  - generic [ref=f2e41]:
+    - banner [ref=f2e42]:
+      - generic [ref=f2e43]:
+        - button "Open navigation" [ref=f2e377] [cursor=pointer]:
+          - img [ref=f2e378]
+        - strong [ref=f2e48]: Lineage
+      - generic [ref=f2e49]:
+        - generic [ref=f2e50]:
+          - img [ref=f2e51]
+          - textbox "Search model" [active] [ref=f2e53]: customer group
+        - button "Notifications" [ref=f2e56] [cursor=pointer]:
+          - img [ref=f2e57]
+        - button "AC" [ref=f2e380] [cursor=pointer]:
+          - generic [ref=f2e62]: AC
+    - main [ref=f2e68]:
+      - generic [ref=f2e237]:
+        - generic [ref=f2e238]:
+          - generic [ref=f2e239]:
+            - generic [ref=f2e240]:
+              - heading "Business Partner lineage" [level=1] [ref=f2e241]
+              - paragraph [ref=f2e242]: Trace systems, transformations, canonical objects, and downstream impact.
+            - generic [ref=f2e243]:
+              - button "Export" [ref=f2e244] [cursor=pointer]:
+                - img [ref=f2e245]
+                - text: Export
+              - button "View object" [ref=f2e247] [cursor=pointer]:
+                - img [ref=f2e248]
+                - text: View object
+          - generic [ref=f2e250]:
+            - generic [ref=f2e251]:
+              - img [ref=f2e252]
+              - textbox [ref=f2e254]:
+                - /placeholder: Find a node or field…
+            - generic [ref=f2e255]:
+              - generic [ref=f2e256]: Depth
+              - combobox "Depth" [ref=f2e257]:
+                - option "1 level"
+                - option "2 levels" [selected]
+                - option "All levels"
+            - button "Filters" [ref=f2e258] [cursor=pointer]:
+              - img [ref=f2e259]
+              - text: Filters
+            - button [ref=f2e261] [cursor=pointer]:
+              - img [ref=f2e262]
+        - application [ref=f2e275]:
+          - generic [ref=f2e277]:
+            - generic:
+              - generic:
+                - img:
+                  - group "Edge from salesforce to staging" [ref=f2e278] [cursor=pointer]
+                - img:
+                  - group "Edge from sap to staging" [ref=f2e281] [cursor=pointer]
+                - img:
+                  - group "Edge from staging to canonical"
+                - img:
+                  - group "Edge from canonical to mdm" [ref=f2e284] [cursor=pointer]
+                - img:
+                  - group "Edge from canonical to analytics" [ref=f2e287] [cursor=pointer]
+              - generic:
+                - group [ref=f2e290]:
+                  - generic [ref=f2e291]:
+                    - img [ref=f2e294]
+                    - generic [ref=f2e297]:
+                      - strong [ref=f2e298]: Salesforce CRM
+                      - generic [ref=f2e299]: Source system
+                - group [ref=f2e301]:
+                  - generic [ref=f2e302]:
+                    - img [ref=f2e305]
+                    - generic [ref=f2e308]:
+                      - strong [ref=f2e309]: SAP S/4HANA
+                      - generic [ref=f2e310]: Source system
+                - group [ref=f2e312]:
+                  - generic [ref=f2e313]:
+                    - img [ref=f2e316]
+                    - generic [ref=f2e319]:
+                      - strong [ref=f2e320]: BP staging model
+                      - generic [ref=f2e321]: Transformation
+                - group [ref=f2e323]:
+                  - generic [ref=f2e324]:
+                    - img [ref=f2e327]
+                    - generic [ref=f2e330]:
+                      - strong [ref=f2e331]: Business Partner
+                      - generic [ref=f2e332]: Canonical model
+                - group [ref=f2e334]:
+                  - generic [ref=f2e335]:
+                    - img [ref=f2e338]
+                    - generic [ref=f2e341]:
+                      - strong [ref=f2e342]: Informatica MDM
+                      - generic [ref=f2e343]: Target system
+                - group [ref=f2e345]:
+                  - generic [ref=f2e346]:
+                    - img [ref=f2e349]
+                    - generic [ref=f2e352]:
+                      - strong [ref=f2e353]: Customer analytics
+                      - generic [ref=f2e354]: Downstream dataset
+          - img
+          - generic "Control Panel" [ref=f2e356]:
+            - button "Zoom In" [ref=f2e357] [cursor=pointer]:
+              - img [ref=f2e358]
+            - button "Zoom Out" [ref=f2e360] [cursor=pointer]:
+              - img [ref=f2e361]
+            - button "Fit View" [ref=f2e363] [cursor=pointer]:
+              - img [ref=f2e364]
+          - img "Mini Map" [ref=f2e367]
+          - link "React Flow attribution" [ref=f2e375] [cursor=pointer]:
+            - /url: https://reactflow.dev?utm_source=attribution
+            - text: React Flow

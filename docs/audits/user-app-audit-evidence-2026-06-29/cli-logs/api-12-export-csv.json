@@ -1,0 +1,11 @@
+{
+    "format": "csv",
+    "files": [
+        "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/generated/exports/csv/attribute.csv",
+        "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/generated/exports/csv/masterdatadomain.csv",
+        "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/generated/exports/csv/dataset.csv",
+        "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/generated/exports/csv/businessentity.csv",
+        "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/generated/exports/csv/fieldendpoint.csv",
+        "/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/generated/exports/csv/valuelist.csv"
+    ]
+}

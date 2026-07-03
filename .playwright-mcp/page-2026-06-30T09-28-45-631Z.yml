@@ -1,0 +1,195 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e9]:
+        - strong [ref=e10]: Martenweave
+        - generic [ref=e11]: Model intelligence
+      - navigation "Primary navigation" [ref=e12]:
+        - button "Home" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+          - generic [ref=e16]: Home
+        - button "Models" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e20]: Models
+        - button "Lineage" [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+          - generic [ref=e24]: Lineage
+        - button "Gaps 5" [ref=e25] [cursor=pointer]:
+          - img [ref=e26]
+          - generic [ref=e28]: Gaps
+          - generic [ref=e29]: "5"
+        - button "Proposals" [ref=e30] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e33]: Proposals
+    - generic [ref=e34]:
+      - generic [ref=e36]:
+        - strong [ref=e37]: Customer migration
+        - generic [ref=e38]: Production · v2.4.1
+      - img [ref=e39]
+  - generic [ref=e41]:
+    - banner [ref=e42]:
+      - generic [ref=e43]:
+        - button "Open navigation" [ref=e239] [cursor=pointer]:
+          - img [ref=e240]
+        - strong [ref=e48]: Open gaps
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - img [ref=e51]
+          - textbox "Search model" [ref=e53]
+        - button "Notifications" [ref=e56] [cursor=pointer]:
+          - img [ref=e57]
+        - button "AC" [ref=e242] [cursor=pointer]:
+          - generic [ref=e62]: AC
+    - main [ref=e68]:
+      - generic [ref=e498]:
+        - generic [ref=e499]:
+          - generic [ref=e500]:
+            - heading "Open gaps" [level=1] [ref=e501]
+            - paragraph [ref=e502]: Review missing mappings, inconsistent types, and unresolved model coverage.
+          - button "Create issue" [ref=e504] [cursor=pointer]:
+            - img [ref=e505]
+            - text: Create issue
+        - generic [ref=e507]:
+          - generic [ref=e508]:
+            - img [ref=e509]
+            - textbox [ref=e511]:
+              - /placeholder: Search gaps by field, object, or source…
+          - combobox [ref=e512]:
+            - option "All severities" [selected]
+            - option "High"
+            - option "Medium"
+            - option "Low"
+          - combobox [ref=e513]:
+            - option "Risk first" [selected]
+            - option "Recently detected"
+            - option "Object name"
+          - button "More filters" [ref=e514] [cursor=pointer]:
+            - img [ref=e515]
+            - text: More filters
+        - generic [ref=e517]:
+          - generic [ref=e518]:
+            - article [ref=e519]:
+              - button "1 Missing mapping for TAX_NUMBER High Tax identification number is not mapped from SAP Sales Order to the canonical model." [ref=e520] [cursor=pointer]:
+                - generic [ref=e521]: "1"
+                - generic [ref=e522]:
+                  - generic [ref=e523]:
+                    - strong [ref=e524]: Missing mapping for TAX_NUMBER
+                    - generic [ref=e525]: High
+                  - generic [ref=e526]: Tax identification number is not mapped from SAP Sales Order to the canonical model.
+                - img [ref=e527]
+              - generic [ref=e529]:
+                - generic [ref=e530]:
+                  - generic [ref=e531]: Impacted object
+                  - strong [ref=e532]:
+                    - img [ref=e533]
+                    - text: Business Partner
+                - generic [ref=e535]:
+                  - generic [ref=e536]: Source → target
+                  - strong [ref=e537]:
+                    - text: Sales Order (SAP)
+                    - img [ref=e538]
+                    - text: Business Partner (Canonical)
+                - generic [ref=e540]:
+                  - generic [ref=e541]: Proposal
+                  - strong [ref=e542]: "Proposal #27"
+                - generic [ref=e543]:
+                  - button "View details" [ref=e544] [cursor=pointer]
+                  - button "Review proposal" [ref=e545] [cursor=pointer]
+              - generic [ref=e546]:
+                - generic [ref=e547]:
+                  - text: Proposal
+                  - generic [ref=e548]: In review
+                - generic [ref=e549]: "Proposal #27"
+                - generic [ref=e550]: Detected 18m ago
+            - article [ref=e551]:
+              - 'button "2 Inconsistent data type: LANGUAGE Medium LANGUAGE is String in source but ISO code in target. Type standardization is required." [ref=e552] [cursor=pointer]':
+                - generic [ref=e553]: "2"
+                - generic [ref=e554]:
+                  - generic [ref=e555]:
+                    - strong [ref=e556]: "Inconsistent data type: LANGUAGE"
+                    - generic [ref=e557]: Medium
+                  - generic [ref=e558]: LANGUAGE is String in source but ISO code in target. Type standardization is required.
+                - img [ref=e559]
+              - generic [ref=e561]:
+                - generic [ref=e562]:
+                  - text: Proposal
+                  - generic [ref=e563]: Draft
+                - generic [ref=e564]: "Proposal #31"
+                - generic [ref=e565]: Detected 2h ago
+            - article [ref=e566]:
+              - button "3 Country code standardization Low Country code formats differ between source and target. Standardize to ISO-2." [ref=e567] [cursor=pointer]:
+                - generic [ref=e568]: "3"
+                - generic [ref=e569]:
+                  - generic [ref=e570]:
+                    - strong [ref=e571]: Country code standardization
+                    - generic [ref=e572]: Low
+                  - generic [ref=e573]: Country code formats differ between source and target. Standardize to ISO-2.
+                - img [ref=e574]
+              - generic [ref=e576]:
+                - generic [ref=e577]:
+                  - text: Proposal
+                  - generic [ref=e578]: Draft
+                - generic [ref=e579]: "Proposal #29"
+                - generic [ref=e580]: Detected 1h ago
+            - article [ref=e581]:
+              - 'button "4 Unmapped field: EMAIL_ADDRESS High EMAIL_ADDRESS exists in source but is not mapped to target. Contact completeness is at risk." [ref=e582] [cursor=pointer]':
+                - generic [ref=e583]: "4"
+                - generic [ref=e584]:
+                  - generic [ref=e585]:
+                    - strong [ref=e586]: "Unmapped field: EMAIL_ADDRESS"
+                    - generic [ref=e587]: High
+                  - generic [ref=e588]: EMAIL_ADDRESS exists in source but is not mapped to target. Contact completeness is at risk.
+                - img [ref=e589]
+              - generic [ref=e591]:
+                - generic [ref=e592]:
+                  - text: Proposal
+                  - generic [ref=e593]: Needs proposal
+                - generic [ref=e594]: —
+                - generic [ref=e595]: Detected 3h ago
+            - article [ref=e596]:
+              - button "5 Missing mapping for INDUSTRY Low INDUSTRY is absent from the target model. Business segmentation impact is possible." [ref=e597] [cursor=pointer]:
+                - generic [ref=e598]: "5"
+                - generic [ref=e599]:
+                  - generic [ref=e600]:
+                    - strong [ref=e601]: Missing mapping for INDUSTRY
+                    - generic [ref=e602]: Low
+                  - generic [ref=e603]: INDUSTRY is absent from the target model. Business segmentation impact is possible.
+                - img [ref=e604]
+              - generic [ref=e606]:
+                - generic [ref=e607]:
+                  - text: Proposal
+                  - generic [ref=e608]: Needs proposal
+                - generic [ref=e609]: —
+                - generic [ref=e610]: Detected 5h ago
+          - complementary [ref=e611]:
+            - generic [ref=e612]:
+              - generic [ref=e613]:
+                - generic [ref=e614]:
+                  - heading "Gap summary" [level=2] [ref=e615]
+                  - paragraph [ref=e616]: Current model coverage
+                - img [ref=e617]
+              - strong [ref=e619]: "5"
+              - generic [ref=e620]: Total open gaps
+              - generic [ref=e621]:
+                - generic [ref=e622]:
+                  - text: High
+                  - strong [ref=e624]: "2"
+                - generic [ref=e625]:
+                  - text: Medium
+                  - strong [ref=e627]: "1"
+                - generic [ref=e628]:
+                  - text: Low
+                  - strong [ref=e630]: "2"
+              - generic [ref=e631]:
+                - generic [ref=e632]: Proposals linked
+                - strong [ref=e633]: 60%
+              - generic [ref=e634]:
+                - generic [ref=e635]: Validation risk
+                - generic [ref=e636]: High
+            - generic [ref=e637]:
+              - img [ref=e639]
+              - heading "Recommended next step" [level=2] [ref=e641]
+              - generic [ref=e642]:
+                - strong [ref=e643]: "Review Proposal #27"
+                - paragraph [ref=e644]: It addresses the highest-risk gap and includes all required evidence.
+                - button "Review proposal" [ref=e645] [cursor=pointer]

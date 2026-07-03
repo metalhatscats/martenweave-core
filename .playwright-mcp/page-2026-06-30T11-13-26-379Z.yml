@@ -1,0 +1,95 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e9]:
+        - strong [ref=e10]: Martenweave
+        - generic [ref=e11]: Model intelligence
+      - navigation "Primary navigation" [ref=e12]:
+        - button "Home" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+          - generic [ref=e16]: Home
+        - button "Models" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e20]: Models
+        - button "Lineage" [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+          - generic [ref=e24]: Lineage
+        - button "Gaps 5" [ref=e25] [cursor=pointer]:
+          - img [ref=e26]
+          - generic [ref=e28]: Gaps
+          - generic [ref=e29]: "5"
+        - button "Proposals" [ref=e30] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e33]: Proposals
+    - generic [ref=e34]:
+      - generic [ref=e36]:
+        - strong [ref=e37]: Customer migration
+        - generic [ref=e38]: Production · v2.4.1
+      - img [ref=e39]
+  - generic [ref=e41]:
+    - banner [ref=e42]:
+      - generic [ref=e44]:
+        - generic [ref=e45]: Customer migration
+        - img [ref=e46]
+        - strong [ref=e48]: Global model search
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - img [ref=e51]
+          - textbox "Search model" [active] [ref=e53]: customer group
+        - generic [ref=e54]: Production
+        - button "Notifications" [ref=e56] [cursor=pointer]:
+          - img [ref=e57]
+        - button "AC Alex Chen Data Steward" [ref=e61] [cursor=pointer]:
+          - generic [ref=e62]: AC
+          - generic [ref=e63]:
+            - strong [ref=e64]: Alex Chen
+            - generic [ref=e65]: Data Steward
+          - img [ref=e66]
+    - main [ref=e68]:
+      - generic [ref=e188]:
+        - generic [ref=e190]:
+          - heading "Global model search" [level=1] [ref=e191]
+          - paragraph [ref=e192]: Search across canonical objects, fields, mappings, datasets, and proposals.
+        - generic [ref=e193]:
+          - img [ref=e194]
+          - textbox [ref=e196]: customer group
+          - button [ref=e197] [cursor=pointer]:
+            - img [ref=e198]
+          - button [ref=e200] [cursor=pointer]:
+            - img [ref=e201]
+        - generic [ref=e203]:
+          - button "All6" [ref=e204] [cursor=pointer]
+          - button "Objects2" [ref=e205] [cursor=pointer]
+          - button "Fields2" [ref=e206] [cursor=pointer]
+          - button "Mappings1" [ref=e207] [cursor=pointer]
+          - button "Proposals1" [ref=e208] [cursor=pointer]
+        - generic [ref=e209]:
+          - img [ref=e211]
+          - generic [ref=e213]:
+            - generic [ref=e214]:
+              - text: AI answer
+              - generic [ref=e215]: Beta
+            - paragraph [ref=e216]:
+              - text: The canonical object is
+              - strong [ref=e217]: Business Partner
+              - text: . It is used by eight source systems, referenced by fourteen rules, and currently has three open field gaps.
+          - button "Ask follow-up" [ref=e218] [cursor=pointer]:
+            - text: Ask follow-up
+            - img [ref=e219]
+        - generic [ref=e221]:
+          - strong [ref=e222]: 0 results
+          - generic [ref=e223]:
+            - generic [ref=e224]:
+              - text: Sorted by
+              - combobox "Sorted by" [ref=e225]:
+                - option "Relevance" [selected]
+                - option "Recently updated"
+                - option "Name"
+            - button "Filters" [ref=e226] [cursor=pointer]:
+              - img [ref=e227]
+              - text: Filters
+        - generic [ref=e231]:
+          - img [ref=e232]
+          - heading "No model objects found" [level=3] [ref=e234]
+          - paragraph [ref=e235]: Try a broader query or clear the active filters.
+          - button "Clear search" [ref=e236] [cursor=pointer]

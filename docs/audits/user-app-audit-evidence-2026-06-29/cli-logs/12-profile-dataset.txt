@@ -1,0 +1,6 @@
+Profile saved to 
+/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/
+generated/dataset_profiles/product_sample.json
+  Rows: 5
+  Columns: 5
+  Status: OK

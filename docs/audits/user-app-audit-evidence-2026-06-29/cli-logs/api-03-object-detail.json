@@ -1,0 +1,14 @@
+{
+    "schema_version": "1.0",
+    "id": "ATTR-PRODUCT-NAME",
+    "type": "Attribute",
+    "status": "active",
+    "name": "Product Name",
+    "domain": "DOMAIN-PRODUCT",
+    "entity": "ENTITY-PRODUCT",
+    "semantic_category": "text",
+    "created_at": "2026-05-25T12:11:42.180947+00:00",
+    "updated_at": "2026-05-25T12:11:42.181885+00:00",
+    "source_file": "ATTR-PRODUCT-NAME.md",
+    "body": "# Product Name\n\nHuman-readable product name."
+}

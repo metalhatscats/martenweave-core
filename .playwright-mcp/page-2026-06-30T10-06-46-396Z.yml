@@ -1,0 +1,225 @@
+- generic [ref=f4e4]:
+  - complementary [ref=f4e5]:
+    - generic [ref=f4e6]:
+      - generic [ref=f4e9]:
+        - strong [ref=f4e10]: Martenweave
+        - generic [ref=f4e11]: Model intelligence
+      - navigation "Primary navigation" [ref=f4e12]:
+        - button "Home" [ref=f4e13] [cursor=pointer]:
+          - img [ref=f4e14]
+          - generic [ref=f4e16]: Home
+        - button "Models" [ref=f4e17] [cursor=pointer]:
+          - img [ref=f4e18]
+          - generic [ref=f4e20]: Models
+        - button "Lineage" [ref=f4e21] [cursor=pointer]:
+          - img [ref=f4e22]
+          - generic [ref=f4e24]: Lineage
+        - button "Gaps 5" [ref=f4e25] [cursor=pointer]:
+          - img [ref=f4e26]
+          - generic [ref=f4e28]: Gaps
+          - generic [ref=f4e29]: "5"
+        - button "Proposals" [ref=f4e30] [cursor=pointer]:
+          - img [ref=f4e31]
+          - generic [ref=f4e33]: Proposals
+    - generic [ref=f4e34]:
+      - generic [ref=f4e36]:
+        - strong [ref=f4e37]: Customer migration
+        - generic [ref=f4e38]: Production · v2.4.1
+      - img [ref=f4e39]
+  - generic [ref=f4e41]:
+    - banner [ref=f4e42]:
+      - generic [ref=f4e44]:
+        - generic [ref=f4e45]: Customer migration
+        - img [ref=f4e46]
+        - strong [ref=f4e48]: Open gaps
+      - generic [ref=f4e49]:
+        - generic [ref=f4e50]:
+          - img [ref=f4e51]
+          - textbox "Search model" [ref=f4e53]
+        - generic [ref=f4e54]: Production
+        - button "Notifications" [ref=f4e56] [cursor=pointer]:
+          - img [ref=f4e57]
+        - button "AC Alex Chen Data Steward" [ref=f4e61] [cursor=pointer]:
+          - generic [ref=f4e62]: AC
+          - generic [ref=f4e63]:
+            - strong [ref=f4e64]: Alex Chen
+            - generic [ref=f4e65]: Data Steward
+          - img [ref=f4e66]
+    - main [ref=f4e68]:
+      - generic [ref=f4e665]:
+        - generic [ref=f4e666]:
+          - generic [ref=f4e667]:
+            - heading "Open gaps" [level=1] [ref=f4e668]
+            - paragraph [ref=f4e669]: Review missing mappings, inconsistent types, and unresolved model coverage.
+          - button "Create issue" [ref=f4e671] [cursor=pointer]:
+            - img [ref=f4e672]
+            - text: Create issue
+        - generic [ref=f4e674]:
+          - generic [ref=f4e675]:
+            - img [ref=f4e676]
+            - textbox [ref=f4e678]:
+              - /placeholder: Search gaps by field, object, or source…
+          - combobox [ref=f4e679]:
+            - option "All severities" [selected]
+            - option "High"
+            - option "Medium"
+            - option "Low"
+          - combobox [ref=f4e680]:
+            - option "Risk first" [selected]
+            - option "Recently detected"
+            - option "Object name"
+          - button "More filters" [ref=f4e681] [cursor=pointer]:
+            - img [ref=f4e682]
+            - text: More filters
+        - generic [ref=f4e684]:
+          - generic [ref=f4e685]:
+            - article [ref=f4e686]:
+              - button "1 Missing mapping for TAX_NUMBER High Tax identification number is not mapped from SAP Sales Order to the canonical model. PN Owner Priya Nair" [ref=f4e687] [cursor=pointer]:
+                - generic [ref=f4e688]: "1"
+                - generic [ref=f4e689]:
+                  - generic [ref=f4e690]:
+                    - strong [ref=f4e691]: Missing mapping for TAX_NUMBER
+                    - generic [ref=f4e692]: High
+                  - generic [ref=f4e693]: Tax identification number is not mapped from SAP Sales Order to the canonical model.
+                - generic [ref=f4e694]:
+                  - generic [ref=f4e695]: PN
+                  - generic [ref=f4e696]:
+                    - generic [ref=f4e697]: Owner
+                    - strong [ref=f4e698]: Priya Nair
+                - img [ref=f4e699]
+              - generic [ref=f4e701]:
+                - generic [ref=f4e702]:
+                  - generic [ref=f4e703]: Impacted object
+                  - strong [ref=f4e704]:
+                    - img [ref=f4e705]
+                    - text: Business Partner
+                - generic [ref=f4e707]:
+                  - generic [ref=f4e708]: Source → target
+                  - strong [ref=f4e709]:
+                    - text: Sales Order (SAP)
+                    - img [ref=f4e710]
+                    - text: Business Partner (Canonical)
+                - generic [ref=f4e712]:
+                  - generic [ref=f4e713]: Proposal
+                  - strong [ref=f4e714]: "Proposal #27"
+                - generic [ref=f4e715]:
+                  - button "View details" [ref=f4e716] [cursor=pointer]
+                  - button "Review proposal" [ref=f4e717] [cursor=pointer]
+              - generic [ref=f4e718]:
+                - generic [ref=f4e719]:
+                  - text: Proposal
+                  - generic [ref=f4e720]: In review
+                - generic [ref=f4e721]: "Proposal #27"
+                - generic [ref=f4e722]: Detected 18m ago
+            - article [ref=f4e723]:
+              - 'button "2 Inconsistent data type: LANGUAGE Medium LANGUAGE is String in source but ISO code in target. Type standardization is required. AC Owner Alex Chen" [ref=f4e724] [cursor=pointer]':
+                - generic [ref=f4e725]: "2"
+                - generic [ref=f4e726]:
+                  - generic [ref=f4e727]:
+                    - strong [ref=f4e728]: "Inconsistent data type: LANGUAGE"
+                    - generic [ref=f4e729]: Medium
+                  - generic [ref=f4e730]: LANGUAGE is String in source but ISO code in target. Type standardization is required.
+                - generic [ref=f4e731]:
+                  - generic [ref=f4e732]: AC
+                  - generic [ref=f4e733]:
+                    - generic [ref=f4e734]: Owner
+                    - strong [ref=f4e735]: Alex Chen
+                - img [ref=f4e736]
+              - generic [ref=f4e738]:
+                - generic [ref=f4e739]:
+                  - text: Proposal
+                  - generic [ref=f4e740]: Draft
+                - generic [ref=f4e741]: "Proposal #31"
+                - generic [ref=f4e742]: Detected 2h ago
+            - article [ref=f4e743]:
+              - button "3 Country code standardization Low Country code formats differ between source and target. Standardize to ISO-2. MW Owner Mia Wong" [ref=f4e744] [cursor=pointer]:
+                - generic [ref=f4e745]: "3"
+                - generic [ref=f4e746]:
+                  - generic [ref=f4e747]:
+                    - strong [ref=f4e748]: Country code standardization
+                    - generic [ref=f4e749]: Low
+                  - generic [ref=f4e750]: Country code formats differ between source and target. Standardize to ISO-2.
+                - generic [ref=f4e751]:
+                  - generic [ref=f4e752]: MW
+                  - generic [ref=f4e753]:
+                    - generic [ref=f4e754]: Owner
+                    - strong [ref=f4e755]: Mia Wong
+                - img [ref=f4e756]
+              - generic [ref=f4e758]:
+                - generic [ref=f4e759]:
+                  - text: Proposal
+                  - generic [ref=f4e760]: Draft
+                - generic [ref=f4e761]: "Proposal #29"
+                - generic [ref=f4e762]: Detected 1h ago
+            - article [ref=f4e763]:
+              - 'button "4 Unmapped field: EMAIL_ADDRESS High EMAIL_ADDRESS exists in source but is not mapped to target. Contact completeness is at risk. PN Owner Priya Nair" [ref=f4e764] [cursor=pointer]':
+                - generic [ref=f4e765]: "4"
+                - generic [ref=f4e766]:
+                  - generic [ref=f4e767]:
+                    - strong [ref=f4e768]: "Unmapped field: EMAIL_ADDRESS"
+                    - generic [ref=f4e769]: High
+                  - generic [ref=f4e770]: EMAIL_ADDRESS exists in source but is not mapped to target. Contact completeness is at risk.
+                - generic [ref=f4e771]:
+                  - generic [ref=f4e772]: PN
+                  - generic [ref=f4e773]:
+                    - generic [ref=f4e774]: Owner
+                    - strong [ref=f4e775]: Priya Nair
+                - img [ref=f4e776]
+              - generic [ref=f4e778]:
+                - generic [ref=f4e779]:
+                  - text: Proposal
+                  - generic [ref=f4e780]: Needs proposal
+                - generic [ref=f4e781]: —
+                - generic [ref=f4e782]: Detected 3h ago
+            - article [ref=f4e783]:
+              - button "5 Missing mapping for INDUSTRY Low INDUSTRY is absent from the target model. Business segmentation impact is possible. AC Owner Alex Chen" [ref=f4e784] [cursor=pointer]:
+                - generic [ref=f4e785]: "5"
+                - generic [ref=f4e786]:
+                  - generic [ref=f4e787]:
+                    - strong [ref=f4e788]: Missing mapping for INDUSTRY
+                    - generic [ref=f4e789]: Low
+                  - generic [ref=f4e790]: INDUSTRY is absent from the target model. Business segmentation impact is possible.
+                - generic [ref=f4e791]:
+                  - generic [ref=f4e792]: AC
+                  - generic [ref=f4e793]:
+                    - generic [ref=f4e794]: Owner
+                    - strong [ref=f4e795]: Alex Chen
+                - img [ref=f4e796]
+              - generic [ref=f4e798]:
+                - generic [ref=f4e799]:
+                  - text: Proposal
+                  - generic [ref=f4e800]: Needs proposal
+                - generic [ref=f4e801]: —
+                - generic [ref=f4e802]: Detected 5h ago
+          - complementary [ref=f4e803]:
+            - generic [ref=f4e804]:
+              - generic [ref=f4e805]:
+                - generic [ref=f4e806]:
+                  - heading "Gap summary" [level=2] [ref=f4e807]
+                  - paragraph [ref=f4e808]: Current model coverage
+                - img [ref=f4e809]
+              - strong [ref=f4e811]: "5"
+              - generic [ref=f4e812]: Total open gaps
+              - generic [ref=f4e813]:
+                - generic [ref=f4e814]:
+                  - text: High
+                  - strong [ref=f4e816]: "2"
+                - generic [ref=f4e817]:
+                  - text: Medium
+                  - strong [ref=f4e819]: "1"
+                - generic [ref=f4e820]:
+                  - text: Low
+                  - strong [ref=f4e822]: "2"
+              - generic [ref=f4e823]:
+                - generic [ref=f4e824]: Proposals linked
+                - strong [ref=f4e825]: 60%
+              - generic [ref=f4e826]:
+                - generic [ref=f4e827]: Validation risk
+                - generic [ref=f4e828]: High
+            - generic [ref=f4e829]:
+              - img [ref=f4e831]
+              - heading "Recommended next step" [level=2] [ref=f4e833]
+              - generic [ref=f4e834]:
+                - strong [ref=f4e835]: "Review Proposal #27"
+                - paragraph [ref=f4e836]: It addresses the highest-risk gap and includes all required evidence.
+                - button "Review proposal" [ref=f4e837] [cursor=pointer]

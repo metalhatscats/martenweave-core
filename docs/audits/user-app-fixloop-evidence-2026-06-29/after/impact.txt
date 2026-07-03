@@ -1,0 +1,85 @@
+Impact Report for DOMAIN-CUSTOMER-BP
+  Type: MasterDataDomain
+  Affected objects: 78
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━┓
+┃ Object ID                            ┃ Type            ┃ Direction  ┃ Depth ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━┩
+│ ATTR-BP-CENTRAL-FOUNDATION-DATE      │ Attribute       │ upstream   │ 1     │
+│ ATTR-BP-CENTRAL-LEGAL-FORM           │ Attribute       │ upstream   │ 1     │
+│ ATTR-BP-CENTRAL-NAME                 │ Attribute       │ upstream   │ 1     │
+│ ATTR-BP-CENTRAL-SEARCH-TERM          │ Attribute       │ upstream   │ 1     │
+│ ATTR-BP-COMPANY-CODE-DUNNING-PROC    │ Attribute       │ upstream   │ 1     │
+│ ATTR-BP-COMPANY-CODE-INTEREST-IND    │ Attribute       │ upstream   │ 1     │
+│ ATTR-BP-COMPANY-CODE-PAYMENT-TERMS   │ Attribute       │ upstream   │ 1     │
+│ ATTR-BP-COMPANY-CODE-RECON-ACCT      │ Attribute       │ upstream   │ 1     │
+│ ATTR-BP-CUSTOMER-INDUSTRY            │ Attribute       │ upstream   │ 1     │
+│ ATTR-BP-CUSTOMER-TAX-NUMBER          │ Attribute       │ upstream   │ 1     │
+│ ATTR-BP-CUSTOMER-VAT-REG             │ Attribute       │ upstream   │ 1     │
+│ ATTR-BP-PARTNER-FUNCTION-SOLD-TO     │ Attribute       │ upstream   │ 1     │
+│ ATTR-BP-SALES-AREA-INCOTERMS         │ Attribute       │ upstream   │ 1     │
+│ ATTR-BP-SALES-AREA-PRICE-GROUP       │ Attribute       │ upstream   │ 1     │
+│ ATTR-BP-SALES-AREA-SHIPPING-COND     │ Attribute       │ upstream   │ 1     │
+│ ATTR-CUST-SALES-CUSTOMER-GROUP       │ Attribute       │ upstream   │ 1     │
+│ CTX-BP-CENTRAL-S4                    │ EntityContext   │ upstream   │ 1     │
+│ CTX-BP-COMPANY-CODE-S4               │ EntityContext   │ upstream   │ 1     │
+│ CTX-BP-CUSTOMER-S4                   │ EntityContext   │ upstream   │ 1     │
+│ DEC-ARCH-001-BP-CENTRAL              │ Decision        │ upstream   │ 1     │
+│ DEC-CH01-A17-CUSTOMER-GROUP          │ Decision        │ upstream   │ 1     │
+│ ENTITY-BP-CENTRAL                    │ BusinessEntity  │ upstream   │ 1     │
+│ ENTITY-BP-CUSTOMER                   │ BusinessEntity  │ upstream   │ 1     │
+│ ENTITY-BUSINESS-PARTNER              │ BusinessEntity  │ upstream   │ 1     │
+│ ENTITY-CUSTOMER-SALES-AREA           │ BusinessEntity  │ upstream   │ 1     │
+│ EVI-CH01-A17-ANALYSIS                │ Evidence        │ upstream   │ 1     │
+│ FEP-MIGFILE-CUSTOMER-GROUP           │ FieldEndpoint   │ upstream   │ 1     │
+│ FEP-S4-BUT000-NAME-ORG1              │ FieldEndpoint   │ upstream   │ 1     │
+│ FEP-S4-KNB1-ZTERM                    │ FieldEndpoint   │ upstream   │ 1     │
+│ FEP-S4-KNVV-KDGRP                    │ FieldEndpoint   │ upstream   │ 1     │
+│ ISS-CH01-A17-CONFIG-GAP              │ Issue           │ upstream   │ 1     │
+│ MAP-CUST-GROUP-LEGACY-TO-KNVV-KDGRP  │ Mapping         │ upstream   │ 1     │
+│ MIGOBJ-CUSTOMER-BP                   │ MigrationObject │ upstream   │ 1     │
+│ PERSON-DATA-STEWARD                  │ Person          │ upstream   │ 1     │
+│ USE-CUST-SALES-CUSTOMER-GROUP-S4     │ AttributeUsage  │ upstream   │ 1     │
+│ VAL-CUST-GROUP-ALLOWED-VALUES        │ ValidationRule  │ upstream   │ 1     │
+│ VLIST-LEGACY-CUST-GROUP              │ ValueList       │ upstream   │ 1     │
+│ VLIST-S4-CUST-GROUP                  │ ValueList       │ upstream   │ 1     │
+│ VMAP-CUST-GROUP-LEGACY-TO-S4         │ ValueMapping    │ upstream   │ 1     │
+│ PERSON-BUSINESS-OWNER                │ Person          │ downstream │ 2     │
+│ USE-BP-CENTRAL-FOUNDATION-DATE-S4    │ AttributeUsage  │ upstream   │ 2     │
+│ USE-BP-CENTRAL-LEGAL-FORM-S4         │ AttributeUsage  │ upstream   │ 2     │
+│ MAP-BP-CENTRAL-SEARCH-TERM           │ Mapping         │ upstream   │ 2     │
+│ USE-BP-CENTRAL-SEARCH-TERM-S4        │ AttributeUsage  │ upstream   │ 2     │
+│ VAL-BP-CENTRAL-SEARCH-TERM-REQUIRED  │ ValidationRule  │ upstream   │ 2     │
+│ USE-BP-COMPANY-CODE-DUNNING-PROC-S4  │ AttributeUsage  │ upstream   │ 2     │
+│ USE-BP-COMPANY-CODE-INTEREST-IND-S4  │ AttributeUsage  │ upstream   │ 2     │
+│ MAP-BP-COMPANY-CODE-RECON-ACCT       │ Mapping         │ upstream   │ 2     │
+│ USE-BP-COMPANY-CODE-RECON-ACCT-S4    │ AttributeUsage  │ upstream   │ 2     │
+│ VAL-BP-COMPANY-CODE-RECON-ACCT-VALID │ ValidationRule  │ upstream   │ 2     │
+│ MAP-BP-CUSTOMER-INDUSTRY             │ Mapping         │ upstream   │ 2     │
+│ USE-BP-CUSTOMER-INDUSTRY-S4          │ AttributeUsage  │ upstream   │ 2     │
+│ VAL-BP-CUSTOMER-INDUSTRY-ALLOWED     │ ValidationRule  │ upstream   │ 2     │
+│ USE-BP-CUSTOMER-TAX-NUMBER-S4        │ AttributeUsage  │ upstream   │ 2     │
+│ USE-BP-CUSTOMER-VAT-REG-S4           │ AttributeUsage  │ upstream   │ 2     │
+│ USE-BP-PARTNER-FUNCTION-SOLD-TO-S4   │ AttributeUsage  │ upstream   │ 2     │
+│ MAP-BP-SALES-AREA-INCOTERMS          │ Mapping         │ upstream   │ 2     │
+│ USE-BP-SALES-AREA-INCOTERMS-S4       │ AttributeUsage  │ upstream   │ 2     │
+│ VAL-BP-SALES-AREA-INCOTERMS-ALLOWED  │ ValidationRule  │ upstream   │ 2     │
+│ USE-BP-SALES-AREA-PRICE-GROUP-S4     │ AttributeUsage  │ upstream   │ 2     │
+│ USE-BP-SALES-AREA-SHIPPING-COND-S4   │ AttributeUsage  │ upstream   │ 2     │
+│ FEP-LEGACY-CUST-GROUP                │ FieldEndpoint   │ upstream   │ 2     │
+│ SYS-S4HANA                           │ System          │ downstream │ 2     │
+│ FEP-S4-BUT000-BU-SORT1               │ FieldEndpoint   │ upstream   │ 2     │
+│ FEP-S4-BUT000-FOUND-DAT              │ FieldEndpoint   │ upstream   │ 2     │
+│ FEP-S4-BUT000-LEGAL-ENTY             │ FieldEndpoint   │ upstream   │ 2     │
+│ FEP-S4-KNA1-BRSCH                    │ FieldEndpoint   │ upstream   │ 2     │
+│ FEP-S4-KNA1-STCD1                    │ FieldEndpoint   │ upstream   │ 2     │
+│ FEP-S4-KNA1-STCEG                    │ FieldEndpoint   │ upstream   │ 2     │
+│ FEP-S4-KNB1-AKONT                    │ FieldEndpoint   │ upstream   │ 2     │
+│ FEP-S4-KNB1-MABER                    │ FieldEndpoint   │ upstream   │ 2     │
+│ FEP-S4-KNB1-VZSKZ                    │ FieldEndpoint   │ upstream   │ 2     │
+│ FEP-S4-KNVP-PARVW                    │ FieldEndpoint   │ upstream   │ 2     │
+│ FEP-S4-KNVV-INCO1                    │ FieldEndpoint   │ upstream   │ 2     │
+│ FEP-S4-KNVV-PLTYP                    │ FieldEndpoint   │ upstream   │ 2     │
+│ FEP-S4-KNVV-VSBED                    │ FieldEndpoint   │ upstream   │ 2     │
+│ CTX-CUSTOMER-SALES-AREA-S4           │ EntityContext   │ downstream │ 2     │
+│ SYS-MIGRATION-FILE                   │ System          │ downstream │ 2     │
+└──────────────────────────────────────┴─────────────────┴────────────┴───────┘

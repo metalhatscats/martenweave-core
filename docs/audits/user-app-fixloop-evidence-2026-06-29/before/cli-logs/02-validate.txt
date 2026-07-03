@@ -1,0 +1,78 @@
+Validation Results:
+  Errors:   0
+  Warnings: 3
+  Info:     4
+  Valid:    True
+
+By code:
+┏━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┓
+┃ Code                   ┃ Severity ┃ Count ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━┩
+│ OWNERSHIP_MISSING      │ WARNING  │ 3     │
+│ SCHEMA_VERSION_MISSING │ INFO     │ 4     │
+└────────────────────────┴──────────┴───────┘
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Severity ┃ Code           ┃ Object         ┃ Message        ┃ Fix            ┃
+┡━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ INFO     │ SCHEMA_VERSIO… │ ATTR-PRODUCT-… │ Object         │ Add            │
+│          │                │                │ 'ATTR-PRODUCT… │ schema_versio… │
+│          │                │                │ is missing     │ "1.0" to the   │
+│          │                │                │ schema_versio… │ frontmatter.   │
+│          │                │                │ Current        │                │
+│          │                │                │ version is     │                │
+│          │                │                │ 1.0.           │                │
+│ INFO     │ SCHEMA_VERSIO… │ ATTR-PRODUCT-… │ Object         │ Add            │
+│          │                │                │ 'ATTR-PRODUCT… │ schema_versio… │
+│          │                │                │ is missing     │ "1.0" to the   │
+│          │                │                │ schema_versio… │ frontmatter.   │
+│          │                │                │ Current        │                │
+│          │                │                │ version is     │                │
+│          │                │                │ 1.0.           │                │
+│ INFO     │ SCHEMA_VERSIO… │ DOMAIN-PRODUCT │ Object         │ Add            │
+│          │                │                │ 'DOMAIN-PRODU… │ schema_versio… │
+│          │                │                │ is missing     │ "1.0" to the   │
+│          │                │                │ schema_versio… │ frontmatter.   │
+│          │                │                │ Current        │                │
+│          │                │                │ version is     │                │
+│          │                │                │ 1.0.           │                │
+│ INFO     │ SCHEMA_VERSIO… │ ENTITY-PRODUCT │ Object         │ Add            │
+│          │                │                │ 'ENTITY-PRODU… │ schema_versio… │
+│          │                │                │ is missing     │ "1.0" to the   │
+│          │                │                │ schema_versio… │ frontmatter.   │
+│          │                │                │ Current        │                │
+│          │                │                │ version is     │                │
+│          │                │                │ 1.0.           │                │
+│ WARNING  │ OWNERSHIP_MIS… │ ATTR-PRODUCT-… │ Attribute      │ Add an         │
+│          │                │                │ 'ATTR-PRODUCT… │ ownership      │
+│          │                │                │ has no owner   │ field to this  │
+│          │                │                │ or steward.    │ object.        │
+│          │                │                │ Consider       │                │
+│          │                │                │ adding         │                │
+│          │                │                │ business_owne… │                │
+│          │                │                │ technical_own… │                │
+│          │                │                │ data_steward,  │                │
+│          │                │                │ accountable_t… │                │
+│          │                │                │ or approver.   │                │
+│ WARNING  │ OWNERSHIP_MIS… │ ATTR-PRODUCT-… │ Attribute      │ Add an         │
+│          │                │                │ 'ATTR-PRODUCT… │ ownership      │
+│          │                │                │ has no owner   │ field to this  │
+│          │                │                │ or steward.    │ object.        │
+│          │                │                │ Consider       │                │
+│          │                │                │ adding         │                │
+│          │                │                │ business_owne… │                │
+│          │                │                │ technical_own… │                │
+│          │                │                │ data_steward,  │                │
+│          │                │                │ accountable_t… │                │
+│          │                │                │ or approver.   │                │
+│ WARNING  │ OWNERSHIP_MIS… │ ENTITY-PRODUCT │ BusinessEntity │ Add an         │
+│          │                │                │ 'ENTITY-PRODU… │ ownership      │
+│          │                │                │ has no owner   │ field to this  │
+│          │                │                │ or steward.    │ object.        │
+│          │                │                │ Consider       │                │
+│          │                │                │ adding         │                │
+│          │                │                │ business_owne… │                │
+│          │                │                │ technical_own… │                │
+│          │                │                │ data_steward,  │                │
+│          │                │                │ accountable_t… │                │
+│          │                │                │ or approver.   │                │
+└──────────┴────────────────┴────────────────┴────────────────┴────────────────┘

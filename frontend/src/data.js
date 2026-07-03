@@ -379,6 +379,24 @@ export const lineageNodes = [
     data: { label: "Customer analytics", meta: "Downstream dataset", tone: "target" },
     type: "model",
   },
+  {
+    id: "decision-tax",
+    position: { x: 650, y: 20 },
+    data: { label: "Preserve tax identifiers", meta: "Decision · DEC-BP-004", tone: "decision" },
+    type: "model",
+  },
+  {
+    id: "gap-tax",
+    position: { x: 650, y: 430 },
+    data: { label: "Missing TAX_NUMBER mapping", meta: "High gap · GAP-001", tone: "gap" },
+    type: "model",
+  },
+  {
+    id: "proposal27",
+    position: { x: 1010, y: 500 },
+    data: { label: "Proposal #27", meta: "Patch proposal · In review", tone: "proposal" },
+    type: "model",
+  },
 ];
 
 export const lineageEdges = [
@@ -387,4 +405,7 @@ export const lineageEdges = [
   { id: "e3", source: "staging", target: "canonical", animated: true },
   { id: "e4", source: "canonical", target: "mdm" },
   { id: "e5", source: "canonical", target: "analytics" },
+  { id: "e6", source: "decision-tax", target: "canonical", label: "governs" },
+  { id: "e7", source: "canonical", target: "gap-tax", label: "exposes" },
+  { id: "e8", source: "gap-tax", target: "proposal27", label: "drives" },
 ];

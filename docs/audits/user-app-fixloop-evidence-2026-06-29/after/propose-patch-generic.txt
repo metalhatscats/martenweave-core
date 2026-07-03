@@ -1,0 +1,6 @@
+No proposal generated.
+  • No AI provider is configured. The deterministic scaffold adapter could not 
+infer operations from this note.
+  → Set an AI provider (e.g. MARTENWEAVE_AI_PROVIDER=kimi), or include a 
+recognized object ID and a concrete change (e.g. 'Update description for 
+ATTR-PRODUCT-NAME').

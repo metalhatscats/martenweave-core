@@ -1,0 +1,195 @@
+Validation Results:
+  Errors:   0
+  Warnings: 18
+  Info:     0
+  Valid:    True
+
+By code:
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┓
+┃ Code                              ┃ Severity ┃ Count ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━┩
+│ FIELD_ENDPOINT_MISSING_ENRICHMENT │ WARNING  │ 5     │
+│ OWNERSHIP_MISSING                 │ WARNING  │ 13    │
+└───────────────────────────────────┴──────────┴───────┘
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃ Severity ┃ Code           ┃ Object         ┃ Message        ┃ Fix            ┃
+┡━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ WARNING  │ OWNERSHIP_MIS… │ ATTR-PRODUCT-… │ Attribute      │ Add an         │
+│          │                │                │ 'ATTR-PRODUCT… │ ownership      │
+│          │                │                │ has no owner   │ field to this  │
+│          │                │                │ or steward.    │ object.        │
+│          │                │                │ Consider       │                │
+│          │                │                │ adding         │                │
+│          │                │                │ business_owne… │                │
+│          │                │                │ technical_own… │                │
+│          │                │                │ data_steward,  │                │
+│          │                │                │ accountable_t… │                │
+│          │                │                │ or approver.   │                │
+│ WARNING  │ OWNERSHIP_MIS… │ ATTR-PRODUCT-… │ Attribute      │ Add an         │
+│          │                │                │ 'ATTR-PRODUCT… │ ownership      │
+│          │                │                │ has no owner   │ field to this  │
+│          │                │                │ or steward.    │ object.        │
+│          │                │                │ Consider       │                │
+│          │                │                │ adding         │                │
+│          │                │                │ business_owne… │                │
+│          │                │                │ technical_own… │                │
+│          │                │                │ data_steward,  │                │
+│          │                │                │ accountable_t… │                │
+│          │                │                │ or approver.   │                │
+│ WARNING  │ OWNERSHIP_MIS… │ ATTR-PRODUCT-… │ Attribute      │ Add an         │
+│          │                │                │ 'ATTR-PRODUCT… │ ownership      │
+│          │                │                │ has no owner   │ field to this  │
+│          │                │                │ or steward.    │ object.        │
+│          │                │                │ Consider       │                │
+│          │                │                │ adding         │                │
+│          │                │                │ business_owne… │                │
+│          │                │                │ technical_own… │                │
+│          │                │                │ data_steward,  │                │
+│          │                │                │ accountable_t… │                │
+│          │                │                │ or approver.   │                │
+│ WARNING  │ OWNERSHIP_MIS… │ ATTR-PRODUCT-… │ Attribute      │ Add an         │
+│          │                │                │ 'ATTR-PRODUCT… │ ownership      │
+│          │                │                │ has no owner   │ field to this  │
+│          │                │                │ or steward.    │ object.        │
+│          │                │                │ Consider       │                │
+│          │                │                │ adding         │                │
+│          │                │                │ business_owne… │                │
+│          │                │                │ technical_own… │                │
+│          │                │                │ data_steward,  │                │
+│          │                │                │ accountable_t… │                │
+│          │                │                │ or approver.   │                │
+│ WARNING  │ OWNERSHIP_MIS… │ ATTR-PRODUCT-… │ Attribute      │ Add an         │
+│          │                │                │ 'ATTR-PRODUCT… │ ownership      │
+│          │                │                │ has no owner   │ field to this  │
+│          │                │                │ or steward.    │ object.        │
+│          │                │                │ Consider       │                │
+│          │                │                │ adding         │                │
+│          │                │                │ business_owne… │                │
+│          │                │                │ technical_own… │                │
+│          │                │                │ data_steward,  │                │
+│          │                │                │ accountable_t… │                │
+│          │                │                │ or approver.   │                │
+│ WARNING  │ OWNERSHIP_MIS… │ DS-PRODUCT-CSV │ Dataset        │ Add an         │
+│          │                │                │ 'DS-PRODUCT-C… │ ownership      │
+│          │                │                │ has no owner   │ field to this  │
+│          │                │                │ or steward.    │ object.        │
+│          │                │                │ Consider       │                │
+│          │                │                │ adding         │                │
+│          │                │                │ business_owne… │                │
+│          │                │                │ technical_own… │                │
+│          │                │                │ data_steward,  │                │
+│          │                │                │ accountable_t… │                │
+│          │                │                │ or approver.   │                │
+│ WARNING  │ OWNERSHIP_MIS… │ ENTITY-PRODUCT │ BusinessEntity │ Add an         │
+│          │                │                │ 'ENTITY-PRODU… │ ownership      │
+│          │                │                │ has no owner   │ field to this  │
+│          │                │                │ or steward.    │ object.        │
+│          │                │                │ Consider       │                │
+│          │                │                │ adding         │                │
+│          │                │                │ business_owne… │                │
+│          │                │                │ technical_own… │                │
+│          │                │                │ data_steward,  │                │
+│          │                │                │ accountable_t… │                │
+│          │                │                │ or approver.   │                │
+│ WARNING  │ OWNERSHIP_MIS… │ FEP-PRODUCT-A… │ FieldEndpoint  │ Add an         │
+│          │                │                │ 'FEP-PRODUCT-… │ ownership      │
+│          │                │                │ has no owner   │ field to this  │
+│          │                │                │ or steward.    │ object.        │
+│          │                │                │ Consider       │                │
+│          │                │                │ adding         │                │
+│          │                │                │ business_owne… │                │
+│          │                │                │ technical_own… │                │
+│          │                │                │ data_steward,  │                │
+│          │                │                │ accountable_t… │                │
+│          │                │                │ or approver.   │                │
+│ WARNING  │ OWNERSHIP_MIS… │ FEP-PRODUCT-C… │ FieldEndpoint  │ Add an         │
+│          │                │                │ 'FEP-PRODUCT-… │ ownership      │
+│          │                │                │ has no owner   │ field to this  │
+│          │                │                │ or steward.    │ object.        │
+│          │                │                │ Consider       │                │
+│          │                │                │ adding         │                │
+│          │                │                │ business_owne… │                │
+│          │                │                │ technical_own… │                │
+│          │                │                │ data_steward,  │                │
+│          │                │                │ accountable_t… │                │
+│          │                │                │ or approver.   │                │
+│ WARNING  │ OWNERSHIP_MIS… │ FEP-PRODUCT-ID │ FieldEndpoint  │ Add an         │
+│          │                │                │ 'FEP-PRODUCT-… │ ownership      │
+│          │                │                │ has no owner   │ field to this  │
+│          │                │                │ or steward.    │ object.        │
+│          │                │                │ Consider       │                │
+│          │                │                │ adding         │                │
+│          │                │                │ business_owne… │                │
+│          │                │                │ technical_own… │                │
+│          │                │                │ data_steward,  │                │
+│          │                │                │ accountable_t… │                │
+│          │                │                │ or approver.   │                │
+│ WARNING  │ OWNERSHIP_MIS… │ FEP-PRODUCT-N… │ FieldEndpoint  │ Add an         │
+│          │                │                │ 'FEP-PRODUCT-… │ ownership      │
+│          │                │                │ has no owner   │ field to this  │
+│          │                │                │ or steward.    │ object.        │
+│          │                │                │ Consider       │                │
+│          │                │                │ adding         │                │
+│          │                │                │ business_owne… │                │
+│          │                │                │ technical_own… │                │
+│          │                │                │ data_steward,  │                │
+│          │                │                │ accountable_t… │                │
+│          │                │                │ or approver.   │                │
+│ WARNING  │ OWNERSHIP_MIS… │ FEP-PRODUCT-U… │ FieldEndpoint  │ Add an         │
+│          │                │                │ 'FEP-PRODUCT-… │ ownership      │
+│          │                │                │ has no owner   │ field to this  │
+│          │                │                │ or steward.    │ object.        │
+│          │                │                │ Consider       │                │
+│          │                │                │ adding         │                │
+│          │                │                │ business_owne… │                │
+│          │                │                │ technical_own… │                │
+│          │                │                │ data_steward,  │                │
+│          │                │                │ accountable_t… │                │
+│          │                │                │ or approver.   │                │
+│ WARNING  │ OWNERSHIP_MIS… │ VLIST-PRODUCT… │ ValueList      │ Add an         │
+│          │                │                │ 'VLIST-PRODUC… │ ownership      │
+│          │                │                │ has no owner   │ field to this  │
+│          │                │                │ or steward.    │ object.        │
+│          │                │                │ Consider       │                │
+│          │                │                │ adding         │                │
+│          │                │                │ business_owne… │                │
+│          │                │                │ technical_own… │                │
+│          │                │                │ data_steward,  │                │
+│          │                │                │ accountable_t… │                │
+│          │                │                │ or approver.   │                │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-PRODUCT-A… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-PRODUCT-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list.    │ rule coverage  │
+│          │                │                │                │ where          │
+│          │                │                │                │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-PRODUCT-C… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-PRODUCT-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list.    │ rule coverage  │
+│          │                │                │                │ where          │
+│          │                │                │                │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-PRODUCT-ID │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-PRODUCT-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list.    │ rule coverage  │
+│          │                │                │                │ where          │
+│          │                │                │                │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-PRODUCT-N… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-PRODUCT-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list.    │ rule coverage  │
+│          │                │                │                │ where          │
+│          │                │                │                │ relevant.      │
+│ WARNING  │ FIELD_ENDPOIN… │ FEP-PRODUCT-U… │ FieldEndpoint  │ Add            │
+│          │                │                │ 'FEP-PRODUCT-… │ value_list,    │
+│          │                │                │ lacks          │ mapping, or    │
+│          │                │                │ enrichment: no │ validation     │
+│          │                │                │ value_list.    │ rule coverage  │
+│          │                │                │                │ where          │
+│          │                │                │                │ relevant.      │
+└──────────┴────────────────┴────────────────┴────────────────┴────────────────┘

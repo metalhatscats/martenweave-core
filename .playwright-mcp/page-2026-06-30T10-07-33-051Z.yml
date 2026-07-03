@@ -1,0 +1,182 @@
+- generic [ref=f4e4]:
+  - complementary [ref=f4e5]:
+    - generic [ref=f4e6]:
+      - generic [ref=f4e9]:
+        - strong [ref=f4e10]: Martenweave
+        - generic [ref=f4e11]: Model intelligence
+      - navigation "Primary navigation" [ref=f4e12]:
+        - button "Home" [ref=f4e13] [cursor=pointer]:
+          - img [ref=f4e14]
+          - generic [ref=f4e16]: Home
+        - button "Models" [ref=f4e17] [cursor=pointer]:
+          - img [ref=f4e18]
+          - generic [ref=f4e20]: Models
+        - button "Lineage" [ref=f4e21] [cursor=pointer]:
+          - img [ref=f4e22]
+          - generic [ref=f4e24]: Lineage
+        - button "Gaps 5" [ref=f4e25] [cursor=pointer]:
+          - img [ref=f4e26]
+          - generic [ref=f4e28]: Gaps
+          - generic [ref=f4e29]: "5"
+        - button "Proposals" [ref=f4e30] [cursor=pointer]:
+          - img [ref=f4e31]
+          - generic [ref=f4e33]: Proposals
+    - generic [ref=f4e34]:
+      - generic [ref=f4e36]:
+        - strong [ref=f4e37]: Customer migration
+        - generic [ref=f4e38]: Production · v2.4.1
+      - img [ref=f4e39]
+  - generic [ref=f4e41]:
+    - banner [ref=f4e42]:
+      - generic [ref=f4e44]:
+        - generic [ref=f4e45]: Customer migration
+        - img [ref=f4e46]
+        - strong [ref=f4e48]: Proposal review
+      - generic [ref=f4e49]:
+        - generic [ref=f4e50]:
+          - img [ref=f4e51]
+          - textbox "Search model" [ref=f4e53]
+        - generic [ref=f4e54]: Production
+        - button "Notifications" [ref=f4e56] [cursor=pointer]:
+          - img [ref=f4e57]
+        - button "AC Alex Chen Data Steward" [ref=f4e61] [cursor=pointer]:
+          - generic [ref=f4e62]: AC
+          - generic [ref=f4e63]:
+            - strong [ref=f4e64]: Alex Chen
+            - generic [ref=f4e65]: Data Steward
+          - img [ref=f4e66]
+    - main [ref=f4e68]:
+      - generic [ref=f4e894]:
+        - generic [ref=f4e895]:
+          - button "Back to proposals" [ref=f4e896] [cursor=pointer]:
+            - img [ref=f4e897]
+            - text: Back to proposals
+          - generic [ref=f4e899]:
+            - generic [ref=f4e900]:
+              - generic [ref=f4e901]:
+                - generic [ref=f4e902]: In review
+                - generic [ref=f4e903]: High impact
+              - heading "Customer alternative key mapping" [level=1] [ref=f4e904]
+              - paragraph [ref=f4e905]: "Proposal #27 · Created by Martenweave AI · Updated 18 minutes ago"
+            - generic [ref=f4e906]:
+              - button "Request changes" [ref=f4e907] [cursor=pointer]:
+                - img [ref=f4e908]
+                - text: Request changes
+              - button "Approve proposal" [ref=f4e910] [cursor=pointer]:
+                - img [ref=f4e911]
+                - text: Approve proposal
+        - generic [ref=f4e913]:
+          - generic [ref=f4e914]:
+            - generic [ref=f4e915]:
+              - generic [ref=f4e916]:
+                - generic [ref=f4e917]: Risk classification
+                - strong [ref=f4e918]:
+                  - img [ref=f4e919]
+                  - text: High
+              - generic [ref=f4e921]:
+                - generic [ref=f4e922]: Canonical objects
+                - strong [ref=f4e923]: 2 affected
+              - generic [ref=f4e924]:
+                - generic [ref=f4e925]: Proposed changes
+                - strong [ref=f4e926]: 4 changes
+              - generic [ref=f4e927]:
+                - generic [ref=f4e928]: Validation
+                - strong [ref=f4e929]:
+                  - img [ref=f4e930]
+                  - text: Passed
+            - generic [ref=f4e932]:
+              - button "Changes" [ref=f4e933] [cursor=pointer]
+              - button "Impact" [ref=f4e934] [cursor=pointer]
+              - button "Validation" [ref=f4e935] [cursor=pointer]
+              - button "Activity" [ref=f4e936] [cursor=pointer]
+            - generic [ref=f4e937]:
+              - generic [ref=f4e938]:
+                - generic [ref=f4e939]:
+                  - heading "Proposed canonical changes" [level=2] [ref=f4e940]
+                  - paragraph [ref=f4e941]: Review every mutation before approval.
+                - generic [ref=f4e942]:
+                  - button "Side by side" [ref=f4e943] [cursor=pointer]:
+                    - img [ref=f4e944]
+                    - text: Side by side
+                  - button "Unified" [ref=f4e946] [cursor=pointer]:
+                    - img [ref=f4e947]
+                    - text: Unified
+              - article [ref=f4e949]:
+                - generic [ref=f4e950]:
+                  - generic [ref=f4e951]:
+                    - img [ref=f4e952]
+                    - text: model/ATTR-BP-TAX-NUMBER.md
+                  - generic [ref=f4e954]: New object
+                - generic [ref=f4e955]:
+                  - generic [ref=f4e956]:
+                    - generic [ref=f4e957]: Current
+                    - generic [ref=f4e958]:
+                      - img [ref=f4e959]
+                      - generic [ref=f4e961]: Object does not exist
+                  - generic [ref=f4e962]:
+                    - generic [ref=f4e963]: Proposed
+                    - generic [ref=f4e964]: "--- id: ATTR-BP-TAX-NUMBER type: Attribute status: draft name: Tax Number domain: DOMAIN-CUSTOMER-BP --- # Tax Number Tax identification number used for reporting and partner matching."
+              - article [ref=f4e965]:
+                - generic [ref=f4e966]:
+                  - generic [ref=f4e967]:
+                    - img [ref=f4e968]
+                    - text: model/MAP-SAP-BP-TAX-NUMBER.md
+                  - generic [ref=f4e970]: Modified
+                - generic [ref=f4e971]:
+                  - generic [ref=f4e972]:
+                    - generic [ref=f4e973]: Field
+                    - strong [ref=f4e974]: target_endpoint
+                  - generic [ref=f4e975]:
+                    - generic [ref=f4e976]: Current
+                    - code [ref=f4e977]: —
+                  - img [ref=f4e978]
+                  - generic [ref=f4e980]:
+                    - generic [ref=f4e981]: Proposed
+                    - code [ref=f4e982]: ATTR-BP-TAX-NUMBER
+                - generic [ref=f4e983]:
+                  - generic [ref=f4e984]:
+                    - generic [ref=f4e985]: Field
+                    - strong [ref=f4e986]: transform
+                  - generic [ref=f4e987]:
+                    - generic [ref=f4e988]: Current
+                    - code [ref=f4e989]: —
+                  - img [ref=f4e990]
+                  - generic [ref=f4e992]:
+                    - generic [ref=f4e993]: Proposed
+                    - code [ref=f4e994]: trim · uppercase · validate
+          - complementary [ref=f4e995]:
+            - generic [ref=f4e996]:
+              - generic [ref=f4e998]:
+                - heading "Review context" [level=2] [ref=f4e999]
+                - paragraph [ref=f4e1000]: Why this change exists
+              - paragraph [ref=f4e1001]: TAX_NUMBER is missing from the Business Partner mapping. The proposal adds a canonical endpoint and links SAP field KNVV.STCD1 with deterministic transform evidence.
+              - button "Linked gap Missing mapping for TAX_NUMBER" [ref=f4e1002] [cursor=pointer]:
+                - img [ref=f4e1003]
+                - generic [ref=f4e1005]:
+                  - generic [ref=f4e1006]: Linked gap
+                  - strong [ref=f4e1007]: Missing mapping for TAX_NUMBER
+                - img [ref=f4e1008]
+            - generic [ref=f4e1010]:
+              - generic [ref=f4e1012]:
+                - heading "Reviewers" [level=2] [ref=f4e1013]
+                - paragraph [ref=f4e1014]: 1 of 2 approvals received
+              - generic [ref=f4e1015]:
+                - generic [ref=f4e1016]: PN
+                - generic [ref=f4e1017]:
+                  - strong [ref=f4e1018]: Priya Nair
+                  - generic [ref=f4e1019]: Data steward
+                - img [ref=f4e1020]
+              - generic [ref=f4e1022]:
+                - generic [ref=f4e1023]: AC
+                - generic [ref=f4e1024]:
+                  - strong [ref=f4e1025]: Alex Chen
+                  - generic [ref=f4e1026]: Your review
+                - generic [ref=f4e1027]: Pending
+            - generic [ref=f4e1028]:
+              - generic [ref=f4e1030]:
+                - heading "Review note" [level=2] [ref=f4e1031]
+                - paragraph [ref=f4e1032]: Visible to proposal reviewers
+              - textbox "Add context or a review note…" [ref=f4e1033]
+              - button "Add note" [disabled] [ref=f4e1034]:
+                - img [ref=f4e1035]
+                - text: Add note

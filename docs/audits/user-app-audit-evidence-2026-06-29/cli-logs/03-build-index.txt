@@ -1,0 +1,11 @@
+Index built at 
+/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/
+generated/modelops.db
+  Objects: 14
+  Valid:   True
+  JSONL:   
+/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/
+generated/search_documents.jsonl
+  JSONL:   
+/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/
+generated/lineage_edges.jsonl

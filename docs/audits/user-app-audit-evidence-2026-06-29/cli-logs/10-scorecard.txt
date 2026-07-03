@@ -1,0 +1,102 @@
+Scorecard: Simple Product Model
+  Readiness: draft
+  Objects:   14
+  Generated: 2026-06-29T17:01:44Z
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Metric                  ┃ Value ┃ Target ┃ Status  ┃ Explanation             ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ model_completeness      │ 50.0  │ 95.0   │ warning │ 0 objects missing name, │
+│                         │       │        │         │ 14 missing description. │
+│ ownership_coverage      │ 0.0   │ 95.0   │ fail    │ 13 of 13 eligible       │
+│                         │       │        │         │ objects lack an owner.  │
+│ validation_rule_covera… │ 0.0   │ 90.0   │ fail    │ 5 active attributes     │
+│                         │       │        │         │ have no validation      │
+│                         │       │        │         │ rule.                   │
+│ lov_coverage            │ 0.0   │ 90.0   │ fail    │ 5 active field          │
+│                         │       │        │         │ endpoints lack a value  │
+│                         │       │        │         │ list.                   │
+│ mapping_logic_coverage  │ 0.0   │ 90.0   │ fail    │ 0 active mappings lack  │
+│                         │       │        │         │ a value mapping.        │
+│ dataset_profile_covera… │ 0.0   │ 80.0   │ fail    │ 1 active datasets lack  │
+│                         │       │        │         │ a profile.              │
+│ traceability_coverage   │ 92.9  │ 80.0   │ pass    │ 1 objects have no       │
+│                         │       │        │         │ relationships.          │
+│ source_freshness_hours  │ 0     │ 24     │ pass    │ Index was built 0       │
+│                         │       │        │         │ hour(s) ago.            │
+│ unresolved_issue_count  │ 0     │ 0      │ pass    │ 0 open issue(s) found   │
+│                         │       │        │         │ in the model.           │
+│ pending_change_count    │ 0     │ 0      │ pass    │ 0 pending proposal(s),  │
+│                         │       │        │         │ 0 pending change        │
+│                         │       │        │         │ request(s).             │
+│ high_risk_change_count  │ 0     │ 0      │ pass    │ 0 pending high-risk     │
+│                         │       │        │         │ change(s).              │
+│ evidence_coverage       │ 0.0   │ 80.0   │ pass    │ No Decision objects in  │
+│                         │       │        │         │ model.                  │
+│ sap_table_coverage      │ 0.0   │ 90.0   │ pass    │ No target SAP           │
+│                         │       │        │         │ FieldEndpoints in       │
+│                         │       │        │         │ model.                  │
+└─────────────────────────┴───────┴────────┴─────────┴─────────────────────────┘
+
+Top Gaps (20 shown)
+┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
+┃ Object ID          ┃ Type           ┃ Gap               ┃ Suggested Action   ┃
+┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
+│ ATTR-PRODUCT-ACTI… │ Attribute      │ missing_owner     │ Add an ownership   │
+│                    │                │                   │ field.             │
+│ ATTR-PRODUCT-ACTI… │ Attribute      │ missing_validati… │ Add a              │
+│                    │                │                   │ ValidationRule     │
+│                    │                │                   │ referencing this   │
+│                    │                │                   │ attribute.         │
+│ ATTR-PRODUCT-CATE… │ Attribute      │ missing_owner     │ Add an ownership   │
+│                    │                │                   │ field.             │
+│ ATTR-PRODUCT-CATE… │ Attribute      │ missing_validati… │ Add a              │
+│                    │                │                   │ ValidationRule     │
+│                    │                │                   │ referencing this   │
+│                    │                │                   │ attribute.         │
+│ ATTR-PRODUCT-ID    │ Attribute      │ missing_owner     │ Add an ownership   │
+│                    │                │                   │ field.             │
+│ ATTR-PRODUCT-ID    │ Attribute      │ missing_validati… │ Add a              │
+│                    │                │                   │ ValidationRule     │
+│                    │                │                   │ referencing this   │
+│                    │                │                   │ attribute.         │
+│ ATTR-PRODUCT-NAME  │ Attribute      │ missing_owner     │ Add an ownership   │
+│                    │                │                   │ field.             │
+│ ATTR-PRODUCT-NAME  │ Attribute      │ missing_validati… │ Add a              │
+│                    │                │                   │ ValidationRule     │
+│                    │                │                   │ referencing this   │
+│                    │                │                   │ attribute.         │
+│ ATTR-PRODUCT-UNIT… │ Attribute      │ missing_owner     │ Add an ownership   │
+│                    │                │                   │ field.             │
+│ ATTR-PRODUCT-UNIT… │ Attribute      │ missing_validati… │ Add a              │
+│                    │                │                   │ ValidationRule     │
+│                    │                │                   │ referencing this   │
+│                    │                │                   │ attribute.         │
+│ DS-PRODUCT-CSV     │ Dataset        │ missing_owner     │ Add an ownership   │
+│                    │                │                   │ field.             │
+│ DS-PRODUCT-CSV     │ Dataset        │ missing_profile   │ Run                │
+│                    │                │                   │ profile-dataset on │
+│                    │                │                   │ this dataset.      │
+│ ENTITY-PRODUCT     │ BusinessEntity │ missing_owner     │ Add an ownership   │
+│                    │                │                   │ field.             │
+│ FEP-PRODUCT-ACTIVE │ FieldEndpoint  │ missing_owner     │ Add an ownership   │
+│                    │                │                   │ field.             │
+│ FEP-PRODUCT-ACTIVE │ FieldEndpoint  │ missing_lov       │ Link a ValueList   │
+│                    │                │                   │ to this field      │
+│                    │                │                   │ endpoint.          │
+│ FEP-PRODUCT-CATEG… │ FieldEndpoint  │ missing_owner     │ Add an ownership   │
+│                    │                │                   │ field.             │
+│ FEP-PRODUCT-CATEG… │ FieldEndpoint  │ missing_lov       │ Link a ValueList   │
+│                    │                │                   │ to this field      │
+│                    │                │                   │ endpoint.          │
+│ FEP-PRODUCT-ID     │ FieldEndpoint  │ missing_owner     │ Add an ownership   │
+│                    │                │                   │ field.             │
+│ FEP-PRODUCT-ID     │ FieldEndpoint  │ missing_lov       │ Link a ValueList   │
+│                    │                │                   │ to this field      │
+│                    │                │                   │ endpoint.          │
+│ FEP-PRODUCT-NAME   │ FieldEndpoint  │ missing_owner     │ Add an ownership   │
+│                    │                │                   │ field.             │
+└────────────────────┴────────────────┴───────────────────┴────────────────────┘
+
+Repository 'Simple Product Model' has 14 objects. Readiness: draft. 7/13 metrics
+pass. Top gap: missing_owner (24 total).

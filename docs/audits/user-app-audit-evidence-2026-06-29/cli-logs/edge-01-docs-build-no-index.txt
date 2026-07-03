@@ -1,0 +1,3 @@
+No index found at 
+/private/tmp/martenweave-audit-empty-repo/generated/modelops.db. Run 
+`martenweave build-index` first.

@@ -15,11 +15,14 @@ import {
   CircleNotch,
   ClockCounterClockwise,
   Columns,
+  Command,
   Copy,
   Cube,
   Database,
+  DownloadSimple,
   DotsThreeVertical,
   Export,
+  FileArrowDown,
   FileText,
   Funnel,
   GitBranch,
@@ -37,7 +40,9 @@ import {
   SidebarSimple,
   SlidersHorizontal,
   Sparkle,
+  Stack,
   Tag,
+  UploadSimple,
   UserCircle,
   Users,
   Warning,
@@ -66,23 +71,37 @@ import {
   recentActivity,
   severityWeight,
 } from "./data.js";
+import {
+  ChangelogScreen,
+  ReportsScreen,
+  SettingsScreen,
+  Toast,
+  WorkbenchOverlay,
+  WorkspaceScreen,
+} from "./workbench.jsx";
 
 const NAV_ITEMS = [
-  { id: "home", label: "Home", icon: House },
+  { id: "home", label: "Workspace", icon: House },
   { id: "models", label: "Models", icon: Cube },
   { id: "lineage", label: "Lineage", icon: ShareNetwork },
   { id: "gaps", label: "Gaps", icon: Warning },
   { id: "proposals", label: "Proposals", icon: NotePencil },
+  { id: "reports", label: "Reports", icon: FileText },
+  { id: "changelog", label: "Changelog", icon: ClockCounterClockwise },
+  { id: "settings", label: "Settings", icon: SlidersHorizontal },
 ];
 
 const ROUTE_TITLES = {
-  home: "Model intelligence",
+  home: "Canonical model ledger",
   models: "Global model search",
   object: "Business Partner",
   lineage: "Lineage",
   gaps: "Open gaps",
   proposals: "Proposals",
   proposal: "Proposal review",
+  reports: "Reports and exports",
+  changelog: "Changelog",
+  settings: "Workspace settings",
 };
 
 function useRoute() {
@@ -141,7 +160,7 @@ function Brand() {
   );
 }
 
-function Sidebar({ route, navigate, open, onClose }) {
+function Sidebar({ route, navigate, open, onClose, onWorkspace }) {
   const activeRoute = route === "object" ? "models" : route === "proposal" ? "proposals" : route;
   return (
     <>
@@ -167,19 +186,20 @@ function Sidebar({ route, navigate, open, onClose }) {
             ))}
           </nav>
         </div>
-        <button className="repo-switcher" type="button" disabled title="Repository switcher requires backend">
+        <button className="repo-switcher" type="button" onClick={onWorkspace}>
           <span className="status-dot" />
           <span>
             <strong>Customer migration</strong>
             <small>Production · v2.4.1</small>
           </span>
+          <CaretRight size={14} />
         </button>
       </aside>
     </>
   );
 }
 
-function Topbar({ route, navigate, title, onMenu }) {
+function Topbar({ route, navigate, title, onMenu, actions }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -224,31 +244,39 @@ function Topbar({ route, navigate, title, onMenu }) {
         </div>
       </div>
       <div className="topbar-actions">
-        <form className={`top-search ${searchOpen ? "is-open" : ""}`} onSubmit={submit}>
+        <form className={`top-search global-top-search ${searchOpen ? "is-open" : ""}`} onSubmit={submit}>
           <MagnifyingGlass size={18} />
           <input
+            data-global-search
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search model"
+            placeholder="Search models, fields, lineage, gaps…"
             aria-label="Search model"
             onFocus={() => setSearchOpen(true)}
           />
+          {!searchOpen && <kbd>/</kbd>}
           {searchOpen && (
             <button type="button" aria-label="Close search" onClick={() => setSearchOpen(false)}>
               <X size={16} />
             </button>
           )}
         </form>
+        <button className="top-action-button" onClick={() => actions.open({ type: "commands" })}>
+          <Command size={17} /> Commands <kbd>⌘K</kbd>
+        </button>
+        <button className="top-action-button" onClick={() => actions.open({ type: "import" })}>
+          <UploadSimple size={17} /> Import
+        </button>
+        <button className="top-action-button" onClick={() => actions.open({ type: "export" })}>
+          <DownloadSimple size={17} /> Export
+        </button>
         <span className="environment-pill">
           <span className="status-dot" />
           Production
         </span>
-        <DisabledButton
-          className="icon-button notification-button"
-          icon={Bell}
-          label="Notifications"
-          reason="No local notification feed"
-        />
+        <button className="icon-button notification-button" onClick={() => actions.open({ type: "activity" })} aria-label="Workspace activity">
+          <Bell size={17} /><span />
+        </button>
         <div className="profile-wrap" ref={profileRef}>
           <button className="profile-button" onClick={() => setProfileOpen((value) => !value)}>
             <span className="avatar">AC</span>
@@ -260,15 +288,9 @@ function Topbar({ route, navigate, title, onMenu }) {
           </button>
           {profileOpen && (
             <div className="profile-menu">
-              <DisabledButton icon={UserCircle} label="Profile" reason="Requires backend identity service">
-                Profile
-              </DisabledButton>
-              <DisabledButton icon={SlidersHorizontal} label="Preferences" reason="Requires backend identity service">
-                Preferences
-              </DisabledButton>
-              <DisabledButton icon={Archive} label="Switch repository" reason="Requires backend identity service">
-                Switch repository
-              </DisabledButton>
+              <button onClick={() => { setProfileOpen(false); actions.open({ type: "workspace" }); }}><UserCircle size={17} /> Workspace profile</button>
+              <button onClick={() => { setProfileOpen(false); actions.open({ type: "shortcuts" }); }}><SlidersHorizontal size={17} /> Keyboard shortcuts</button>
+              <button onClick={() => { setProfileOpen(false); actions.open({ type: "workspace" }); }}><Archive size={17} /> Repository context</button>
             </div>
           )}
         </div>
@@ -277,7 +299,7 @@ function Topbar({ route, navigate, title, onMenu }) {
   );
 }
 
-function AppShell({ route, navigate, title, children }) {
+function AppShell({ route, navigate, title, actions, children }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -296,9 +318,10 @@ function AppShell({ route, navigate, title, children }) {
         navigate={navigate}
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
+        onWorkspace={() => actions.open({ type: "workspace" })}
       />
       <div className="app-stage">
-        <Topbar route={route} navigate={navigate} title={title} onMenu={() => setMenuOpen(true)} />
+        <Topbar route={route} navigate={navigate} title={title} onMenu={() => setMenuOpen(true)} actions={actions} />
         <main className={`app-main route-${route}`}>{children}</main>
       </div>
     </div>
@@ -744,10 +767,10 @@ const OBJECT_TYPE_LABELS = {
   Proposal: "Proposal",
 };
 
-function ObjectScreen({ navigate, params }) {
+function ObjectScreen({ navigate, params, onExport, onDraft }) {
   const [tab, setTab] = useState("Overview");
   const [copied, setCopied] = useState(false);
-  const tabs = ["Overview", "Fields", "Relationships", "Governance"];
+  const tabs = ["Overview", "Fields", "Evidence", "Relationships", "Impact", "Governance"];
   const objectId = params.get("id");
   const object = modelObjects.find((item) => item.id === objectId) || modelObjects[0];
   const copyId = async () => {
@@ -776,23 +799,15 @@ function ObjectScreen({ navigate, params }) {
           </div>
         </div>
         <div className="page-actions">
-          <DisabledButton
-            className="secondary-button"
-            icon={Export}
-            label="Export"
-            reason="Export requires generated index (backend)"
-          >
-            Export
-          </DisabledButton>
+          <button className="secondary-button" onClick={() => onExport("evidence")}>
+            <Export size={17} /> Export
+          </button>
           <button className="primary-button" onClick={() => navigate("lineage")}>
             <ShareNetwork size={17} /> Trace lineage
           </button>
-          <DisabledButton
-            className="icon-button bordered"
-            icon={DotsThreeVertical}
-            label="More options"
-            reason="Object actions require backend"
-          />
+          <button className="icon-button bordered" onClick={onDraft} aria-label="Draft patch proposal">
+            <DotsThreeVertical size={17} />
+          </button>
         </div>
       </div>
       <p className="object-lead">{object.fullDescription}</p>
@@ -807,7 +822,9 @@ function ObjectScreen({ navigate, params }) {
 
       {tab === "Overview" && <ObjectOverview navigate={navigate} object={object} onViewFields={() => setTab("Fields")} />}
       {tab === "Fields" && <FieldsTable />}
+      {tab === "Evidence" && <ObjectEvidencePanel />}
       {tab === "Relationships" && <Relationships navigate={navigate} />}
+      {tab === "Impact" && <ObjectImpactPanel navigate={navigate} />}
       {tab === "Governance" && <GovernancePanel />}
     </div>
   );
@@ -895,16 +912,71 @@ function FieldsTable() {
       <div className="data-table">
         <div className="data-table-head"><span>Field</span><span>Type</span><span>Required</span><span>Usage</span><span>Status</span></div>
         {shown.map((field) => (
-          <button className="data-table-row" key={field.id}>
+          <div className="data-table-row" key={field.id}>
             <span><strong>{field.name}</strong><small>{field.id}</small></span>
             <code>{field.type}</code>
             <span>{field.required ? "Required" : "Optional"}</span>
             <span>{field.usage}</span>
             <Badge tone={field.status === "Gap" ? "high" : field.status === "In review" ? "violet" : "green"}>{field.status}</Badge>
-          </button>
+          </div>
         ))}
       </div>
     </section>
+  );
+}
+
+function ObjectEvidencePanel() {
+  return (
+    <div className="object-evidence-grid">
+      <section className="surface">
+        <div className="section-title"><div><h2>Source evidence</h2><p>Traceable project inputs supporting this object</p></div><Badge tone="green">27 items</Badge></div>
+        {[
+          ["SAP S/4HANA profile", "KNVV.STCD1", "158,932 distinct · 2.1% null"],
+          ["Canonical definition", "ATTR-BP-TAX-NUMBER", "String(20) · optional"],
+          ["Migration decision", "DEC-BP-004", "Preserve source tax identifiers"],
+          ["Validation run", "VAL-2026-07-03-1018", "4 passed · 1 warning"],
+        ].map(([source, id, detail]) => (
+          <div className="evidence-row" key={id}><Database size={17} /><span><strong>{source}</strong><code>{id}</code></span><small>{detail}</small><Badge tone="green">Verified</Badge></div>
+        ))}
+      </section>
+      <section className="surface">
+        <div className="section-title"><div><h2>Dataset coverage</h2><p>Observed presence across loaded extracts</p></div></div>
+        {[
+          ["SAP Business Partner", 98],
+          ["Legacy CRM customer", 86],
+          ["Customer analytics", 91],
+          ["MDM golden record", 73],
+        ].map(([name, value]) => (
+          <div className="coverage-row" key={name}><span>{name}<strong>{value}%</strong></span><i><b style={{ width: `${value}%` }} /></i></div>
+        ))}
+        <div className="validation-rule-list">
+          <h3>Validation rules</h3>
+          {["ID uniqueness", "Reference integrity", "SAP context grain", "Required ownership"].map((rule) => (
+            <p key={rule}><CheckCircle size={15} /> {rule}<strong>Passed</strong></p>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ObjectImpactPanel({ navigate }) {
+  return (
+    <div className="impact-panel">
+      <section className="impact-grid">
+        {[["Direct mappings", "3", GitBranch], ["Field endpoints", "4", Database], ["Downstream reports", "2", FileText], ["Open proposals", "1", NotePencil]].map(([label, value, Icon]) => (
+          <button className="surface" key={label} onClick={() => navigate(label === "Open proposals" ? "proposals" : "lineage")}><Icon size={20} /><strong>{value}</strong><span>{label}</span></button>
+        ))}
+      </section>
+      <section className="surface impact-paths">
+        <div className="section-title"><div><h2>Downstream impact</h2><p>Deterministic traversal from the selected canonical object</p></div><button onClick={() => navigate("lineage")}>Open lineage <ArrowRight size={14} /></button></div>
+        <div><span>SAP S/4HANA</span><ArrowRight size={15} /><span>KNVV.STCD1</span><ArrowRight size={15} /><span>TAX_NUMBER</span><ArrowRight size={15} /><span>Customer analytics</span></div>
+      </section>
+      <section className="surface linked-work">
+        <div><Badge tone="high">Open gap</Badge><strong>Missing mapping for TAX_NUMBER</strong><p>Detected in SAP Sales Order with 27 evidence items.</p><button onClick={() => navigate("gaps", { gap: 1 })}>Review gap</button></div>
+        <div><Badge tone="violet">Proposal #27</Badge><strong>Customer alternative key mapping</strong><p>Validation passed. Human approval is required before change request creation.</p><button onClick={() => navigate("proposal", { id: 27 })}>Review proposal</button></div>
+      </section>
+    </div>
   );
 }
 
@@ -947,10 +1019,19 @@ function GovernancePanel() {
 }
 
 function ModelNode({ data, selected }) {
+  const Icon = {
+    source: Database,
+    mapping: GitBranch,
+    canonical: Cube,
+    target: Stack,
+    gap: Warning,
+    decision: FileText,
+    proposal: NotePencil,
+  }[data.tone] || Database;
   return (
     <div className={`flow-node flow-node-${data.tone} ${selected ? "is-selected" : ""}`}>
       <Handle type="target" position={Position.Left} />
-      <span className="flow-node-icon"><Database size={19} weight="duotone" /></span>
+      <span className="flow-node-icon"><Icon size={19} weight="duotone" /></span>
       <span><strong>{data.label}</strong><small>{data.meta}</small></span>
       <Handle type="source" position={Position.Right} />
     </div>
@@ -959,13 +1040,23 @@ function ModelNode({ data, selected }) {
 
 const nodeTypes = { model: ModelNode };
 
-function LineageScreen({ navigate }) {
+function LineageScreen({ navigate, onExport }) {
   const [allNodes, , onNodesChange] = useNodesState(lineageNodes);
   const [allEdges, , onEdgesChange] = useEdgesState(lineageEdges);
-  const [depth, setDepth] = useState("2 levels");
+  const [depth, setDepth] = useState("All levels");
   const [selected, setSelected] = useState("canonical");
   const [panelOpen, setPanelOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [nodeQuery, setNodeQuery] = useState("");
+  const [visibleLayers, setVisibleLayers] = useState({
+    source: true,
+    mapping: true,
+    canonical: true,
+    target: true,
+    gap: true,
+    decision: true,
+    proposal: true,
+  });
 
   const selectedNode = useMemo(
     () => allNodes.find((node) => node.id === selected),
@@ -987,12 +1078,20 @@ function LineageScreen({ navigate }) {
 
   const visibleNodeIds = useMemo(() => {
     const query = nodeQuery.trim().toLowerCase();
+    const depthIds =
+      depth === "1 level"
+        ? new Set(["staging", "canonical", "gap-tax", "proposal27"])
+        : depth === "2 levels"
+          ? new Set(["salesforce", "sap", "staging", "canonical", "mdm", "analytics", "gap-tax", "proposal27"])
+          : null;
     return new Set(
       allNodes
+        .filter((node) => visibleLayers[node.data.tone] !== false)
+        .filter((node) => !depthIds || depthIds.has(node.id))
         .filter((node) => !query || `${node.data.label} ${node.data.meta}`.toLowerCase().includes(query))
         .map((node) => node.id),
     );
-  }, [allNodes, nodeQuery]);
+  }, [allNodes, depth, nodeQuery, visibleLayers]);
 
   const nodes = useMemo(
     () =>
@@ -1021,14 +1120,9 @@ function LineageScreen({ navigate }) {
           description="Trace systems, transformations, canonical objects, and downstream impact."
           actions={
             <>
-              <DisabledButton
-                className="secondary-button"
-                icon={Export}
-                label="Export"
-                reason="Export requires generated lineage (backend)"
-              >
-                Export
-              </DisabledButton>
+              <button className="secondary-button" onClick={() => onExport("lineage")}>
+                <Export size={17} /> Export
+              </button>
               <button className="primary-button" onClick={() => navigate("object", { id: selectedObjectId })}><ArrowRight size={17} /> View object</button>
             </>
           }
@@ -1043,16 +1137,26 @@ function LineageScreen({ navigate }) {
             />
           </label>
           <label className="select-control"><span>Depth</span><select value={depth} onChange={(event) => setDepth(event.target.value)}><option>1 level</option><option>2 levels</option><option>All levels</option></select></label>
-          <DisabledButton
-            className="secondary-button"
-            icon={Funnel}
-            label="Filters"
-            reason="Lineage filters require backend"
-          >
-            Filters
-          </DisabledButton>
+          <button className={`secondary-button ${filtersOpen ? "is-active" : ""}`} onClick={() => setFiltersOpen((value) => !value)}>
+            <Funnel size={17} /> Filters
+          </button>
           <button className={`icon-button bordered ${panelOpen ? "is-active" : ""}`} onClick={() => setPanelOpen((value) => !value)}><SidebarSimple size={18} /></button>
         </div>
+        {filtersOpen && (
+          <div className="lineage-filter-bar">
+            {[
+              ["Source systems", "source"],
+              ["Mappings", "mapping"],
+              ["Canonical objects", "canonical"],
+              ["Datasets", "target"],
+              ["Gaps", "gap"],
+              ["Decisions", "decision"],
+              ["Proposals", "proposal"],
+            ].map(([item, layer]) => (
+              <label key={item}><input type="checkbox" checked={visibleLayers[layer]} onChange={() => setVisibleLayers((current) => ({ ...current, [layer]: !current[layer] }))} /><span>{item}</span></label>
+            ))}
+          </div>
+        )}
       </div>
       <div className="lineage-workspace">
         <div className="lineage-canvas">
@@ -1061,6 +1165,9 @@ function LineageScreen({ navigate }) {
             <span><i className="legend-mapping" /> Transformation</span>
             <span><i className="legend-canonical" /> Canonical</span>
             <span><i className="legend-target" /> Target</span>
+            <span><i className="legend-gap" /> Gap</span>
+            <span><i className="legend-decision" /> Decision</span>
+            <span><i className="legend-proposal" /> Proposal</span>
           </div>
           <ReactFlow
             nodes={nodes}
@@ -1110,9 +1217,11 @@ function LineageScreen({ navigate }) {
   );
 }
 
-function GapsScreen({ navigate, params }) {
+function GapsScreen({ navigate, params, onDraft }) {
   const [query, setQuery] = useState("");
   const [severity, setSeverity] = useState("All severities");
+  const [status, setStatus] = useState("All statuses");
+  const [moreFilters, setMoreFilters] = useState(false);
   const [sort, setSort] = useState("Risk first");
   const [expandedId, setExpandedId] = useState(1);
 
@@ -1133,7 +1242,8 @@ function GapsScreen({ navigate, params }) {
   const shown = useMemo(() => {
     const filtered = gaps.filter((gap) => {
       const matchesQuery = `${gap.title} ${gap.object} ${gap.source}`.toLowerCase().includes(query.toLowerCase());
-      return matchesQuery && (severity === "All severities" || gap.severity === severity);
+      const matchesStatus = status === "All statuses" || gap.status === status;
+      return matchesQuery && matchesStatus && (severity === "All severities" || gap.severity === severity);
     });
     const list = [...filtered];
     if (sort === "Risk first") {
@@ -1144,7 +1254,7 @@ function GapsScreen({ navigate, params }) {
       list.sort((a, b) => a.object.localeCompare(b.object));
     }
     return list;
-  }, [query, severity, sort]);
+  }, [query, severity, status, sort]);
 
   const selectedGap = gaps.find((gap) => gap.id === expandedId) || gaps[0];
 
@@ -1154,14 +1264,7 @@ function GapsScreen({ navigate, params }) {
         title="Open gaps"
         description="Review missing mappings, inconsistent types, and unresolved model coverage."
         actions={
-          <DisabledButton
-            className="primary-button"
-            icon={Plus}
-            label="Create issue"
-            reason="Creating issues requires backend PatchProposal service"
-          >
-            Create issue
-          </DisabledButton>
+          <button className="primary-button" onClick={onDraft}><Plus size={17} /> Draft proposal</button>
         }
       />
       <div className="gap-controls">
@@ -1172,22 +1275,23 @@ function GapsScreen({ navigate, params }) {
         <select value={sort} onChange={(event) => setSort(event.target.value)}>
           <option>Risk first</option><option>Recently detected</option><option>Object name</option>
         </select>
-        <DisabledButton
-          className="secondary-button"
-          icon={Funnel}
-          label="More filters"
-          reason="Additional filters require backend"
-        >
-          More filters
-        </DisabledButton>
+        <button className={`secondary-button ${moreFilters ? "is-active" : ""}`} onClick={() => setMoreFilters((value) => !value)}><Funnel size={17} /> More filters</button>
       </div>
+      {moreFilters && (
+        <div className="gap-extra-filters">
+          <label>Status<select value={status} onChange={(event) => setStatus(event.target.value)}><option>All statuses</option><option>In review</option><option>Draft</option><option>Needs proposal</option></select></label>
+          <label>Object<select aria-label="Gap object"><option>All objects</option><option>Business Partner</option><option>Sales Order</option><option>Customer</option></select></label>
+          <label>Source<select aria-label="Gap source"><option>All sources</option><option>SAP S/4HANA</option><option>Legacy CRM</option><option>Customer SQL</option></select></label>
+          <button onClick={() => { setStatus("All statuses"); setSeverity("All severities"); setQuery(""); }}>Reset filters</button>
+        </div>
+      )}
       <div className="gaps-layout">
         <section className="gap-list">
           {shown.length === 0 ? (
             <div className="empty-state">
               <Warning size={30} />
               <h3>No gaps match the current filters</h3>
-              <button onClick={() => { setQuery(""); setSeverity("All severities"); }}>Clear filters</button>
+              <button onClick={() => { setQuery(""); setSeverity("All severities"); setStatus("All statuses"); }}>Clear filters</button>
             </div>
           ) : (
             shown.map((gap) => {
@@ -1229,12 +1333,7 @@ function GapsScreen({ navigate, params }) {
           <section className="surface gap-summary">
             <div className="section-title">
               <div><h2>Gap summary</h2><p>Current model coverage</p></div>
-              <DisabledButton
-                className="icon-button"
-                icon={Info}
-                label="Gap summary details"
-                reason="Summary details require backend"
-              />
+              <button className="icon-button" onClick={() => setMoreFilters((value) => !value)} aria-label="Show gap filters"><Info size={17} /></button>
             </div>
             <strong className="summary-number">5</strong>
             <span className="summary-label">Total open gaps</span>
@@ -1275,9 +1374,7 @@ function GapsScreen({ navigate, params }) {
                   Review proposal
                 </button>
               ) : (
-                <DisabledButton className="primary-button full-width" label="Review proposal" reason="No proposal linked">
-                  Review proposal
-                </DisabledButton>
+                <button className="primary-button full-width" onClick={onDraft}>Create proposal</button>
               )}
             </div>
           </section>
@@ -1296,7 +1393,7 @@ function GapsScreen({ navigate, params }) {
   );
 }
 
-function ProposalsScreen({ navigate }) {
+function ProposalsScreen({ navigate, onDraft }) {
   const [tab, setTab] = useState("All");
   const [query, setQuery] = useState("");
   const shown = proposals.filter((proposal) => {
@@ -1310,14 +1407,7 @@ function ProposalsScreen({ navigate }) {
         title="Proposals"
         description="Review AI-assisted model changes before they become canonical."
         actions={
-          <DisabledButton
-            className="primary-button"
-            icon={Plus}
-            label="New proposal"
-            reason="New proposals are created in core CLI/API"
-          >
-            New proposal
-          </DisabledButton>
+          <button className="primary-button" onClick={onDraft}><Plus size={17} /> New proposal</button>
         }
       />
       <div className="proposal-toolbar">
@@ -1353,13 +1443,20 @@ function ProposalsScreen({ navigate }) {
   );
 }
 
-function ProposalScreen({ navigate, params }) {
+function ProposalScreen({ navigate, params, onToast }) {
   const [tab, setTab] = useState("Changes");
   const [decision, setDecision] = useState(null);
   const [comment, setComment] = useState("");
   const [savedComment, setSavedComment] = useState("");
+  const [reviewStatus, setReviewStatus] = useState("");
   const proposalId = Number(params.get("id"));
   const proposal = proposals.find((item) => item.id === proposalId) || proposals[0];
+
+  useEffect(() => {
+    const openApproval = () => setDecision("approve");
+    window.addEventListener("martenweave:approve", openApproval);
+    return () => window.removeEventListener("martenweave:approve", openApproval);
+  }, []);
 
   return (
     <div className="proposal-review-page">
@@ -1367,13 +1464,13 @@ function ProposalScreen({ navigate, params }) {
         <button className="back-link" onClick={() => navigate("proposals")}><CaretLeft size={15} /> Back to proposals</button>
         <div className="proposal-title-row">
           <div>
-            <div className="object-type-row"><Badge tone="violet">{proposal.status}</Badge><Badge tone={proposal.risk.toLowerCase()}>{proposal.risk} impact</Badge></div>
+            <div className="object-type-row"><Badge tone={reviewStatus === "Approved" ? "green" : "violet"}>{reviewStatus || proposal.status}</Badge><Badge tone={proposal.risk.toLowerCase()}>{proposal.risk} impact</Badge></div>
             <h1>{proposal.title}</h1>
             <p>Proposal #{proposal.id} · Created by {proposal.author} · Updated {proposal.updated}</p>
           </div>
           <div className="page-actions">
-            <button className="danger-button" onClick={() => setDecision("reject")}><XCircle size={17} /> Request changes</button>
-            <button className="approve-button" onClick={() => setDecision("approve")}><CheckCircle size={17} /> Approve proposal</button>
+            <button className="danger-button" onClick={() => setDecision("reject")} disabled={Boolean(reviewStatus)}><XCircle size={17} /> Request changes</button>
+            <button className="approve-button" onClick={() => setDecision("approve")} disabled={Boolean(reviewStatus)}><CheckCircle size={17} /> {reviewStatus || "Approve proposal"}</button>
           </div>
         </div>
       </div>
@@ -1422,7 +1519,17 @@ function ProposalScreen({ navigate, params }) {
         </aside>
       </div>
       {decision && (
-        <DecisionDialog type={decision} proposalId={proposal.id} onClose={() => setDecision(null)} onConfirm={() => { setDecision(null); navigate("proposals"); }} />
+        <DecisionDialog
+          type={decision}
+          proposalId={proposal.id}
+          onClose={() => setDecision(null)}
+          onConfirm={() => {
+            const nextStatus = decision === "approve" ? "Approved" : "Changes requested";
+            setReviewStatus(nextStatus);
+            setDecision(null);
+            onToast(`${nextStatus}: Proposal #${proposal.id}. Canonical files remain unchanged.`);
+          }}
+        />
       )}
     </div>
   );
@@ -1562,6 +1669,85 @@ function DecisionDialog({ type, proposalId, onClose, onConfirm }) {
 
 export function App() {
   const [route, params, navigate] = useRoute();
+  const [overlay, setOverlay] = useState(null);
+  const [toast, setToast] = useState("");
+  const pendingGo = useRef(false);
+  const goTimer = useRef(null);
+  const open = useCallback((next) => setOverlay(next), []);
+  const close = useCallback(() => setOverlay(null), []);
+  const dismissToast = useCallback(() => setToast(""), []);
+
+  useEffect(() => {
+    const onKey = (event) => {
+      const target = event.target;
+      const isTyping =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target?.isContentEditable;
+      if (event.key === "Escape") {
+        setOverlay(null);
+        return;
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setOverlay((current) => current?.type === "commands" ? null : { type: "commands" });
+        return;
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && route === "proposal") {
+        event.preventDefault();
+        window.dispatchEvent(new Event("martenweave:approve"));
+        return;
+      }
+      if (isTyping || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.key === "/") {
+        event.preventDefault();
+        document.querySelector("[data-global-search]")?.focus();
+        return;
+      }
+      if (event.key === "?") {
+        setOverlay({ type: "shortcuts" });
+        return;
+      }
+      if (event.key.toLowerCase() === "i") {
+        setOverlay({ type: "import" });
+        return;
+      }
+      if (event.key.toLowerCase() === "e") {
+        setOverlay({ type: "export" });
+        return;
+      }
+      if (pendingGo.current) {
+        const destination = { m: "models", l: "lineage", g: "gaps", p: "proposals" }[event.key.toLowerCase()];
+        pendingGo.current = false;
+        window.clearTimeout(goTimer.current);
+        if (destination) {
+          event.preventDefault();
+          navigate(destination);
+        }
+        return;
+      }
+      if (event.key.toLowerCase() === "g") {
+        pendingGo.current = true;
+        goTimer.current = window.setTimeout(() => { pendingGo.current = false; }, 900);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.clearTimeout(goTimer.current);
+    };
+  }, [navigate, route]);
+
+  const actions = {
+    open,
+    import: () => open({ type: "import" }),
+    export: (exportType) => open({ type: "export", exportType }),
+    commands: () => open({ type: "commands" }),
+    shortcuts: () => open({ type: "shortcuts" }),
+    draft: () => open({ type: "proposal-draft" }),
+    toast: setToast,
+  };
   const routeTitle = (() => {
     if (route === "object") {
       const id = params.get("id");
@@ -1574,16 +1760,23 @@ export function App() {
     return ROUTE_TITLES[route] || "Workspace";
   })();
   const screen = {
-    home: <HomeScreen navigate={navigate} />,
+    home: <WorkspaceScreen navigate={navigate} onImport={actions.import} onExport={actions.export} onCommands={actions.commands} onShortcuts={actions.shortcuts} />,
     models: <ModelsScreen navigate={navigate} params={params} />,
-    object: <ObjectScreen navigate={navigate} params={params} />,
-    lineage: <LineageScreen navigate={navigate} params={params} />,
-    gaps: <GapsScreen navigate={navigate} params={params} />,
-    proposals: <ProposalsScreen navigate={navigate} />,
-    proposal: <ProposalScreen navigate={navigate} params={params} />,
-  }[route] || <HomeScreen navigate={navigate} />;
+    object: <ObjectScreen navigate={navigate} params={params} onExport={actions.export} onDraft={actions.draft} />,
+    lineage: <LineageScreen navigate={navigate} params={params} onExport={actions.export} />,
+    gaps: <GapsScreen navigate={navigate} params={params} onDraft={actions.draft} />,
+    proposals: <ProposalsScreen navigate={navigate} onDraft={actions.draft} />,
+    proposal: <ProposalScreen navigate={navigate} params={params} onToast={actions.toast} />,
+    reports: <ReportsScreen onExport={actions.export} />,
+    changelog: <ChangelogScreen />,
+    settings: <SettingsScreen onToast={actions.toast} onShortcuts={actions.shortcuts} />,
+  }[route] || <WorkspaceScreen navigate={navigate} onImport={actions.import} onExport={actions.export} onCommands={actions.commands} onShortcuts={actions.shortcuts} />;
 
   return (
-    <AppShell route={route} navigate={navigate} title={routeTitle}>{screen}</AppShell>
+    <>
+      <AppShell route={route} navigate={navigate} title={routeTitle} actions={actions}>{screen}</AppShell>
+      <WorkbenchOverlay overlay={overlay} onClose={close} navigate={navigate} onOpen={open} onToast={setToast} />
+      <Toast message={toast} onClose={dismissToast} />
+    </>
   );
 }

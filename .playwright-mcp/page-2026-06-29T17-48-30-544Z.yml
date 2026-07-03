@@ -1,0 +1,263 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Local Static Viewer" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Generated local static read-only viewer over the SQLite index.
+    - navigation "Viewer navigation" [ref=e7]:
+      - link "Dashboard" [ref=e8] [cursor=pointer]:
+        - /url: index.html
+      - link "Objects" [ref=e9] [cursor=pointer]:
+        - /url: objects.html
+      - link "Gaps" [ref=e10] [cursor=pointer]:
+        - /url: gaps.html
+      - link "Decisions" [ref=e11] [cursor=pointer]:
+        - /url: decisions.html
+      - link "Owners" [ref=e12] [cursor=pointer]:
+        - /url: owners.html
+      - link "Manifest" [ref=e13] [cursor=pointer]:
+        - /url: viewer-manifest.json
+  - generic [ref=e14]:
+    - text: "Index freshness:"
+    - strong [ref=e15]: fresh
+    - text: . Viewer content is generated from the current SQLite index.
+  - generic [ref=e16]:
+    - text: Read-only generated artifact. Canonical files in
+    - code [ref=e17]: model/
+    - text: remain the source of truth; this viewer can be deleted and rebuilt at any time.
+  - generic [ref=e18]:
+    - generic [ref=e19]:
+      - heading "Objects" [level=3] [ref=e20]
+      - generic [ref=e21]: "85"
+      - generic [ref=e22]: Indexed canonical objects
+    - generic [ref=e23]:
+      - heading "Object types" [level=3] [ref=e24]
+      - generic [ref=e25]: "17"
+      - generic [ref=e26]: Types represented in the index
+    - generic [ref=e27]:
+      - heading "Validation findings" [level=3] [ref=e28]
+      - generic [ref=e29]: "50"
+      - generic [ref=e30]: "WARNING: 50"
+    - generic [ref=e31]:
+      - heading "Index freshness" [level=3] [ref=e32]
+      - generic [ref=e33]: Fresh
+      - generic [ref=e34]: Hash matches canonical source
+  - generic [ref=e35]:
+    - heading "Repository" [level=2] [ref=e36]
+    - table [ref=e37]:
+      - rowgroup [ref=e38]:
+        - row "Repository Customer BP Example" [ref=e39]:
+          - rowheader "Repository" [ref=e40]
+          - cell "Customer BP Example" [ref=e41]
+        - row "Repository version unknown" [ref=e42]:
+          - rowheader "Repository version" [ref=e43]
+          - cell "unknown" [ref=e44]
+        - row "Schema version 1.0" [ref=e45]:
+          - rowheader "Schema version" [ref=e46]
+          - cell "1.0" [ref=e47]
+        - row "Martenweave package 0.4.1" [ref=e48]:
+          - rowheader "Martenweave package" [ref=e49]
+          - cell "0.4.1" [ref=e50]
+        - row "Index built unknown" [ref=e51]:
+          - rowheader "Index built" [ref=e52]
+          - cell "unknown" [ref=e53]
+        - row "Viewer generated 2026-06-29T17:45:35+00:00" [ref=e54]:
+          - rowheader "Viewer generated" [ref=e55]
+          - cell "2026-06-29T17:45:35+00:00" [ref=e56]
+  - generic [ref=e57]:
+    - heading "Type counts" [level=2] [ref=e58]
+    - table [ref=e59]:
+      - rowgroup [ref=e60]:
+        - row "Type Count" [ref=e61]:
+          - columnheader "Type" [ref=e62]
+          - columnheader "Count" [ref=e63]
+      - rowgroup [ref=e64]:
+        - row "Attribute 16" [ref=e65]:
+          - cell "Attribute" [ref=e66]
+          - cell "16" [ref=e67]
+        - row "AttributeUsage 14" [ref=e68]:
+          - cell "AttributeUsage" [ref=e69]
+          - cell "14" [ref=e70]
+        - row "BusinessEntity 4" [ref=e71]:
+          - cell "BusinessEntity" [ref=e72]
+          - cell "4" [ref=e73]
+        - row "Decision 2" [ref=e74]:
+          - cell "Decision" [ref=e75]
+          - cell "2" [ref=e76]
+        - row "EntityContext 4" [ref=e77]:
+          - cell "EntityContext" [ref=e78]
+          - cell "4" [ref=e79]
+        - row "Evidence 1" [ref=e80]:
+          - cell "Evidence" [ref=e81]
+          - cell "1" [ref=e82]
+        - row "FieldEndpoint 18" [ref=e83]:
+          - cell "FieldEndpoint" [ref=e84]
+          - cell "18" [ref=e85]
+        - row "Issue 1" [ref=e86]:
+          - cell "Issue" [ref=e87]
+          - cell "1" [ref=e88]
+        - row "Mapping 5" [ref=e89]:
+          - cell "Mapping" [ref=e90]
+          - cell "5" [ref=e91]
+        - row "MappingSet 1" [ref=e92]:
+          - cell "MappingSet" [ref=e93]
+          - cell "1" [ref=e94]
+        - row "MasterDataDomain 1" [ref=e95]:
+          - cell "MasterDataDomain" [ref=e96]
+          - cell "1" [ref=e97]
+        - row "MigrationObject 1" [ref=e98]:
+          - cell "MigrationObject" [ref=e99]
+          - cell "1" [ref=e100]
+        - row "Person 2" [ref=e101]:
+          - cell "Person" [ref=e102]
+          - cell "2" [ref=e103]
+        - row "System 3" [ref=e104]:
+          - cell "System" [ref=e105]
+          - cell "3" [ref=e106]
+        - row "ValidationRule 5" [ref=e107]:
+          - cell "ValidationRule" [ref=e108]
+          - cell "5" [ref=e109]
+        - row "ValueList 4" [ref=e110]:
+          - cell "ValueList" [ref=e111]
+          - cell "4" [ref=e112]
+        - row "ValueMapping 3" [ref=e113]:
+          - cell "ValueMapping" [ref=e114]
+          - cell "3" [ref=e115]
+  - generic [ref=e116]:
+    - heading "Quick search" [level=2] [ref=e117]
+    - textbox "Filter objects" [ref=e118]:
+      - /placeholder: Filter objects by Customer Group, KNVV, KDGRP, owner, type...
+    - paragraph [ref=e119]: 12 objects shown. Search runs locally from embedded rows and does not require network access.
+    - table [ref=e120]:
+      - rowgroup [ref=e121]:
+        - row "ID Type Label Status Owners Hints" [ref=e122]:
+          - columnheader "ID" [ref=e123]
+          - columnheader "Type" [ref=e124]
+          - columnheader "Label" [ref=e125]
+          - columnheader "Status" [ref=e126]
+          - columnheader "Owners" [ref=e127]
+          - columnheader "Hints" [ref=e128]
+      - rowgroup [ref=e129]:
+        - row "ATTR-BP-CENTRAL-FOUNDATION-DATE Attribute Foundation Date active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e130]:
+          - cell "ATTR-BP-CENTRAL-FOUNDATION-DATE" [ref=e131]:
+            - link "ATTR-BP-CENTRAL-FOUNDATION-DATE" [ref=e132] [cursor=pointer]:
+              - /url: objects/attr-bp-central-foundation-date.html
+              - code [ref=e133]: ATTR-BP-CENTRAL-FOUNDATION-DATE
+          - cell "Attribute" [ref=e134]
+          - cell "Foundation Date" [ref=e135]
+          - cell "active" [ref=e136]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e137]
+          - cell [ref=e138]
+        - row "ATTR-BP-CENTRAL-LEGAL-FORM Attribute Legal Form active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e139]:
+          - cell "ATTR-BP-CENTRAL-LEGAL-FORM" [ref=e140]:
+            - link "ATTR-BP-CENTRAL-LEGAL-FORM" [ref=e141] [cursor=pointer]:
+              - /url: objects/attr-bp-central-legal-form.html
+              - code [ref=e142]: ATTR-BP-CENTRAL-LEGAL-FORM
+          - cell "Attribute" [ref=e143]
+          - cell "Legal Form" [ref=e144]
+          - cell "active" [ref=e145]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e146]
+          - cell [ref=e147]
+        - row "ATTR-BP-CENTRAL-NAME Attribute BP Central Name active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e148]:
+          - cell "ATTR-BP-CENTRAL-NAME" [ref=e149]:
+            - link "ATTR-BP-CENTRAL-NAME" [ref=e150] [cursor=pointer]:
+              - /url: objects/attr-bp-central-name.html
+              - code [ref=e151]: ATTR-BP-CENTRAL-NAME
+          - cell "Attribute" [ref=e152]
+          - cell "BP Central Name" [ref=e153]
+          - cell "active" [ref=e154]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e155]
+          - cell [ref=e156]
+        - row "ATTR-BP-CENTRAL-SEARCH-TERM Attribute Search Term active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e157]:
+          - cell "ATTR-BP-CENTRAL-SEARCH-TERM" [ref=e158]:
+            - link "ATTR-BP-CENTRAL-SEARCH-TERM" [ref=e159] [cursor=pointer]:
+              - /url: objects/attr-bp-central-search-term.html
+              - code [ref=e160]: ATTR-BP-CENTRAL-SEARCH-TERM
+          - cell "Attribute" [ref=e161]
+          - cell "Search Term" [ref=e162]
+          - cell "active" [ref=e163]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e164]
+          - cell [ref=e165]
+        - row "ATTR-BP-COMPANY-CODE-DUNNING-PROC Attribute Dunning Procedure active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e166]:
+          - cell "ATTR-BP-COMPANY-CODE-DUNNING-PROC" [ref=e167]:
+            - link "ATTR-BP-COMPANY-CODE-DUNNING-PROC" [ref=e168] [cursor=pointer]:
+              - /url: objects/attr-bp-company-code-dunning-proc.html
+              - code [ref=e169]: ATTR-BP-COMPANY-CODE-DUNNING-PROC
+          - cell "Attribute" [ref=e170]
+          - cell "Dunning Procedure" [ref=e171]
+          - cell "active" [ref=e172]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e173]
+          - cell [ref=e174]
+        - row "ATTR-BP-COMPANY-CODE-INTEREST-IND Attribute Interest Indicator active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e175]:
+          - cell "ATTR-BP-COMPANY-CODE-INTEREST-IND" [ref=e176]:
+            - link "ATTR-BP-COMPANY-CODE-INTEREST-IND" [ref=e177] [cursor=pointer]:
+              - /url: objects/attr-bp-company-code-interest-ind.html
+              - code [ref=e178]: ATTR-BP-COMPANY-CODE-INTEREST-IND
+          - cell "Attribute" [ref=e179]
+          - cell "Interest Indicator" [ref=e180]
+          - cell "active" [ref=e181]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e182]
+          - cell [ref=e183]
+        - row "ATTR-BP-COMPANY-CODE-PAYMENT-TERMS Attribute Payment Terms active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e184]:
+          - cell "ATTR-BP-COMPANY-CODE-PAYMENT-TERMS" [ref=e185]:
+            - link "ATTR-BP-COMPANY-CODE-PAYMENT-TERMS" [ref=e186] [cursor=pointer]:
+              - /url: objects/attr-bp-company-code-payment-terms.html
+              - code [ref=e187]: ATTR-BP-COMPANY-CODE-PAYMENT-TERMS
+          - cell "Attribute" [ref=e188]
+          - cell "Payment Terms" [ref=e189]
+          - cell "active" [ref=e190]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e191]
+          - cell [ref=e192]
+        - row "ATTR-BP-COMPANY-CODE-RECON-ACCT Attribute Reconciliation Account active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e193]:
+          - cell "ATTR-BP-COMPANY-CODE-RECON-ACCT" [ref=e194]:
+            - link "ATTR-BP-COMPANY-CODE-RECON-ACCT" [ref=e195] [cursor=pointer]:
+              - /url: objects/attr-bp-company-code-recon-acct.html
+              - code [ref=e196]: ATTR-BP-COMPANY-CODE-RECON-ACCT
+          - cell "Attribute" [ref=e197]
+          - cell "Reconciliation Account" [ref=e198]
+          - cell "active" [ref=e199]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e200]
+          - cell [ref=e201]
+        - row "ATTR-BP-CUSTOMER-INDUSTRY Attribute Industry active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e202]:
+          - cell "ATTR-BP-CUSTOMER-INDUSTRY" [ref=e203]:
+            - link "ATTR-BP-CUSTOMER-INDUSTRY" [ref=e204] [cursor=pointer]:
+              - /url: objects/attr-bp-customer-industry.html
+              - code [ref=e205]: ATTR-BP-CUSTOMER-INDUSTRY
+          - cell "Attribute" [ref=e206]
+          - cell "Industry" [ref=e207]
+          - cell "active" [ref=e208]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e209]
+          - cell [ref=e210]
+        - row "ATTR-BP-CUSTOMER-TAX-NUMBER Attribute Tax Number active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e211]:
+          - cell "ATTR-BP-CUSTOMER-TAX-NUMBER" [ref=e212]:
+            - link "ATTR-BP-CUSTOMER-TAX-NUMBER" [ref=e213] [cursor=pointer]:
+              - /url: objects/attr-bp-customer-tax-number.html
+              - code [ref=e214]: ATTR-BP-CUSTOMER-TAX-NUMBER
+          - cell "Attribute" [ref=e215]
+          - cell "Tax Number" [ref=e216]
+          - cell "active" [ref=e217]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e218]
+          - cell [ref=e219]
+        - row "ATTR-BP-CUSTOMER-VAT-REG Attribute VAT Registration active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e220]:
+          - cell "ATTR-BP-CUSTOMER-VAT-REG" [ref=e221]:
+            - link "ATTR-BP-CUSTOMER-VAT-REG" [ref=e222] [cursor=pointer]:
+              - /url: objects/attr-bp-customer-vat-reg.html
+              - code [ref=e223]: ATTR-BP-CUSTOMER-VAT-REG
+          - cell "Attribute" [ref=e224]
+          - cell "VAT Registration" [ref=e225]
+          - cell "active" [ref=e226]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e227]
+          - cell [ref=e228]
+        - row "ATTR-BP-PARTNER-FUNCTION-SOLD-TO Attribute Sold-To Party active PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e229]:
+          - cell "ATTR-BP-PARTNER-FUNCTION-SOLD-TO" [ref=e230]:
+            - link "ATTR-BP-PARTNER-FUNCTION-SOLD-TO" [ref=e231] [cursor=pointer]:
+              - /url: objects/attr-bp-partner-function-sold-to.html
+              - code [ref=e232]: ATTR-BP-PARTNER-FUNCTION-SOLD-TO
+          - cell "Attribute" [ref=e233]
+          - cell "Sold-To Party" [ref=e234]
+          - cell "active" [ref=e235]
+          - cell "PERSON-BUSINESS-OWNER, PERSON-DATA-STEWARD" [ref=e236]
+          - cell [ref=e237]
+    - paragraph [ref=e238]:
+      - link "Open full searchable object list" [ref=e239] [cursor=pointer]:
+        - /url: objects.html
+  - generic [ref=e240]: Generated output is disposable. Canonical Markdown + YAML files remain authoritative. No hosted UI, login, editor, SAP write-back, or AI auto-mutation is included.

@@ -1,0 +1,44 @@
+===== health =====
+{
+    "status": "healthy",
+    "repository": "/private/tmp/martenweave-fixloop-repo",
+    "indexed": true,
+    "canonical_files": 85
+}
+===== impact known =====
+{
+    "object_id": "DOMAIN-CUSTOMER-BP",
+    "root_object_type": "MasterDataDomain",
+    "root_object_name": "Business Partner / Customer",
+    "upstream": [
+        {
+            "object_id": "ATTR-BP-CENTRAL-FOUNDATION-DATE",
+            "object_type": "Attribute",
+            "object_name": "Foundation Date",
+            "relationship_type": "belongs_to_domain",
+            "depth": 1
+        },
+        {
+            "object_id": "ATTR-BP-CENTRAL-LEGAL-FORM",
+            "object_type": "Attribute",
+            "object_name": "Legal Form",
+            "relationship_type": "belongs_to_domain",
+            "depth": 1
+        },
+        {
+            "object_id": "ATTR-BP-CENTRAL-NAME",
+            "object_type": "Attribute",
+            "object_name": "BP Central Name",
+            "relationship_type": "belongs_to_domain",
+            "depth": 1
+        },
+        {
+            "object_id": "ATTR-BP-CENTRAL-SEARCH-TERM",
+            "object_type": "Attribute",
+            "object_name": "Search Term",
+===== impact unknown =====
+{"detail":"Object DOES-NOT-EXIST not found"}
+HTTP 404
+===== trace unknown =====
+{"detail":"Object DOES-NOT-EXIST not found"}
+HTTP 404

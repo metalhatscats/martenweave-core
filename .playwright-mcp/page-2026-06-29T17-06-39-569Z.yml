@@ -1,0 +1,104 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Local Static Viewer" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Generated local static read-only viewer over the SQLite index.
+    - navigation "Viewer navigation" [ref=e7]:
+      - link "Dashboard" [ref=e8] [cursor=pointer]:
+        - /url: index.html
+      - link "Objects" [ref=e9] [cursor=pointer]:
+        - /url: objects.html
+      - link "Gaps" [ref=e10] [cursor=pointer]:
+        - /url: gaps.html
+      - link "Decisions" [ref=e11] [cursor=pointer]:
+        - /url: decisions.html
+      - link "Owners" [ref=e12] [cursor=pointer]:
+        - /url: owners.html
+      - link "Manifest" [ref=e13] [cursor=pointer]:
+        - /url: viewer-manifest.json
+  - generic [ref=e14]:
+    - text: "Index freshness:"
+    - strong [ref=e15]: fresh
+    - text: . Viewer content is generated from the current SQLite index.
+  - generic [ref=e16]:
+    - text: Read-only generated artifact. Canonical files in
+    - code [ref=e17]: model/
+    - text: remain the source of truth; this viewer can be deleted and rebuilt at any time.
+  - generic [ref=e18]:
+    - generic [ref=e19]:
+      - heading "Objects" [level=3] [ref=e20]
+      - generic [ref=e21]: "1"
+      - generic [ref=e22]: Indexed canonical objects
+    - generic [ref=e23]:
+      - heading "Object types" [level=3] [ref=e24]
+      - generic [ref=e25]: "1"
+      - generic [ref=e26]: Types represented in the index
+    - generic [ref=e27]:
+      - heading "Validation findings" [level=3] [ref=e28]
+      - generic [ref=e29]: "0"
+      - generic [ref=e30]: None
+    - generic [ref=e31]:
+      - heading "Index freshness" [level=3] [ref=e32]
+      - generic [ref=e33]: Fresh
+      - generic [ref=e34]: Hash matches canonical source
+  - generic [ref=e35]:
+    - heading "Repository" [level=2] [ref=e36]
+    - table [ref=e37]:
+      - rowgroup [ref=e38]:
+        - row "Repository My Model Repository" [ref=e39]:
+          - rowheader "Repository" [ref=e40]
+          - cell "My Model Repository" [ref=e41]
+        - row "Repository version 1.0.0" [ref=e42]:
+          - rowheader "Repository version" [ref=e43]
+          - cell "1.0.0" [ref=e44]
+        - row "Schema version 1.0" [ref=e45]:
+          - rowheader "Schema version" [ref=e46]
+          - cell "1.0" [ref=e47]
+        - row "Martenweave package 0.4.1" [ref=e48]:
+          - rowheader "Martenweave package" [ref=e49]
+          - cell "0.4.1" [ref=e50]
+        - row "Index built unknown" [ref=e51]:
+          - rowheader "Index built" [ref=e52]
+          - cell "unknown" [ref=e53]
+        - row "Viewer generated 2026-06-29T17:06:29+00:00" [ref=e54]:
+          - rowheader "Viewer generated" [ref=e55]
+          - cell "2026-06-29T17:06:29+00:00" [ref=e56]
+  - generic [ref=e57]:
+    - heading "Type counts" [level=2] [ref=e58]
+    - table [ref=e59]:
+      - rowgroup [ref=e60]:
+        - row "Type Count" [ref=e61]:
+          - columnheader "Type" [ref=e62]
+          - columnheader "Count" [ref=e63]
+      - rowgroup [ref=e64]:
+        - row "MasterDataDomain 1" [ref=e65]:
+          - cell "MasterDataDomain" [ref=e66]
+          - cell "1" [ref=e67]
+  - generic [ref=e68]:
+    - heading "Quick search" [level=2] [ref=e69]
+    - textbox "Filter objects by Customer Group, KNVV, KDGRP, owner, type..." [ref=e70]
+    - paragraph [ref=e71]: 1 object shown. Search runs locally from embedded rows and does not require network access.
+    - table [ref=e72]:
+      - rowgroup [ref=e73]:
+        - row "ID Type Label Status Owners Hints" [ref=e74]:
+          - columnheader "ID" [ref=e75]
+          - columnheader "Type" [ref=e76]
+          - columnheader "Label" [ref=e77]
+          - columnheader "Status" [ref=e78]
+          - columnheader "Owners" [ref=e79]
+          - columnheader "Hints" [ref=e80]
+      - rowgroup [ref=e81]:
+        - row "DOMAIN-EXAMPLE MasterDataDomain Example Domain draft" [ref=e82]:
+          - cell "DOMAIN-EXAMPLE" [ref=e83]:
+            - link "DOMAIN-EXAMPLE" [ref=e84] [cursor=pointer]:
+              - /url: objects/domain-example.html
+              - code [ref=e85]: DOMAIN-EXAMPLE
+          - cell "MasterDataDomain" [ref=e86]
+          - cell "Example Domain" [ref=e87]
+          - cell "draft" [ref=e88]
+          - cell [ref=e89]
+          - cell [ref=e90]
+    - paragraph [ref=e91]:
+      - link "Open full searchable object list" [ref=e92] [cursor=pointer]:
+        - /url: objects.html
+  - generic [ref=e93]: Generated output is disposable. Canonical Markdown + YAML files remain authoritative. No hosted UI, login, editor, SAP write-back, or AI auto-mutation is included.

@@ -1,0 +1,95 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Objects" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Generated local static read-only viewer over the SQLite index.
+    - navigation "Viewer navigation" [ref=e7]:
+      - link "Dashboard" [ref=e8] [cursor=pointer]:
+        - /url: index.html
+      - link "Objects" [ref=e9] [cursor=pointer]:
+        - /url: objects.html
+      - link "Gaps" [ref=e10] [cursor=pointer]:
+        - /url: gaps.html
+      - link "Decisions" [ref=e11] [cursor=pointer]:
+        - /url: decisions.html
+      - link "Owners" [ref=e12] [cursor=pointer]:
+        - /url: owners.html
+      - link "Manifest" [ref=e13] [cursor=pointer]:
+        - /url: viewer-manifest.json
+  - generic [ref=e14]:
+    - text: "Index freshness:"
+    - strong [ref=e15]: fresh
+    - text: . Viewer content is generated from the current SQLite index.
+  - generic [ref=e16]:
+    - text: Read-only generated artifact. Canonical files in
+    - code [ref=e17]: model/
+    - text: remain the source of truth; this viewer can be deleted and rebuilt at any time.
+  - generic [ref=e18]:
+    - heading "Searchable objects" [level=2] [ref=e19]
+    - textbox "Search IDs, labels, Customer Group, KNVV, KDGRP, owners, related terms..." [ref=e20]
+    - paragraph [ref=e21]: 5 objects shown. Search is local and works from file:// because the rows contain their own search terms.
+    - generic [ref=e22]:
+      - generic [ref=e23]: Attribute
+      - generic [ref=e24]: BusinessEntity
+      - generic [ref=e25]: MasterDataDomain
+    - table [ref=e26]:
+      - rowgroup [ref=e27]:
+        - row "ID Type Label Status Owners Hints" [ref=e28]:
+          - columnheader "ID" [ref=e29]
+          - columnheader "Type" [ref=e30]
+          - columnheader "Label" [ref=e31]
+          - columnheader "Status" [ref=e32]
+          - columnheader "Owners" [ref=e33]
+          - columnheader "Hints" [ref=e34]
+      - rowgroup [ref=e35]:
+        - row "ATTR-PRODUCT-ID Attribute Product ID active" [ref=e36]:
+          - cell "ATTR-PRODUCT-ID" [ref=e37]:
+            - link "ATTR-PRODUCT-ID" [ref=e38] [cursor=pointer]:
+              - /url: objects/attr-product-id.html
+              - code [ref=e39]: ATTR-PRODUCT-ID
+          - cell "Attribute" [ref=e40]
+          - cell "Product ID" [ref=e41]
+          - cell "active" [ref=e42]
+          - cell [ref=e43]
+          - cell [ref=e44]
+        - row "ATTR-PRODUCT-NAME Attribute Product Name active" [ref=e45]:
+          - cell "ATTR-PRODUCT-NAME" [ref=e46]:
+            - link "ATTR-PRODUCT-NAME" [ref=e47] [cursor=pointer]:
+              - /url: objects/attr-product-name.html
+              - code [ref=e48]: ATTR-PRODUCT-NAME
+          - cell "Attribute" [ref=e49]
+          - cell "Product Name" [ref=e50]
+          - cell "active" [ref=e51]
+          - cell [ref=e52]
+          - cell [ref=e53]
+        - row "ENTITY-PRODUCT BusinessEntity Product active" [ref=e54]:
+          - cell "ENTITY-PRODUCT" [ref=e55]:
+            - link "ENTITY-PRODUCT" [ref=e56] [cursor=pointer]:
+              - /url: objects/entity-product.html
+              - code [ref=e57]: ENTITY-PRODUCT
+          - cell "BusinessEntity" [ref=e58]
+          - cell "Product" [ref=e59]
+          - cell "active" [ref=e60]
+          - cell [ref=e61]
+          - cell [ref=e62]
+        - row "DOMAIN-EXAMPLE MasterDataDomain Example Domain draft" [ref=e63]:
+          - cell "DOMAIN-EXAMPLE" [ref=e64]:
+            - link "DOMAIN-EXAMPLE" [ref=e65] [cursor=pointer]:
+              - /url: objects/domain-example.html
+              - code [ref=e66]: DOMAIN-EXAMPLE
+          - cell "MasterDataDomain" [ref=e67]
+          - cell "Example Domain" [ref=e68]
+          - cell "draft" [ref=e69]
+          - cell [ref=e70]
+          - cell [ref=e71]
+        - row "DOMAIN-PRODUCT MasterDataDomain Product active" [ref=e72]:
+          - cell "DOMAIN-PRODUCT" [ref=e73]:
+            - link "DOMAIN-PRODUCT" [ref=e74] [cursor=pointer]:
+              - /url: objects/domain-product.html
+              - code [ref=e75]: DOMAIN-PRODUCT
+          - cell "MasterDataDomain" [ref=e76]
+          - cell "Product" [ref=e77]
+          - cell "active" [ref=e78]
+          - cell [ref=e79]
+          - cell [ref=e80]
+  - generic [ref=e81]: Generated output is disposable. Canonical Markdown + YAML files remain authoritative. No hosted UI, login, editor, SAP write-back, or AI auto-mutation is included.

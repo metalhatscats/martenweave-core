@@ -1,0 +1,2 @@
+{"detail":"Index not found. Run build-index first."}
+HTTP_STATUS:400

@@ -1,0 +1,106 @@
+Repository Health
+  Total objects: 14
+  Index fresh:   True
+  Missing name:        0
+  Missing description: 14
+  Ownership coverage:  0/13 (0.0%)
+
+Data Quality Coverage
+  Attributes with rules:    0/5 (0.0%)
+  Endpoints with LoV:       0/5 (0.0%)
+  Mappings with value map:  0/0 (0.0%)
+  Datasets with profile:    0/1 (0.0%)
+  Active objects with owner: 0/13 (0.0%)
+
+Coverage Gaps (24)
+┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
+┃ Object ID          ┃ Type           ┃ Gap               ┃ Suggested Action   ┃
+┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
+│ ATTR-PRODUCT-ACTI… │ Attribute      │ missing_owner     │ Add                │
+│                    │                │                   │ business_owner,    │
+│                    │                │                   │ technical_owner,   │
+│                    │                │                   │ or data_steward.   │
+│ ATTR-PRODUCT-ACTI… │ Attribute      │ missing_validati… │ Add a              │
+│                    │                │                   │ ValidationRule     │
+│                    │                │                   │ referencing this   │
+│                    │                │                   │ attribute.         │
+│ ATTR-PRODUCT-CATE… │ Attribute      │ missing_owner     │ Add                │
+│                    │                │                   │ business_owner,    │
+│                    │                │                   │ technical_owner,   │
+│                    │                │                   │ or data_steward.   │
+│ ATTR-PRODUCT-CATE… │ Attribute      │ missing_validati… │ Add a              │
+│                    │                │                   │ ValidationRule     │
+│                    │                │                   │ referencing this   │
+│                    │                │                   │ attribute.         │
+│ ATTR-PRODUCT-ID    │ Attribute      │ missing_owner     │ Add                │
+│                    │                │                   │ business_owner,    │
+│                    │                │                   │ technical_owner,   │
+│                    │                │                   │ or data_steward.   │
+│ ATTR-PRODUCT-ID    │ Attribute      │ missing_validati… │ Add a              │
+│                    │                │                   │ ValidationRule     │
+│                    │                │                   │ referencing this   │
+│                    │                │                   │ attribute.         │
+│ ATTR-PRODUCT-NAME  │ Attribute      │ missing_owner     │ Add                │
+│                    │                │                   │ business_owner,    │
+│                    │                │                   │ technical_owner,   │
+│                    │                │                   │ or data_steward.   │
+│ ATTR-PRODUCT-NAME  │ Attribute      │ missing_validati… │ Add a              │
+│                    │                │                   │ ValidationRule     │
+│                    │                │                   │ referencing this   │
+│                    │                │                   │ attribute.         │
+│ ATTR-PRODUCT-UNIT… │ Attribute      │ missing_owner     │ Add                │
+│                    │                │                   │ business_owner,    │
+│                    │                │                   │ technical_owner,   │
+│                    │                │                   │ or data_steward.   │
+│ ATTR-PRODUCT-UNIT… │ Attribute      │ missing_validati… │ Add a              │
+│                    │                │                   │ ValidationRule     │
+│                    │                │                   │ referencing this   │
+│                    │                │                   │ attribute.         │
+│ DS-PRODUCT-CSV     │ Dataset        │ missing_owner     │ Add                │
+│                    │                │                   │ business_owner,    │
+│                    │                │                   │ technical_owner,   │
+│                    │                │                   │ or data_steward.   │
+│ DS-PRODUCT-CSV     │ Dataset        │ missing_profile   │ Run                │
+│                    │                │                   │ profile-dataset on │
+│                    │                │                   │ this dataset.      │
+│ ENTITY-PRODUCT     │ BusinessEntity │ missing_owner     │ Add                │
+│                    │                │                   │ business_owner,    │
+│                    │                │                   │ technical_owner,   │
+│                    │                │                   │ or data_steward.   │
+│ FEP-PRODUCT-ACTIVE │ FieldEndpoint  │ missing_owner     │ Add                │
+│                    │                │                   │ business_owner,    │
+│                    │                │                   │ technical_owner,   │
+│                    │                │                   │ or data_steward.   │
+│ FEP-PRODUCT-ACTIVE │ FieldEndpoint  │ missing_lov       │ Link a ValueList   │
+│                    │                │                   │ to this field      │
+│                    │                │                   │ endpoint.          │
+│ FEP-PRODUCT-CATEG… │ FieldEndpoint  │ missing_owner     │ Add                │
+│                    │                │                   │ business_owner,    │
+│                    │                │                   │ technical_owner,   │
+│                    │                │                   │ or data_steward.   │
+│ FEP-PRODUCT-CATEG… │ FieldEndpoint  │ missing_lov       │ Link a ValueList   │
+│                    │                │                   │ to this field      │
+│                    │                │                   │ endpoint.          │
+│ FEP-PRODUCT-ID     │ FieldEndpoint  │ missing_owner     │ Add                │
+│                    │                │                   │ business_owner,    │
+│                    │                │                   │ technical_owner,   │
+│                    │                │                   │ or data_steward.   │
+│ FEP-PRODUCT-ID     │ FieldEndpoint  │ missing_lov       │ Link a ValueList   │
+│                    │                │                   │ to this field      │
+│                    │                │                   │ endpoint.          │
+│ FEP-PRODUCT-NAME   │ FieldEndpoint  │ missing_owner     │ Add                │
+│                    │                │                   │ business_owner,    │
+│                    │                │                   │ technical_owner,   │
+│                    │                │                   │ or data_steward.   │
+└────────────────────┴────────────────┴───────────────────┴────────────────────┘
+  ... and 4 more gaps
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
+┃ Type             ┃ Count ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
+│ Attribute        │ 5     │
+│ BusinessEntity   │ 1     │
+│ Dataset          │ 1     │
+│ FieldEndpoint    │ 5     │
+│ MasterDataDomain │ 1     │
+│ ValueList        │ 1     │
+└──────────────────┴───────┘
