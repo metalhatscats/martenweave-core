@@ -2505,6 +2505,17 @@ def agent_loop(
         for h in result.human_checks:
             console.print(f"  • {h}")
 
+    if result.operations_preview:
+        console.print("\n[bold]Operations preview:[/bold]")
+        preview_table = Table("Operation", "Object", "Status")
+        for op in result.operations_preview:
+            preview_table.add_row(
+                op.get("op", "—"),
+                op.get("object_id", "—"),
+                op.get("status", "—"),
+            )
+        console.print(preview_table)
+
     if result.log:
         console.print("\n[bold]Iteration log:[/bold]")
         table = Table("Iteration", "Action", "Proposal", "Validation")

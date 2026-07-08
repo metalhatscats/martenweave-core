@@ -12,8 +12,10 @@ from modelops_core.ai.agent_loop import (
     _errors_unchanged,
     run_agent_loop,
 )
+from modelops_core.ai.provider_adapter import AIProviderError
 from modelops_core.approval.risk_service import RiskAssessment
 from modelops_core.impact.proposal_impact_service import ProposalImpactReport
+from modelops_core.patching.apply_service import DryRunResult
 
 
 def _valid_proposal(proposal_id: str = "PP-TEST-001") -> dict:
@@ -266,6 +268,7 @@ def test_agent_loop_high_risk(
     assert result.validation_status == "valid"
     assert result.impact["requires_approval"] is True
     assert result.impact["high_risk"] is True
+    assert any("ChangeRequest" in check for check in result.human_checks)
 
 
 @patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
@@ -358,6 +361,44 @@ def test_agent_loop_emits_terminal_impact_audit(
     assert len(impact_calls) == 1
     assert impact_calls[0].kwargs["proposal_id"] == proposal["id"]
     assert impact_calls[0].kwargs["validation_status"] == "valid"
+    assert impact_calls[0].kwargs["status"] == "success"
+
+
+@patch("modelops_core.ai.agent_loop._emit_iteration_audit")
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+@patch("modelops_core.ai.agent_loop.generate_proposal_impact_report")
+@patch("modelops_core.ai.agent_loop.compute_proposal_risk")
+def test_agent_loop_emits_high_risk_audit(
+    mock_risk,
+    mock_impact,
+    mock_build,
+    mock_audit,
+    sample_repo: Path,
+) -> None:
+    proposal = _valid_proposal()
+    mock_build.return_value = _make_result(proposal)
+    mock_impact.return_value = ProposalImpactReport(
+        proposal_id=proposal["id"],
+        operation_reports=[],
+        high_risk=True,
+    )
+    mock_risk.return_value = RiskAssessment(
+        requires_approval=True,
+        risk_level="high",
+        risk_reasons=["Touches high-risk object type."],
+        affected_object_count=6,
+        max_impact_depth=3,
+    )
+
+    result = run_agent_loop(sample_repo, "Add risky mapping.", max_iterations=3)
+
+    assert result.final_status == AgentLoopStatus.HIGH_RISK
+    impact_calls = [
+        call for call in mock_audit.call_args_list
+        if call.kwargs.get("action") == "impact_analysis"
+    ]
+    assert len(impact_calls) == 1
+    assert impact_calls[0].kwargs["status"] == "high_risk"
 
 
 def test_iteration_log_entry_to_dict() -> None:
@@ -380,8 +421,92 @@ def test_iteration_log_entry_to_dict() -> None:
 @patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
 @patch("modelops_core.ai.agent_loop.generate_proposal_impact_report")
 @patch("modelops_core.ai.agent_loop.compute_proposal_risk")
+@patch("modelops_core.ai.agent_loop.dry_run_patch_proposal")
 @patch("modelops_core.ai.agent_loop.write_patch_proposal")
-def test_agent_loop_dry_run_does_not_write(
+def test_agent_loop_dry_run_returns_operations_preview(
+    mock_write,
+    mock_dry_run,
+    mock_risk,
+    mock_impact,
+    mock_build,
+    sample_repo: Path,
+) -> None:
+    proposal = _valid_proposal()
+    mock_build.return_value = _make_result(proposal)
+    mock_impact.return_value = ProposalImpactReport(
+        proposal_id=proposal["id"],
+        operation_reports=[],
+        high_risk=False,
+    )
+    mock_risk.return_value = RiskAssessment(
+        requires_approval=False,
+        risk_level="low",
+        risk_reasons=[],
+        affected_object_count=0,
+        max_impact_depth=0,
+    )
+    mock_write.return_value = sample_repo / "model" / "patch-proposals" / f"{proposal['id']}.md"
+    preview = DryRunResult(
+        proposal_id=proposal["id"],
+        would_change=True,
+        operations_preview=[
+            {
+                "op": "update_object",
+                "object_id": "ATTR-TEST",
+                "status": "would_update",
+            }
+        ],
+    )
+    mock_dry_run.return_value = preview
+
+    result = run_agent_loop(sample_repo, "Dry-run goal.", max_iterations=3, dry_run=True)
+
+    assert result.final_status == AgentLoopStatus.VALID_PROPOSAL
+    assert result.proposal_path is not None
+    assert result.operations_preview == preview.operations_preview
+    mock_dry_run.assert_called_once()
+
+
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+def test_agent_loop_provider_failure(
+    mock_build,
+    sample_repo: Path,
+) -> None:
+    mock_build.side_effect = AIProviderError("provider is unavailable")
+
+    result = run_agent_loop(sample_repo, "Generate with failing provider.", max_iterations=3)
+
+    assert result.final_status == AgentLoopStatus.FAILED
+    assert result.validation_status == "failed"
+    assert result.iterations == 1
+    assert any("provider" in check.lower() for check in result.human_checks)
+    assert not any("Traceback" in check for check in result.human_checks)
+
+
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+@patch("modelops_core.ai.agent_loop.generate_proposal_impact_report")
+def test_agent_loop_impact_failure(
+    mock_impact,
+    mock_build,
+    sample_repo: Path,
+) -> None:
+    proposal = _valid_proposal()
+    mock_build.return_value = _make_result(proposal)
+    mock_impact.side_effect = RuntimeError("impact engine failed")
+
+    result = run_agent_loop(sample_repo, "Goal with bad impact.", max_iterations=3)
+
+    assert result.final_status == AgentLoopStatus.FAILED
+    assert result.validation_status == "failed"
+    assert result.proposal_id == proposal["id"]
+    assert any("impact" in check.lower() for check in result.human_checks)
+
+
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+@patch("modelops_core.ai.agent_loop.generate_proposal_impact_report")
+@patch("modelops_core.ai.agent_loop.compute_proposal_risk")
+@patch("modelops_core.ai.agent_loop.write_patch_proposal")
+def test_agent_loop_write_failure(
     mock_write,
     mock_risk,
     mock_impact,
@@ -402,9 +527,11 @@ def test_agent_loop_dry_run_does_not_write(
         affected_object_count=0,
         max_impact_depth=0,
     )
+    mock_write.side_effect = OSError("disk full")
 
-    result = run_agent_loop(sample_repo, "Dry-run goal.", max_iterations=3, dry_run=True)
+    result = run_agent_loop(sample_repo, "Goal that cannot be written.", max_iterations=3)
 
-    assert result.final_status == AgentLoopStatus.VALID_PROPOSAL
-    mock_write.assert_not_called()
-    assert result.proposal_path is not None
+    assert result.final_status == AgentLoopStatus.FAILED
+    assert result.validation_status == "failed"
+    assert result.proposal_id == proposal["id"]
+    assert any("write" in check.lower() or "disk" in check.lower() for check in result.human_checks)

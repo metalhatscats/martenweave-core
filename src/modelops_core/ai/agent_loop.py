@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import shutil
+import tempfile
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
 from modelops_core.ai.patch_proposal_service import build_patch_proposal_from_note
+from modelops_core.ai.provider_adapter import AIProviderError
 from modelops_core.approval import compute_proposal_risk
 from modelops_core.config import (
     load_repo_config,
@@ -15,6 +18,7 @@ from modelops_core.config import (
     resolve_model_path,
 )
 from modelops_core.impact.proposal_impact_service import generate_proposal_impact_report
+from modelops_core.patching.apply_service import dry_run_patch_proposal
 from modelops_core.patching.patch_proposal_service import write_patch_proposal
 from modelops_core.reports.audit_service import (
     AuditEventService,
@@ -68,6 +72,7 @@ class AgentLoopResult:
     assumptions: list[str] = field(default_factory=list)
     human_checks: list[str] = field(default_factory=list)
     log: list[IterationLogEntry] = field(default_factory=list)
+    operations_preview: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -81,6 +86,7 @@ class AgentLoopResult:
             "assumptions": self.assumptions,
             "human_checks": self.human_checks,
             "log": [entry.to_dict() for entry in self.log],
+            "operations_preview": self.operations_preview,
         }
 
 
@@ -110,7 +116,8 @@ def _build_refined_note(
     previous_errors: list[dict[str, Any]],
 ) -> str:
     """Construct a refined note that feeds validation errors back to the proposer."""
-    proposal_id = proposal.get("id") if isinstance(proposal, dict) else None
+    proposal_dict = proposal if isinstance(proposal, dict) else {}
+    proposal_id = proposal_dict.get("id")
     lines: list[str] = [f"Original goal: {goal}", ""]
 
     if proposal_id:
@@ -133,7 +140,7 @@ def _build_refined_note(
     lines.append("")
     lines.append("Please fix these errors and regenerate the proposal. Do not change the intent.")
 
-    impact = proposal.get("impact") if isinstance(proposal, dict) else None
+    impact = proposal_dict.get("impact")
     if isinstance(impact, dict) and impact.get("affected_objects_count"):
         count = impact["affected_objects_count"]
         lines.append("")
@@ -143,6 +150,15 @@ def _build_refined_note(
         )
 
     return "\n".join(lines)
+
+
+def _change_request_guidance(proposal_id: str) -> str:
+    """Return guidance for creating a ChangeRequest for a high-risk proposal."""
+    return (
+        f"This proposal is high-risk and requires approval. Create a ChangeRequest "
+        f"with `martenweave change-request create --proposal {proposal_id}` linking "
+        f"proposal {proposal_id}."
+    )
 
 
 def _run_baseline_validation(repo_root: Path) -> dict[str, Any]:
@@ -181,13 +197,14 @@ def _emit_iteration_audit(
     validation_status: str | None,
     errors: list[dict[str, Any]] | None,
     dry_run: bool,
+    status: str = "success",
 ) -> None:
     """Write an audit event for every loop iteration."""
     service = AuditEventService(repo_root)
     event = create_audit_event(
         event_type="agent_loop_iteration",
         actor="agent-loop",
-        status="success",
+        status=status,
         command="agent-loop",
         proposal_id=proposal_id,
         validation_status=validation_status,
@@ -196,9 +213,36 @@ def _emit_iteration_audit(
             "errors": errors or [],
             "proposal_id": proposal_id,
         },
-        metadata={"dry_run": dry_run},
+        metadata={"dry_run": dry_run, "agent_loop_status": status},
     )
     service.emit(event)
+
+
+def _run_dry_run_preview(
+    repo_root: Path,
+    model_path: Path,
+    proposal: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Preview what applying the proposal would do without touching canonical files.
+
+    Writes the proposal to a temporary copy of the model, runs the dry-run
+    service, and returns the operations preview. The temporary directory is
+    removed before returning.
+    """
+    proposal_id = proposal.get("id", "unknown")
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_root = Path(tmpdir)
+        tmp_model = tmp_root / "model"
+        shutil.copytree(model_path, tmp_model)
+        config_path = repo_root / "modelops.config.yaml"
+        if config_path.exists():
+            shutil.copy2(config_path, tmp_root / config_path.name)
+
+        preview_proposal = dict(proposal)
+        preview_proposal["status"] = "accepted"
+        write_patch_proposal(preview_proposal, tmp_model)
+        dry_run_result = dry_run_patch_proposal(tmp_model, proposal_id)
+        return [dict(op) for op in dry_run_result.operations_preview]
 
 
 def run_agent_loop(
@@ -239,6 +283,7 @@ def run_agent_loop(
         validation_status="valid" if baseline["is_valid"] else "invalid",
         errors=baseline_errors,
         dry_run=dry_run,
+        status="success" if baseline["is_valid"] else "invalid",
     )
 
     if not baseline["is_valid"]:
@@ -259,11 +304,40 @@ def run_agent_loop(
         result.iterations = iteration
 
         # PROPOSE
-        proposal_result = build_patch_proposal_from_note(
-            current_note,
-            repo_root=repo_root,
-            command="agent-loop",
-        )
+        try:
+            proposal_result = build_patch_proposal_from_note(
+                current_note,
+                repo_root=repo_root,
+                command="agent-loop",
+            )
+        except (AIProviderError, Exception) as exc:  # noqa: BLE001
+            log.append(
+                IterationLogEntry(
+                    iteration=iteration,
+                    action="propose",
+                    proposal_id=None,
+                    validation_status="failed",
+                    errors=[{"code": "PROPOSAL_GENERATION_FAILED", "message": str(exc)}],
+                )
+            )
+            _emit_iteration_audit(
+                repo_root=repo_root,
+                iteration=iteration,
+                proposal_id=None,
+                action="propose",
+                validation_status="failed",
+                errors=[{"code": "PROPOSAL_GENERATION_FAILED", "message": str(exc)}],
+                dry_run=dry_run,
+                status="failed",
+            )
+            result.final_status = AgentLoopStatus.FAILED
+            result.validation_status = "failed"
+            result.human_checks = [
+                "Proposal generation failed. Check the AI provider configuration and try again."
+            ]
+            result.log = log
+            return result
+
         proposal = proposal_result.get("proposal")
 
         if proposal is None:
@@ -284,6 +358,7 @@ def run_agent_loop(
                 validation_status="not_generated",
                 errors=[],
                 dry_run=dry_run,
+                status="failed",
             )
             result.final_status = AgentLoopStatus.FAILED
             result.validation_status = "not_generated"
@@ -314,6 +389,7 @@ def run_agent_loop(
             validation_status=validation_status,
             errors=error_results,
             dry_run=dry_run,
+            status="success" if validation_status == "valid" else "invalid",
         )
 
         # VALIDATE
@@ -350,17 +426,37 @@ def run_agent_loop(
 
     # IMPACT analysis for a valid proposal.
     operations = final_proposal.get("operations", [])
-    impact_report = generate_proposal_impact_report(
-        db_path=db_path,
-        proposal_id=final_proposal.get("id", "unknown"),
-        operations=operations,
-        max_depth=2,
-    )
-    risk = compute_proposal_risk(
-        operations=operations,
-        model_path=model_path,
-        impact_report=impact_report,
-    )
+    try:
+        impact_report = generate_proposal_impact_report(
+            db_path=db_path,
+            proposal_id=final_proposal.get("id", "unknown"),
+            operations=operations,
+            max_depth=2,
+        )
+        risk = compute_proposal_risk(
+            operations=operations,
+            model_path=model_path,
+            impact_report=impact_report,
+        )
+    except (AIProviderError, Exception) as exc:  # noqa: BLE001
+        _emit_iteration_audit(
+            repo_root=repo_root,
+            iteration=result.iterations,
+            proposal_id=final_proposal.get("id"),
+            action="impact_analysis",
+            validation_status="valid",
+            errors=[{"code": "IMPACT_ANALYSIS_FAILED", "message": str(exc)}],
+            dry_run=dry_run,
+            status="failed",
+        )
+        result.final_status = AgentLoopStatus.FAILED
+        result.validation_status = "failed"
+        result.proposal_id = final_proposal.get("id")
+        result.human_checks = [
+            "Impact analysis failed. Check the index and proposal operations and try again."
+        ]
+        result.log = log
+        return result
 
     result.impact = {
         "high_risk": impact_report.high_risk,
@@ -369,6 +465,8 @@ def run_agent_loop(
         "risk_level": risk.risk_level,
         "risk_reasons": risk.risk_reasons,
     }
+
+    is_high_risk = risk.requires_approval or impact_report.high_risk
 
     # Audit the terminal impact assessment before returning DONE or HIGH_RISK.
     _emit_iteration_audit(
@@ -379,22 +477,57 @@ def run_agent_loop(
         validation_status="valid",
         errors=[],
         dry_run=dry_run,
+        status="high_risk" if is_high_risk else "success",
     )
 
-    # Persist the proposal unless this is a dry-run preview.
-    if not dry_run:
-        final_proposal_path = write_patch_proposal(final_proposal, model_path)
+    # Build a dry-run operations preview when requested.
+    if dry_run:
+        try:
+            result.operations_preview = _run_dry_run_preview(
+                repo_root=repo_root,
+                model_path=model_path,
+                proposal=final_proposal,
+            )
+        except Exception as exc:  # noqa: BLE001
+            result.operations_preview = []
+            result.human_checks.append(
+                f"Dry-run preview could not be generated: {exc}"
+            )
+        final_proposal_path = model_path / "patch-proposals" / f"{final_proposal['id']}.md"
         result.proposal_path = str(final_proposal_path)
     else:
-        # Compute the path where the proposal would be written.
-        final_proposal_path = model_path / "patch-proposals" / f"{final_proposal['id']}.md"
+        # Persist the proposal.
+        try:
+            final_proposal_path = write_patch_proposal(final_proposal, model_path)
+        except (AIProviderError, Exception) as exc:  # noqa: BLE001
+            _emit_iteration_audit(
+                repo_root=repo_root,
+                iteration=result.iterations,
+                proposal_id=final_proposal.get("id"),
+                action="write_proposal",
+                validation_status="valid",
+                errors=[{"code": "WRITE_PROPOSAL_FAILED", "message": str(exc)}],
+                dry_run=dry_run,
+                status="failed",
+            )
+            result.final_status = AgentLoopStatus.FAILED
+            result.validation_status = "failed"
+            result.proposal_id = final_proposal.get("id")
+            result.human_checks = [
+                "Failed to write the proposal file. Check permissions and disk space and try again."
+            ]
+            result.log = log
+            return result
         result.proposal_path = str(final_proposal_path)
 
     result.proposal_id = final_proposal.get("id")
 
-    if risk.requires_approval or impact_report.high_risk:
+    if is_high_risk:
         result.final_status = AgentLoopStatus.HIGH_RISK
         result.validation_status = "valid"
+        result.human_checks.append(
+            _change_request_guidance(final_proposal.get("id", "unknown"))
+        )
         result.log = log
         return result
 
