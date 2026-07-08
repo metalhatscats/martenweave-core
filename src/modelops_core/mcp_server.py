@@ -735,7 +735,9 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
                     "human_checks": [
                         "Verify the proposal ID and that the proposal has been written."
                     ],
-                }
+                },
+                indent=2,
+                default=str,
             )
 
         parsed = parse_file(proposal_path)
