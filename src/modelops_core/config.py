@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Any
 
 import yaml
 from pydantic import BaseModel, Field
@@ -63,6 +64,10 @@ class RepoConfig(BaseModel):
         description="Minimum unique approvers required for high-risk ChangeRequests.",
     )
     resource_limits: ResourceLimits = Field(default_factory=ResourceLimits)
+    ai: dict[str, Any] | None = Field(
+        default=None,
+        description="Optional AI provider configuration, e.g. a list of providers to route.",
+    )
 
 
 class Settings(BaseModel):

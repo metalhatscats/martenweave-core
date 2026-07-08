@@ -13,26 +13,63 @@ from modelops_core.ai.provider_adapter import (
     NoProviderAdapter,
     ProviderOutputValidator,
 )
+from modelops_core.ai.provider_router import ProviderRouter
 
 _DEFAULT_VALIDATOR = ProviderOutputValidator()
 
 
-def _get_default_adapter() -> AIProviderAdapter:
-    """Resolve the default AI provider adapter from environment."""
-    provider = os.getenv("MARTENWEAVE_AI_PROVIDER", "no_provider")
-    if provider == "kimi":
+_KNOWN_PROVIDERS = ["no_provider", "kimi", "openai", "ollama"]
+
+
+def _build_provider_adapter(name: str) -> AIProviderAdapter:
+    """Construct a single provider adapter by name."""
+    if name == "no_provider":
+        return NoProviderAdapter()
+    if name == "kimi":
         from modelops_core.ai.kimi_adapter import KimiAdapter
 
         return KimiAdapter()
-    if provider == "openai":
+    if name == "openai":
         from modelops_core.ai.openai_compatible_adapter import OpenAICompatibleAdapter
 
         return OpenAICompatibleAdapter()
-    if provider == "ollama":
+    if name == "ollama":
         from modelops_core.ai.ollama_adapter import OllamaAdapter
 
         return OllamaAdapter()
-    return NoProviderAdapter()
+    raise ValueError(
+        f"Unknown AI provider '{name}'. "
+        f"Known providers: {', '.join(_KNOWN_PROVIDERS)}."
+    )
+
+
+def _get_default_adapter(repo_root: Path | None = None) -> AIProviderAdapter:
+    """Resolve the default AI provider adapter from environment or repo config."""
+    provider = os.getenv("MARTENWEAVE_AI_PROVIDER")
+
+    if provider is None and repo_root is not None:
+        from modelops_core.config import load_repo_config
+
+        config = load_repo_config(repo_root)
+        if config is not None and config.ai is not None:
+            providers = config.ai.get("providers")
+            if isinstance(providers, list):
+                provider = ",".join(str(p) for p in providers if p)
+
+    if provider is None:
+        provider = "no_provider"
+
+    names = [p.strip() for p in provider.split(",") if p.strip()]
+    if len(names) > 1:
+        adapters = [_build_provider_adapter(name) for name in names]
+        return ProviderRouter(
+            primary=adapters[0],
+            fallbacks=adapters[1:],
+            primary_name=names[0],
+            fallback_names=names[1:],
+        )
+
+    return _build_provider_adapter(names[0])
 
 
 _ID_PATTERN = re.compile(r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*")
@@ -90,7 +127,7 @@ def build_patch_proposal_from_note(
         }
 
     if adapter is None:
-        adapter = _get_default_adapter()
+        adapter = _get_default_adapter(repo_root=repo_root)
 
     if repo_root is not None:
         from modelops_core.telemetry.ai_usage import wrap_ai_adapter
