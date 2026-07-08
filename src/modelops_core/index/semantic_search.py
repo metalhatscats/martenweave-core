@@ -7,6 +7,7 @@ import math
 import re
 import sqlite3
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from modelops_core.schemas.registry import get_search_fields
@@ -181,6 +182,7 @@ class SemanticIndexBuilder:
                 "VALUES (?, ?, ?, ?)",
                 (object_id, vector_json, magnitude, term_count),
             )
+        conn.commit()
 
     def _extract_text(
         self,
@@ -207,3 +209,141 @@ class SemanticIndexBuilder:
                     parts.append(value)
 
         return " ".join(parts)
+
+
+class SemanticSearcher:
+    """Search the semantic index using TF-IDF cosine similarity."""
+
+    def search(
+        self,
+        db_path: Path,
+        query: str,
+        candidate_ids: set[str] | None = None,
+        expand: bool = False,
+        limit: int = 50,
+        min_score: float = 0.0,
+    ) -> list[SemanticSearchResult]:
+        """Return objects ranked by semantic similarity to ``query``."""
+        query = query.strip()
+        if not query or not Path(db_path).exists():
+            return []
+
+        conn = sqlite3.connect(str(db_path))
+        conn.row_factory = sqlite3.Row
+        try:
+            if not self._has_index(conn):
+                return []
+
+            vocabulary = self._load_vocabulary(conn)
+            if not vocabulary:
+                return []
+
+            query_vector = self._build_query_vector(query, vocabulary)
+            if not query_vector:
+                return []
+
+            if expand and candidate_ids:
+                query_vector = self._expand_query_vector(
+                    conn, query_vector, candidate_ids, vocabulary
+                )
+
+            candidates = self._load_candidates(conn, candidate_ids)
+            results: list[SemanticSearchResult] = []
+            query_terms = set(_tokenize(query))
+            for object_id, obj_type, vector in candidates:
+                score = _cosine_similarity(query_vector, vector)
+                if score < min_score:
+                    continue
+                matched_terms = [t for t in query_terms if t in vector]
+                results.append(
+                    SemanticSearchResult(
+                        object_id=object_id,
+                        object_type=obj_type,
+                        semantic_score=round(score, 6),
+                        matched_terms=matched_terms,
+                    )
+                )
+
+            results.sort(key=lambda r: r.semantic_score, reverse=True)
+            return results[:limit]
+        finally:
+            conn.close()
+
+    def _has_index(self, conn: sqlite3.Connection) -> bool:
+        row = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='semantic_index'"
+        ).fetchone()
+        return row is not None
+
+    def _load_vocabulary(self, conn: sqlite3.Connection) -> dict[str, float]:
+        rows = conn.execute("SELECT term, idf FROM semantic_vocabulary").fetchall()
+        return {row["term"]: row["idf"] for row in rows}
+
+    def _build_query_vector(
+        self, query: str, vocabulary: dict[str, float]
+    ) -> dict[str, float]:
+        tf = _term_frequencies(_tokenize(query))
+        vector = {
+            term: (1 + math.log(tf_val)) * vocabulary.get(term, 0.0)
+            for term, tf_val in tf.items()
+        }
+        return _normalize_vector(vector)
+
+    def _load_candidates(
+        self,
+        conn: sqlite3.Connection,
+        candidate_ids: set[str] | None,
+    ) -> list[tuple[str, str, dict[str, float]]]:
+        if candidate_ids is not None and not candidate_ids:
+            return []
+        if candidate_ids:
+            placeholders = ", ".join("?" for _ in candidate_ids)
+            sql = (
+                "SELECT si.object_id, o.type, si.term_vector_json "
+                f"FROM semantic_index si JOIN objects o ON o.id = si.object_id "
+                f"WHERE si.object_id IN ({placeholders})"
+            )
+            rows = conn.execute(sql, list(candidate_ids)).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT si.object_id, o.type, si.term_vector_json "
+                "FROM semantic_index si JOIN objects o ON o.id = si.object_id"
+            ).fetchall()
+        return [
+            (row["object_id"], row["type"], json.loads(row["term_vector_json"]))
+            for row in rows
+        ]
+
+    def _expand_query_vector(
+        self,
+        conn: sqlite3.Connection,
+        query_vector: dict[str, float],
+        candidate_ids: set[str],
+        vocabulary: dict[str, float],
+        expansion_weight: float = 0.3,
+        max_relationships: int = 20,
+    ) -> dict[str, float]:
+        """Blend in one-hop related object vectors."""
+        placeholders = ", ".join("?" for _ in candidate_ids)
+        rel_rows = conn.execute(
+            f"""
+            SELECT DISTINCT to_object_id
+            FROM object_relationships
+            WHERE from_object_id IN ({placeholders})
+            LIMIT ?
+            """,
+            list(candidate_ids) + [max_relationships],
+        ).fetchall()
+        if not rel_rows:
+            return query_vector
+
+        related_ids = {row["to_object_id"] for row in rel_rows}
+        related = self._load_candidates(conn, related_ids)
+        if not related:
+            return query_vector
+
+        expanded = dict(query_vector)
+        for _object_id, _obj_type, vector in related:
+            for term, value in vector.items():
+                expanded[term] = expanded.get(term, 0.0) + value * expansion_weight
+        return _normalize_vector(expanded)

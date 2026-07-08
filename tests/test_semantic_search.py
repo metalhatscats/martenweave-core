@@ -7,6 +7,7 @@ from pathlib import Path
 
 from modelops_core.index.semantic_search import (
     SemanticIndexBuilder,
+    SemanticSearcher,
     _compute_idf,
     _cosine_similarity,
     _term_frequencies,
@@ -102,3 +103,36 @@ def test_builder_creates_tables_and_vectors(tmp_path: Path) -> None:
     index = conn.execute("SELECT object_id, magnitude FROM semantic_index").fetchall()
     assert any(row[0] == "ATTR-001" for row in index)
     conn.close()
+
+
+def test_semantic_search_ranks_related_terms(tmp_path: Path) -> None:
+    db = tmp_path / "modelops.db"
+    conn = sqlite3.connect(str(db))
+    _build_objects_table(conn)
+    SemanticIndexBuilder().build(conn)
+    conn.close()
+
+    searcher = SemanticSearcher()
+    results = searcher.search(db, "customer grouping")
+    ids = [r.object_id for r in results]
+    assert "ATTR-001" in ids
+    assert "FEP-001" in ids
+    assert results[0].semantic_score >= results[1].semantic_score
+
+
+def test_semantic_search_empty_query(tmp_path: Path) -> None:
+    db = tmp_path / "modelops.db"
+    conn = sqlite3.connect(str(db))
+    _build_objects_table(conn)
+    SemanticIndexBuilder().build(conn)
+    conn.close()
+
+    assert SemanticSearcher().search(db, "   ") == []
+
+
+def test_semantic_search_missing_index(tmp_path: Path) -> None:
+    db = tmp_path / "empty.db"
+    conn = __import__("sqlite3").connect(str(db))
+    conn.executescript("CREATE TABLE objects (id TEXT PRIMARY KEY);")
+    conn.close()
+    assert SemanticSearcher().search(db, "customer") == []
