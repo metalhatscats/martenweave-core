@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from modelops_core.ai.prompt_registry import PromptRegistry
 from modelops_core.ai.provider_adapter import (
     AICandidateOutput,
     AIContextBundle,
@@ -76,6 +77,34 @@ def _build_prompt(context: AIContextBundle) -> str:
     lines.append("Respond with JSON matching this schema:")
     lines.append(json.dumps(_CANDIDATE_SCHEMA, indent=2))
     return "\n".join(lines)
+
+
+def build_prompt_messages(context: AIContextBundle) -> tuple[str, str]:
+    """Build (system_prompt, user_prompt) using the prompt registry, with fallback.
+
+    Tries to load the versioned "propose-patch" prompt template from the
+    registry. If the registry has no matching prompt, falls back to the
+    legacy hardcoded system prompt and user prompt builder.
+    """
+    context_dict = {
+        "note": context.note,
+        "repository_context": context.repository_context,
+        "dataset_columns": context.dataset_columns,
+        "dataset_row_count": context.dataset_row_count,
+        "affected_object_ids": context.affected_object_ids,
+        "domain": context.domain,
+        "include_raw_samples": context.include_raw_samples,
+    }
+
+    try:
+        registry = PromptRegistry()
+        system_prompt, user_prompt = registry.render_for_workflow(
+            "propose-patch", context_dict
+        )
+    except KeyError:
+        system_prompt, user_prompt = _SYSTEM_PROMPT, _build_prompt(context)
+
+    return system_prompt, user_prompt
 
 
 def _parse_candidate(raw: dict[str, Any]) -> AICandidateOutput:

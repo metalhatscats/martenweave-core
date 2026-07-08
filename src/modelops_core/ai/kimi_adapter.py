@@ -9,9 +9,8 @@ import urllib.request
 from typing import Any
 
 from modelops_core.ai._candidate_common import (
-    _SYSTEM_PROMPT,
-    _build_prompt,
     _parse_candidate,
+    build_prompt_messages,
 )
 from modelops_core.ai.provider_adapter import (
     AICandidateOutput,
@@ -92,10 +91,10 @@ class KimiAdapter:
                 "MOONSHOT_API_KEY is not set. Configure it in your environment or .env file."
             )
 
-        prompt = _build_prompt(context)
+        system_prompt, user_prompt = build_prompt_messages(context)
         messages = [
-            {"role": "system", "content": _SYSTEM_PROMPT},
-            {"role": "user", "content": prompt},
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
         ]
 
         response = _post_chat_completion(

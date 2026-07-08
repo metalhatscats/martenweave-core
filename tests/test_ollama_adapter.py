@@ -17,6 +17,27 @@ from modelops_core.ai.provider_adapter import (
 )
 
 
+def _minimal_valid_response() -> dict:
+    return {
+        "message": {
+            "content": json.dumps(
+                {
+                    "proposal_id": "PP-TEST-001",
+                    "title": "Test Proposal",
+                    "operations": [
+                        {
+                            "op": "update_object",
+                            "object_id": "DOMAIN-TEST",
+                            "target_path": "name",
+                            "after": "Updated",
+                        }
+                    ],
+                }
+            )
+        }
+    }
+
+
 def test_ollama_adapter_successful_response() -> None:
     adapter = OllamaAdapter()
 
@@ -55,6 +76,51 @@ def test_ollama_adapter_successful_response() -> None:
     assert c.title == "Test Proposal"
     assert len(c.operations) == 1
     assert c.operations[0]["object_id"] == "DOMAIN-TEST"
+
+
+def test_ollama_adapter_uses_registry_prompt() -> None:
+    adapter = OllamaAdapter()
+
+    mock_registry = mock.Mock()
+    mock_registry.render_for_workflow.return_value = (
+        "Registry system prompt",
+        "Registry user prompt",
+    )
+
+    with mock.patch(
+        "modelops_core.ai._candidate_common.PromptRegistry",
+        return_value=mock_registry,
+    ):
+        with mock.patch(
+            "modelops_core.ai.ollama_adapter._post_chat",
+            return_value=_minimal_valid_response(),
+        ) as mock_post:
+            adapter.generate_candidates(AIContextBundle(note="update name"))
+
+    messages = mock_post.call_args.kwargs["messages"]
+    assert messages[0]["content"] == "Registry system prompt"
+    assert messages[1]["content"] == "Registry user prompt"
+
+
+def test_ollama_adapter_fallback_when_registry_missing() -> None:
+    adapter = OllamaAdapter()
+
+    mock_registry = mock.Mock()
+    mock_registry.render_for_workflow.side_effect = KeyError("no prompt")
+
+    with mock.patch(
+        "modelops_core.ai._candidate_common.PromptRegistry",
+        return_value=mock_registry,
+    ):
+        with mock.patch(
+            "modelops_core.ai.ollama_adapter._post_chat",
+            return_value=_minimal_valid_response(),
+        ) as mock_post:
+            adapter.generate_candidates(AIContextBundle(note="update name"))
+
+    messages = mock_post.call_args.kwargs["messages"]
+    assert "data modeling assistant" in messages[0]["content"]
+    assert "Generate a patch proposal" in messages[1]["content"]
 
 
 def test_ollama_adapter_missing_message_raises() -> None:

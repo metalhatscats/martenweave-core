@@ -54,6 +54,28 @@ def test_get_for_workflow_missing_raises() -> None:
         registry.get_for_workflow("nonexistent-workflow")
 
 
+def test_prompt_registry_render_for_workflow() -> None:
+    registry = PromptRegistry()
+    system, user = registry.render_for_workflow(
+        "file-to-model",
+        {"dataset_profile": {"columns": ["customer_id"], "row_count": 10}},
+    )
+    assert "modeling assistant" in system.lower()
+    assert "file-to-model" in user
+    assert "customer_id" in user
+
+
+def test_prompt_registry_render_propose_patch() -> None:
+    registry = PromptRegistry()
+    system, user = registry.render_for_workflow(
+        "propose-patch",
+        {"note": "Update Customer Group description.", "domain": "DOMAIN-CUSTOMER-BP"},
+    )
+    assert "data modeling assistant" in system.lower()
+    assert "Update Customer Group description." in user
+    assert "DOMAIN-CUSTOMER-BP" in user
+
+
 def test_render_system_prompt() -> None:
     registry = PromptRegistry()
     template = registry.get("explain_trace")
