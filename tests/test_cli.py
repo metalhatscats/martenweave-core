@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import urllib.request
 from pathlib import Path
+from unittest.mock import MagicMock
 
 from typer.testing import CliRunner
 
@@ -351,3 +353,97 @@ def test_cli_doctor_json_missing_model_path(tmp_path: Path) -> None:
     data = json.loads(result.output)
     assert data["model_path_exists"] is False
     assert data["validation"]["ran"] is False
+
+
+# ---------------------------------------------------------------------------
+# ai-provider
+# ---------------------------------------------------------------------------
+
+
+def test_ai_provider_list() -> None:
+    result = runner.invoke(app, ["ai-provider", "list"])
+    assert result.exit_code == 0
+    assert "no_provider" in result.output
+    assert "kimi" in result.output
+    assert "openai" in result.output
+    assert "ollama" in result.output
+
+
+def test_ai_provider_list_json() -> None:
+    result = runner.invoke(app, ["ai-provider", "list", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    providers = {row["provider"] for row in data}
+    assert providers == {"no_provider", "kimi", "openai", "ollama"}
+
+
+def test_ai_provider_health_no_provider() -> None:
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "no_provider", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["provider"] == "no_provider"
+    assert data["configured"] is True
+    assert data["reachable"] is True
+    assert data["model"] is None
+    assert data["error"] is None
+
+
+def test_ai_provider_health_default_env(monkeypatch) -> None:
+    monkeypatch.setenv("MARTENWEAVE_AI_PROVIDER", "no_provider")
+    result = runner.invoke(app, ["ai-provider", "health", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["provider"] == "no_provider"
+    assert data["configured"] is True
+    assert data["reachable"] is True
+
+
+def test_ai_provider_health_missing_key(monkeypatch) -> None:
+    monkeypatch.delenv("KIMI_API_KEY", raising=False)
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["provider"] == "kimi"
+    assert data["configured"] is False
+    assert data["reachable"] is False
+    assert data["error"] == "KIMI_API_KEY not set"
+
+
+def test_ai_provider_health_reachable(monkeypatch) -> None:
+    monkeypatch.setenv("KIMI_API_KEY", "test-key")
+
+    mock_resp = MagicMock()
+    mock_resp.status = 200
+    mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+    mock_resp.__exit__ = MagicMock(return_value=False)
+
+    def mock_urlopen(req, **_kwargs):
+        return mock_resp
+
+    monkeypatch.setattr(urllib.request, "urlopen", mock_urlopen)
+
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["provider"] == "kimi"
+    assert data["configured"] is True
+    assert data["reachable"] is True
+    assert data["model"] == "kimi-latest"
+    assert data["error"] is None
+
+
+def test_ai_provider_health_unreachable(monkeypatch) -> None:
+    monkeypatch.setenv("KIMI_API_KEY", "test-key")
+
+    def mock_urlopen(_req, **_kwargs):
+        raise urllib.error.URLError("Connection refused")
+
+    monkeypatch.setattr(urllib.request, "urlopen", mock_urlopen)
+
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["provider"] == "kimi"
+    assert data["configured"] is True
+    assert data["reachable"] is False
+    assert "test-key" not in json.dumps(data)
