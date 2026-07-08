@@ -148,9 +148,8 @@ def _fetch_redacted_sources(
         if not source_id or source_id in seen:
             continue
 
-        # Link source if its source_id matches an included object id or is referenced
-        # as a dataset_id in an object's frontmatter. Fallback: include all
-        # dataset_profile sources when the registry is present (heuristic).
+        # Link source if its source_id matches an included object id. Fallback:
+        # include all dataset_profile sources when the registry is present (heuristic).
         source_type = entry.get("source_type", "")
         if source_id not in object_id_set and source_type != "dataset_profile":
             continue
