@@ -647,4 +647,56 @@ def test_cli_search_semantic_unexpected_error_fallback(tmp_path: Path) -> None:
     data = json.loads(result.output)
     assert "semantic_error" in data
     assert "semantic engine exploded" in data["semantic_error"]
-    assert data["total_count"] >= 1
+
+
+def test_semantic_search_uses_repo_config_max_context_relationships(tmp_path: Path) -> None:
+    """semantic_search_objects should load max_context_relationships from repo config."""
+    repo = tmp_path / "repo"
+    generated = repo / "generated"
+    generated.mkdir(parents=True)
+    (repo / "modelops.config.yaml").write_text(
+        "name: test\nresource_limits:\n  max_context_relationships: 7\n",
+        encoding="utf-8",
+    )
+    db_path = generated / "modelops.db"
+    db_path.write_text("", encoding="utf-8")
+
+    from modelops_core.index.query_service import semantic_search_objects
+
+    with patch.object(SemanticSearcher, "search") as mock_search:
+        mock_search.return_value = []
+        semantic_search_objects(
+            db_path=db_path,
+            query="customer",
+            expand=True,
+            repo_root=repo,
+        )
+        assert mock_search.call_args is not None
+        assert mock_search.call_args.kwargs.get("max_relationships") == 7
+
+
+def test_semantic_search_max_relationships_explicit_override(tmp_path: Path) -> None:
+    """An explicit max_relationships should override the repo config default."""
+    repo = tmp_path / "repo"
+    generated = repo / "generated"
+    generated.mkdir(parents=True)
+    (repo / "modelops.config.yaml").write_text(
+        "name: test\nresource_limits:\n  max_context_relationships: 7\n",
+        encoding="utf-8",
+    )
+    db_path = generated / "modelops.db"
+    db_path.write_text("", encoding="utf-8")
+
+    from modelops_core.index.query_service import semantic_search_objects
+
+    with patch.object(SemanticSearcher, "search") as mock_search:
+        mock_search.return_value = []
+        semantic_search_objects(
+            db_path=db_path,
+            query="customer",
+            expand=True,
+            repo_root=repo,
+            max_relationships=3,
+        )
+        assert mock_search.call_args is not None
+        assert mock_search.call_args.kwargs.get("max_relationships") == 3

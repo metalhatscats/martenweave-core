@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from modelops_core.ai.provider_adapter import AIProviderError
 from modelops_core.config import (
     load_repo_config,
     resolve_generated_path,
@@ -635,9 +636,21 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
         from modelops_core.patching.patch_proposal_service import write_patch_proposal
 
         model_path = resolve_model_path(repo_root)
-        result = build_patch_proposal_from_note(
-            note, repo_root=repo_root, command="mcp-propose-model-change"
-        )
+        try:
+            result = build_patch_proposal_from_note(
+                note, repo_root=repo_root, command="mcp-propose-model-change"
+            )
+        except (AIProviderError, ValueError) as exc:
+            return json.dumps(
+                {
+                    "error": str(exc),
+                    "is_safe": False,
+                    "assumptions": [],
+                    "human_checks": [f"Patch proposal failed: {exc}"],
+                },
+                indent=2,
+                default=str,
+            )
         proposal = result.get("proposal")
         if proposal is None:
             return json.dumps(
@@ -690,7 +703,20 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
                 default=str,
             )
 
-        profile_dict = json.loads(profile_file.read_text(encoding="utf-8"))
+        try:
+            profile_dict = json.loads(profile_file.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            return json.dumps(
+                {
+                    "error": f"Invalid JSON profile: {exc}",
+                    "assumptions": [],
+                    "human_checks": [
+                        "Ensure the profile file is valid JSON produced by profile_dataset."
+                    ],
+                },
+                indent=2,
+                default=str,
+            )
         inferred_dataset_id = dataset_id if dataset_id is not None else profile_file.stem
         proposal = infer_model_from_profile(
             profile_dict, dataset_id=inferred_dataset_id, domain=domain

@@ -319,6 +319,7 @@ def semantic_search_objects(
     min_score: float = 0.0,
     expand_candidate_ids: set[str] | None = None,
     repo_root: Path | None = None,
+    max_relationships: int | None = None,
 ) -> list[SemanticSearchResult]:
     """Semantic reranking over a candidate set.
 
@@ -327,13 +328,17 @@ def semantic_search_objects(
     defaults to ``candidate_ids`` when omitted.
 
     When ``repo_root`` is provided, ``RepoConfig.resource_limits.max_export_objects``
-    is enforced by passing it as ``max_objects``.
+    is enforced by passing it as ``max_objects``, and
+    ``RepoConfig.resource_limits.max_context_relationships`` is used as
+    ``max_relationships`` unless ``max_relationships`` is explicitly set.
     """
     max_objects: int | None = None
     if repo_root is not None:
         config = load_repo_config(repo_root)
         if config is not None:
             max_objects = config.resource_limits.max_export_objects
+            if max_relationships is None:
+                max_relationships = config.resource_limits.max_context_relationships
 
     return SemanticSearcher().search(
         db_path=db_path,
@@ -344,4 +349,5 @@ def semantic_search_objects(
         min_score=min_score,
         expand_candidate_ids=expand_candidate_ids,
         max_objects=max_objects,
+        max_relationships=max_relationships,
     )

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+import sqlite3
 import tempfile
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -456,7 +457,7 @@ def run_agent_loop(
             model_path=model_path,
             impact_report=impact_report,
         )
-    except AIProviderError as exc:
+    except (AIProviderError, sqlite3.OperationalError, FileNotFoundError) as exc:
         _emit_iteration_audit(
             repo_root=repo_root,
             iteration=result.iterations,
@@ -471,7 +472,7 @@ def run_agent_loop(
         result.validation_status = "failed"
         result.proposal_id = final_proposal.get("id")
         result.human_checks = [
-            "Impact analysis failed. Check the index and proposal operations and try again."
+            "Impact analysis failed: index not found. Run `martenweave build-index` first."
         ]
         result.log = log
         return result
@@ -537,6 +538,16 @@ def run_agent_loop(
             result.log = log
             return result
         result.proposal_path = str(final_proposal_path)
+
+        # Build an operations preview for persisted proposals too.
+        try:
+            dry_run_result = dry_run_patch_proposal(model_path, final_proposal.get("id", "unknown"))
+            result.operations_preview = [dict(op) for op in dry_run_result.operations_preview]
+        except (AIProviderError, ValueError, KeyError, OSError) as exc:
+            result.operations_preview = []
+            result.human_checks.append(
+                f"Operations preview could not be generated: {exc}"
+            )
 
     result.proposal_id = final_proposal.get("id")
 

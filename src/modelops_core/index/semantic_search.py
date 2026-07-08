@@ -245,6 +245,7 @@ class SemanticSearcher:
         min_score: float = 0.0,
         expand_candidate_ids: set[str] | None = None,
         max_objects: int | None = None,
+        max_relationships: int | None = None,
     ) -> list[SemanticSearchResult]:
         """Return objects ranked by semantic similarity to ``query``.
 
@@ -255,6 +256,9 @@ class SemanticSearcher:
         ``max_objects`` enforces ``RepoConfig.resource_limits.max_export_objects``:
         if more candidates would be loaded than allowed, ``ResourceLimitExceeded``
         is raised so callers can fall back gracefully.
+
+        ``max_relationships`` limits how many one-hop relationships are blended
+        into the query vector during expansion. Defaults to 20.
         """
         query = query.strip()
         if not query or not Path(db_path).exists():
@@ -281,19 +285,28 @@ class SemanticSearcher:
 
             if expand and expansion_ids:
                 query_vector = self._expand_query_vector(
-                    conn, query_vector, expansion_ids, vocabulary
+                    conn, query_vector, expansion_ids, vocabulary,
+                    max_relationships=max_relationships,
                 )
 
             candidates = self._load_candidates(conn, candidate_ids)
             if max_objects is not None and len(candidates) > max_objects:
-                raise ResourceLimitExceeded(
-                    resource="max_export_objects",
-                    message=(
+                if candidate_ids is None:
+                    message = (
+                        f"Semantic search index size ({len(candidates)}) exceeds "
+                        f"the configured max_export_objects limit ({max_objects}). "
+                        "Increase resource_limits.max_export_objects or build a smaller model."
+                    )
+                else:
+                    message = (
                         f"Semantic search candidate count ({len(candidates)}) exceeds "
                         f"the configured max_export_objects limit ({max_objects}). "
                         "Rerun with a narrower query or increase "
                         "resource_limits.max_export_objects."
-                    ),
+                    )
+                raise ResourceLimitExceeded(
+                    resource="max_export_objects",
+                    message=message,
                 )
             results: list[SemanticSearchResult] = []
             query_terms = set(_tokenize(query))
@@ -385,9 +398,11 @@ class SemanticSearcher:
         candidate_ids: set[str],
         vocabulary: dict[str, float],
         expansion_weight: float = 0.3,
-        max_relationships: int = 20,
+        max_relationships: int | None = None,
     ) -> dict[str, float]:
         """Blend in one-hop related object vectors."""
+        if max_relationships is None:
+            max_relationships = 20
         placeholders = ", ".join("?" for _ in candidate_ids)
         rel_rows = conn.execute(
             f"""

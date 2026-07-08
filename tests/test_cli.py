@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import urllib.request
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner
@@ -716,3 +716,51 @@ def test_cli_agent_loop_json_exit_code_on_failure(
     assert result.exit_code == 1
     data = json.loads(result.output)
     assert data["final_status"] == final_status
+
+
+@patch("modelops_core.ai.patch_proposal_service.build_patch_proposal_from_note")
+def test_cli_propose_patch_provider_error_json(
+    mock_build: MagicMock,
+    tmp_path: Path,
+) -> None:
+    """propose-patch --json should return stable JSON when the provider fails."""
+    from modelops_core.ai.provider_adapter import AIProviderError
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    note = repo / "note.md"
+    note.write_text("Update Customer Group.", encoding="utf-8")
+    mock_build.side_effect = AIProviderError("provider is unavailable")
+
+    result = runner.invoke(
+        app,
+        ["propose-patch", "--from", str(note), "--repo", str(repo), "--json"],
+    )
+    assert result.exit_code == 1
+    data = json.loads(result.output)
+    assert data["is_safe"] is False
+    assert data["proposal"] is None
+    assert data["validation"] == []
+    assert "error" in data
+    assert "provider is unavailable" in data["error"]
+
+
+@patch("modelops_core.ai.patch_proposal_service.build_patch_proposal_from_note")
+def test_cli_propose_patch_value_error_human(
+    mock_build: MagicMock,
+    tmp_path: Path,
+) -> None:
+    """propose-patch without --json should print a clear error and exit non-zero."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    note = repo / "note.md"
+    note.write_text("Update Customer Group.", encoding="utf-8")
+    mock_build.side_effect = ValueError("Unknown AI provider 'unknown_provider'.")
+
+    result = runner.invoke(
+        app,
+        ["propose-patch", "--from", str(note), "--repo", str(repo)],
+    )
+    assert result.exit_code == 1
+    assert "Patch proposal failed" in result.output
+    assert "unknown_provider" in result.output

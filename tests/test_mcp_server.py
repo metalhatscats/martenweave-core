@@ -7,6 +7,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -332,6 +333,24 @@ class TestMCPWriteIntentTools:
         )
         assert matching[-1]["provider"] == "NoProviderAdapter"
 
+    @patch("modelops_core.ai.patch_proposal_service.build_patch_proposal_from_note")
+    def test_propose_model_change_provider_error(self, mock_build, sample_repo):
+        """propose_model_change should return a structured error on provider failure."""
+        from modelops_core.ai.provider_adapter import AIProviderError
+
+        mock_build.side_effect = AIProviderError("provider is unavailable")
+        server = create_mcp_server(repo=str(sample_repo))
+        result = _call_tool_sync(
+            server,
+            "propose_model_change",
+            {"note": "Update the description of Customer Group to clarify usage."},
+        )
+        assert result.get("is_safe") is False
+        assert "error" in result
+        assert "provider is unavailable" in result["error"]
+        assert isinstance(result.get("assumptions"), list)
+        assert isinstance(result.get("human_checks"), list)
+
     def test_proposal_dry_run_not_found(self, sample_repo):
         """proposal_dry_run should error for a missing proposal."""
         server = create_mcp_server(repo=str(sample_repo))
@@ -514,6 +533,21 @@ class TestMCPWriteIntentTools:
             {"profile_path": "/does/not/exist/profile.json"},
         )
         assert "error" in result
+        assert isinstance(result.get("assumptions"), list)
+        assert isinstance(result.get("human_checks"), list)
+
+    def test_infer_model_invalid_json(self, sample_repo, tmp_path: Path):
+        """infer_model should return a structured error for invalid JSON profiles."""
+        profile_path = tmp_path / "profile.json"
+        profile_path.write_text("not valid json", encoding="utf-8")
+        server = create_mcp_server(repo=str(sample_repo))
+        result = _call_tool_sync(
+            server,
+            "infer_model",
+            {"profile_path": str(profile_path)},
+        )
+        assert "error" in result
+        assert "Invalid JSON profile" in result["error"]
         assert isinstance(result.get("assumptions"), list)
         assert isinstance(result.get("human_checks"), list)
 

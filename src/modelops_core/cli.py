@@ -2368,18 +2368,31 @@ def propose_patch(
         )
 
     from modelops_core.ai.patch_proposal_service import build_patch_proposal_from_note
-    from modelops_core.ai.provider_adapter import AIOutputValidationError
+    from modelops_core.ai.provider_adapter import AIProviderError
 
     try:
         result = build_patch_proposal_from_note(
             note, repo_root=repo_root, include_raw_samples=include_raw_samples
         )
-    except AIOutputValidationError as exc:
+    except (AIProviderError, ValueError) as exc:
         msg = str(exc)
         if json_output:
-            print(json.dumps({"error": msg}, indent=2))
+            print(
+                json.dumps(
+                    {
+                        "is_safe": False,
+                        "proposal": None,
+                        "validation": [],
+                        "assumptions": [],
+                        "human_checks": [f"Patch proposal failed: {msg}"],
+                        "error": msg,
+                    },
+                    indent=2,
+                    default=str,
+                )
+            )
             raise typer.Exit(code=1) from exc
-        console.print(f"[red]{msg}[/red]")
+        console.print(f"[red]Patch proposal failed: {msg}[/red]")
         raise typer.Exit(code=1) from exc
 
     proposal = result.get("proposal")

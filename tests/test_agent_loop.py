@@ -551,3 +551,39 @@ def test_agent_loop_write_failure(
     assert result.validation_status == "failed"
     assert result.proposal_id == proposal["id"]
     assert any("write" in check.lower() or "disk" in check.lower() for check in result.human_checks)
+
+
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+@patch("modelops_core.ai.agent_loop.generate_proposal_impact_report")
+def test_agent_loop_impact_missing_index_filenotfound(
+    mock_impact,
+    mock_build,
+    sample_repo: Path,
+) -> None:
+    mock_build.return_value = _make_result(_valid_proposal())
+    mock_impact.side_effect = FileNotFoundError("no such file: modelops.db")
+
+    result = run_agent_loop(sample_repo, "Goal with missing index.", max_iterations=3)
+
+    assert result.final_status == AgentLoopStatus.FAILED
+    assert result.validation_status == "failed"
+    assert any("build-index" in check for check in result.human_checks)
+
+
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+@patch("modelops_core.ai.agent_loop.generate_proposal_impact_report")
+def test_agent_loop_impact_missing_index_sqlite_error(
+    mock_impact,
+    mock_build,
+    sample_repo: Path,
+) -> None:
+    import sqlite3
+
+    mock_build.return_value = _make_result(_valid_proposal())
+    mock_impact.side_effect = sqlite3.OperationalError("no such table: objects")
+
+    result = run_agent_loop(sample_repo, "Goal with sqlite error.", max_iterations=3)
+
+    assert result.final_status == AgentLoopStatus.FAILED
+    assert result.validation_status == "failed"
+    assert any("build-index" in check for check in result.human_checks)
