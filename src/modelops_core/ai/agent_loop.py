@@ -310,7 +310,7 @@ def run_agent_loop(
                 repo_root=repo_root,
                 command="agent-loop",
             )
-        except (AIProviderError, Exception) as exc:  # noqa: BLE001
+        except AIProviderError as exc:
             log.append(
                 IterationLogEntry(
                     iteration=iteration,
@@ -438,7 +438,7 @@ def run_agent_loop(
             model_path=model_path,
             impact_report=impact_report,
         )
-    except (AIProviderError, Exception) as exc:  # noqa: BLE001
+    except AIProviderError as exc:
         _emit_iteration_audit(
             repo_root=repo_root,
             iteration=result.iterations,
@@ -499,7 +499,7 @@ def run_agent_loop(
         # Persist the proposal.
         try:
             final_proposal_path = write_patch_proposal(final_proposal, model_path)
-        except (AIProviderError, Exception) as exc:  # noqa: BLE001
+        except (OSError, KeyError) as exc:
             _emit_iteration_audit(
                 repo_root=repo_root,
                 iteration=result.iterations,

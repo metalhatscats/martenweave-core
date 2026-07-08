@@ -5721,9 +5721,12 @@ def search(
             ]
             merged[obj_id] = result
 
-        # Preserve keyword-only results at their original scores.
+        # Include keyword-only results with a zero semantic score so the ranking
+        # stays on a single float scale and keyword-only matches do not outrank
+        # real semantic matches.
         for r in results:
             if r.object_id not in merged:
+                r.score = 0.0
                 merged[r.object_id] = r
 
         results = sorted(merged.values(), key=lambda r: r.score, reverse=True)

@@ -6,6 +6,7 @@ import json
 import sqlite3
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 from typer.testing import CliRunner
 
@@ -415,3 +416,102 @@ def test_cli_search_semantic_json(tmp_path: Path) -> None:
     assert data["total_count"] == 2
     assert all("semantic_score" in r for r in data["results"])
     assert data["results"][0]["semantic_score"] >= data["results"][1]["semantic_score"]
+
+
+def test_cli_search_semantic_keyword_only_ranks_last(tmp_path: Path) -> None:
+    """Keyword-only fallback matches must receive a zero semantic score and rank below
+    objects that have a real semantic score.
+    """
+    repo = tmp_path / "repo"
+    model_dir = repo / "model"
+    model_dir.mkdir(parents=True)
+    generated = repo / "generated"
+    generated.mkdir()
+
+    db = generated / "modelops.db"
+    conn = __import__("sqlite3").connect(str(db))
+    conn.executescript(
+        """
+        CREATE TABLE objects (
+            id TEXT PRIMARY KEY,
+            type TEXT NOT NULL,
+            status TEXT NOT NULL,
+            name TEXT,
+            title TEXT,
+            domain TEXT,
+            description TEXT,
+            body TEXT,
+            source_file TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            frontmatter_json TEXT,
+            body_hash TEXT
+        );
+        """
+    )
+    conn.execute(
+        "INSERT INTO objects ("
+        "id, type, status, name, title, domain, description, body, "
+        "source_file, content_hash, frontmatter_json) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "ATTR-001", "Attribute", "active", "Customer Group", "Customer Group", None,
+            "Sales-area-dependent customer grouping", "# Customer Group",
+            "model/ATTR-001.md", "hash",
+            '{"id": "ATTR-001", "type": "Attribute"}',
+        ),
+    )
+    conn.execute(
+        "INSERT INTO objects ("
+        "id, type, status, name, title, domain, description, body, "
+        "source_file, content_hash, frontmatter_json) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "FEP-001", "FieldEndpoint", "active", "KNVV KDGRP", None, None,
+            "SAP field for customer grouping", "# KNVV KDGRP",
+            "model/FEP-001.md", "hash",
+            '{"id": "FEP-001", "type": "FieldEndpoint", "technical_name": "KDGRP"}',
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    from modelops_core.index.semantic_search import SemanticSearchResult
+
+    def _fake_semantic_search(*_args, **_kwargs):
+        # Simulate a semantic index that only recognises ATTR-001.
+        return [
+            SemanticSearchResult(
+                object_id="ATTR-001",
+                object_type="Attribute",
+                semantic_score=0.75,
+                matched_terms=["customer", "grouping"],
+            ),
+        ]
+
+    with patch("modelops_core.cli.semantic_search_objects", side_effect=_fake_semantic_search):
+        runner = CliRunner()
+        result = runner.invoke(
+            app,
+            [
+                "search",
+                "customer grouping",
+                "--repo",
+                str(repo),
+                "--semantic",
+                "--json",
+            ],
+        )
+
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["total_count"] == 2
+    scores = [r["score"] for r in data["results"]]
+    assert scores == sorted(scores, reverse=True)
+    assert scores[-1] == 0.0
+    assert data["results"][-1]["object_id"] == "FEP-001"
+    assert data["results"][-1]["semantic_score"] == 0.0
+    assert data["results"][-1]["semantic_matched_terms"] == []
+    attr = next(r for r in data["results"] if r["object_id"] == "ATTR-001")
+    assert attr["score"] == 0.75
+    assert attr["semantic_score"] == 0.75
+    assert set(attr["semantic_matched_terms"]) == {"customer", "grouping"}

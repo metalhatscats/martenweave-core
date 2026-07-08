@@ -492,7 +492,7 @@ def test_agent_loop_impact_failure(
 ) -> None:
     proposal = _valid_proposal()
     mock_build.return_value = _make_result(proposal)
-    mock_impact.side_effect = RuntimeError("impact engine failed")
+    mock_impact.side_effect = AIProviderError("impact engine failed")
 
     result = run_agent_loop(sample_repo, "Goal with bad impact.", max_iterations=3)
 
