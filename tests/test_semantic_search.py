@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from pathlib import Path
+from typing import Any
 
 from modelops_core.index.semantic_search import (
     SemanticIndexBuilder,
@@ -64,6 +66,60 @@ def _build_objects_table(conn: sqlite3.Connection) -> None:
             "hash",
             '{"id": "FEP-001", "type": "FieldEndpoint", "technical_name": "KDGRP"}',
         ),
+    )
+
+
+def _build_relationships_table(conn: sqlite3.Connection) -> None:
+    conn.executescript(
+        """
+        CREATE TABLE object_relationships (
+            from_object_id TEXT NOT NULL,
+            to_object_id TEXT NOT NULL,
+            relationship_type TEXT NOT NULL,
+            weight REAL
+        );
+        """
+    )
+
+
+def _insert_object(
+    conn: sqlite3.Connection,
+    object_id: str,
+    obj_type: str,
+    name: str,
+    description: str,
+    frontmatter: dict[str, Any] | None = None,
+) -> None:
+    if frontmatter is None:
+        frontmatter = {"id": object_id, "type": obj_type}
+    conn.execute(
+        "INSERT INTO objects "
+        "(id, type, name, title, description, body, source_file, content_hash, frontmatter_json) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            object_id,
+            obj_type,
+            name,
+            name,
+            description,
+            f"# {name}",
+            f"model/{object_id}.md",
+            "hash",
+            json.dumps(frontmatter),
+        ),
+    )
+
+
+def _insert_relationship(
+    conn: sqlite3.Connection,
+    from_object_id: str,
+    to_object_id: str,
+    relationship_type: str = "relates_to",
+) -> None:
+    conn.execute(
+        "INSERT INTO object_relationships (from_object_id, to_object_id, relationship_type) "
+        "VALUES (?, ?, ?)",
+        (from_object_id, to_object_id, relationship_type),
     )
 
 
@@ -136,3 +192,131 @@ def test_semantic_search_missing_index(tmp_path: Path) -> None:
     conn.executescript("CREATE TABLE objects (id TEXT PRIMARY KEY);")
     conn.close()
     assert SemanticSearcher().search(db, "customer") == []
+
+
+def test_semantic_search_missing_vocabulary_returns_empty(tmp_path: Path) -> None:
+    db = tmp_path / "partial.db"
+    conn = sqlite3.connect(str(db))
+    conn.executescript(
+        """
+        CREATE TABLE objects (id TEXT PRIMARY KEY);
+        CREATE TABLE semantic_index (
+            object_id TEXT PRIMARY KEY,
+            term_vector_json TEXT NOT NULL,
+            magnitude REAL NOT NULL,
+            term_count INTEGER NOT NULL
+        );
+        """
+    )
+    conn.close()
+    assert SemanticSearcher().search(db, "customer") == []
+
+
+def test_semantic_search_expand_requires_relationships_table(tmp_path: Path) -> None:
+    db = tmp_path / "partial.db"
+    conn = sqlite3.connect(str(db))
+    _build_objects_table(conn)
+    SemanticIndexBuilder().build(conn)
+    conn.close()
+
+    # Without expansion the index is usable.
+    assert SemanticSearcher().search(db, "grouping", candidate_ids={"ATTR-001"}) != []
+
+    # Expansion requires object_relationships; missing table returns empty gracefully.
+    assert (
+        SemanticSearcher().search(
+            db,
+            "grouping",
+            candidate_ids={"ATTR-001"},
+            expand=True,
+        )
+        == []
+    )
+
+
+def test_semantic_search_candidate_ids_filter(tmp_path: Path) -> None:
+    db = tmp_path / "modelops.db"
+    conn = sqlite3.connect(str(db))
+    _build_objects_table(conn)
+    SemanticIndexBuilder().build(conn)
+    conn.close()
+
+    searcher = SemanticSearcher()
+    results = searcher.search(db, "grouping", candidate_ids={"ATTR-001"})
+    assert [r.object_id for r in results] == ["ATTR-001"]
+
+
+def test_semantic_search_min_score(tmp_path: Path) -> None:
+    db = tmp_path / "modelops.db"
+    conn = sqlite3.connect(str(db))
+    _build_objects_table(conn)
+    SemanticIndexBuilder().build(conn)
+    conn.close()
+
+    searcher = SemanticSearcher()
+    all_results = searcher.search(db, "customer grouping")
+    assert len(all_results) == 2
+
+    threshold = all_results[0].semantic_score - 0.001
+    filtered = searcher.search(db, "customer grouping", min_score=threshold)
+    assert len(filtered) == 1
+    assert filtered[0].object_id == all_results[0].object_id
+    assert filtered[0].semantic_score >= threshold
+
+
+def test_semantic_search_limit(tmp_path: Path) -> None:
+    db = tmp_path / "modelops.db"
+    conn = sqlite3.connect(str(db))
+    _build_objects_table(conn)
+    _insert_object(
+        conn,
+        "OBJ-EXTRA",
+        "Attribute",
+        "Extra Grouping",
+        "Another customer grouping object",
+    )
+    SemanticIndexBuilder().build(conn)
+    conn.close()
+
+    searcher = SemanticSearcher()
+    results = searcher.search(db, "grouping", limit=1)
+    assert len(results) == 1
+
+
+def test_semantic_search_expand_surfaces_related_objects(tmp_path: Path) -> None:
+    db = tmp_path / "modelops.db"
+    conn = sqlite3.connect(str(db))
+    _build_objects_table(conn)
+    _insert_object(
+        conn,
+        "OBJ-SOURCE",
+        "BusinessEntity",
+        "Customer Master",
+        "Central customer master record",
+    )
+    _insert_object(
+        conn,
+        "OBJ-TARGET",
+        "Attribute",
+        "Region Classification",
+        "Geographic region classification",
+    )
+    _build_relationships_table(conn)
+    _insert_relationship(conn, "OBJ-SOURCE", "OBJ-TARGET")
+    SemanticIndexBuilder().build(conn)
+    conn.close()
+
+    searcher = SemanticSearcher()
+    candidate_ids = {"OBJ-SOURCE", "OBJ-TARGET"}
+
+    no_expand = searcher.search(db, "customer master", candidate_ids=candidate_ids, expand=False)
+    with_expand = searcher.search(db, "customer master", candidate_ids=candidate_ids, expand=True)
+
+    target_no_expand = next(r for r in no_expand if r.object_id == "OBJ-TARGET")
+    target_with_expand = next(r for r in with_expand if r.object_id == "OBJ-TARGET")
+
+    # Without expansion the related object shares no query terms and scores zero.
+    assert target_no_expand.semantic_score == 0.0
+    # With expansion the related object's vector is blended into the query,
+    # surfacing the related object with a non-zero score.
+    assert target_with_expand.semantic_score > target_no_expand.semantic_score

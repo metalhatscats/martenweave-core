@@ -231,7 +231,7 @@ class SemanticSearcher:
         conn = sqlite3.connect(str(db_path))
         conn.row_factory = sqlite3.Row
         try:
-            if not self._has_index(conn):
+            if not self._has_index(conn, expand=expand, candidate_ids=candidate_ids):
                 return []
 
             vocabulary = self._load_vocabulary(conn)
@@ -269,11 +269,28 @@ class SemanticSearcher:
         finally:
             conn.close()
 
-    def _has_index(self, conn: sqlite3.Connection) -> bool:
-        row = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='semantic_index'"
-        ).fetchone()
-        return row is not None
+    def _has_index(
+        self,
+        conn: sqlite3.Connection,
+        expand: bool = False,
+        candidate_ids: set[str] | None = None,
+    ) -> bool:
+        """Verify required semantic-search tables exist.
+
+        Expansion requires ``object_relationships`` only when it will actually
+        be invoked (``expand=True`` with non-empty ``candidate_ids``).
+        """
+        required = ["semantic_index", "semantic_vocabulary"]
+        if expand and candidate_ids:
+            required.append("object_relationships")
+        for table in required:
+            row = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+                (table,),
+            ).fetchone()
+            if row is None:
+                return False
+        return True
 
     def _load_vocabulary(self, conn: sqlite3.Connection) -> dict[str, float]:
         rows = conn.execute("SELECT term, idf FROM semantic_vocabulary").fetchall()
