@@ -316,10 +316,13 @@ def semantic_search_objects(
     expand: bool = False,
     limit: int = 50,
     min_score: float = 0.0,
+    expand_candidate_ids: set[str] | None = None,
 ) -> list[Any]:
     """Semantic reranking over a candidate set.
 
     If ``candidate_ids`` is ``None`` all indexed objects are scored.
+    ``expand_candidate_ids`` controls query expansion independently; it
+    defaults to ``candidate_ids`` when omitted.
     """
     return SemanticSearcher().search(
         db_path=db_path,
@@ -328,4 +331,5 @@ def semantic_search_objects(
         expand=expand,
         limit=limit,
         min_score=min_score,
+        expand_candidate_ids=expand_candidate_ids,
     )

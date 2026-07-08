@@ -15,9 +15,24 @@ from modelops_core.schemas.registry import get_search_fields
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
 
+def _stem(token: str) -> str:
+    """Apply conservative English stemming so variants like ``grouping`` match ``group``."""
+    if len(token) > 4 and token.endswith("ing"):
+        return token[:-3]
+    if len(token) > 3 and token.endswith("ed"):
+        return token[:-2]
+    if len(token) > 3 and token.endswith("ies"):
+        return token[:-3] + "y"
+    if len(token) > 3 and token.endswith("es") and not token.endswith(("ss", "us", "is")):
+        return token[:-2]
+    if len(token) > 3 and token.endswith("s") and not token.endswith(("ss", "us")):
+        return token[:-1]
+    return token
+
+
 def _tokenize(text: str) -> list[str]:
-    """Lowercase and split text into alphanumeric tokens."""
-    return _TOKEN_RE.findall(text.lower())
+    """Lowercase, split, and stem text into alphanumeric tokens."""
+    return [_stem(t) for t in _TOKEN_RE.findall(text.lower())]
 
 
 def _term_frequencies(tokens: list[str]) -> dict[str, int]:
@@ -29,10 +44,15 @@ def _term_frequencies(tokens: list[str]) -> dict[str, int]:
 
 
 def _compute_idf(doc_count: int, df: int) -> float:
-    """Compute inverse document frequency with smoothing."""
+    """Compute inverse document frequency with smoothing.
+
+    The +1 smoothing guarantees that terms appearing in every document still
+    contribute a small non-zero weight, preventing empty query/document vectors
+    in tiny corpora.
+    """
     if doc_count == 0 or df == 0:
         return 0.0
-    return math.log(doc_count / df)
+    return math.log(doc_count / df + 1)
 
 
 def _magnitude(vector: dict[str, float]) -> float:
@@ -222,8 +242,14 @@ class SemanticSearcher:
         expand: bool = False,
         limit: int = 50,
         min_score: float = 0.0,
+        expand_candidate_ids: set[str] | None = None,
     ) -> list[SemanticSearchResult]:
-        """Return objects ranked by semantic similarity to ``query``."""
+        """Return objects ranked by semantic similarity to ``query``.
+
+        ``candidate_ids`` restricts which objects are scored. ``expand`` uses
+        one-hop relationships from ``expand_candidate_ids`` (falling back to
+        ``candidate_ids``) to broaden the query vector.
+        """
         query = query.strip()
         if not query or not Path(db_path).exists():
             return []
@@ -231,7 +257,12 @@ class SemanticSearcher:
         conn = sqlite3.connect(str(db_path))
         conn.row_factory = sqlite3.Row
         try:
-            if not self._has_index(conn, expand=expand, candidate_ids=candidate_ids):
+            expansion_ids = (
+                expand_candidate_ids
+                if expand_candidate_ids is not None
+                else candidate_ids
+            )
+            if not self._has_index(conn, expand=expand, candidate_ids=expansion_ids):
                 return []
 
             vocabulary = self._load_vocabulary(conn)
@@ -242,9 +273,9 @@ class SemanticSearcher:
             if not query_vector:
                 return []
 
-            if expand and candidate_ids:
+            if expand and expansion_ids:
                 query_vector = self._expand_query_vector(
-                    conn, query_vector, candidate_ids, vocabulary
+                    conn, query_vector, expansion_ids, vocabulary
                 )
 
             candidates = self._load_candidates(conn, candidate_ids)

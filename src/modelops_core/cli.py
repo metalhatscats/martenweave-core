@@ -83,6 +83,8 @@ from modelops_core.imports.privacy import (
 )
 from modelops_core.index import build_index as _build_index
 from modelops_core.index.query_service import (
+    PaginatedResult,
+    SearchResult,
     query_objects,
     search_objects,
     semantic_search_objects,
@@ -5571,6 +5573,73 @@ def diff(
             console.print(table)
 
 
+def _filter_semantic_ids(
+    db_path: Path,
+    semantic_results: list[Any],
+    object_type: str | None,
+    status: str | None,
+    domain: str | None,
+    tags: list[str] | None,
+) -> set[str]:
+    """Return semantic result IDs that pass the same filters as keyword search."""
+    if not semantic_results:
+        return set()
+    object_ids = [r.object_id for r in semantic_results]
+    conditions: list[str] = [f"id IN ({', '.join('?' for _ in object_ids)})"]
+    params: list[Any] = list(object_ids)
+    if object_type:
+        conditions.append("type = ?")
+        params.append(object_type)
+    if status:
+        conditions.append("status = ?")
+        params.append(status)
+    if domain:
+        conditions.append("domain = ?")
+        params.append(domain)
+    if tags:
+        placeholders = ", ".join("?" for _ in tags)
+        conditions.append(
+            f"id IN (SELECT object_id FROM tags WHERE tag IN ({placeholders}))"
+        )
+        params.extend(tags)
+    sql = "SELECT id FROM objects WHERE " + " AND ".join(conditions)
+    conn = sqlite3.connect(str(db_path))
+    try:
+        rows = conn.execute(sql, params).fetchall()
+    finally:
+        conn.close()
+    return {row[0] for row in rows}
+
+
+def _load_search_results_for_ids(
+    db_path: Path, object_ids: set[str]
+) -> dict[str, SearchResult]:
+    """Load SearchResult metadata for a set of object IDs."""
+    if not object_ids:
+        return {}
+    placeholders = ", ".join("?" for _ in object_ids)
+    sql = f"SELECT * FROM objects WHERE id IN ({placeholders})"
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(sql, list(object_ids)).fetchall()
+    finally:
+        conn.close()
+    return {
+        row["id"]: SearchResult(
+            object_id=row["id"],
+            object_type=row["type"],
+            status=row["status"],
+            name=row["name"],
+            title=row["title"],
+            domain=row["domain"],
+            description=row["description"],
+            source_file=row["source_file"],
+        )
+        for row in rows
+    }
+
+
 @app.command("search")
 def search(
     query: str = typer.Argument(..., help="Search query (keywords)."),
@@ -5612,30 +5681,61 @@ def search(
         offset=offset,
     )
     results = paginated.results
+    total_count = paginated.total_count
 
     if semantic:
-        candidate_ids = {r.object_id for r in results}
+        keyword_by_id = {r.object_id: r for r in results}
+        keyword_ids = set(keyword_by_id)
+        # Search the full semantic index so related objects are surfaced even when
+        # they do not contain the literal query terms.
         semantic_results = semantic_search_objects(
             db_path=db_path,
             query=query,
-            candidate_ids=candidate_ids,
+            candidate_ids=None,
             expand=semantic_expand,
-            limit=limit,
+            limit=limit + offset,
+            expand_candidate_ids=keyword_ids,
         )
-        semantic_by_id = {r.object_id: r for r in semantic_results}
-        # Preserve keyword filters but attach semantic scores where available.
+        allowed_ids = _filter_semantic_ids(
+            db_path,
+            semantic_results,
+            object_type=object_type,
+            status=status,
+            domain=domain,
+            tags=tags,
+        )
+        semantic_by_id = {r.object_id: r for r in semantic_results if r.object_id in allowed_ids}
+
+        # Fetch metadata for semantic results that keyword search missed.
+        semantic_only_ids = set(semantic_by_id) - keyword_ids
+        metadata = _load_search_results_for_ids(db_path, semantic_only_ids)
+
+        merged: dict[str, SearchResult] = {}
+        for obj_id, sr in semantic_by_id.items():
+            result = keyword_by_id.get(obj_id) or metadata.get(obj_id)
+            if result is None:
+                continue
+            result.score = sr.semantic_score
+            result.matched_fields = result.matched_fields + [
+                "semantic:" + t for t in sr.matched_terms
+            ]
+            merged[obj_id] = result
+
+        # Preserve keyword-only results at their original scores.
         for r in results:
-            sr = semantic_by_id.get(r.object_id)
-            if sr:
-                r.score = sr.semantic_score
-                r.matched_fields = r.matched_fields + ["semantic:" + t for t in sr.matched_terms]
-        results.sort(key=lambda r: r.score, reverse=True)
+            if r.object_id not in merged:
+                merged[r.object_id] = r
+
+        results = sorted(merged.values(), key=lambda r: r.score, reverse=True)
+        results = results[offset : offset + limit]
+        total_count = len(merged)
+        paginated = PaginatedResult(results=results, total_count=total_count)
 
     if json_output:
         output: dict[str, Any] = {
             "stale_index_warning": stale,
             "results": [],
-            "total_count": paginated.total_count,
+            "total_count": total_count,
         }
         for r in results:
             result_obj = {
