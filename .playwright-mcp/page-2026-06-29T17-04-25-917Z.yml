@@ -1,0 +1,38 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Decisions" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Generated local static read-only viewer over the SQLite index.
+    - navigation "Viewer navigation" [ref=e7]:
+      - link "Dashboard" [ref=e8] [cursor=pointer]:
+        - /url: index.html
+      - link "Objects" [ref=e9] [cursor=pointer]:
+        - /url: objects.html
+      - link "Gaps" [ref=e10] [cursor=pointer]:
+        - /url: gaps.html
+      - link "Decisions" [ref=e11] [cursor=pointer]:
+        - /url: decisions.html
+      - link "Owners" [ref=e12] [cursor=pointer]:
+        - /url: owners.html
+      - link "Manifest" [ref=e13] [cursor=pointer]:
+        - /url: viewer-manifest.json
+  - generic [ref=e14]:
+    - text: "Index freshness:"
+    - strong [ref=e15]: fresh
+    - text: . Viewer content is generated from the current SQLite index.
+  - generic [ref=e16]:
+    - generic [ref=e17]:
+      - heading "Decisions" [level=3] [ref=e18]
+      - generic [ref=e19]: "0"
+      - generic [ref=e20]: Canonical Decision objects
+    - generic [ref=e21]:
+      - heading "With evidence" [level=3] [ref=e22]
+      - generic [ref=e23]: "0"
+      - generic [ref=e24]: 0.0% evidence coverage
+  - generic [ref=e25]:
+    - heading "Canonical decisions" [level=2] [ref=e26]
+    - generic [ref=e27]: No canonical Decision objects are present in this model.
+  - generic [ref=e28]:
+    - heading "Evidence coverage by domain" [level=2] [ref=e29]
+    - generic [ref=e30]: No decision evidence coverage rows are available.
+  - generic [ref=e31]: Generated output is disposable. Canonical Markdown + YAML files remain authoritative. No hosted UI, login, editor, SAP write-back, or AI auto-mutation is included.

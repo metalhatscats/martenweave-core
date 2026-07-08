@@ -1,0 +1,6 @@
+Index built at /private/tmp/martenweave-fixloop-repo/generated/modelops.db
+  Objects: 5
+  Valid:   True
+  JSONL:   
+/private/tmp/martenweave-fixloop-repo/generated/search_documents.jsonl
+  JSONL:   /private/tmp/martenweave-fixloop-repo/generated/lineage_edges.jsonl

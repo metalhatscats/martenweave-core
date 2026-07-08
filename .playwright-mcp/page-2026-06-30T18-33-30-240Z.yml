@@ -1,0 +1,135 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e9]:
+        - strong [ref=e10]: Martenweave
+        - generic [ref=e11]: Model intelligence
+      - navigation "Primary navigation" [ref=e12]:
+        - button "Home" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+          - generic [ref=e16]: Home
+        - button "Models" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e20]: Models
+        - button "Lineage" [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+          - generic [ref=e24]: Lineage
+        - button "Gaps 5" [ref=e25] [cursor=pointer]:
+          - img [ref=e26]
+          - generic [ref=e28]: Gaps
+          - generic [ref=e29]: "5"
+        - button "Proposals" [ref=e30] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e33]: Proposals
+    - button "Customer migration Production · v2.4.1" [disabled] [ref=e34]:
+      - generic [ref=e36]:
+        - strong [ref=e37]: Customer migration
+        - generic [ref=e38]: Production · v2.4.1
+  - generic [ref=e39]:
+    - banner [ref=e40]:
+      - generic [ref=e42]:
+        - generic [ref=e43]: Customer migration
+        - img [ref=e44]
+        - strong [ref=e46]: Business Partner
+      - generic [ref=e47]:
+        - generic [ref=e48]:
+          - img [ref=e49]
+          - textbox "Search model" [ref=e51]
+        - generic [ref=e52]: Production
+        - button "Notifications — No local notification feed" [disabled] [ref=e54]:
+          - img [ref=e55]
+        - button "AC Alex Chen Data Steward" [ref=e58] [cursor=pointer]:
+          - generic [ref=e59]: AC
+          - generic [ref=e60]:
+            - strong [ref=e61]: Alex Chen
+            - generic [ref=e62]: Data Steward
+          - img [ref=e63]
+    - main [ref=e65]:
+      - generic [ref=e185]:
+        - button "Back to search" [ref=e186] [cursor=pointer]:
+          - img [ref=e187]
+          - text: Back to search
+        - generic [ref=e189]:
+          - generic [ref=e190]:
+            - img [ref=e192]
+            - generic [ref=e195]:
+              - generic [ref=e196]:
+                - generic [ref=e197]: Master data domain
+                - generic [ref=e198]:
+                  - img [ref=e199]
+                  - text: Validated
+              - heading "Business Partner" [level=1] [ref=e201]
+              - button "DOMAIN-CUSTOMER-BP" [ref=e202] [cursor=pointer]:
+                - text: DOMAIN-CUSTOMER-BP
+                - img [ref=e203]
+          - generic [ref=e205]:
+            - button "Export — Export requires generated index (backend)" [disabled] [ref=e206]:
+              - img [ref=e207]
+              - text: Export
+            - button "Trace lineage" [ref=e209] [cursor=pointer]:
+              - img [ref=e210]
+              - text: Trace lineage
+            - button "More options — Object actions require backend" [disabled] [ref=e212]:
+              - img [ref=e213]
+        - paragraph [ref=e215]: Business Partner is the canonical master record for any organization or person with whom the enterprise conducts business. It provides a stable semantic layer above source-system-specific customer and vendor structures, unifying identity, address, tax, and communication data across SAP, CRM, MDM, and analytics platforms.
+        - generic [ref=e216]:
+          - button "Overview" [ref=e217] [cursor=pointer]
+          - button "Fields5" [ref=e218] [cursor=pointer]
+          - button "Relationships" [ref=e219] [cursor=pointer]
+          - button "Governance" [ref=e220] [cursor=pointer]
+        - generic [ref=e354]:
+          - generic [ref=e355]:
+            - generic [ref=e356]:
+              - heading "Canonical fields" [level=2] [ref=e357]
+              - paragraph [ref=e358]: Semantic attributes defined by this model
+            - generic [ref=e359]:
+              - img [ref=e360]
+              - textbox [ref=e362]:
+                - /placeholder: Filter fields
+          - generic [ref=e363]:
+            - generic [ref=e364]:
+              - generic [ref=e365]: Field
+              - generic [ref=e366]: Type
+              - generic [ref=e367]: Required
+              - generic [ref=e368]: Usage
+              - generic [ref=e369]: Status
+            - button "PARTNER_ID ATTR-BP-PARTNER-ID String (40) Required 8 endpoints Validated" [ref=e370] [cursor=pointer]:
+              - generic [ref=e371]:
+                - strong [ref=e372]: PARTNER_ID
+                - generic [ref=e373]: ATTR-BP-PARTNER-ID
+              - code [ref=e374]: String (40)
+              - generic [ref=e375]: Required
+              - generic [ref=e376]: 8 endpoints
+              - generic [ref=e377]: Validated
+            - button "PARTNER_TYPE ATTR-BP-PARTNER-TYPE Code Required 6 endpoints Validated" [ref=e378] [cursor=pointer]:
+              - generic [ref=e379]:
+                - strong [ref=e380]: PARTNER_TYPE
+                - generic [ref=e381]: ATTR-BP-PARTNER-TYPE
+              - code [ref=e382]: Code
+              - generic [ref=e383]: Required
+              - generic [ref=e384]: 6 endpoints
+              - generic [ref=e385]: Validated
+            - button "TAX_NUMBER ATTR-BP-TAX-NUMBER String (20) Optional 3 endpoints Gap" [ref=e386] [cursor=pointer]:
+              - generic [ref=e387]:
+                - strong [ref=e388]: TAX_NUMBER
+                - generic [ref=e389]: ATTR-BP-TAX-NUMBER
+              - code [ref=e390]: String (20)
+              - generic [ref=e391]: Optional
+              - generic [ref=e392]: 3 endpoints
+              - generic [ref=e393]: Gap
+            - button "COUNTRY ATTR-BP-COUNTRY Code (ISO-2) Required 12 endpoints Validated" [ref=e394] [cursor=pointer]:
+              - generic [ref=e395]:
+                - strong [ref=e396]: COUNTRY
+                - generic [ref=e397]: ATTR-BP-COUNTRY
+              - code [ref=e398]: Code (ISO-2)
+              - generic [ref=e399]: Required
+              - generic [ref=e400]: 12 endpoints
+              - generic [ref=e401]: Validated
+            - button "LANGUAGE ATTR-BP-LANGUAGE Code (ISO) Optional 5 endpoints In review" [ref=e402] [cursor=pointer]:
+              - generic [ref=e403]:
+                - strong [ref=e404]: LANGUAGE
+                - generic [ref=e405]: ATTR-BP-LANGUAGE
+              - code [ref=e406]: Code (ISO)
+              - generic [ref=e407]: Optional
+              - generic [ref=e408]: 5 endpoints
+              - generic [ref=e409]: In review

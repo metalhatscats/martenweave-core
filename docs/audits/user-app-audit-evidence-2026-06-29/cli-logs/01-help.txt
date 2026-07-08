@@ -1,0 +1,73 @@
+                                                                                
+ Usage: martenweave [OPTIONS] COMMAND [ARGS]...                                 
+                                                                                
+ Martenweave Core — backend-first model registry CLI.                           
+                                                                                
+╭─ Options ────────────────────────────────────────────────────────────────────╮
+│ --version                     Show version and exit.                         │
+│ --quiet                       Suppress non-error output.                     │
+│ --no-color                    Disable ANSI color codes in terminal output.   │
+│ --install-completion          Install completion for the current shell.      │
+│ --show-completion             Show completion for the current shell, to copy │
+│                               it or customize the installation.              │
+│ --help                        Show this message and exit.                    │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ───────────────────────────────────────────────────────────────────╮
+│ init                Scaffold a new model repository.                         │
+│ profile-dataset     Profile a dataset file (CSV or XLSX) and save the        │
+│                     profile.                                                 │
+│ gaps                Detect dataset-to-model gaps by comparing dataset        │
+│                     columns against FieldEndpoints.                          │
+│ import-drive        Import a CSV or XLSX file from Google Drive and profile  │
+│                     it.                                                      │
+│ import-sheet        Import a Google Sheet as a PatchProposal.                │
+│ sources             List registered external sources for this repository.    │
+│ source-show         Show details for a single registered source.             │
+│ infer-model         Infer draft model objects from a dataset profile and     │
+│                     create a PatchProposal.                                  │
+│ validate            Run deterministic validation on canonical files.         │
+│ build-index         Build SQLite index from canonical files.                 │
+│ clean               Remove generated artifacts (database, JSONL exports,     │
+│                     dataset profiles).                                       │
+│ index-fresh         Check whether the generated index is stale relative to   │
+│                     canonical files.                                         │
+│ health              Show repository health report.                           │
+│ doctor              Run diagnostics: version, config, paths, index           │
+│                     freshness, validation.                                   │
+│ scorecard           Show a compact governance scorecard with readiness       │
+│                     metrics.                                                 │
+│ owners              Show ownership coverage and steward workload.            │
+│ analyze             Analyze model completeness, risk, and readiness.         │
+│ gap-report          Generate a consolidated gap summary report.              │
+│ trace               Trace upstream and downstream relationships for an       │
+│                     object.                                                  │
+│ impact              Generate impact report for an object.                    │
+│ propose-patch       Create a PatchProposal from a structured note.           │
+│ serve               Start the local API server.                              │
+│ mcp                 Start the MCP server for agent integration.              │
+│ import-model-sheet  Import spreadsheet edits and generate a PatchProposal.   │
+│ export-model        Export canonical model objects to CSV or XLSX.           │
+│ export-schema       Export JSON Schema for canonical object types.           │
+│ export-sheets       Export canonical model objects to Google Sheets.         │
+│ git-bundle          Generate a GitHub-ready change bundle from a             │
+│                     PatchProposal.                                           │
+│ publish-issue       Publish an issue draft to GitHub.                        │
+│ publish-pr          Publish a git bundle as a GitHub pull request.           │
+│ audit-log           Query the append-only audit log.                         │
+│ usage-report        Show usage report from audit events.                     │
+│ docs-build          Generate static Markdown docs and a local read-only HTML │
+│                     viewer from the model index.                             │
+│ config-guard        Scan repository for secrets and configuration guardrail  │
+│                     issues.                                                  │
+│ diff                Compare two model repositories and show differences.     │
+│ search              Search indexed objects by keyword.                       │
+│ query               Run a structured query over the generated index.         │
+│ migrate             Migrate canonical objects to the current schema version. │
+│ issue-draft         Generate GitHub-ready issue drafts from model artifacts. │
+│ change-request      Create and manage ChangeRequests.                        │
+│ notifications       Preview notification recipients for workflow actions.    │
+│ decisions           Browse and inspect Decision objects.                     │
+│ proposal            Review and apply PatchProposals.                         │
+│ assessment          Migration Model Readiness Assessment.                    │
+╰──────────────────────────────────────────────────────────────────────────────╯
+

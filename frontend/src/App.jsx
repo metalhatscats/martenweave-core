@@ -1,0 +1,1782 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Archive,
+  ArrowRight,
+  ArrowUp,
+  Bell,
+  BracketsCurly,
+  Buildings,
+  CaretDown,
+  CaretLeft,
+  CaretRight,
+  ChatCircleText,
+  Check,
+  CheckCircle,
+  CircleNotch,
+  ClockCounterClockwise,
+  Columns,
+  Command,
+  Copy,
+  Cube,
+  Database,
+  DownloadSimple,
+  DotsThreeVertical,
+  Export,
+  FileArrowDown,
+  FileText,
+  Funnel,
+  GitBranch,
+  GitDiff,
+  House,
+  Info,
+  List,
+  MagnifyingGlass,
+  NotePencil,
+  Paperclip,
+  Plus,
+  SealCheck,
+  ShareNetwork,
+  ShieldCheck,
+  SidebarSimple,
+  SlidersHorizontal,
+  Sparkle,
+  Stack,
+  Tag,
+  UploadSimple,
+  UserCircle,
+  Users,
+  Warning,
+  WarningCircle,
+  X,
+  XCircle,
+} from "@phosphor-icons/react";
+import {
+  Background,
+  Controls,
+  Handle,
+  MiniMap,
+  Position,
+  ReactFlow,
+  useEdgesState,
+  useNodesState,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import {
+  fields,
+  gaps,
+  lineageEdges,
+  lineageNodes,
+  modelObjects,
+  proposals,
+  recentActivity,
+  severityWeight,
+} from "./data.js";
+import {
+  ChangelogScreen,
+  ReportsScreen,
+  SettingsScreen,
+  Toast,
+  WorkbenchOverlay,
+  WorkspaceScreen,
+} from "./workbench.jsx";
+
+const NAV_ITEMS = [
+  { id: "home", label: "Workspace", icon: House },
+  { id: "models", label: "Models", icon: Cube },
+  { id: "lineage", label: "Lineage", icon: ShareNetwork },
+  { id: "gaps", label: "Gaps", icon: Warning },
+  { id: "proposals", label: "Proposals", icon: NotePencil },
+  { id: "reports", label: "Reports", icon: FileText },
+  { id: "changelog", label: "Changelog", icon: ClockCounterClockwise },
+  { id: "settings", label: "Settings", icon: SlidersHorizontal },
+];
+
+const ROUTE_TITLES = {
+  home: "Canonical model ledger",
+  models: "Global model search",
+  object: "Business Partner",
+  lineage: "Lineage",
+  gaps: "Open gaps",
+  proposals: "Proposals",
+  proposal: "Proposal review",
+  reports: "Reports and exports",
+  changelog: "Changelog",
+  settings: "Workspace settings",
+};
+
+function useRoute() {
+  const getRoute = () => window.location.hash.replace("#/", "").split("?")[0] || "home";
+  const getParams = () => {
+    const hash = window.location.hash;
+    const idx = hash.indexOf("?");
+    return idx === -1 ? new URLSearchParams() : new URLSearchParams(hash.slice(idx + 1));
+  };
+  const [route, setRoute] = useState(getRoute);
+  const [params, setParams] = useState(getParams);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      setRoute(getRoute());
+      setParams(getParams());
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  const navigate = useCallback((next, search) => {
+    const query = typeof search === "string" ? search : new URLSearchParams(search).toString();
+    window.location.hash = query ? `/${next}?${query}` : `/${next}`;
+  }, []);
+
+  return [route, params, navigate];
+}
+
+function DisabledButton({ className, icon: Icon, label, reason, children }) {
+  return (
+    <button
+      type="button"
+      className={className}
+      disabled
+      title={reason}
+      aria-label={`${label} — ${reason}`}
+    >
+      {Icon && <Icon size={17} />}
+      {children}
+    </button>
+  );
+}
+
+function Brand() {
+  return (
+    <div className="brand">
+      <span className="brand-mark">
+        <img src="/martenweave-logo.png" alt="" />
+      </span>
+      <span className="brand-copy">
+        <strong>Martenweave</strong>
+        <small>Model intelligence</small>
+      </span>
+    </div>
+  );
+}
+
+function Sidebar({ route, navigate, open, onClose, onWorkspace }) {
+  const activeRoute = route === "object" ? "models" : route === "proposal" ? "proposals" : route;
+  return (
+    <>
+      {open && <button className="mobile-scrim" aria-label="Close navigation" onClick={onClose} />}
+      <aside className={`sidebar ${open ? "is-open" : ""}`}>
+        <div>
+          <Brand />
+          <nav aria-label="Primary navigation">
+            {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+              <button
+                type="button"
+                className={`nav-item ${activeRoute === id ? "is-active" : ""}`}
+                key={id}
+                onClick={() => {
+                  navigate(id);
+                  onClose();
+                }}
+              >
+                <Icon size={20} weight={activeRoute === id ? "fill" : "regular"} />
+                <span>{label}</span>
+                {id === "gaps" && <span className="nav-count">5</span>}
+              </button>
+            ))}
+          </nav>
+        </div>
+        <button className="repo-switcher" type="button" onClick={onWorkspace}>
+          <span className="status-dot" />
+          <span>
+            <strong>Customer migration</strong>
+            <small>Production · v2.4.1</small>
+          </span>
+          <CaretRight size={14} />
+        </button>
+      </aside>
+    </>
+  );
+}
+
+function Topbar({ route, navigate, title, onMenu, actions }) {
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const profileRef = useRef(null);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+    const onClick = (event) => {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setProfileOpen(false);
+      }
+    };
+    const onKey = (event) => {
+      if (event.key === "Escape") setProfileOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [profileOpen]);
+
+  const submit = (event) => {
+    event.preventDefault();
+    const search = query.trim() ? `search=${encodeURIComponent(query.trim())}` : "";
+    navigate("models", search);
+    setSearchOpen(false);
+    setQuery("");
+  };
+
+  return (
+    <header className="topbar">
+      <div className="topbar-leading">
+        <button className="icon-button mobile-menu" onClick={onMenu} aria-label="Open navigation">
+          <SidebarSimple size={21} />
+        </button>
+        <div className="breadcrumb">
+          <span>Customer migration</span>
+          <CaretRight size={13} />
+          <strong>{title || ROUTE_TITLES[route] || "Workspace"}</strong>
+        </div>
+      </div>
+      <div className="topbar-actions">
+        <form className={`top-search global-top-search ${searchOpen ? "is-open" : ""}`} onSubmit={submit}>
+          <MagnifyingGlass size={18} />
+          <input
+            data-global-search
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search models, fields, lineage, gaps…"
+            aria-label="Search model"
+            onFocus={() => setSearchOpen(true)}
+          />
+          {!searchOpen && <kbd>/</kbd>}
+          {searchOpen && (
+            <button type="button" aria-label="Close search" onClick={() => setSearchOpen(false)}>
+              <X size={16} />
+            </button>
+          )}
+        </form>
+        <button className="top-action-button" onClick={() => actions.open({ type: "commands" })}>
+          <Command size={17} /> Commands <kbd>⌘K</kbd>
+        </button>
+        <button className="top-action-button" onClick={() => actions.open({ type: "import" })}>
+          <UploadSimple size={17} /> Import
+        </button>
+        <button className="top-action-button" onClick={() => actions.open({ type: "export" })}>
+          <DownloadSimple size={17} /> Export
+        </button>
+        <span className="environment-pill">
+          <span className="status-dot" />
+          Production
+        </span>
+        <button className="icon-button notification-button" onClick={() => actions.open({ type: "activity" })} aria-label="Workspace activity">
+          <Bell size={17} /><span />
+        </button>
+        <div className="profile-wrap" ref={profileRef}>
+          <button className="profile-button" onClick={() => setProfileOpen((value) => !value)}>
+            <span className="avatar">AC</span>
+            <span className="profile-copy">
+              <strong>Alex Chen</strong>
+              <small>Data Steward</small>
+            </span>
+            <CaretDown size={14} />
+          </button>
+          {profileOpen && (
+            <div className="profile-menu">
+              <button onClick={() => { setProfileOpen(false); actions.open({ type: "workspace" }); }}><UserCircle size={17} /> Workspace profile</button>
+              <button onClick={() => { setProfileOpen(false); actions.open({ type: "shortcuts" }); }}><SlidersHorizontal size={17} /> Keyboard shortcuts</button>
+              <button onClick={() => { setProfileOpen(false); actions.open({ type: "workspace" }); }}><Archive size={17} /> Repository context</button>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function AppShell({ route, navigate, title, actions, children }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (event) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
+  return (
+    <div className="app-shell">
+      <Sidebar
+        route={route}
+        navigate={navigate}
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onWorkspace={() => actions.open({ type: "workspace" })}
+      />
+      <div className="app-stage">
+        <Topbar route={route} navigate={navigate} title={title} onMenu={() => setMenuOpen(true)} actions={actions} />
+        <main className={`app-main route-${route}`}>{children}</main>
+      </div>
+    </div>
+  );
+}
+
+function PageHeader({ eyebrow, title, description, actions }) {
+  return (
+    <div className="page-header">
+      <div>
+        {eyebrow && <span className="eyebrow">{eyebrow}</span>}
+        <h1>{title}</h1>
+        {description && <p>{description}</p>}
+      </div>
+      {actions && <div className="page-actions">{actions}</div>}
+    </div>
+  );
+}
+
+function Badge({ children, tone = "neutral" }) {
+  return <span className={`badge badge-${tone}`}>{children}</span>;
+}
+
+function IconTile({ type, size = 42 }) {
+  const map = {
+    Domain: [Cube, "blue"],
+    Attribute: [BracketsCurly, "violet"],
+    Entity: [Buildings, "cyan"],
+    Mapping: [ShareNetwork, "orange"],
+    Proposal: [FileText, "violet"],
+  };
+  const [Icon, tone] = map[type] || [Database, "green"];
+  return (
+    <span className={`icon-tile icon-tile-${tone}`} style={{ width: size, height: size }}>
+      <Icon size={Math.round(size * 0.48)} weight="duotone" />
+    </span>
+  );
+}
+
+function HomeScreen({ navigate }) {
+  const [prompt, setPrompt] = useState("");
+  const [submittedPrompt, setSubmittedPrompt] = useState("");
+  const [isThinking, setIsThinking] = useState(false);
+  const recommendedProposal = proposals.find((proposal) => proposal.status === "In review") || proposals[0];
+  const suggestions = [
+    "Show high-risk gaps in Business Partner",
+    "Trace TAX_NUMBER across source systems",
+    "What changed in the model this week?",
+  ];
+
+  const submitPrompt = (event, suggestedPrompt) => {
+    event?.preventDefault();
+    const value = suggestedPrompt || prompt;
+    if (!value.trim()) return;
+    setIsThinking(true);
+    setSubmittedPrompt("");
+    window.setTimeout(() => {
+      setSubmittedPrompt(value);
+      setIsThinking(false);
+    }, 650);
+  };
+
+  return (
+    <div className="home-layout page-pad">
+      <section className="home-primary">
+        <div className="home-intro">
+          <span className="ai-orb"><Sparkle size={22} weight="fill" /></span>
+          <h1>Ask your model layer anything</h1>
+          <p>Search, inspect, trace, validate, and review governed model knowledge.</p>
+        </div>
+        <form className="prompt-box" onSubmit={submitPrompt}>
+          <textarea
+            value={prompt}
+            onChange={(event) => setPrompt(event.target.value)}
+            placeholder="Ask about models, fields, lineage, gaps, or proposals…"
+            rows={2}
+          />
+          <div className="prompt-toolbar">
+            <div>
+              <DisabledButton
+                className="icon-button"
+                icon={Paperclip}
+                label="Attach context"
+                reason="Attach canonical objects after backend index is available"
+              />
+              <DisabledButton
+                className="context-button"
+                icon={SlidersHorizontal}
+                label="Context"
+                reason="Attach model/lineage context after backend index is available"
+              >
+                Context
+              </DisabledButton>
+            </div>
+            <button className="send-button" aria-label="Ask Martenweave" disabled={!prompt.trim()}>
+              <ArrowUp size={18} weight="bold" />
+            </button>
+          </div>
+        </form>
+        <div className="suggestion-row" aria-label="Suggested questions">
+          {suggestions.map((suggestion) => (
+            <button key={suggestion} onClick={() => submitPrompt(null, suggestion)}>
+              {suggestion}
+              <ArrowRight size={14} />
+            </button>
+          ))}
+        </div>
+
+        <section className="answer-card" aria-live="polite">
+          {!submittedPrompt && !isThinking ? (
+            <div className="answer-empty">
+              <ClockCounterClockwise size={21} />
+              <span>Recent answer</span>
+              <p>Ask a question to build an evidence-backed model view.</p>
+            </div>
+          ) : isThinking ? (
+            <div className="thinking-state">
+              <CircleNotch className="spin" size={22} />
+              <span>Tracing canonical objects and validation evidence…</span>
+            </div>
+          ) : (
+            <>
+              <div className="question-row">
+                <span className="avatar">AC</span>
+                <div>
+                  <strong>You</strong>
+                  <p>{submittedPrompt}</p>
+                </div>
+              </div>
+              <div className="assistant-row">
+                <span className="assistant-mark"><Sparkle size={18} weight="fill" /></span>
+                <div className="assistant-copy">
+                  <div className="answer-byline">
+                    <strong>Martenweave</strong>
+                    <Badge tone="blue">Evidence-backed</Badge>
+                  </div>
+                  <p>
+                    Business Partner has three unresolved field gaps. The highest-risk issue is
+                    TAX_NUMBER because it affects migration validation, reporting, and two downstream
+                    customer processes.
+                  </p>
+                  <div className="insight-grid">
+                    <button onClick={() => navigate("gaps")}>
+                      <span><WarningCircle size={19} /> Open gaps</span>
+                      <strong>3 fields</strong>
+                      <small>TAX_NUMBER, LANGUAGE, INDUSTRY</small>
+                    </button>
+                    <button onClick={() => navigate("lineage")}>
+                      <span><ShareNetwork size={19} /> Impacted systems</span>
+                      <strong>3 systems</strong>
+                      <small>Sales Order, MDM, Analytics</small>
+                    </button>
+                    <button onClick={() => navigate("proposal", { id: recommendedProposal.id })}>
+                      <span><ShieldCheck size={19} /> Recommended action</span>
+                      <strong>Review Proposal #{recommendedProposal.id}</strong>
+                      <small>All required evidence is attached</small>
+                    </button>
+                  </div>
+                  <div className="affected-table">
+                    <div className="table-heading">
+                      <strong>Affected fields</strong>
+                      <button onClick={() => navigate("gaps")}>View all <ArrowRight size={14} /></button>
+                    </div>
+                    {gaps.slice(0, 3).map((gap) => (
+                      <div className="affected-row" key={gap.id}>
+                        <strong>{gap.title.replace(/.*: |Missing mapping for /, "")}</strong>
+                        <span>{gap.source}</span>
+                        <Badge tone={gap.severity.toLowerCase()}>{gap.severity}</Badge>
+                        <span>{gap.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </section>
+      </section>
+      <aside className="home-rail">
+        <RailSection title="Recent objects" action="View all" onAction={() => navigate("models")}>
+          {modelObjects.slice(0, 4).map((item) => (
+            <button className="rail-item" key={item.id} onClick={() => navigate("object", { id: item.id })}>
+              <IconTile type={item.label} size={34} />
+              <span><strong>{item.name}</strong><small>{item.label}</small></span>
+              <CaretRight size={14} />
+            </button>
+          ))}
+        </RailSection>
+        <RailSection title="Recent activity">
+          {recentActivity.map(([action, subject, time], index) => (
+            <div className="activity-item" key={action}>
+              <span className={`activity-icon activity-${index}`}><CheckCircle size={16} /></span>
+              <span><strong>{action}</strong><small>{subject}</small></span>
+              <time>{time}</time>
+            </div>
+          ))}
+        </RailSection>
+      </aside>
+    </div>
+  );
+}
+
+function RailSection({ title, action, onAction, children }) {
+  return (
+    <section className="rail-section">
+      <div className="rail-heading">
+        <h2>{title}</h2>
+        {action && <button onClick={onAction}>{action}</button>}
+      </div>
+      <div>{children}</div>
+    </section>
+  );
+}
+
+function updatedMinutes(value) {
+  if (!value) return Infinity;
+  const match = value.match(/^(\d+)([mhd])\s+ago$/);
+  if (!match) return Infinity;
+  const n = parseInt(match[1], 10);
+  const unit = match[2];
+  return unit === "m" ? n : unit === "h" ? n * 60 : n * 1440;
+}
+
+function getHashSearchParam() {
+  const hash = window.location.hash;
+  const queryIndex = hash.indexOf("?");
+  if (queryIndex === -1) return "";
+  return new URLSearchParams(hash.slice(queryIndex + 1)).get("search") || "";
+}
+
+function ModelsScreen({ navigate, params }) {
+  const [query, setQuery] = useState(() => getHashSearchParam() || "business partner");
+  const [activeTab, setActiveTab] = useState("All");
+  const [sort, setSort] = useState("Relevance");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [selectedTypes, setSelectedTypes] = useState([]);
+  const [selectedStatuses, setSelectedStatuses] = useState([]);
+  const searchRef = useRef(null);
+
+  useEffect(() => {
+    setQuery(params.get("search") || "business partner");
+  }, [params]);
+  const tabs = ["All", "Objects", "Fields", "Mappings", "Proposals"];
+  const typeFilters = ["Domain", "Attribute", "Entity", "Mapping", "Proposal"];
+  const statusFilters = ["Validated", "In review", "Draft"];
+
+  const sortedResults = useMemo(() => {
+    const filtered = modelObjects.filter((item) => {
+      const matchesQuery =
+        !query ||
+        `${item.name} ${item.description} ${item.type}`.toLowerCase().includes(query.toLowerCase());
+      const matchesTab =
+        activeTab === "All" ||
+        (activeTab === "Objects" && ["Domain", "Entity"].includes(item.label)) ||
+        (activeTab === "Fields" && item.label === "Attribute") ||
+        (activeTab === "Mappings" && item.label === "Mapping") ||
+        (activeTab === "Proposals" && item.label === "Proposal");
+      const matchesType = selectedTypes.length === 0 || selectedTypes.includes(item.label);
+      const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(item.status);
+      return matchesQuery && matchesTab && matchesType && matchesStatus;
+    });
+    const list = [...filtered];
+    const q = query.trim().toLowerCase();
+    if (sort === "Relevance") {
+      if (!q) {
+        list.sort((a, b) => updatedMinutes(b.updated) - updatedMinutes(a.updated));
+      } else {
+        list.sort((a, b) => {
+          const aName = a.name.toLowerCase().includes(q);
+          const bName = b.name.toLowerCase().includes(q);
+          if (aName !== bName) return bName - aName;
+          const aDesc = a.description.toLowerCase().includes(q);
+          const bDesc = b.description.toLowerCase().includes(q);
+          return bDesc - aDesc;
+        });
+      }
+    } else if (sort === "Name") {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sort === "Recently updated") {
+      list.sort((a, b) => updatedMinutes(b.updated) - updatedMinutes(a.updated));
+    }
+    return list;
+  }, [query, activeTab, selectedTypes, selectedStatuses, sort]);
+
+  return (
+    <div className="page-pad search-page">
+      <PageHeader
+        title="Global model search"
+        description="Search across canonical objects, fields, mappings, datasets, and proposals."
+      />
+      <form
+        className="global-search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!query.trim()) searchRef.current?.focus();
+        }}
+      >
+        <MagnifyingGlass size={21} />
+        <input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} />
+        {query && <button type="button" onClick={() => setQuery("")}><X size={17} /></button>}
+        <button type="submit" className="search-submit"><ArrowUp size={18} weight="bold" /></button>
+      </form>
+      <div className="search-tabs">
+        {tabs.map((tab) => (
+          <button
+            className={activeTab === tab ? "is-active" : ""}
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+          >
+            {tab}
+            <span>
+              {tab === "All"
+                ? modelObjects.length
+                : tab === "Objects"
+                  ? modelObjects.filter((item) => ["Domain", "Entity"].includes(item.label)).length
+                  : tab === "Fields"
+                    ? modelObjects.filter((item) => item.label === "Attribute").length
+                    : tab === "Mappings"
+                      ? modelObjects.filter((item) => item.label === "Mapping").length
+                      : modelObjects.filter((item) => item.label === "Proposal").length}
+            </span>
+          </button>
+        ))}
+      </div>
+      <section className="ai-summary">
+        <span className="assistant-mark"><Sparkle size={17} weight="fill" /></span>
+        <div>
+          <span className="summary-title">AI answer <Badge tone="blue">Beta</Badge></span>
+          <p>
+            The canonical object is <strong>Business Partner</strong>. It is used by eight source
+            systems, referenced by fourteen rules, and currently has three open field gaps.
+          </p>
+        </div>
+        <button onClick={() => navigate("home")}>Ask follow-up <ArrowRight size={14} /></button>
+      </section>
+      <div className="results-toolbar">
+        <strong>{sortedResults.length} results</strong>
+        <div>
+          <label>
+            Sorted by
+            <select value={sort} onChange={(event) => setSort(event.target.value)}>
+              <option>Relevance</option>
+              <option>Recently updated</option>
+              <option>Name</option>
+            </select>
+          </label>
+          <button
+            className={`filter-toggle ${filtersOpen ? "is-active" : ""}`}
+            onClick={() => setFiltersOpen((value) => !value)}
+          >
+            <SlidersHorizontal size={17} /> Filters
+          </button>
+        </div>
+      </div>
+      <div className={`search-results-layout ${filtersOpen ? "with-filters" : ""}`}>
+        <section className="result-list">
+          {sortedResults.length ? sortedResults.map((item) => (
+            <button
+              className="result-row"
+              key={item.id}
+              onClick={() => navigate(item.label === "Proposal" ? "proposal" : "object", { id: item.proposalId || item.id })}
+            >
+              <IconTile type={item.label} />
+              <span className="result-copy">
+                <span className="result-name"><Badge tone={item.label.toLowerCase()}>{item.label}</Badge><strong>{item.name}</strong></span>
+                <span className="result-description">{item.description}</span>
+                <span className="result-meta">
+                  <span><Users size={14} /> {item.owners} owners</span>
+                  <span><Database size={14} /> {item.systems.length} systems</span>
+                  <span><CheckCircle size={14} /> {item.status}</span>
+                </span>
+              </span>
+              <span className="result-updated">Updated {item.updated}</span>
+              <CaretRight size={18} />
+            </button>
+          )) : (
+            <div className="empty-state">
+              <MagnifyingGlass size={30} />
+              <h3>No model objects found</h3>
+              <p>Try a broader query or clear the active filters.</p>
+              <button onClick={() => { setQuery(""); setSelectedTypes([]); setSelectedStatuses([]); }}>Clear search</button>
+            </div>
+          )}
+        </section>
+        {filtersOpen && (
+          <aside className="filters-panel">
+            <div className="filters-heading">
+              <strong>Quick filters</strong>
+              <button onClick={() => { setSelectedTypes([]); setSelectedStatuses([]); }}>Clear all</button>
+            </div>
+            <fieldset>
+              <legend>Object type</legend>
+              {typeFilters.map((type) => (
+                <label key={type}>
+                  <input
+                    type="checkbox"
+                    checked={selectedTypes.includes(type)}
+                    onChange={() =>
+                      setSelectedTypes((current) =>
+                        current.includes(type)
+                          ? current.filter((item) => item !== type)
+                          : [...current, type],
+                      )
+                    }
+                  />
+                  <span>{type}</span>
+                  <small>{modelObjects.filter((item) => item.label === type).length}</small>
+                </label>
+              ))}
+            </fieldset>
+            <fieldset>
+              <legend>Status</legend>
+              {statusFilters.map((statusOption) => (
+                <label key={statusOption}>
+                  <input
+                    type="checkbox"
+                    checked={selectedStatuses.includes(statusOption)}
+                    onChange={() =>
+                      setSelectedStatuses((current) =>
+                        current.includes(statusOption)
+                          ? current.filter((item) => item !== statusOption)
+                          : [...current, statusOption],
+                      )
+                    }
+                  />
+                  <span>{statusOption}</span>
+                  <small>{modelObjects.filter((item) => item.status === statusOption).length}</small>
+                </label>
+              ))}
+            </fieldset>
+          </aside>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const OBJECT_TYPE_LABELS = {
+  Domain: "Master data domain",
+  Attribute: "Attribute",
+  Entity: "Business entity",
+  Mapping: "Mapping",
+  Proposal: "Proposal",
+};
+
+function ObjectScreen({ navigate, params, onExport, onDraft }) {
+  const [tab, setTab] = useState("Overview");
+  const [copied, setCopied] = useState(false);
+  const tabs = ["Overview", "Fields", "Evidence", "Relationships", "Impact", "Governance"];
+  const objectId = params.get("id");
+  const object = modelObjects.find((item) => item.id === objectId) || modelObjects[0];
+  const copyId = async () => {
+    await navigator.clipboard?.writeText(object.id);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1200);
+  };
+
+  return (
+    <div className="page-pad object-page">
+      <button className="back-link" onClick={() => navigate("models")}>
+        <CaretLeft size={15} /> Back to search
+      </button>
+      <div className="object-hero">
+        <div className="object-identity">
+          <IconTile type={object.label} size={58} />
+          <div>
+            <div className="object-type-row">
+              <Badge tone={object.label.toLowerCase()}>{OBJECT_TYPE_LABELS[object.label] || object.label}</Badge>
+              <Badge tone="green"><CheckCircle size={13} /> {object.status}</Badge>
+            </div>
+            <h1>{object.name}</h1>
+            <button className="copy-id" onClick={copyId}>
+              {object.id} {copied ? <Check size={14} /> : <Copy size={14} />}
+            </button>
+          </div>
+        </div>
+        <div className="page-actions">
+          <button className="secondary-button" onClick={() => onExport("evidence")}>
+            <Export size={17} /> Export
+          </button>
+          <button className="primary-button" onClick={() => navigate("lineage")}>
+            <ShareNetwork size={17} /> Trace lineage
+          </button>
+          <button className="icon-button bordered" onClick={onDraft} aria-label="Draft patch proposal">
+            <DotsThreeVertical size={17} />
+          </button>
+        </div>
+      </div>
+      <p className="object-lead">{object.fullDescription}</p>
+      <div className="object-tabs">
+        {tabs.map((item) => (
+          <button className={tab === item ? "is-active" : ""} key={item} onClick={() => setTab(item)}>
+            {item}
+            {item === "Fields" && <span>{fields.length}</span>}
+          </button>
+        ))}
+      </div>
+
+      {tab === "Overview" && <ObjectOverview navigate={navigate} object={object} onViewFields={() => setTab("Fields")} />}
+      {tab === "Fields" && <FieldsTable />}
+      {tab === "Evidence" && <ObjectEvidencePanel />}
+      {tab === "Relationships" && <Relationships navigate={navigate} />}
+      {tab === "Impact" && <ObjectImpactPanel navigate={navigate} />}
+      {tab === "Governance" && <GovernancePanel />}
+    </div>
+  );
+}
+
+function ObjectOverview({ navigate, object, onViewFields }) {
+  return (
+    <div className="object-grid">
+      <div className="object-main-column">
+        <section className="surface overview-section">
+          <div className="section-title"><div><h2>Model overview</h2><p>Canonical scope and operating context</p></div></div>
+          <div className="definition-grid">
+            <div><small>Business owner</small><strong>{object.businessOwner}</strong></div>
+            <div><small>Technical steward</small><strong>{object.technicalSteward}</strong></div>
+            <div><small>Lifecycle</small><strong>{object.lifecycle}</strong></div>
+            <div><small>Last validated</small><strong>{object.lastValidated}</strong></div>
+          </div>
+          <div className="narrative-block">
+            <h3>Business definition</h3>
+            <p>{object.fullDescription}</p>
+          </div>
+          <div className="tag-row">
+            <Tag size={16} />
+            {object.tags.map((tag) => <Badge key={tag}>{tag}</Badge>)}
+          </div>
+        </section>
+        <section className="surface">
+          <div className="section-title">
+            <div><h2>Key fields</h2><p>Frequently referenced canonical attributes</p></div>
+            <button onClick={onViewFields}>View all {fields.length} <ArrowRight size={14} /></button>
+          </div>
+          <div className="compact-field-list">
+            {fields.slice(0, 4).map((field) => (
+              <div key={field.id}>
+                <span className="field-glyph">Aa</span>
+                <span><strong>{field.name}</strong><small>{field.description}</small></span>
+                <code>{field.type}</code>
+                <Badge tone={field.status === "Gap" ? "high" : "green"}>{field.status}</Badge>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+      <aside className="object-side-column">
+        <section className="surface health-card">
+          <div className="section-title"><div><h2>Model health</h2><p>Deterministic validation</p></div></div>
+          <div className="health-score">
+            <strong>{object.health}%</strong>
+            <span>{object.status}</span>
+          </div>
+          <div className="progress-track"><span style={{ width: `${object.health}%` }} /></div>
+          <ul>
+            <li><CheckCircle size={17} /> {object.label} health <strong>{object.health}%</strong></li>
+            <li><WarningCircle size={17} /> Open field gaps <strong>Review</strong></li>
+            <li><ShieldCheck size={17} /> Ownership coverage <strong>{object.owners * 32}%</strong></li>
+          </ul>
+          <button className="secondary-button full-width" onClick={() => navigate("gaps")}>
+            Review open gaps
+          </button>
+        </section>
+        <section className="surface">
+          <div className="section-title"><div><h2>Connected systems</h2><p>{object.systems.length} upstream and downstream</p></div></div>
+          {object.systems.map((system, index) => (
+            <button className="system-row" key={system} onClick={() => navigate("lineage")}>
+              <span className={`system-icon system-${index}`}><Database size={17} /></span>
+              <span><strong>{system}</strong><small>{index < 2 ? "Source" : "Target"}</small></span>
+              <CaretRight size={14} />
+            </button>
+          ))}
+        </section>
+      </aside>
+    </div>
+  );
+}
+
+function FieldsTable() {
+  const [query, setQuery] = useState("");
+  const shown = fields.filter((field) => field.name.toLowerCase().includes(query.toLowerCase()));
+  return (
+    <section className="surface fields-surface">
+      <div className="section-title">
+        <div><h2>Canonical fields</h2><p>Semantic attributes defined by this model</p></div>
+        <label className="inline-search"><MagnifyingGlass size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Filter fields" /></label>
+      </div>
+      <div className="data-table">
+        <div className="data-table-head"><span>Field</span><span>Type</span><span>Required</span><span>Usage</span><span>Status</span></div>
+        {shown.map((field) => (
+          <div className="data-table-row" key={field.id}>
+            <span><strong>{field.name}</strong><small>{field.id}</small></span>
+            <code>{field.type}</code>
+            <span>{field.required ? "Required" : "Optional"}</span>
+            <span>{field.usage}</span>
+            <Badge tone={field.status === "Gap" ? "high" : field.status === "In review" ? "violet" : "green"}>{field.status}</Badge>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ObjectEvidencePanel() {
+  return (
+    <div className="object-evidence-grid">
+      <section className="surface">
+        <div className="section-title"><div><h2>Source evidence</h2><p>Traceable project inputs supporting this object</p></div><Badge tone="green">27 items</Badge></div>
+        {[
+          ["SAP S/4HANA profile", "KNVV.STCD1", "158,932 distinct · 2.1% null"],
+          ["Canonical definition", "ATTR-BP-TAX-NUMBER", "String(20) · optional"],
+          ["Migration decision", "DEC-BP-004", "Preserve source tax identifiers"],
+          ["Validation run", "VAL-2026-07-03-1018", "4 passed · 1 warning"],
+        ].map(([source, id, detail]) => (
+          <div className="evidence-row" key={id}><Database size={17} /><span><strong>{source}</strong><code>{id}</code></span><small>{detail}</small><Badge tone="green">Verified</Badge></div>
+        ))}
+      </section>
+      <section className="surface">
+        <div className="section-title"><div><h2>Dataset coverage</h2><p>Observed presence across loaded extracts</p></div></div>
+        {[
+          ["SAP Business Partner", 98],
+          ["Legacy CRM customer", 86],
+          ["Customer analytics", 91],
+          ["MDM golden record", 73],
+        ].map(([name, value]) => (
+          <div className="coverage-row" key={name}><span>{name}<strong>{value}%</strong></span><i><b style={{ width: `${value}%` }} /></i></div>
+        ))}
+        <div className="validation-rule-list">
+          <h3>Validation rules</h3>
+          {["ID uniqueness", "Reference integrity", "SAP context grain", "Required ownership"].map((rule) => (
+            <p key={rule}><CheckCircle size={15} /> {rule}<strong>Passed</strong></p>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ObjectImpactPanel({ navigate }) {
+  return (
+    <div className="impact-panel">
+      <section className="impact-grid">
+        {[["Direct mappings", "3", GitBranch], ["Field endpoints", "4", Database], ["Downstream reports", "2", FileText], ["Open proposals", "1", NotePencil]].map(([label, value, Icon]) => (
+          <button className="surface" key={label} onClick={() => navigate(label === "Open proposals" ? "proposals" : "lineage")}><Icon size={20} /><strong>{value}</strong><span>{label}</span></button>
+        ))}
+      </section>
+      <section className="surface impact-paths">
+        <div className="section-title"><div><h2>Downstream impact</h2><p>Deterministic traversal from the selected canonical object</p></div><button onClick={() => navigate("lineage")}>Open lineage <ArrowRight size={14} /></button></div>
+        <div><span>SAP S/4HANA</span><ArrowRight size={15} /><span>KNVV.STCD1</span><ArrowRight size={15} /><span>TAX_NUMBER</span><ArrowRight size={15} /><span>Customer analytics</span></div>
+      </section>
+      <section className="surface linked-work">
+        <div><Badge tone="high">Open gap</Badge><strong>Missing mapping for TAX_NUMBER</strong><p>Detected in SAP Sales Order with 27 evidence items.</p><button onClick={() => navigate("gaps", { gap: 1 })}>Review gap</button></div>
+        <div><Badge tone="violet">Proposal #27</Badge><strong>Customer alternative key mapping</strong><p>Validation passed. Human approval is required before change request creation.</p><button onClick={() => navigate("proposal", { id: 27 })}>Review proposal</button></div>
+      </section>
+    </div>
+  );
+}
+
+function Relationships({ navigate }) {
+  return (
+    <div className="relationship-grid">
+      {[
+        ["Customer Sales Area", "Child entity", "ENTITY-CUSTOMER-SALES-AREA"],
+        ["Customer Company Code", "Child entity", "ENTITY-CUSTOMER-COMPANY"],
+        ["Business Partner Address", "Related entity", "ENTITY-BP-ADDRESS"],
+        ["SAP Business Partner", "Physical representation", "FEP-S4-BUT000-PARTNER"],
+      ].map(([name, relation, id]) => (
+        <button className="surface relationship-card" key={id} onClick={() => navigate("lineage")}>
+          <IconTile type="Entity" />
+          <span><Badge tone="cyan">{relation}</Badge><strong>{name}</strong><small>{id}</small></span>
+          <ArrowRight size={17} />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function GovernancePanel() {
+  return (
+    <div className="governance-grid">
+      <section className="surface">
+        <div className="section-title"><div><h2>Ownership</h2><p>Accountability and review roles</p></div></div>
+        {[["Data owner", "Customer Data Office", "CD"], ["Data steward", "Priya Nair", "PN"], ["Technical owner", "Migration Platform", "MP"]].map(([role, name, initials]) => (
+          <div className="owner-row" key={role}><span className="avatar avatar-soft">{initials}</span><span><small>{role}</small><strong>{name}</strong></span><Badge tone="green">Active</Badge></div>
+        ))}
+      </section>
+      <section className="surface">
+        <div className="section-title"><div><h2>Controls</h2><p>Governance policy coverage</p></div></div>
+        {["Stable object ID", "Approved semantic definition", "Reference integrity", "SAP context validation"].map((control) => (
+          <div className="control-row" key={control}><CheckCircle size={18} weight="fill" /><span>{control}</span><strong>Passed</strong></div>
+        ))}
+      </section>
+    </div>
+  );
+}
+
+function ModelNode({ data, selected }) {
+  const Icon = {
+    source: Database,
+    mapping: GitBranch,
+    canonical: Cube,
+    target: Stack,
+    gap: Warning,
+    decision: FileText,
+    proposal: NotePencil,
+  }[data.tone] || Database;
+  return (
+    <div className={`flow-node flow-node-${data.tone} ${selected ? "is-selected" : ""}`}>
+      <Handle type="target" position={Position.Left} />
+      <span className="flow-node-icon"><Icon size={19} weight="duotone" /></span>
+      <span><strong>{data.label}</strong><small>{data.meta}</small></span>
+      <Handle type="source" position={Position.Right} />
+    </div>
+  );
+}
+
+const nodeTypes = { model: ModelNode };
+
+function LineageScreen({ navigate, onExport }) {
+  const [allNodes, , onNodesChange] = useNodesState(lineageNodes);
+  const [allEdges, , onEdgesChange] = useEdgesState(lineageEdges);
+  const [depth, setDepth] = useState("All levels");
+  const [selected, setSelected] = useState("canonical");
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [nodeQuery, setNodeQuery] = useState("");
+  const [visibleLayers, setVisibleLayers] = useState({
+    source: true,
+    mapping: true,
+    canonical: true,
+    target: true,
+    gap: true,
+    decision: true,
+    proposal: true,
+  });
+
+  const selectedNode = useMemo(
+    () => allNodes.find((node) => node.id === selected),
+    [allNodes, selected],
+  );
+
+  const selectedObjectId = useMemo(() => {
+    if (selectedNode?.id === "canonical") return "DOMAIN-CUSTOMER-BP";
+    const found = modelObjects.find((obj) => obj.name === selectedNode?.data?.label);
+    return found?.id || "DOMAIN-CUSTOMER-BP";
+  }, [selectedNode]);
+
+  const inspectorTone =
+    selectedNode?.data?.tone === "canonical"
+      ? "domain"
+      : selectedNode?.data?.tone === "mapping"
+        ? "mapping"
+        : "neutral";
+
+  const visibleNodeIds = useMemo(() => {
+    const query = nodeQuery.trim().toLowerCase();
+    const depthIds =
+      depth === "1 level"
+        ? new Set(["staging", "canonical", "gap-tax", "proposal27"])
+        : depth === "2 levels"
+          ? new Set(["salesforce", "sap", "staging", "canonical", "mdm", "analytics", "gap-tax", "proposal27"])
+          : null;
+    return new Set(
+      allNodes
+        .filter((node) => visibleLayers[node.data.tone] !== false)
+        .filter((node) => !depthIds || depthIds.has(node.id))
+        .filter((node) => !query || `${node.data.label} ${node.data.meta}`.toLowerCase().includes(query))
+        .map((node) => node.id),
+    );
+  }, [allNodes, depth, nodeQuery, visibleLayers]);
+
+  const nodes = useMemo(
+    () =>
+      allNodes.map((node) => ({
+        ...node,
+        hidden: !visibleNodeIds.has(node.id),
+        selected: node.id === selected,
+      })),
+    [allNodes, visibleNodeIds, selected],
+  );
+
+  const edges = useMemo(
+    () =>
+      allEdges.map((edge) => ({
+        ...edge,
+        hidden: !(visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target)),
+      })),
+    [allEdges, visibleNodeIds],
+  );
+
+  return (
+    <div className="lineage-page">
+      <div className="lineage-header page-pad">
+        <PageHeader
+          title="Business Partner lineage"
+          description="Trace systems, transformations, canonical objects, and downstream impact."
+          actions={
+            <>
+              <button className="secondary-button" onClick={() => onExport("lineage")}>
+                <Export size={17} /> Export
+              </button>
+              <button className="primary-button" onClick={() => navigate("object", { id: selectedObjectId })}><ArrowRight size={17} /> View object</button>
+            </>
+          }
+        />
+        <div className="lineage-toolbar">
+          <label className="inline-search wide">
+            <MagnifyingGlass size={17} />
+            <input
+              value={nodeQuery}
+              onChange={(event) => setNodeQuery(event.target.value)}
+              placeholder="Find a node or field…"
+            />
+          </label>
+          <label className="select-control"><span>Depth</span><select value={depth} onChange={(event) => setDepth(event.target.value)}><option>1 level</option><option>2 levels</option><option>All levels</option></select></label>
+          <button className={`secondary-button ${filtersOpen ? "is-active" : ""}`} onClick={() => setFiltersOpen((value) => !value)}>
+            <Funnel size={17} /> Filters
+          </button>
+          <button className={`icon-button bordered ${panelOpen ? "is-active" : ""}`} onClick={() => setPanelOpen((value) => !value)}><SidebarSimple size={18} /></button>
+        </div>
+        {filtersOpen && (
+          <div className="lineage-filter-bar">
+            {[
+              ["Source systems", "source"],
+              ["Mappings", "mapping"],
+              ["Canonical objects", "canonical"],
+              ["Datasets", "target"],
+              ["Gaps", "gap"],
+              ["Decisions", "decision"],
+              ["Proposals", "proposal"],
+            ].map(([item, layer]) => (
+              <label key={item}><input type="checkbox" checked={visibleLayers[layer]} onChange={() => setVisibleLayers((current) => ({ ...current, [layer]: !current[layer] }))} /><span>{item}</span></label>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="lineage-workspace">
+        <div className="lineage-canvas">
+          <div className="canvas-legend">
+            <span><i className="legend-source" /> Source</span>
+            <span><i className="legend-mapping" /> Transformation</span>
+            <span><i className="legend-canonical" /> Canonical</span>
+            <span><i className="legend-target" /> Target</span>
+            <span><i className="legend-gap" /> Gap</span>
+            <span><i className="legend-decision" /> Decision</span>
+            <span><i className="legend-proposal" /> Proposal</span>
+          </div>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onNodeClick={(_, node) => { setSelected(node.id); setPanelOpen(true); }}
+            fitView
+            minZoom={0.55}
+            maxZoom={1.5}
+          >
+            <Background color="#dce4ef" gap={24} size={1} />
+            <Controls showInteractive={false} />
+            <MiniMap pannable zoomable nodeColor={(node) => node.data.tone === "canonical" ? "#2563eb" : "#cbd5e1"} />
+          </ReactFlow>
+        </div>
+        {panelOpen && (
+          <aside className="lineage-inspector">
+            <div className="inspector-heading">
+              <span><Badge tone={inspectorTone}>{selectedNode?.data?.meta || "Node"}</Badge><h2>{selectedNode?.data?.label || "Object"}</h2></span>
+              <button className="icon-button" onClick={() => setPanelOpen(false)}><X size={18} /></button>
+            </div>
+            <p>Selected node details, validation context, and visible path evidence.</p>
+            <div className="inspector-block">
+              <small>Object ID</small>
+              <code>{selectedObjectId}</code>
+            </div>
+            <div className="inspector-block">
+              <small>Visible impact</small>
+              <div className="metric-pair"><span><strong>2</strong> upstream</span><span><strong>2</strong> downstream</span></div>
+            </div>
+            <div className="inspector-block">
+              <small>Path evidence</small>
+              <ul className="path-list">
+                <li><CheckCircle size={16} /> Salesforce → BP staging</li>
+                <li><CheckCircle size={16} /> SAP S/4HANA → BP staging</li>
+                <li><CheckCircle size={16} /> BP staging → Canonical</li>
+              </ul>
+            </div>
+            <button className="primary-button full-width" onClick={() => navigate("object", { id: selectedObjectId })}>Open object details</button>
+            <button className="secondary-button full-width" onClick={() => navigate("gaps")}>Review related gaps</button>
+          </aside>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function GapsScreen({ navigate, params, onDraft }) {
+  const [query, setQuery] = useState("");
+  const [severity, setSeverity] = useState("All severities");
+  const [status, setStatus] = useState("All statuses");
+  const [moreFilters, setMoreFilters] = useState(false);
+  const [sort, setSort] = useState("Risk first");
+  const [expandedId, setExpandedId] = useState(1);
+
+  useEffect(() => {
+    const gapParam = params.get("gap");
+    if (!gapParam) {
+      setExpandedId(1);
+      return;
+    }
+    const id = Number(gapParam);
+    if (!Number.isInteger(id) || !gaps.some((gap) => gap.id === id)) {
+      setExpandedId(null);
+    } else {
+      setExpandedId(id);
+    }
+  }, [params]);
+  const recommendedProposal = proposals.find((proposal) => proposal.status === "In review") || proposals[0];
+  const shown = useMemo(() => {
+    const filtered = gaps.filter((gap) => {
+      const matchesQuery = `${gap.title} ${gap.object} ${gap.source}`.toLowerCase().includes(query.toLowerCase());
+      const matchesStatus = status === "All statuses" || gap.status === status;
+      return matchesQuery && matchesStatus && (severity === "All severities" || gap.severity === severity);
+    });
+    const list = [...filtered];
+    if (sort === "Risk first") {
+      list.sort((a, b) => severityWeight[b.severity] - severityWeight[a.severity]);
+    } else if (sort === "Recently detected") {
+      list.sort((a, b) => updatedMinutes(b.detected) - updatedMinutes(a.detected));
+    } else if (sort === "Object name") {
+      list.sort((a, b) => a.object.localeCompare(b.object));
+    }
+    return list;
+  }, [query, severity, status, sort]);
+
+  const selectedGap = gaps.find((gap) => gap.id === expandedId) || gaps[0];
+
+  return (
+    <div className="page-pad gaps-page">
+      <PageHeader
+        title="Open gaps"
+        description="Review missing mappings, inconsistent types, and unresolved model coverage."
+        actions={
+          <button className="primary-button" onClick={onDraft}><Plus size={17} /> Draft proposal</button>
+        }
+      />
+      <div className="gap-controls">
+        <label className="inline-search wide"><MagnifyingGlass size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search gaps by field, object, or source…" /></label>
+        <select value={severity} onChange={(event) => setSeverity(event.target.value)}>
+          <option>All severities</option><option>High</option><option>Medium</option><option>Low</option>
+        </select>
+        <select value={sort} onChange={(event) => setSort(event.target.value)}>
+          <option>Risk first</option><option>Recently detected</option><option>Object name</option>
+        </select>
+        <button className={`secondary-button ${moreFilters ? "is-active" : ""}`} onClick={() => setMoreFilters((value) => !value)}><Funnel size={17} /> More filters</button>
+      </div>
+      {moreFilters && (
+        <div className="gap-extra-filters">
+          <label>Status<select value={status} onChange={(event) => setStatus(event.target.value)}><option>All statuses</option><option>In review</option><option>Draft</option><option>Needs proposal</option></select></label>
+          <label>Object<select aria-label="Gap object"><option>All objects</option><option>Business Partner</option><option>Sales Order</option><option>Customer</option></select></label>
+          <label>Source<select aria-label="Gap source"><option>All sources</option><option>SAP S/4HANA</option><option>Legacy CRM</option><option>Customer SQL</option></select></label>
+          <button onClick={() => { setStatus("All statuses"); setSeverity("All severities"); setQuery(""); }}>Reset filters</button>
+        </div>
+      )}
+      <div className="gaps-layout">
+        <section className="gap-list">
+          {shown.length === 0 ? (
+            <div className="empty-state">
+              <Warning size={30} />
+              <h3>No gaps match the current filters</h3>
+              <button onClick={() => { setQuery(""); setSeverity("All severities"); setStatus("All statuses"); }}>Clear filters</button>
+            </div>
+          ) : (
+            shown.map((gap) => {
+              const expanded = expandedId === gap.id;
+              return (
+                <article className={`gap-card ${expanded ? "is-expanded" : ""}`} key={gap.id}>
+                  <button className="gap-card-main" onClick={() => setExpandedId(expanded ? null : gap.id)}>
+                    <span className="gap-index">{gap.id}</span>
+                    <span className="gap-title">
+                      <span><strong>{gap.title}</strong><Badge tone={gap.severity.toLowerCase()}>{gap.severity}</Badge></span>
+                      <small>{gap.note}</small>
+                    </span>
+                    <span className="gap-owner"><span className="avatar avatar-soft">{gap.initials}</span><span><small>Owner</small><strong>{gap.owner}</strong></span></span>
+                    <CaretDown className={expanded ? "rotate" : ""} size={17} />
+                  </button>
+                  {expanded && (
+                    <div className="gap-detail">
+                      <div><small>Impacted object</small><strong><Cube size={15} /> {gap.object}</strong></div>
+                      <div><small>Source → target</small><strong>{gap.source} <ArrowRight size={13} /> {gap.target}</strong></div>
+                      <div><small>Proposal</small><strong>{gap.proposal}</strong></div>
+                      <div className="gap-detail-actions">
+                        <button className="primary-button" onClick={() => navigate(gap.proposalId ? "proposal" : "proposals", gap.proposalId ? { id: gap.proposalId } : undefined)}>
+                          {gap.proposalId ? "Review proposal" : "Create proposal"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <footer>
+                    <span>Proposal <Badge tone={gap.status === "In review" ? "violet" : "neutral"}>{gap.status}</Badge></span>
+                    <span>{gap.proposal}</span>
+                    <span>Detected {gap.detected}</span>
+                  </footer>
+                </article>
+              );
+            })
+          )}
+        </section>
+        <aside className="gaps-rail">
+          <section className="surface gap-summary">
+            <div className="section-title">
+              <div><h2>Gap summary</h2><p>Current model coverage</p></div>
+              <button className="icon-button" onClick={() => setMoreFilters((value) => !value)} aria-label="Show gap filters"><Info size={17} /></button>
+            </div>
+            <strong className="summary-number">5</strong>
+            <span className="summary-label">Total open gaps</span>
+            <div className="severity-list">
+              <span><i className="severity-high" /> High <strong>2</strong></span>
+              <span><i className="severity-medium" /> Medium <strong>1</strong></span>
+              <span><i className="severity-low" /> Low <strong>2</strong></span>
+            </div>
+            <div className="summary-stat"><span>Proposals linked</span><strong>60%</strong></div>
+            <div className="summary-stat"><span>Validation risk</span><Badge tone="high">High</Badge></div>
+          </section>
+          <section className="surface gap-detail-panel">
+            <div className="section-title">
+              <div>
+                <h2>{selectedGap.title}</h2>
+                <p><Badge tone={selectedGap.severity.toLowerCase()}>{selectedGap.severity}</Badge></p>
+              </div>
+            </div>
+            <p className="gap-detail-note">{selectedGap.note}</p>
+            <div className="gap-detail-block">
+              <small>Recommendation</small>
+              <p>{selectedGap.recommendation}</p>
+            </div>
+            <div className="gap-detail-block">
+              <small>Evidence</small>
+              <ul className="gap-evidence-list">
+                {selectedGap.evidence.map((item, index) => (
+                  <li key={index}><CheckCircle size={14} /> {item}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="gap-detail-actions">
+              <button className="secondary-button full-width" onClick={() => navigate("object", { id: selectedGap.linkedObjectId })}>
+                Open object
+              </button>
+              {selectedGap.linkedProposalId ? (
+                <button className="primary-button full-width" onClick={() => navigate("proposal", { id: selectedGap.linkedProposalId })}>
+                  Review proposal
+                </button>
+              ) : (
+                <button className="primary-button full-width" onClick={onDraft}>Create proposal</button>
+              )}
+            </div>
+          </section>
+          <section className="surface assistant-suggestion">
+            <span className="assistant-mark"><Sparkle size={17} weight="fill" /></span>
+            <h2>Recommended next step</h2>
+            <div>
+              <strong>Review Proposal #{recommendedProposal.id}</strong>
+              <p>It addresses the highest-risk gap and includes all required evidence.</p>
+              <button className="primary-button full-width" onClick={() => navigate("proposal", { id: recommendedProposal.id })}>Review proposal</button>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function ProposalsScreen({ navigate, onDraft }) {
+  const [tab, setTab] = useState("All");
+  const [query, setQuery] = useState("");
+  const shown = proposals.filter((proposal) => {
+    const matchesTab = tab === "All" || proposal.status === tab;
+    const matchesQuery = `${proposal.title} ${proposal.summary}`.toLowerCase().includes(query.toLowerCase());
+    return matchesTab && matchesQuery;
+  });
+  return (
+    <div className="page-pad proposals-page">
+      <PageHeader
+        title="Proposals"
+        description="Review AI-assisted model changes before they become canonical."
+        actions={
+          <button className="primary-button" onClick={onDraft}><Plus size={17} /> New proposal</button>
+        }
+      />
+      <div className="proposal-toolbar">
+        <div className="segmented-control">
+          {["All", "In review", "Draft", "Approved"].map((item) => <button className={tab === item ? "is-active" : ""} key={item} onClick={() => setTab(item)}>{item}</button>)}
+        </div>
+        <label className="inline-search"><MagnifyingGlass size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search proposals" /></label>
+      </div>
+      <div className="proposal-list">
+        {shown.length === 0 ? (
+          <div className="empty-state">
+            <NotePencil size={30} />
+            <h3>No proposals match</h3>
+            <p>Try a different status tab or clear the search.</p>
+            <button onClick={() => { setTab("All"); setQuery(""); }}>Clear filters</button>
+          </div>
+        ) : (
+          shown.map((proposal) => (
+            <button className="proposal-row" key={proposal.id} onClick={() => navigate("proposal", { id: proposal.id })}>
+              <span className="proposal-number">#{proposal.id}</span>
+              <span className="proposal-copy">
+                <span><Badge tone={proposal.status === "In review" ? "violet" : "neutral"}>{proposal.status}</Badge><Badge tone={proposal.risk.toLowerCase()}>{proposal.risk} risk</Badge></span>
+                <strong>{proposal.title}</strong>
+                <p>{proposal.summary}</p>
+                <small>{proposal.changes} proposed changes · {proposal.author} · Updated {proposal.updated}</small>
+              </span>
+              <span className="proposal-review">Review <ArrowRight size={16} /></span>
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProposalScreen({ navigate, params, onToast }) {
+  const [tab, setTab] = useState("Changes");
+  const [decision, setDecision] = useState(null);
+  const [comment, setComment] = useState("");
+  const [savedComment, setSavedComment] = useState("");
+  const [reviewStatus, setReviewStatus] = useState("");
+  const proposalId = Number(params.get("id"));
+  const proposal = proposals.find((item) => item.id === proposalId) || proposals[0];
+
+  useEffect(() => {
+    const openApproval = () => setDecision("approve");
+    window.addEventListener("martenweave:approve", openApproval);
+    return () => window.removeEventListener("martenweave:approve", openApproval);
+  }, []);
+
+  return (
+    <div className="proposal-review-page">
+      <div className="proposal-review-header page-pad">
+        <button className="back-link" onClick={() => navigate("proposals")}><CaretLeft size={15} /> Back to proposals</button>
+        <div className="proposal-title-row">
+          <div>
+            <div className="object-type-row"><Badge tone={reviewStatus === "Approved" ? "green" : "violet"}>{reviewStatus || proposal.status}</Badge><Badge tone={proposal.risk.toLowerCase()}>{proposal.risk} impact</Badge></div>
+            <h1>{proposal.title}</h1>
+            <p>Proposal #{proposal.id} · Created by {proposal.author} · Updated {proposal.updated}</p>
+          </div>
+          <div className="page-actions">
+            <button className="danger-button" onClick={() => setDecision("reject")} disabled={Boolean(reviewStatus)}><XCircle size={17} /> Request changes</button>
+            <button className="approve-button" onClick={() => setDecision("approve")} disabled={Boolean(reviewStatus)}><CheckCircle size={17} /> {reviewStatus || "Approve proposal"}</button>
+          </div>
+        </div>
+      </div>
+      <div className="proposal-review-body">
+        <div className="review-main">
+          <section className="proposal-summary-strip">
+            <div><small>Risk classification</small><strong><WarningCircle size={16} /> {proposal.risk}</strong></div>
+            <div><small>Canonical objects</small><strong>{proposal.impactObjects} affected</strong></div>
+            <div><small>Proposed changes</small><strong>{proposal.changes} changes</strong></div>
+            <div><small>Validation</small><strong><CheckCircle size={16} /> {proposal.validationStatus}</strong></div>
+          </section>
+          <div className="review-tabs">
+            {["Changes", "Impact", "Validation", "Activity"].map((item) => <button className={tab === item ? "is-active" : ""} key={item} onClick={() => setTab(item)}>{item}</button>)}
+          </div>
+          {tab === "Changes" && <ProposalChanges />}
+          {tab === "Impact" && <ProposalImpact navigate={navigate} proposal={proposal} />}
+          {tab === "Validation" && <ProposalValidation proposal={proposal} />}
+          {tab === "Activity" && <ProposalActivity />}
+        </div>
+        <aside className="review-sidebar">
+          <section className="surface">
+            <div className="section-title"><div><h2>Review context</h2><p>Why this change exists</p></div></div>
+            <p className="review-context">
+              {proposal.linkedGap} is driving this proposal. The change adds or modifies canonical
+              endpoints with deterministic transform evidence.
+            </p>
+            <button className="linked-gap" onClick={() => navigate("gaps", { gap: proposal.linkedGapId })}>
+              <WarningCircle size={18} />
+              <span><small>Linked gap</small><strong>{proposal.linkedGap}</strong></span>
+              <CaretRight size={15} />
+            </button>
+          </section>
+          <section className="surface">
+            <div className="section-title"><div><h2>Reviewers</h2><p>1 of 2 approvals received</p></div></div>
+            <div className="reviewer-row"><span className="avatar avatar-soft">PN</span><span><strong>Priya Nair</strong><small>Data steward</small></span><CheckCircle size={18} weight="fill" /></div>
+            <div className="reviewer-row"><span className="avatar avatar-soft">AC</span><span><strong>Alex Chen</strong><small>Your review</small></span><Badge>Pending</Badge></div>
+          </section>
+          <section className="surface comment-box">
+            <div className="section-title"><div><h2>Review note</h2><p>Visible to proposal reviewers</p></div></div>
+            <textarea value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Add context or a review note…" rows={4} />
+            <button className="secondary-button full-width" disabled={!comment.trim()} onClick={() => { setSavedComment(comment); setComment(""); }}>
+              <ChatCircleText size={17} /> Add note
+            </button>
+            {savedComment && <div className="saved-note"><CheckCircle size={15} /> Note added: {savedComment}</div>}
+          </section>
+        </aside>
+      </div>
+      {decision && (
+        <DecisionDialog
+          type={decision}
+          proposalId={proposal.id}
+          onClose={() => setDecision(null)}
+          onConfirm={() => {
+            const nextStatus = decision === "approve" ? "Approved" : "Changes requested";
+            setReviewStatus(nextStatus);
+            setDecision(null);
+            onToast(`${nextStatus}: Proposal #${proposal.id}. Canonical files remain unchanged.`);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ProposalChanges() {
+  const [view, setView] = useState("Side by side");
+  return (
+    <section className="change-section">
+      <div className="change-section-heading">
+        <div><h2>Proposed canonical changes</h2><p>Review every mutation before approval.</p></div>
+        <div className="view-toggle"><button className={view === "Side by side" ? "is-active" : ""} onClick={() => setView("Side by side")}><Columns size={16} /> Side by side</button><button className={view === "Unified" ? "is-active" : ""} onClick={() => setView("Unified")}><List size={16} /> Unified</button></div>
+      </div>
+      <article className="diff-card">
+        <header>
+          <span><FileText size={18} /> model/ATTR-BP-TAX-NUMBER.md</span>
+          <Badge tone="green">New object</Badge>
+        </header>
+        <div className={`diff-body ${view === "Unified" ? "is-unified" : ""}`}>
+          {view === "Side by side" && (
+            <div className="diff-pane before">
+              <div className="diff-pane-label">Current</div>
+              <div className="diff-empty"><FileText size={23} /><span>Object does not exist</span></div>
+            </div>
+          )}
+          <div className="diff-pane after">
+            <div className="diff-pane-label">Proposed</div>
+            <pre>{`---
+id: ATTR-BP-TAX-NUMBER
+type: Attribute
+status: draft
+name: Tax Number
+domain: DOMAIN-CUSTOMER-BP
+---
+
+# Tax Number
+
+Tax identification number used for
+reporting and partner matching.`}</pre>
+          </div>
+        </div>
+      </article>
+      <article className="diff-card">
+        <header>
+          <span><GitDiff size={18} /> model/MAP-SAP-BP-TAX-NUMBER.md</span>
+          <Badge tone="blue">Modified</Badge>
+        </header>
+        <div className="field-diff">
+          <div><small>Field</small><strong>target_endpoint</strong></div>
+          <div className="removed-value"><small>Current</small><code>—</code></div>
+          <ArrowRight size={16} />
+          <div className="added-value"><small>Proposed</small><code>ATTR-BP-TAX-NUMBER</code></div>
+        </div>
+        <div className="field-diff">
+          <div><small>Field</small><strong>transform</strong></div>
+          <div className="removed-value"><small>Current</small><code>—</code></div>
+          <ArrowRight size={16} />
+          <div className="added-value"><small>Proposed</small><code>trim · uppercase · validate</code></div>
+        </div>
+      </article>
+    </section>
+  );
+}
+
+function ProposalImpact({ navigate, proposal }) {
+  return (
+    <section className="change-section">
+      <div className="change-section-heading"><div><h2>Impact analysis</h2><p>Deterministic BFS traversal from changed objects.</p></div><button className="secondary-button" onClick={() => navigate("lineage")}><ShareNetwork size={17} /> Open lineage</button></div>
+      <div className="impact-grid">
+        {[["Directly changed", String(proposal.impactObjects), FileText], ["Downstream objects", String(proposal.impactObjects + 4), GitBranch], ["Source systems", "3", Database], ["High-risk paths", proposal.risk === "High" ? "1" : "0", WarningCircle]].map(([label, value, Icon]) => (
+          <div className="surface" key={label}><Icon size={20} /><strong>{value}</strong><span>{label}</span></div>
+        ))}
+      </div>
+      <section className="surface impact-paths">
+        <h3>Highest-risk path</h3>
+        <div><span>SAP S/4HANA</span><ArrowRight size={15} /><span>KNVV.STCD1</span><ArrowRight size={15} /><span>Tax Number</span><ArrowRight size={15} /><span>Customer analytics</span></div>
+      </section>
+    </section>
+  );
+}
+
+function ProposalValidation({ proposal }) {
+  return (
+    <section className="change-section">
+      <div className="change-section-heading"><div><h2>Validation evidence</h2><p>Deterministic checks executed before review.</p></div><Badge tone={proposal.validationStatus === "Passed" ? "green" : "high"}><CheckCircle size={14} /> {proposal.validationStatus === "Passed" ? "All checks passed" : "Checks failed"}</Badge></div>
+      <div className="validation-list">
+        {[
+          ["Schema validation", "Object structure matches the registered Attribute and Mapping schemas."],
+          ["Reference integrity", "All proposed object references resolve to valid canonical IDs."],
+          ["SAP context", "Source endpoint context matches the registered domain pack rules."],
+          ["ID uniqueness", "No duplicate stable IDs were found in the repository."],
+        ].map(([title, description]) => (
+          <div className="surface validation-row" key={title}><span className="validation-check"><Check size={16} weight="bold" /></span><span><strong>{title}</strong><small>{description}</small></span><Badge tone={proposal.validationStatus === "Passed" ? "green" : "high"}>{proposal.validationStatus}</Badge></div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ProposalActivity() {
+  return (
+    <section className="change-section">
+      <div className="change-section-heading"><div><h2>Proposal activity</h2><p>Immutable review and validation history.</p></div></div>
+      <div className="timeline">
+        {[
+          ["Proposal generated", "Martenweave AI created four patch operations from gap evidence.", "18m ago", Sparkle],
+          ["Validation completed", "All deterministic repository checks passed.", "16m ago", ShieldCheck],
+          ["Impact analysis completed", "Six downstream objects and one high-risk path detected.", "15m ago", ShareNetwork],
+          ["Priya Nair approved", "Data stewardship review completed.", "7m ago", CheckCircle],
+        ].map(([title, description, time, Icon]) => (
+          <div key={title}><span className="timeline-icon"><Icon size={16} /></span><span><strong>{title}</strong><small>{description}</small></span><time>{time}</time></div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function DecisionDialog({ type, proposalId, onClose, onConfirm }) {
+  const approve = type === "approve";
+  const [reason, setReason] = useState("");
+  return (
+    <div className="dialog-backdrop" role="presentation" onMouseDown={onClose}>
+      <div className="decision-dialog" role="dialog" aria-modal="true" aria-labelledby="decision-title" onMouseDown={(event) => event.stopPropagation()}>
+        <button className="icon-button dialog-close" onClick={onClose}><X size={18} /></button>
+        <span className={`dialog-icon ${approve ? "approve" : "reject"}`}>{approve ? <SealCheck size={24} /> : <XCircle size={24} />}</span>
+        <h2 id="decision-title">{approve ? `Approve Proposal #${proposalId}?` : "Request changes?"}</h2>
+        <p>{approve ? "Approval creates a governed change request. Canonical files are not modified until that change request is applied." : "Send the proposal back with a clear reason for the author."}</p>
+        <label><span>{approve ? "Approval note (optional)" : "Required changes"}</span><textarea rows={3} value={reason} onChange={(event) => setReason(event.target.value)} placeholder={approve ? "Add a short review note…" : "Explain what must change…"} /></label>
+        <div className="dialog-actions">
+          <button className="secondary-button" onClick={onClose}>Cancel</button>
+          <button className={approve ? "approve-button" : "danger-button"} disabled={!approve && !reason.trim()} onClick={onConfirm}>{approve ? <><CheckCircle size={17} /> Approve</> : <><XCircle size={17} /> Request changes</>}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function App() {
+  const [route, params, navigate] = useRoute();
+  const [overlay, setOverlay] = useState(null);
+  const [toast, setToast] = useState("");
+  const pendingGo = useRef(false);
+  const goTimer = useRef(null);
+  const open = useCallback((next) => setOverlay(next), []);
+  const close = useCallback(() => setOverlay(null), []);
+  const dismissToast = useCallback(() => setToast(""), []);
+
+  useEffect(() => {
+    const onKey = (event) => {
+      const target = event.target;
+      const isTyping =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target?.isContentEditable;
+      if (event.key === "Escape") {
+        setOverlay(null);
+        return;
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setOverlay((current) => current?.type === "commands" ? null : { type: "commands" });
+        return;
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter" && route === "proposal") {
+        event.preventDefault();
+        window.dispatchEvent(new Event("martenweave:approve"));
+        return;
+      }
+      if (isTyping || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.key === "/") {
+        event.preventDefault();
+        document.querySelector("[data-global-search]")?.focus();
+        return;
+      }
+      if (event.key === "?") {
+        setOverlay({ type: "shortcuts" });
+        return;
+      }
+      if (event.key.toLowerCase() === "i") {
+        setOverlay({ type: "import" });
+        return;
+      }
+      if (event.key.toLowerCase() === "e") {
+        setOverlay({ type: "export" });
+        return;
+      }
+      if (pendingGo.current) {
+        const destination = { m: "models", l: "lineage", g: "gaps", p: "proposals" }[event.key.toLowerCase()];
+        pendingGo.current = false;
+        window.clearTimeout(goTimer.current);
+        if (destination) {
+          event.preventDefault();
+          navigate(destination);
+        }
+        return;
+      }
+      if (event.key.toLowerCase() === "g") {
+        pendingGo.current = true;
+        goTimer.current = window.setTimeout(() => { pendingGo.current = false; }, 900);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.clearTimeout(goTimer.current);
+    };
+  }, [navigate, route]);
+
+  const actions = {
+    open,
+    import: () => open({ type: "import" }),
+    export: (exportType) => open({ type: "export", exportType }),
+    commands: () => open({ type: "commands" }),
+    shortcuts: () => open({ type: "shortcuts" }),
+    draft: () => open({ type: "proposal-draft" }),
+    toast: setToast,
+  };
+  const routeTitle = (() => {
+    if (route === "object") {
+      const id = params.get("id");
+      return modelObjects.find((item) => item.id === id)?.name || "Object detail";
+    }
+    if (route === "proposal") {
+      const id = params.get("id");
+      return proposals.find((item) => item.id === Number(id))?.title || "Proposal review";
+    }
+    return ROUTE_TITLES[route] || "Workspace";
+  })();
+  const screen = {
+    home: <WorkspaceScreen navigate={navigate} onImport={actions.import} onExport={actions.export} onCommands={actions.commands} onShortcuts={actions.shortcuts} />,
+    models: <ModelsScreen navigate={navigate} params={params} />,
+    object: <ObjectScreen navigate={navigate} params={params} onExport={actions.export} onDraft={actions.draft} />,
+    lineage: <LineageScreen navigate={navigate} params={params} onExport={actions.export} />,
+    gaps: <GapsScreen navigate={navigate} params={params} onDraft={actions.draft} />,
+    proposals: <ProposalsScreen navigate={navigate} onDraft={actions.draft} />,
+    proposal: <ProposalScreen navigate={navigate} params={params} onToast={actions.toast} />,
+    reports: <ReportsScreen onExport={actions.export} />,
+    changelog: <ChangelogScreen />,
+    settings: <SettingsScreen onToast={actions.toast} onShortcuts={actions.shortcuts} />,
+  }[route] || <WorkspaceScreen navigate={navigate} onImport={actions.import} onExport={actions.export} onCommands={actions.commands} onShortcuts={actions.shortcuts} />;
+
+  return (
+    <>
+      <AppShell route={route} navigate={navigate} title={routeTitle} actions={actions}>{screen}</AppShell>
+      <WorkbenchOverlay overlay={overlay} onClose={close} navigate={navigate} onOpen={open} onToast={setToast} />
+      <Toast message={toast} onClose={dismissToast} />
+    </>
+  );
+}

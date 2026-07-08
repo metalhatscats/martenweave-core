@@ -14,6 +14,12 @@ from rich.console import Console
 from rich.table import Table
 
 from modelops_core import __version__
+from modelops_core.agents import (
+    ProductOwnerAgent,
+    ProductOwnerInput,
+    ReadinessAgent,
+    ReadinessInput,
+)
 from modelops_core.approval import compute_proposal_risk
 from modelops_core.assessment.assessment_service import (
     generate_assessment_package,
@@ -1347,11 +1353,22 @@ def index_fresh(
     if report.reason:
         console.print(f"  Reason: {report.reason}")
     if report.stale_sources:
-        console.print(f"  Stale sources: {len(report.stale_sources)} file(s)")
-        for src in report.stale_sources[:10]:
-            console.print(f"    [dim]{src}[/dim]")
-        if len(report.stale_sources) > 10:
-            console.print(f"    ... and {len(report.stale_sources) - 10} more")
+        if report.fresh:
+            # Content hash still matches; mtime differences are diagnostic only.
+            console.print(
+                f"  Sources newer than index: {len(report.stale_sources)} file(s) "
+                "(content hash matches; no rebuild needed)"
+            )
+            for src in report.stale_sources[:10]:
+                console.print(f"    [dim]{src}[/dim]")
+            if len(report.stale_sources) > 10:
+                console.print(f"    ... and {len(report.stale_sources) - 10} more")
+        else:
+            console.print(f"  Stale sources: {len(report.stale_sources)} file(s)")
+            for src in report.stale_sources[:10]:
+                console.print(f"    [dim]{src}[/dim]")
+            if len(report.stale_sources) > 10:
+                console.print(f"    ... and {len(report.stale_sources) - 10} more")
 
 
 @app.command()
@@ -1941,6 +1958,8 @@ def trace(
     ),
 ) -> None:
     """Trace upstream and downstream relationships for an object."""
+    import json
+
     repo_root = _resolve_repo(repo)
     db_path = resolve_generated_path(repo_root) / "modelops.db"
 
@@ -1958,9 +1977,23 @@ def trace(
         relationship_class=relationship_class,
     )
 
-    if json_output:
-        import json
+    if result.root_object_type is None:
+        if json_output:
+            print(
+                json.dumps(
+                    {
+                        "stale_index_warning": stale,
+                        "error": f"Object not found: {object_id}",
+                    },
+                    indent=2,
+                    default=str,
+                )
+            )
+        else:
+            console.print(f"[red]Object not found: {object_id}[/red]")
+        raise typer.Exit(code=1)
 
+    if json_output:
         data = {
             "stale_index_warning": stale,
             "root_object_id": result.root_object_id,
@@ -2059,6 +2092,22 @@ def impact(
         direction=direction,
         relationship_class=relationship_class,
     )
+
+    if report.root_object_type is None:
+        if json_output or fmt.lower() == "json":
+            content = json.dumps(
+                {"stale_index_warning": stale, "error": f"Object not found: {object_id}"},
+                indent=2,
+                default=str,
+            )
+            if output is not None:
+                output.write_text(content, encoding="utf-8")
+                console.print(f"[green]Report written to {output}[/green]")
+            else:
+                print(content)
+        else:
+            console.print(f"[red]Object not found: {object_id}[/red]")
+        raise typer.Exit(code=1)
 
     # Legacy --json flag takes precedence
     if json_output or fmt.lower() == "json":
@@ -2193,6 +2242,10 @@ def propose_patch(
             print(json.dumps(result, indent=2, default=str))
         else:
             console.print("[red]No proposal generated.[/red]")
+            for assumption in result.get("assumptions", []):
+                console.print(f"  • {assumption}")
+            for check in result.get("human_checks", []):
+                console.print(f"  → {check}")
         raise typer.Exit(code=1)
 
     path = None
@@ -5628,6 +5681,253 @@ def assessment_run(
     console.print("\n[bold]Artifacts generated[/bold]")
     for a in package.artifacts:
         console.print(f"  {a.path.name} — {a.description}")
+
+
+# ---------------------------------------------------------------------------
+# Agent subcommands
+# ---------------------------------------------------------------------------
+agent_app = typer.Typer(
+    name="agent",
+    help="Agentic workflow orchestrators.",
+)
+app.add_typer(agent_app, name="agent")
+
+
+@agent_app.command("product-owner")
+@with_telemetry("agent_product_owner")
+def agent_product_owner(
+    source: Path = typer.Argument(  # noqa: B008
+        ..., help="Path to a note/issue Markdown file or a ChangeRequest ID."
+    ),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    source_type: str = typer.Option(
+        "auto",
+        "--source-type",
+        help="Input type: auto, issue, note, change_request.",
+    ),
+    max_iterations: int = typer.Option(
+        3,
+        "--max-iterations",
+        help="Maximum proposal refinement iterations.",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Preview intended changes without writing files.",
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Run the ProductOwner agent loop on a product input."""
+    from modelops_core.config import load_repo_config
+
+    repo_root = _resolve_repo(repo)
+    config = load_repo_config(repo_root)
+    if config is None:
+        if json_output:
+            print(json.dumps({"error": "No modelops.config.yaml found."}, indent=2))
+        else:
+            console.print("[red]No modelops.config.yaml found.[/red]")
+        raise typer.Exit(code=1)
+
+    inferred_type = source_type
+    raw_text = ""
+    source_id: str | None = None
+
+    if inferred_type == "auto":
+        if source.suffix.lower() in {".md", ".txt"}:
+            inferred_type = "issue" if "issue" in source.name.lower() else "note"
+        else:
+            inferred_type = "change_request"
+
+    if inferred_type == "change_request":
+        source_id = source.name
+        cr_path = resolve_model_path(repo_root) / "change-requests" / f"{source_id}.md"
+        if not cr_path.exists():
+            if json_output:
+                print(json.dumps({"error": f"ChangeRequest not found: {source_id}"}, indent=2))
+            else:
+                console.print(f"[red]ChangeRequest not found: {source_id}[/red]")
+            raise typer.Exit(code=1)
+        raw_text = cr_path.read_text(encoding="utf-8")
+    else:
+        if not source.exists():
+            if json_output:
+                print(json.dumps({"error": f"File not found: {source}"}, indent=2))
+            else:
+                console.print(f"[red]File not found: {source}[/red]")
+            raise typer.Exit(code=1)
+        raw_text = source.read_text(encoding="utf-8")
+        source_id = source.stem
+
+    agent = ProductOwnerAgent(dry_run=dry_run, max_iterations=max_iterations)
+    result = agent.run(
+        ProductOwnerInput(
+            source_type=inferred_type,
+            raw_text=raw_text,
+            source_id=source_id,
+            repo_root=repo_root,
+        )
+    )
+
+    if json_output:
+        print(
+            json.dumps(
+                {
+                    "success": result.success,
+                    "iterations": result.iterations,
+                    "proposal_id": result.proposal_id,
+                    "proposal_path": str(result.proposal_path) if result.proposal_path else None,
+                    "change_request_id": result.change_request_id,
+                    "change_request_path": (
+                        str(result.change_request_path) if result.change_request_path else None
+                    ),
+                    "validation_status": result.validation_status,
+                    "impact_summary": result.impact_summary,
+                    "draft_issue_path": (
+                        str(result.draft_issue_path) if result.draft_issue_path else None
+                    ),
+                    "notification_event_ids": result.notification_event_ids,
+                    "assumptions": result.assumptions,
+                    "human_checks": result.human_checks,
+                    "error_message": result.error_message,
+                },
+                indent=2,
+                default=str,
+            )
+        )
+        raise typer.Exit(code=0 if result.success else 1)
+
+    if result.success:
+        console.print(
+            f"[green]ProductOwner loop completed in {result.iterations} iteration(s)[/green]"
+        )
+    else:
+        console.print(
+            f"[yellow]ProductOwner loop finished in {result.iterations} iteration(s) "
+            "but did not produce a valid proposal.[/yellow]"
+        )
+
+    console.print(f"  Proposal:       {result.proposal_id or '—'}")
+    console.print(f"  Validation:     {result.validation_status or '—'}")
+    if result.proposal_path:
+        console.print(f"  Proposal path:  {result.proposal_path}")
+    if result.change_request_id:
+        console.print(f"  ChangeRequest:  {result.change_request_id}")
+    if result.draft_issue_path:
+        console.print(f"  Issue draft:    {result.draft_issue_path}")
+    if result.impact_summary:
+        affected = result.impact_summary.get("affected_object_count")
+        if affected is not None:
+            console.print(f"  Affected objects: {affected}")
+
+    if result.assumptions:
+        console.print("\n[bold]Assumptions[/bold]")
+        for assumption in result.assumptions:
+            console.print(f"  - {assumption}")
+
+    if result.human_checks:
+        console.print("\n[bold]Human checks[/bold]")
+        for check in result.human_checks:
+            console.print(f"  - {check}")
+
+    if result.error_message:
+        console.print(f"\n[red]Error: {result.error_message}[/red]")
+        raise typer.Exit(code=1)
+
+
+@agent_app.command("readiness")
+@with_telemetry("agent_readiness")
+def agent_readiness(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    profile: str = typer.Option(
+        "pilot",
+        "--profile",
+        help="Readiness profile: demo, pilot, release.",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Preview intended changes without writing files.",
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Run readiness gates and create Issue/Proposal artifacts for blockers."""
+    repo_root = _resolve_repo(repo)
+    config = load_repo_config(repo_root)
+    if config is None:
+        if json_output:
+            print(json.dumps({"error": "No modelops.config.yaml found."}, indent=2))
+        else:
+            console.print("[red]No modelops.config.yaml found.[/red]")
+        raise typer.Exit(code=1)
+
+    agent = ReadinessAgent(dry_run=dry_run)
+    result = agent.run(ReadinessInput(repo_root=repo_root, profile=profile))
+
+    if json_output:
+        print(
+            json.dumps(
+                {
+                    "ready": result.ready,
+                    "profile": result.profile,
+                    "gate_count": result.gate_count,
+                    "failed_gates": result.failed_gates,
+                    "blockers": [
+                        {
+                            "gate": b.gate,
+                            "severity": b.severity,
+                            "message": b.message,
+                            "object_id": b.object_id,
+                            "issue_id": b.issue_id,
+                        }
+                        for b in result.blockers
+                    ],
+                    "issues_created": result.issues_created,
+                    "proposal_created": result.proposal_created,
+                    "draft_issue_path": (
+                        str(result.draft_issue_path) if result.draft_issue_path else None
+                    ),
+                    "notification_event_ids": result.notification_event_ids,
+                },
+                indent=2,
+                default=str,
+            )
+        )
+        raise typer.Exit(code=0 if result.ready else 1)
+
+    if result.ready:
+        console.print(
+            f"[green]Repository is ready for {result.profile}: "
+            f"{result.gate_count}/{result.gate_count} gates passed[/green]"
+        )
+    else:
+        console.print(
+            f"[yellow]Repository is not ready for {result.profile}: "
+            f"{len(result.failed_gates)} gate(s) failed[/yellow]"
+        )
+
+    console.print(f"\n[bold]Gates checked:[/bold] {result.gate_count}")
+    if result.failed_gates:
+        console.print(f"[bold]Failed gates:[/bold] {', '.join(result.failed_gates)}")
+    if result.issues_created:
+        console.print(f"[bold]Issues created:[/bold] {len(result.issues_created)}")
+        for issue_id in result.issues_created:
+            console.print(f"  - {issue_id}")
+    if result.proposal_created:
+        console.print(f"[bold]Proposal created:[/bold] {result.proposal_created}")
+    if result.draft_issue_path:
+        console.print(f"[bold]Draft issue:[/bold] {result.draft_issue_path}")
+    if result.notification_event_ids:
+        console.print(f"[bold]Notifications:[/bold] {len(result.notification_event_ids)}")
+
+    if result.blockers:
+        table = Table("Gate", "Severity", "Object", "Message")
+        for b in result.blockers:
+            table.add_row(b.gate, b.severity, b.object_id or "—", b.message)
+        console.print("\n[bold]Blockers[/bold]")
+        console.print(table)
+
+    raise typer.Exit(code=0 if result.ready else 1)
 
 
 if __name__ == "__main__":

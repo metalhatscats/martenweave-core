@@ -20,6 +20,10 @@ designed to be embedded in pipelines, IDEs, local API processes, MCP servers, an
 It can generate a local static read-only viewer from the disposable SQLite index for inspection and
 demo purposes.
 
+For an interactive **local frontend prototype**, see [`frontend/README.md`](frontend/README.md).
+It can be run locally for demo and review; it is **not a hosted production app** and does not
+replace the CLI-first core workflow.
+
 ## Status
 
 - Current source version: `0.4.1`

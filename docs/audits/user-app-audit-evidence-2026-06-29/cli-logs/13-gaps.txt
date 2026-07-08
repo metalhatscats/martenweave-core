@@ -1,0 +1,84 @@
+
+Coverage
+  Total columns:      5
+  Matched columns:    5
+  Unmatched columns:  0
+  Duplicate columns:  0
+  Match rate:         100.0%
+
+Gaps found for product_sample (15)
+┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
+┃ Column            ┃ Code              ┃ Severity ┃ Message           ┃ Sheet ┃
+┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
+│ ATTR-PRODUCT-ACT… │ MODEL_ATTRIBUTE_… │ critical │ Attribute         │ —     │
+│                   │                   │          │ 'ATTR-PRODUCT-AC… │       │
+│                   │                   │          │ has no linked     │       │
+│                   │                   │          │ FieldEndpoint.    │       │
+│ ATTR-PRODUCT-CAT… │ MODEL_ATTRIBUTE_… │ critical │ Attribute         │ —     │
+│                   │                   │          │ 'ATTR-PRODUCT-CA… │       │
+│                   │                   │          │ has no linked     │       │
+│                   │                   │          │ FieldEndpoint.    │       │
+│ ATTR-PRODUCT-ID   │ MODEL_ATTRIBUTE_… │ critical │ Attribute         │ —     │
+│                   │                   │          │ 'ATTR-PRODUCT-ID' │       │
+│                   │                   │          │ has no linked     │       │
+│                   │                   │          │ FieldEndpoint.    │       │
+│ ATTR-PRODUCT-NAME │ MODEL_ATTRIBUTE_… │ critical │ Attribute         │ —     │
+│                   │                   │          │ 'ATTR-PRODUCT-NA… │       │
+│                   │                   │          │ has no linked     │       │
+│                   │                   │          │ FieldEndpoint.    │       │
+│ ATTR-PRODUCT-UNI… │ MODEL_ATTRIBUTE_… │ critical │ Attribute         │ —     │
+│                   │                   │          │ 'ATTR-PRODUCT-UN… │       │
+│                   │                   │          │ has no linked     │       │
+│                   │                   │          │ FieldEndpoint.    │       │
+│ ATTR-PRODUCT-ACT… │ MISSING_OWNER     │ warning  │ Attribute         │ —     │
+│                   │                   │          │ 'ATTR-PRODUCT-AC… │       │
+│                   │                   │          │ is missing an     │       │
+│                   │                   │          │ owner.            │       │
+│ ATTR-PRODUCT-CAT… │ MISSING_OWNER     │ warning  │ Attribute         │ —     │
+│                   │                   │          │ 'ATTR-PRODUCT-CA… │       │
+│                   │                   │          │ is missing an     │       │
+│                   │                   │          │ owner.            │       │
+│ ATTR-PRODUCT-ID   │ MISSING_OWNER     │ warning  │ Attribute         │ —     │
+│                   │                   │          │ 'ATTR-PRODUCT-ID' │       │
+│                   │                   │          │ is missing an     │       │
+│                   │                   │          │ owner.            │       │
+│ ATTR-PRODUCT-NAME │ MISSING_OWNER     │ warning  │ Attribute         │ —     │
+│                   │                   │          │ 'ATTR-PRODUCT-NA… │       │
+│                   │                   │          │ is missing an     │       │
+│                   │                   │          │ owner.            │       │
+│ ATTR-PRODUCT-UNI… │ MISSING_OWNER     │ warning  │ Attribute         │ —     │
+│                   │                   │          │ 'ATTR-PRODUCT-UN… │       │
+│                   │                   │          │ is missing an     │       │
+│                   │                   │          │ owner.            │       │
+│ FEP-PRODUCT-ACTI… │ MISSING_OWNER     │ warning  │ FieldEndpoint     │ —     │
+│                   │                   │          │ 'FEP-PRODUCT-ACT… │       │
+│                   │                   │          │ is missing an     │       │
+│                   │                   │          │ owner.            │       │
+│ FEP-PRODUCT-CATE… │ MISSING_OWNER     │ warning  │ FieldEndpoint     │ —     │
+│                   │                   │          │ 'FEP-PRODUCT-CAT… │       │
+│                   │                   │          │ is missing an     │       │
+│                   │                   │          │ owner.            │       │
+│ FEP-PRODUCT-ID    │ MISSING_OWNER     │ warning  │ FieldEndpoint     │ —     │
+│                   │                   │          │ 'FEP-PRODUCT-ID'  │       │
+│                   │                   │          │ is missing an     │       │
+│                   │                   │          │ owner.            │       │
+│ FEP-PRODUCT-NAME  │ MISSING_OWNER     │ warning  │ FieldEndpoint     │ —     │
+│                   │                   │          │ 'FEP-PRODUCT-NAM… │       │
+│                   │                   │          │ is missing an     │       │
+│                   │                   │          │ owner.            │       │
+│ FEP-PRODUCT-UNIT… │ MISSING_OWNER     │ warning  │ FieldEndpoint     │ —     │
+│                   │                   │          │ 'FEP-PRODUCT-UNI… │       │
+│                   │                   │          │ is missing an     │       │
+│                   │                   │          │ owner.            │       │
+└───────────────────┴───────────────────┴──────────┴───────────────────┴───────┘
+
+Matches (5)
+┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━┓
+┃ Column     ┃ Endpoint               ┃ Match Type ┃ Sheet ┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━┩
+│ product_id │ FEP-PRODUCT-ID         │ exact      │ —     │
+│ name       │ FEP-PRODUCT-NAME       │ exact      │ —     │
+│ category   │ FEP-PRODUCT-CATEGORY   │ exact      │ —     │
+│ unit_price │ FEP-PRODUCT-UNIT-PRICE │ exact      │ —     │
+│ active     │ FEP-PRODUCT-ACTIVE     │ exact      │ —     │
+└────────────┴────────────────────────┴────────────┴───────┘

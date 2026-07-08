@@ -1,0 +1,175 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e9]:
+        - strong [ref=e10]: Martenweave
+        - generic [ref=e11]: Model intelligence
+      - navigation "Primary navigation" [ref=e12]:
+        - button "Home" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+          - generic [ref=e16]: Home
+        - button "Models" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e20]: Models
+        - button "Lineage" [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+          - generic [ref=e24]: Lineage
+        - button "Gaps 5" [ref=e25] [cursor=pointer]:
+          - img [ref=e26]
+          - generic [ref=e28]: Gaps
+          - generic [ref=e29]: "5"
+        - button "Proposals" [ref=e30] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e33]: Proposals
+    - generic [ref=e34]:
+      - generic [ref=e36]:
+        - strong [ref=e37]: Customer migration
+        - generic [ref=e38]: Production · v2.4.1
+      - img [ref=e39]
+  - generic [ref=e41]:
+    - banner [ref=e42]:
+      - generic [ref=e43]:
+        - button "Open navigation" [ref=e239] [cursor=pointer]:
+          - img [ref=e240]
+        - strong [ref=e48]: Proposal review
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - img [ref=e51]
+          - textbox "Search model" [ref=e53]
+        - button "Notifications" [ref=e56] [cursor=pointer]:
+          - img [ref=e57]
+        - button "AC" [ref=e242] [cursor=pointer]:
+          - generic [ref=e62]: AC
+    - main [ref=e68]:
+      - generic [ref=e646]:
+        - generic [ref=e647]:
+          - button "Back to proposals" [ref=e648] [cursor=pointer]:
+            - img [ref=e649]
+            - text: Back to proposals
+          - generic [ref=e651]:
+            - generic [ref=e652]:
+              - generic [ref=e653]:
+                - generic [ref=e654]: In review
+                - generic [ref=e655]: High impact
+              - heading "Customer alternative key mapping" [level=1] [ref=e656]
+              - paragraph [ref=e657]: "Proposal #27 · Created by Martenweave AI · Updated 18 minutes ago"
+            - generic [ref=e658]:
+              - button "Request changes" [ref=e659] [cursor=pointer]:
+                - img [ref=e660]
+                - text: Request changes
+              - button "Approve proposal" [ref=e662] [cursor=pointer]:
+                - img [ref=e663]
+                - text: Approve proposal
+        - generic [ref=e665]:
+          - generic [ref=e666]:
+            - generic [ref=e667]:
+              - generic [ref=e668]:
+                - generic [ref=e669]: Risk classification
+                - strong [ref=e670]:
+                  - img [ref=e671]
+                  - text: High
+              - generic [ref=e673]:
+                - generic [ref=e674]: Canonical objects
+                - strong [ref=e675]: 2 affected
+              - generic [ref=e676]:
+                - generic [ref=e677]: Proposed changes
+                - strong [ref=e678]: 4 changes
+              - generic [ref=e679]:
+                - generic [ref=e680]: Validation
+                - strong [ref=e681]:
+                  - img [ref=e682]
+                  - text: Passed
+            - generic [ref=e684]:
+              - button "Changes" [ref=e685] [cursor=pointer]
+              - button "Impact" [ref=e686] [cursor=pointer]
+              - button "Validation" [ref=e687] [cursor=pointer]
+              - button "Activity" [ref=e688] [cursor=pointer]
+            - generic [ref=e689]:
+              - generic [ref=e690]:
+                - generic [ref=e691]:
+                  - heading "Proposed canonical changes" [level=2] [ref=e692]
+                  - paragraph [ref=e693]: Review every mutation before approval.
+                - generic [ref=e694]:
+                  - button "Side by side" [ref=e695] [cursor=pointer]:
+                    - img [ref=e696]
+                    - text: Side by side
+                  - button "Unified" [ref=e698] [cursor=pointer]:
+                    - img [ref=e699]
+                    - text: Unified
+              - article [ref=e701]:
+                - generic [ref=e702]:
+                  - generic [ref=e703]:
+                    - img [ref=e704]
+                    - text: model/ATTR-BP-TAX-NUMBER.md
+                  - generic [ref=e706]: New object
+                - generic [ref=e707]:
+                  - generic [ref=e708]:
+                    - generic [ref=e709]: Current
+                    - generic [ref=e710]:
+                      - img [ref=e711]
+                      - generic [ref=e713]: Object does not exist
+                  - generic [ref=e714]:
+                    - generic [ref=e715]: Proposed
+                    - generic [ref=e716]: "--- id: ATTR-BP-TAX-NUMBER type: Attribute status: draft name: Tax Number domain: DOMAIN-CUSTOMER-BP --- # Tax Number Tax identification number used for reporting and partner matching."
+              - article [ref=e717]:
+                - generic [ref=e718]:
+                  - generic [ref=e719]:
+                    - img [ref=e720]
+                    - text: model/MAP-SAP-BP-TAX-NUMBER.md
+                  - generic [ref=e722]: Modified
+                - generic [ref=e723]:
+                  - generic [ref=e724]:
+                    - generic [ref=e725]: Field
+                    - strong [ref=e726]: target_endpoint
+                  - generic [ref=e727]:
+                    - generic [ref=e728]: Current
+                    - code [ref=e729]: —
+                  - generic [ref=e730]:
+                    - generic [ref=e731]: Proposed
+                    - code [ref=e732]: ATTR-BP-TAX-NUMBER
+                - generic [ref=e733]:
+                  - generic [ref=e734]:
+                    - generic [ref=e735]: Field
+                    - strong [ref=e736]: transform
+                  - generic [ref=e737]:
+                    - generic [ref=e738]: Current
+                    - code [ref=e739]: —
+                  - generic [ref=e740]:
+                    - generic [ref=e741]: Proposed
+                    - code [ref=e742]: trim · uppercase · validate
+          - complementary [ref=e743]:
+            - generic [ref=e744]:
+              - generic [ref=e746]:
+                - heading "Review context" [level=2] [ref=e747]
+                - paragraph [ref=e748]: Why this change exists
+              - paragraph [ref=e749]: TAX_NUMBER is missing from the Business Partner mapping. The proposal adds a canonical endpoint and links SAP field KNVV.STCD1 with deterministic transform evidence.
+              - button "Linked gap Missing mapping for TAX_NUMBER" [ref=e750] [cursor=pointer]:
+                - img [ref=e751]
+                - generic [ref=e753]:
+                  - generic [ref=e754]: Linked gap
+                  - strong [ref=e755]: Missing mapping for TAX_NUMBER
+                - img [ref=e756]
+            - generic [ref=e758]:
+              - generic [ref=e760]:
+                - heading "Reviewers" [level=2] [ref=e761]
+                - paragraph [ref=e762]: 1 of 2 approvals received
+              - generic [ref=e763]:
+                - generic [ref=e764]: PN
+                - generic [ref=e765]:
+                  - strong [ref=e766]: Priya Nair
+                  - generic [ref=e767]: Data steward
+                - img [ref=e768]
+              - generic [ref=e770]:
+                - generic [ref=e771]: AC
+                - generic [ref=e772]:
+                  - strong [ref=e773]: Alex Chen
+                  - generic [ref=e774]: Your review
+                - generic [ref=e775]: Pending
+            - generic [ref=e776]:
+              - generic [ref=e778]:
+                - heading "Review note" [level=2] [ref=e779]
+                - paragraph [ref=e780]: Visible to proposal reviewers
+              - textbox "Add context or a review note…" [ref=e781]
+              - button "Add note" [disabled] [ref=e782]:
+                - img [ref=e783]
+                - text: Add note

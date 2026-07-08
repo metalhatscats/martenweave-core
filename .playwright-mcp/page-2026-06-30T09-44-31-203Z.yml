@@ -1,0 +1,131 @@
+- generic [ref=f2e4]:
+  - complementary [ref=f2e5]:
+    - generic [ref=f2e6]:
+      - generic [ref=f2e9]:
+        - strong [ref=f2e10]: Martenweave
+        - generic [ref=f2e11]: Model intelligence
+      - navigation "Primary navigation" [ref=f2e12]:
+        - button "Home" [ref=f2e13] [cursor=pointer]:
+          - img [ref=f2e14]
+          - generic [ref=f2e16]: Home
+        - button "Models" [ref=f2e17] [cursor=pointer]:
+          - img [ref=f2e18]
+          - generic [ref=f2e20]: Models
+        - button "Lineage" [ref=f2e21] [cursor=pointer]:
+          - img [ref=f2e22]
+          - generic [ref=f2e24]: Lineage
+        - button "Gaps 5" [ref=f2e25] [cursor=pointer]:
+          - img [ref=f2e26]
+          - generic [ref=f2e28]: Gaps
+          - generic [ref=f2e29]: "5"
+        - button "Proposals" [ref=f2e30] [cursor=pointer]:
+          - img [ref=f2e31]
+          - generic [ref=f2e33]: Proposals
+    - generic [ref=f2e34]:
+      - generic [ref=f2e36]:
+        - strong [ref=f2e37]: Customer migration
+        - generic [ref=f2e38]: Production · v2.4.1
+      - img [ref=f2e39]
+  - generic [ref=f2e41]:
+    - banner [ref=f2e42]:
+      - generic [ref=f2e43]:
+        - button "Open navigation" [ref=f2e991] [cursor=pointer]:
+          - img [ref=f2e992]
+        - strong [ref=f2e48]: Model intelligence
+      - generic [ref=f2e49]:
+        - generic [ref=f2e50]:
+          - img [ref=f2e51]
+          - textbox "Search model" [ref=f2e53]
+        - button "Notifications" [ref=f2e56] [cursor=pointer]:
+          - img [ref=f2e57]
+        - button "AC" [ref=f2e994] [cursor=pointer]:
+          - generic [ref=f2e62]: AC
+    - main [ref=f2e68]:
+      - generic [ref=f2e995]:
+        - generic [ref=f2e996]:
+          - generic [ref=f2e997]:
+            - img [ref=f2e999]
+            - heading "Ask your model layer anything" [level=1] [ref=f2e1001]
+            - paragraph [ref=f2e1002]: Search, inspect, trace, validate, and review governed model knowledge.
+          - generic [ref=f2e1003]:
+            - textbox "Ask about models, fields, lineage, gaps, or proposals…" [ref=f2e1004]
+            - generic [ref=f2e1005]:
+              - generic [ref=f2e1006]:
+                - button "Attach context" [ref=f2e1007] [cursor=pointer]:
+                  - img [ref=f2e1008]
+                - button "Context" [ref=f2e1010] [cursor=pointer]:
+                  - img [ref=f2e1011]
+                  - text: Context
+              - button "Ask Martenweave" [disabled] [ref=f2e1013]:
+                - img [ref=f2e1014]
+          - generic "Suggested questions" [ref=f2e1016]:
+            - button "Show high-risk gaps in Business Partner" [ref=f2e1017] [cursor=pointer]:
+              - text: Show high-risk gaps in Business Partner
+              - img [ref=f2e1018]
+            - button "Trace TAX_NUMBER across source systems" [ref=f2e1020] [cursor=pointer]:
+              - text: Trace TAX_NUMBER across source systems
+              - img [ref=f2e1021]
+            - button "What changed in the model this week?" [ref=f2e1023] [cursor=pointer]:
+              - text: What changed in the model this week?
+              - img [ref=f2e1024]
+          - generic [ref=f2e1027]:
+            - img [ref=f2e1028]
+            - generic [ref=f2e1030]: Recent answer
+            - paragraph [ref=f2e1031]: Ask a question to build an evidence-backed model view.
+        - complementary [ref=f2e1032]:
+          - generic [ref=f2e1033]:
+            - generic [ref=f2e1034]:
+              - heading "Recent objects" [level=2] [ref=f2e1035]
+              - button "View all" [ref=f2e1036] [cursor=pointer]
+            - generic [ref=f2e1037]:
+              - button "Business Partner Domain" [ref=f2e1038] [cursor=pointer]:
+                - img [ref=f2e1040]
+                - generic [ref=f2e1043]:
+                  - strong [ref=f2e1044]: Business Partner
+                  - generic [ref=f2e1045]: Domain
+                - img [ref=f2e1046]
+              - button "ADDRESS_ID Attribute" [ref=f2e1048] [cursor=pointer]:
+                - img [ref=f2e1050]
+                - generic [ref=f2e1053]:
+                  - strong [ref=f2e1054]: ADDRESS_ID
+                  - generic [ref=f2e1055]: Attribute
+                - img [ref=f2e1056]
+              - button "COUNTRY Attribute" [ref=f2e1058] [cursor=pointer]:
+                - img [ref=f2e1060]
+                - generic [ref=f2e1063]:
+                  - strong [ref=f2e1064]: COUNTRY
+                  - generic [ref=f2e1065]: Attribute
+                - img [ref=f2e1066]
+              - button "Customer Sales Area Entity" [ref=f2e1068] [cursor=pointer]:
+                - img [ref=f2e1070]
+                - generic [ref=f2e1073]:
+                  - strong [ref=f2e1074]: Customer Sales Area
+                  - generic [ref=f2e1075]: Entity
+                - img [ref=f2e1076]
+          - generic [ref=f2e1078]:
+            - heading "Recent activity" [level=2] [ref=f2e1080]
+            - generic [ref=f2e1081]:
+              - generic [ref=f2e1082]:
+                - img [ref=f2e1084]
+                - generic [ref=f2e1086]:
+                  - strong [ref=f2e1087]: Validation completed
+                  - generic [ref=f2e1088]: Business Partner
+                - time [ref=f2e1089]: 2m ago
+              - generic [ref=f2e1090]:
+                - img [ref=f2e1092]
+                - generic [ref=f2e1094]:
+                  - strong [ref=f2e1095]: "Proposal #27 updated"
+                  - generic [ref=f2e1096]: Customer alternative key mapping
+                - time [ref=f2e1097]: 18m ago
+              - generic [ref=f2e1098]:
+                - img [ref=f2e1100]
+                - generic [ref=f2e1102]:
+                  - strong [ref=f2e1103]: New gap detected
+                  - generic [ref=f2e1104]: TAX_NUMBER
+                - time [ref=f2e1105]: 1h ago
+              - generic [ref=f2e1106]:
+                - img [ref=f2e1108]
+                - generic [ref=f2e1110]:
+                  - strong [ref=f2e1111]: Lineage updated
+                  - generic [ref=f2e1112]: Sales Order → Business Partner
+                - time [ref=f2e1113]: 2h ago

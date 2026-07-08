@@ -1,0 +1,150 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Local Static Viewer" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Generated local static read-only viewer over the SQLite index.
+    - navigation "Viewer navigation" [ref=e7]:
+      - link "Dashboard" [ref=e8] [cursor=pointer]:
+        - /url: index.html
+      - link "Objects" [ref=e9] [cursor=pointer]:
+        - /url: objects.html
+      - link "Gaps" [ref=e10] [cursor=pointer]:
+        - /url: gaps.html
+      - link "Decisions" [ref=e11] [cursor=pointer]:
+        - /url: decisions.html
+      - link "Owners" [ref=e12] [cursor=pointer]:
+        - /url: owners.html
+      - link "Manifest" [ref=e13] [cursor=pointer]:
+        - /url: viewer-manifest.json
+  - generic [ref=e14]:
+    - text: "Index freshness:"
+    - strong [ref=e15]: fresh
+    - text: . Viewer content is generated from the current SQLite index.
+  - generic [ref=e16]:
+    - text: Read-only generated artifact. Canonical files in
+    - code [ref=e17]: model/
+    - text: remain the source of truth; this viewer can be deleted and rebuilt at any time.
+  - generic [ref=e18]:
+    - generic [ref=e19]:
+      - heading "Objects" [level=3] [ref=e20]
+      - generic [ref=e21]: "5"
+      - generic [ref=e22]: Indexed canonical objects
+    - generic [ref=e23]:
+      - heading "Object types" [level=3] [ref=e24]
+      - generic [ref=e25]: "3"
+      - generic [ref=e26]: Types represented in the index
+    - generic [ref=e27]:
+      - heading "Validation findings" [level=3] [ref=e28]
+      - generic [ref=e29]: "7"
+      - generic [ref=e30]: "INFO: 4, WARNING: 3"
+    - generic [ref=e31]:
+      - heading "Index freshness" [level=3] [ref=e32]
+      - generic [ref=e33]: Fresh
+      - generic [ref=e34]: Hash matches canonical source
+  - generic [ref=e35]:
+    - heading "Repository" [level=2] [ref=e36]
+    - table [ref=e37]:
+      - rowgroup [ref=e38]:
+        - row "Repository Fixloop Test Repository" [ref=e39]:
+          - rowheader "Repository" [ref=e40]
+          - cell "Fixloop Test Repository" [ref=e41]
+        - row "Repository version 1.0.0" [ref=e42]:
+          - rowheader "Repository version" [ref=e43]
+          - cell "1.0.0" [ref=e44]
+        - row "Schema version 1.0" [ref=e45]:
+          - rowheader "Schema version" [ref=e46]
+          - cell "1.0" [ref=e47]
+        - row "Martenweave package 0.4.1" [ref=e48]:
+          - rowheader "Martenweave package" [ref=e49]
+          - cell "0.4.1" [ref=e50]
+        - row "Index built unknown" [ref=e51]:
+          - rowheader "Index built" [ref=e52]
+          - cell "unknown" [ref=e53]
+        - row "Viewer generated 2026-06-29T17:20:59+00:00" [ref=e54]:
+          - rowheader "Viewer generated" [ref=e55]
+          - cell "2026-06-29T17:20:59+00:00" [ref=e56]
+  - generic [ref=e57]:
+    - heading "Type counts" [level=2] [ref=e58]
+    - table [ref=e59]:
+      - rowgroup [ref=e60]:
+        - row "Type Count" [ref=e61]:
+          - columnheader "Type" [ref=e62]
+          - columnheader "Count" [ref=e63]
+      - rowgroup [ref=e64]:
+        - row "Attribute 2" [ref=e65]:
+          - cell "Attribute" [ref=e66]
+          - cell "2" [ref=e67]
+        - row "BusinessEntity 1" [ref=e68]:
+          - cell "BusinessEntity" [ref=e69]
+          - cell "1" [ref=e70]
+        - row "MasterDataDomain 2" [ref=e71]:
+          - cell "MasterDataDomain" [ref=e72]
+          - cell "2" [ref=e73]
+  - generic [ref=e74]:
+    - heading "Quick search" [level=2] [ref=e75]
+    - textbox "Filter objects by Customer Group, KNVV, KDGRP, owner, type..." [ref=e76]
+    - paragraph [ref=e77]: 5 objects shown. Search runs locally from embedded rows and does not require network access.
+    - table [ref=e78]:
+      - rowgroup [ref=e79]:
+        - row "ID Type Label Status Owners Hints" [ref=e80]:
+          - columnheader "ID" [ref=e81]
+          - columnheader "Type" [ref=e82]
+          - columnheader "Label" [ref=e83]
+          - columnheader "Status" [ref=e84]
+          - columnheader "Owners" [ref=e85]
+          - columnheader "Hints" [ref=e86]
+      - rowgroup [ref=e87]:
+        - row "ATTR-PRODUCT-ID Attribute Product ID active" [ref=e88]:
+          - cell "ATTR-PRODUCT-ID" [ref=e89]:
+            - link "ATTR-PRODUCT-ID" [ref=e90] [cursor=pointer]:
+              - /url: objects/attr-product-id.html
+              - code [ref=e91]: ATTR-PRODUCT-ID
+          - cell "Attribute" [ref=e92]
+          - cell "Product ID" [ref=e93]
+          - cell "active" [ref=e94]
+          - cell [ref=e95]
+          - cell [ref=e96]
+        - row "ATTR-PRODUCT-NAME Attribute Product Name active" [ref=e97]:
+          - cell "ATTR-PRODUCT-NAME" [ref=e98]:
+            - link "ATTR-PRODUCT-NAME" [ref=e99] [cursor=pointer]:
+              - /url: objects/attr-product-name.html
+              - code [ref=e100]: ATTR-PRODUCT-NAME
+          - cell "Attribute" [ref=e101]
+          - cell "Product Name" [ref=e102]
+          - cell "active" [ref=e103]
+          - cell [ref=e104]
+          - cell [ref=e105]
+        - row "ENTITY-PRODUCT BusinessEntity Product active" [ref=e106]:
+          - cell "ENTITY-PRODUCT" [ref=e107]:
+            - link "ENTITY-PRODUCT" [ref=e108] [cursor=pointer]:
+              - /url: objects/entity-product.html
+              - code [ref=e109]: ENTITY-PRODUCT
+          - cell "BusinessEntity" [ref=e110]
+          - cell "Product" [ref=e111]
+          - cell "active" [ref=e112]
+          - cell [ref=e113]
+          - cell [ref=e114]
+        - row "DOMAIN-EXAMPLE MasterDataDomain Example Domain draft" [ref=e115]:
+          - cell "DOMAIN-EXAMPLE" [ref=e116]:
+            - link "DOMAIN-EXAMPLE" [ref=e117] [cursor=pointer]:
+              - /url: objects/domain-example.html
+              - code [ref=e118]: DOMAIN-EXAMPLE
+          - cell "MasterDataDomain" [ref=e119]
+          - cell "Example Domain" [ref=e120]
+          - cell "draft" [ref=e121]
+          - cell [ref=e122]
+          - cell [ref=e123]
+        - row "DOMAIN-PRODUCT MasterDataDomain Product active" [ref=e124]:
+          - cell "DOMAIN-PRODUCT" [ref=e125]:
+            - link "DOMAIN-PRODUCT" [ref=e126] [cursor=pointer]:
+              - /url: objects/domain-product.html
+              - code [ref=e127]: DOMAIN-PRODUCT
+          - cell "MasterDataDomain" [ref=e128]
+          - cell "Product" [ref=e129]
+          - cell "active" [ref=e130]
+          - cell [ref=e131]
+          - cell [ref=e132]
+    - paragraph [ref=e133]:
+      - link "Open full searchable object list" [ref=e134] [cursor=pointer]:
+        - /url: objects.html
+  - generic [ref=e135]: Generated output is disposable. Canonical Markdown + YAML files remain authoritative. No hosted UI, login, editor, SAP write-back, or AI auto-mutation is included.

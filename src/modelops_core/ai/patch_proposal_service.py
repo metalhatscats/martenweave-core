@@ -9,6 +9,7 @@ from typing import Any
 
 from modelops_core.ai.provider_adapter import (
     AIContextBundle,
+    AIOutputValidationError,
     AIProviderAdapter,
     NoProviderAdapter,
     ProviderOutputValidator,
@@ -80,17 +81,54 @@ def build_patch_proposal_from_note(
         adapter = wrap_ai_adapter(adapter, repo_root=repo_root, command="propose-patch")
 
     candidates = adapter.generate_candidates(context)
+    provider = os.getenv("MARTENWEAVE_AI_PROVIDER", "no_provider")
     if not candidates:
+        if provider == "no_provider":
+            assumption = (
+                "No AI provider is configured. The deterministic scaffold adapter "
+                "could not infer operations from this note."
+            )
+            human_check = (
+                "Set an AI provider (e.g. MARTENWEAVE_AI_PROVIDER=kimi), "
+                "or include a recognized object ID and a concrete change "
+                "(e.g. 'Update description for ATTR-PRODUCT-NAME')."
+            )
+        else:
+            assumption = "No candidates generated."
+            human_check = "Please refine the note and try again."
         return {
             "is_safe": False,
             "proposal": None,
             "validation": [],
             "markdown": "",
-            "assumptions": ["No candidates generated."],
-            "human_checks": ["Please refine the note and try again."],
+            "assumptions": [assumption],
+            "human_checks": [human_check],
         }
 
     candidate = candidates[0]
-    validated = _DEFAULT_VALIDATOR.validate(candidate)
+    try:
+        validated = _DEFAULT_VALIDATOR.validate(candidate)
+    except AIOutputValidationError as exc:
+        if provider == "no_provider" and "no operations" in str(exc).lower():
+            return {
+                "is_safe": False,
+                "proposal": None,
+                "validation": [],
+                "markdown": "",
+                "assumptions": [
+                    (
+                        "No AI provider is configured. The deterministic scaffold adapter "
+                        "could not infer operations from this note."
+                    )
+                ],
+                "human_checks": [
+                    (
+                        "Set an AI provider (e.g. MARTENWEAVE_AI_PROVIDER=kimi), "
+                        "or include a recognized object ID and a concrete change "
+                        "(e.g. 'Update description for ATTR-PRODUCT-NAME')."
+                    )
+                ],
+            }
+        raise
     result = _DEFAULT_VALIDATOR.to_patch_proposal(validated["candidate"])
     return result

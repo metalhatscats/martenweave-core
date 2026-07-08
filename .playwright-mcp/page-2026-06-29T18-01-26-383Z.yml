@@ -1,0 +1,70 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - banner [ref=e3]:
+    - navigation "Primary navigation" [ref=e4]:
+      - link "Martenweave home" [ref=e5] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e6]: Martenweave
+      - generic [ref=e7]:
+        - link "Docs" [ref=e8] [cursor=pointer]:
+          - /url: /docs.html
+        - link "GitHub" [ref=e9] [cursor=pointer]:
+          - /url: https://github.com/metalhatscats/martenweave-core
+  - main [ref=e10]:
+    - region "Open-source model registry for SAP migration, MDM, and governance." [ref=e11]:
+      - heading "Open-source model registry for SAP migration, MDM, and governance." [level=1] [ref=e12]
+      - paragraph [ref=e13]: Canonical files, deterministic validation, dataset gap detection, lineage, impact analysis, and human-approved AI proposals.
+      - search "Site search" [ref=e14]:
+        - generic [ref=e15]: Search models, fields, SAP tables, and docs
+        - searchbox "Search models, fields, SAP tables, and docs" [ref=e16]
+        - button "Search" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+      - paragraph [ref=e20]:
+        - text: "Try:"
+        - button "Customer Group" [ref=e21] [cursor=pointer]
+        - button "FEP-S4-KNVV-KDGRP" [ref=e22] [cursor=pointer]
+        - button "dataset gaps" [ref=e23] [cursor=pointer]
+        - button "impact analysis" [ref=e24] [cursor=pointer]
+      - paragraph [ref=e25]: Open source · Python 3.11+ · Local-first · Canonical files · Deterministic validation · Human-approved AI
+      - generic "Quick links" [ref=e26]:
+        - link "Quickstart" [ref=e27] [cursor=pointer]:
+          - /url: /docs/quickstart.html
+        - link "GitHub" [ref=e28] [cursor=pointer]:
+          - /url: https://github.com/metalhatscats/martenweave-core
+        - link "Docs" [ref=e29] [cursor=pointer]:
+          - /url: /docs.html
+  - contentinfo [ref=e30]:
+    - link "Martenweave home" [ref=e31] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e32]: Martenweave
+    - navigation "Footer navigation" [ref=e33]:
+      - link "GitHub" [ref=e34] [cursor=pointer]:
+        - /url: https://github.com/metalhatscats/martenweave-core
+      - link "PyPI" [ref=e35] [cursor=pointer]:
+        - /url: https://pypi.org/project/martenweave-core/
+      - link "Docs" [ref=e36] [cursor=pointer]:
+        - /url: /docs.html
+      - link "Quickstart" [ref=e37] [cursor=pointer]:
+        - /url: /docs/quickstart.html
+      - link "Examples" [ref=e38] [cursor=pointer]:
+        - /url: /docs/examples.html
+      - link "Product" [ref=e39] [cursor=pointer]:
+        - /url: /docs/product.html
+      - link "How it works" [ref=e40] [cursor=pointer]:
+        - /url: /docs/how-it-works.html
+      - link "Import/export" [ref=e41] [cursor=pointer]:
+        - /url: /docs/import-export.html
+      - link "Governance" [ref=e42] [cursor=pointer]:
+        - /url: /docs/governance.html
+      - link "AI disclosure" [ref=e43] [cursor=pointer]:
+        - /url: /ai.txt
+      - link "License" [ref=e44] [cursor=pointer]:
+        - /url: https://github.com/metalhatscats/martenweave-core/blob/main/LICENSE
+      - link "llms.txt" [ref=e45] [cursor=pointer]:
+        - /url: /llms.txt
+      - link "humans.txt" [ref=e46] [cursor=pointer]:
+        - /url: /humans.txt
+      - link "Website source" [ref=e47] [cursor=pointer]:
+        - /url: https://github.com/Martenweave/martenweave.github.io
+    - paragraph [ref=e48]: AI proposes. Validators verify. Humans approve.

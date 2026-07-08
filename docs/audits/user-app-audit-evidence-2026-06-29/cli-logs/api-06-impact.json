@@ -1,0 +1,100 @@
+{
+    "object_id": "DOMAIN-PRODUCT",
+    "root_object_type": "MasterDataDomain",
+    "root_object_name": "Product Domain",
+    "upstream": [
+        {
+            "object_id": "ATTR-PRODUCT-ACTIVE",
+            "object_type": "Attribute",
+            "object_name": "Active",
+            "relationship_type": "belongs_to_domain",
+            "depth": 1
+        },
+        {
+            "object_id": "ATTR-PRODUCT-CATEGORY",
+            "object_type": "Attribute",
+            "object_name": "Category",
+            "relationship_type": "belongs_to_domain",
+            "depth": 1
+        },
+        {
+            "object_id": "ATTR-PRODUCT-ID",
+            "object_type": "Attribute",
+            "object_name": "Product ID",
+            "relationship_type": "belongs_to_domain",
+            "depth": 1
+        },
+        {
+            "object_id": "ATTR-PRODUCT-NAME",
+            "object_type": "Attribute",
+            "object_name": "Product Name",
+            "relationship_type": "belongs_to_domain",
+            "depth": 1
+        },
+        {
+            "object_id": "ATTR-PRODUCT-UNIT-PRICE",
+            "object_type": "Attribute",
+            "object_name": "Unit Price",
+            "relationship_type": "belongs_to_domain",
+            "depth": 1
+        },
+        {
+            "object_id": "DS-PRODUCT-CSV",
+            "object_type": "Dataset",
+            "object_name": "product_sample.csv",
+            "relationship_type": "belongs_to_domain",
+            "depth": 1
+        },
+        {
+            "object_id": "ENTITY-PRODUCT",
+            "object_type": "BusinessEntity",
+            "object_name": "Product",
+            "relationship_type": "belongs_to_domain",
+            "depth": 1
+        },
+        {
+            "object_id": "FEP-PRODUCT-ACTIVE",
+            "object_type": "FieldEndpoint",
+            "object_name": "active",
+            "relationship_type": "belongs_to_domain",
+            "depth": 1
+        },
+        {
+            "object_id": "FEP-PRODUCT-CATEGORY",
+            "object_type": "FieldEndpoint",
+            "object_name": "category",
+            "relationship_type": "belongs_to_domain",
+            "depth": 1
+        },
+        {
+            "object_id": "FEP-PRODUCT-ID",
+            "object_type": "FieldEndpoint",
+            "object_name": "product_id",
+            "relationship_type": "belongs_to_domain",
+            "depth": 1
+        },
+        {
+            "object_id": "FEP-PRODUCT-NAME",
+            "object_type": "FieldEndpoint",
+            "object_name": "name",
+            "relationship_type": "belongs_to_domain",
+            "depth": 1
+        },
+        {
+            "object_id": "FEP-PRODUCT-UNIT-PRICE",
+            "object_type": "FieldEndpoint",
+            "object_name": "unit_price",
+            "relationship_type": "belongs_to_domain",
+            "depth": 1
+        },
+        {
+            "object_id": "VLIST-PRODUCT-CATEGORY",
+            "object_type": "ValueList",
+            "object_name": "Product Categories",
+            "relationship_type": "belongs_to_domain",
+            "depth": 1
+        }
+    ],
+    "downstream": [],
+    "total_affected": 13
+}

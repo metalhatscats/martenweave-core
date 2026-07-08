@@ -606,3 +606,18 @@ def test_impact_report_filters_by_relationship_class(temp_model_dir: Path) -> No
         relationship_class="nonexistent",
     )
     assert report_none.affected_objects == []
+
+
+def test_impact_cli_unknown_object_id(sample_repo: Path) -> None:
+    """CLI impact on an unknown ID must fail loudly instead of returning an empty report."""
+    result = runner.invoke(app, ["impact", "DOES-NOT-EXIST", "--repo", str(sample_repo)])
+    assert result.exit_code == 1
+    assert "Object not found: DOES-NOT-EXIST" in result.output
+
+
+def test_impact_cli_unknown_object_id_json(sample_repo: Path) -> None:
+    """CLI impact --json on an unknown ID must include a structured error."""
+    result = runner.invoke(app, ["impact", "DOES-NOT-EXIST", "--repo", str(sample_repo), "--json"])
+    assert result.exit_code == 1
+    data = json.loads(result.output.strip())
+    assert data["error"] == "Object not found: DOES-NOT-EXIST"

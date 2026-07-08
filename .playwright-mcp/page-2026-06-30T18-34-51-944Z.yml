@@ -1,0 +1,196 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e9]:
+        - strong [ref=e10]: Martenweave
+        - generic [ref=e11]: Model intelligence
+      - navigation "Primary navigation" [ref=e12]:
+        - button "Home" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+          - generic [ref=e16]: Home
+        - button "Models" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e20]: Models
+        - button "Lineage" [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+          - generic [ref=e24]: Lineage
+        - button "Gaps 5" [ref=e25] [cursor=pointer]:
+          - img [ref=e26]
+          - generic [ref=e28]: Gaps
+          - generic [ref=e29]: "5"
+        - button "Proposals" [ref=e30] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e33]: Proposals
+    - button "Customer migration Production · v2.4.1" [disabled] [ref=e34]:
+      - generic [ref=e36]:
+        - strong [ref=e37]: Customer migration
+        - generic [ref=e38]: Production · v2.4.1
+  - generic [ref=e39]:
+    - banner [ref=e40]:
+      - generic [ref=e42]:
+        - generic [ref=e43]: Customer migration
+        - img [ref=e44]
+        - strong [ref=e46]: Normalize business partner language code
+      - generic [ref=e47]:
+        - generic [ref=e48]:
+          - img [ref=e49]
+          - textbox "Search model" [ref=e51]
+        - generic [ref=e52]: Production
+        - button "Notifications — No local notification feed" [disabled] [ref=e54]:
+          - img [ref=e55]
+        - button "AC Alex Chen Data Steward" [ref=e58] [cursor=pointer]:
+          - generic [ref=e59]: AC
+          - generic [ref=e60]:
+            - strong [ref=e61]: Alex Chen
+            - generic [ref=e62]: Data Steward
+          - img [ref=e63]
+    - main [ref=e65]:
+      - generic [ref=e957]:
+        - generic [ref=e958]:
+          - button "Back to proposals" [ref=e959] [cursor=pointer]:
+            - img [ref=e960]
+            - text: Back to proposals
+          - generic [ref=e962]:
+            - generic [ref=e963]:
+              - generic [ref=e964]:
+                - generic [ref=e965]: Draft
+                - generic [ref=e966]: Medium impact
+              - heading "Normalize business partner language code" [level=1] [ref=e967]
+              - paragraph [ref=e968]: "Proposal #31 · Created by Alex Chen · Updated 2h ago"
+            - generic [ref=e969]:
+              - button "Request changes" [ref=e970] [cursor=pointer]:
+                - img [ref=e971]
+                - text: Request changes
+              - button "Approve proposal" [active] [ref=e973] [cursor=pointer]:
+                - img [ref=e974]
+                - text: Approve proposal
+        - generic [ref=e976]:
+          - generic [ref=e977]:
+            - generic [ref=e978]:
+              - generic [ref=e979]:
+                - generic [ref=e980]: Risk classification
+                - strong [ref=e981]:
+                  - img [ref=e982]
+                  - text: Medium
+              - generic [ref=e984]:
+                - generic [ref=e985]: Canonical objects
+                - strong [ref=e986]: 1 affected
+              - generic [ref=e987]:
+                - generic [ref=e988]: Proposed changes
+                - strong [ref=e989]: 3 changes
+              - generic [ref=e990]:
+                - generic [ref=e991]: Validation
+                - strong [ref=e992]:
+                  - img [ref=e993]
+                  - text: Passed
+            - generic [ref=e995]:
+              - button "Changes" [ref=e996] [cursor=pointer]
+              - button "Impact" [ref=e997] [cursor=pointer]
+              - button "Validation" [ref=e998] [cursor=pointer]
+              - button "Activity" [ref=e999] [cursor=pointer]
+            - generic [ref=e1000]:
+              - generic [ref=e1001]:
+                - generic [ref=e1002]:
+                  - heading "Proposed canonical changes" [level=2] [ref=e1003]
+                  - paragraph [ref=e1004]: Review every mutation before approval.
+                - generic [ref=e1005]:
+                  - button "Side by side" [ref=e1006] [cursor=pointer]:
+                    - img [ref=e1007]
+                    - text: Side by side
+                  - button "Unified" [ref=e1009] [cursor=pointer]:
+                    - img [ref=e1010]
+                    - text: Unified
+              - article [ref=e1012]:
+                - generic [ref=e1013]:
+                  - generic [ref=e1014]:
+                    - img [ref=e1015]
+                    - text: model/ATTR-BP-TAX-NUMBER.md
+                  - generic [ref=e1017]: New object
+                - generic [ref=e1018]:
+                  - generic [ref=e1019]:
+                    - generic [ref=e1020]: Current
+                    - generic [ref=e1021]:
+                      - img [ref=e1022]
+                      - generic [ref=e1024]: Object does not exist
+                  - generic [ref=e1025]:
+                    - generic [ref=e1026]: Proposed
+                    - generic [ref=e1027]: "--- id: ATTR-BP-TAX-NUMBER type: Attribute status: draft name: Tax Number domain: DOMAIN-CUSTOMER-BP --- # Tax Number Tax identification number used for reporting and partner matching."
+              - article [ref=e1028]:
+                - generic [ref=e1029]:
+                  - generic [ref=e1030]:
+                    - img [ref=e1031]
+                    - text: model/MAP-SAP-BP-TAX-NUMBER.md
+                  - generic [ref=e1033]: Modified
+                - generic [ref=e1034]:
+                  - generic [ref=e1035]:
+                    - generic [ref=e1036]: Field
+                    - strong [ref=e1037]: target_endpoint
+                  - generic [ref=e1038]:
+                    - generic [ref=e1039]: Current
+                    - code [ref=e1040]: —
+                  - img [ref=e1041]
+                  - generic [ref=e1043]:
+                    - generic [ref=e1044]: Proposed
+                    - code [ref=e1045]: ATTR-BP-TAX-NUMBER
+                - generic [ref=e1046]:
+                  - generic [ref=e1047]:
+                    - generic [ref=e1048]: Field
+                    - strong [ref=e1049]: transform
+                  - generic [ref=e1050]:
+                    - generic [ref=e1051]: Current
+                    - code [ref=e1052]: —
+                  - img [ref=e1053]
+                  - generic [ref=e1055]:
+                    - generic [ref=e1056]: Proposed
+                    - code [ref=e1057]: trim · uppercase · validate
+          - complementary [ref=e1058]:
+            - generic [ref=e1059]:
+              - generic [ref=e1061]:
+                - heading "Review context" [level=2] [ref=e1062]
+                - paragraph [ref=e1063]: Why this change exists
+              - paragraph [ref=e1064]: "Inconsistent data type: LANGUAGE is driving this proposal. The change adds or modifies canonical endpoints with deterministic transform evidence."
+              - 'button "Linked gap Inconsistent data type: LANGUAGE" [ref=e1065] [cursor=pointer]':
+                - img [ref=e1066]
+                - generic [ref=e1068]:
+                  - generic [ref=e1069]: Linked gap
+                  - strong [ref=e1070]: "Inconsistent data type: LANGUAGE"
+                - img [ref=e1071]
+            - generic [ref=e1073]:
+              - generic [ref=e1075]:
+                - heading "Reviewers" [level=2] [ref=e1076]
+                - paragraph [ref=e1077]: 1 of 2 approvals received
+              - generic [ref=e1078]:
+                - generic [ref=e1079]: PN
+                - generic [ref=e1080]:
+                  - strong [ref=e1081]: Priya Nair
+                  - generic [ref=e1082]: Data steward
+                - img [ref=e1083]
+              - generic [ref=e1085]:
+                - generic [ref=e1086]: AC
+                - generic [ref=e1087]:
+                  - strong [ref=e1088]: Alex Chen
+                  - generic [ref=e1089]: Your review
+                - generic [ref=e1090]: Pending
+            - generic [ref=e1091]:
+              - generic [ref=e1093]:
+                - heading "Review note" [level=2] [ref=e1094]
+                - paragraph [ref=e1095]: Visible to proposal reviewers
+              - textbox "Add context or a review note…" [ref=e1096]
+              - button "Add note" [disabled] [ref=e1097]:
+                - img [ref=e1098]
+                - text: Add note
+        - 'dialog "Approve Proposal #31?" [ref=e1100]':
+          - button [ref=e1101] [cursor=pointer]:
+            - img [ref=e1102]
+          - img [ref=e1105]
+          - 'heading "Approve Proposal #31?" [level=2] [ref=e1107]'
+          - paragraph [ref=e1108]: Approval creates a governed change request. Canonical files are not modified until that change request is applied.
+          - generic [ref=e1109]:
+            - generic [ref=e1110]: Approval note (optional)
+            - textbox "Approval note (optional)" [ref=e1111]:
+              - /placeholder: Add a short review note…
+          - generic [ref=e1112]:
+            - button "Cancel" [ref=e1113] [cursor=pointer]
+            - button "Approve" [ref=e1114] [cursor=pointer]:
+              - img [ref=e1115]
+              - text: Approve

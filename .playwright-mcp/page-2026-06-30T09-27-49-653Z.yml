@@ -1,0 +1,133 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e9]:
+        - strong [ref=e10]: Martenweave
+        - generic [ref=e11]: Model intelligence
+      - navigation "Primary navigation" [ref=e12]:
+        - button "Home" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+          - generic [ref=e16]: Home
+        - button "Models" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e20]: Models
+        - button "Lineage" [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+          - generic [ref=e24]: Lineage
+        - button "Gaps 5" [ref=e25] [cursor=pointer]:
+          - img [ref=e26]
+          - generic [ref=e28]: Gaps
+          - generic [ref=e29]: "5"
+        - button "Proposals" [ref=e30] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e33]: Proposals
+    - generic [ref=e34]:
+      - generic [ref=e36]:
+        - strong [ref=e37]: Customer migration
+        - generic [ref=e38]: Production · v2.4.1
+      - img [ref=e39]
+  - generic [ref=e41]:
+    - banner [ref=e42]:
+      - generic [ref=e43]:
+        - button "Open navigation" [ref=e239] [cursor=pointer]:
+          - img [ref=e240]
+        - strong [ref=e48]: Model intelligence
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - img [ref=e51]
+          - textbox "Search model" [ref=e53]
+        - button "Notifications" [ref=e56] [cursor=pointer]:
+          - img [ref=e57]
+        - button "AC" [ref=e242] [cursor=pointer]:
+          - generic [ref=e62]: AC
+    - main [ref=e68]:
+      - generic [ref=e243]:
+        - generic [ref=e244]:
+          - generic [ref=e245]:
+            - img [ref=e247]
+            - heading "Ask your model layer anything" [level=1] [ref=e249]
+            - paragraph [ref=e250]: Search, inspect, trace, validate, and review governed model knowledge.
+          - generic [ref=e251]:
+            - textbox "Ask about models, fields, lineage, gaps, or proposals…" [ref=e252]
+            - generic [ref=e253]:
+              - generic [ref=e254]:
+                - button "Attach context" [ref=e255] [cursor=pointer]:
+                  - img [ref=e256]
+                - button "Context" [ref=e258] [cursor=pointer]:
+                  - img [ref=e259]
+                  - text: Context
+              - button "Ask Martenweave" [disabled] [ref=e261]:
+                - img [ref=e262]
+          - generic "Suggested questions" [ref=e264]:
+            - button "Show high-risk gaps in Business Partner" [ref=e265] [cursor=pointer]:
+              - text: Show high-risk gaps in Business Partner
+              - img [ref=e266]
+            - button "Trace TAX_NUMBER across source systems" [ref=e268] [cursor=pointer]:
+              - text: Trace TAX_NUMBER across source systems
+              - img [ref=e269]
+            - button "What changed in the model this week?" [ref=e271] [cursor=pointer]:
+              - text: What changed in the model this week?
+              - img [ref=e272]
+          - generic [ref=e275]:
+            - img [ref=e276]
+            - generic [ref=e278]: Recent answer
+            - paragraph [ref=e279]: Ask a question to build an evidence-backed model view.
+        - complementary [ref=e280]:
+          - generic [ref=e281]:
+            - generic [ref=e282]:
+              - heading "Recent objects" [level=2] [ref=e283]
+              - button "View all" [ref=e284] [cursor=pointer]
+            - generic [ref=e285]:
+              - button "Business Partner Domain" [ref=e286] [cursor=pointer]:
+                - img [ref=e288]
+                - generic [ref=e291]:
+                  - strong [ref=e292]: Business Partner
+                  - generic [ref=e293]: Domain
+                - img [ref=e294]
+              - button "ADDRESS_ID Attribute" [ref=e296] [cursor=pointer]:
+                - img [ref=e298]
+                - generic [ref=e301]:
+                  - strong [ref=e302]: ADDRESS_ID
+                  - generic [ref=e303]: Attribute
+                - img [ref=e304]
+              - button "COUNTRY Attribute" [ref=e306] [cursor=pointer]:
+                - img [ref=e308]
+                - generic [ref=e311]:
+                  - strong [ref=e312]: COUNTRY
+                  - generic [ref=e313]: Attribute
+                - img [ref=e314]
+              - button "Customer Sales Area Entity" [ref=e316] [cursor=pointer]:
+                - img [ref=e318]
+                - generic [ref=e321]:
+                  - strong [ref=e322]: Customer Sales Area
+                  - generic [ref=e323]: Entity
+                - img [ref=e324]
+          - generic [ref=e326]:
+            - generic [ref=e327]:
+              - heading "Recent activity" [level=2] [ref=e328]
+              - button "View all" [ref=e329] [cursor=pointer]
+            - generic [ref=e330]:
+              - generic [ref=e331]:
+                - img [ref=e333]
+                - generic [ref=e335]:
+                  - strong [ref=e336]: Validation completed
+                  - generic [ref=e337]: Business Partner
+                - time [ref=e338]: 2m ago
+              - generic [ref=e339]:
+                - img [ref=e341]
+                - generic [ref=e343]:
+                  - strong [ref=e344]: "Proposal #27 updated"
+                  - generic [ref=e345]: Customer alternative key mapping
+                - time [ref=e346]: 18m ago
+              - generic [ref=e347]:
+                - img [ref=e349]
+                - generic [ref=e351]:
+                  - strong [ref=e352]: New gap detected
+                  - generic [ref=e353]: TAX_NUMBER
+                - time [ref=e354]: 1h ago
+              - generic [ref=e355]:
+                - img [ref=e357]
+                - generic [ref=e359]:
+                  - strong [ref=e360]: Lineage updated
+                  - generic [ref=e361]: Sales Order → Business Partner
+                - time [ref=e362]: 2h ago

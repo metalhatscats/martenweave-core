@@ -220,6 +220,83 @@ When building a new model from scratch, create objects in this order to avoid br
 
 ---
 
+## 7.5 ProductOwner agentic loop
+
+The `ProductOwnerAgent` (`modelops agent product-owner`) consumes raw product inputs and runs a validation-driven loop to produce human-reviewable `PatchProposal` objects.
+
+### Supported inputs
+
+| Source | Example | Handling |
+|---|---|---|
+| Note | `note.md` with free text | Passed directly to the proposal generator |
+| Issue | GitHub issue Markdown | Frontmatter stripped; body used as evidence |
+| ChangeRequest | Existing `CR-*.md` file | `reason`, `requested_change`, and `expected_impact` synthesize the note |
+
+### Loop steps
+
+1. **Normalize** input into a note and extract candidate object IDs.
+2. **Generate** an initial `PatchProposal` using the configured AI adapter.
+3. **Validate** the proposal deterministically (ID format, object existence, allowed operations).
+4. **Refine** if validation fails: append errors to the note and regenerate (up to `--max-iterations`).
+5. **Impact analysis**: compute affected objects from the SQLite index.
+6. **Write** the validated proposal to `model/patch-proposals/`.
+7. **Create ChangeRequest** when the proposal is high-risk, originated from a ChangeRequest, or failed final validation.
+8. **Draft issue** and emit notification events for owners/approvers.
+
+### CLI usage
+
+```bash
+modelops agent product-owner --from note.md --repo ./my-model --dry-run
+modelops agent product-owner --from issue.md --repo ./my-model --source-type issue
+modelops agent product-owner --from CR-0001 --repo ./my-model --source-type change_request
+```
+
+The agent never edits canonical model objects directly. All changes flow through `PatchProposal` and, when approved, `ChangeRequest`.
+
+### ProductOwner agent vs Readiness agent
+
+| Agent | Input | Output | Use when |
+|---|---|---|---|
+| `product-owner` | Note, issue, ChangeRequest | PatchProposal, ChangeRequest, issue draft | A human has a concrete change request |
+| `readiness` | Repository state | Issue files, issue draft, notifications | You want to know if the repo is pilot-ready |
+
+---
+
+## 7.6 Readiness agentic loop
+
+The `ReadinessAgent` (`modelops agent readiness`) runs deterministic trust gates against a repository and creates `Issue` objects for every blocker.
+
+### Supported gates
+
+| Gate | Trigger | Severity |
+|---|---|---|
+| `validation_errors` | Any validation `ERROR` | high |
+| `stale_index` | Generated index is older than canonical files | medium |
+| `scorecard_zero_coverage_pass` | A coverage metric is `0.0` but marked `pass` | high |
+| `scorecard_untitled_repository` | Config has a name but scorecard shows "Untitled Repository" | medium |
+| `invalid_open_proposal` | Open PatchProposal has `validation_status: invalid` | high |
+| `high_risk_unapproved_proposal` | Open high-risk proposal lacks approved ChangeRequest | high |
+| `active_object_missing_owner` | Active object has no ownership field | medium |
+
+### CLI usage
+
+```bash
+modelops agent readiness --repo ./my-model --profile pilot
+modelops agent readiness --repo ./my-model --profile demo --dry-run
+modelops agent readiness --repo ./my-model --profile release --json
+```
+
+### Output
+
+- Readiness report (human table or JSON).
+- One `Issue` canonical file per blocker in `model/issues/`.
+- A GitHub issue draft in `generated/issues/`.
+- Notification events for affected owners.
+
+The agent does not auto-apply fixes. It makes blockers trackable so the team can resolve them through the normal PatchProposal/ChangeRequest workflow.
+
+---
+
 ## 8. Agent anti-patterns to avoid
 
 | Anti-pattern | Why it hurts | Correct approach |

@@ -153,6 +153,23 @@ class TestIndexFreshCLI:
         assert data["fresh"] is False
         assert data["hash_mismatch"] is True
 
+    def test_cli_human_readable_fresh_with_mtime_drift(self, sample_repo: Path) -> None:
+        """When only mtimes drift, the CLI must still say fresh and explain why."""
+        runner.invoke(app, ["build-index", "--repo", str(sample_repo)])
+        time.sleep(0.1)
+        # Touch a model file without changing content
+        model_path = resolve_model_path(sample_repo)
+        for f in model_path.iterdir():
+            if f.is_file() and f.suffix == ".md":
+                f.touch()
+                break
+
+        result = runner.invoke(app, ["index-fresh", "--repo", str(sample_repo)])
+        assert result.exit_code == 0
+        assert "fresh" in result.output.lower()
+        assert "content hash matches" in result.output.lower()
+        assert "no rebuild needed" in result.output.lower()
+
 
 class TestIndexFreshnessHash:
     def test_hash_mismatch_detects_content_change(self, tmp_path: Path) -> None:

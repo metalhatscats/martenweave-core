@@ -1,0 +1,181 @@
+- generic [ref=f4e4]:
+  - complementary [ref=f4e5]:
+    - generic [ref=f4e6]:
+      - generic [ref=f4e9]:
+        - strong [ref=f4e10]: Martenweave
+        - generic [ref=f4e11]: Model intelligence
+      - navigation "Primary navigation" [ref=f4e12]:
+        - button "Home" [ref=f4e13] [cursor=pointer]:
+          - img [ref=f4e14]
+          - generic [ref=f4e16]: Home
+        - button "Models" [ref=f4e17] [cursor=pointer]:
+          - img [ref=f4e18]
+          - generic [ref=f4e20]: Models
+        - button "Lineage" [ref=f4e21] [cursor=pointer]:
+          - img [ref=f4e22]
+          - generic [ref=f4e24]: Lineage
+        - button "Gaps 5" [ref=f4e25] [cursor=pointer]:
+          - img [ref=f4e26]
+          - generic [ref=f4e28]: Gaps
+          - generic [ref=f4e29]: "5"
+        - button "Proposals" [ref=f4e30] [cursor=pointer]:
+          - img [ref=f4e31]
+          - generic [ref=f4e33]: Proposals
+    - generic [ref=f4e34]:
+      - generic [ref=f4e36]:
+        - strong [ref=f4e37]: Customer migration
+        - generic [ref=f4e38]: Production · v2.4.1
+      - img [ref=f4e39]
+  - generic [ref=f4e41]:
+    - banner [ref=f4e42]:
+      - generic [ref=f4e44]:
+        - generic [ref=f4e45]: Customer migration
+        - img [ref=f4e46]
+        - strong [ref=f4e48]: Lineage
+      - generic [ref=f4e49]:
+        - generic [ref=f4e50]:
+          - img [ref=f4e51]
+          - textbox "Search model" [ref=f4e53]
+        - generic [ref=f4e54]: Production
+        - button "Notifications" [ref=f4e56] [cursor=pointer]:
+          - img [ref=f4e57]
+        - button "AC Alex Chen Data Steward" [ref=f4e61] [cursor=pointer]:
+          - generic [ref=f4e62]: AC
+          - generic [ref=f4e63]:
+            - strong [ref=f4e64]: Alex Chen
+            - generic [ref=f4e65]: Data Steward
+          - img [ref=f4e66]
+    - main [ref=f4e68]:
+      - generic [ref=f4e492]:
+        - generic [ref=f4e493]:
+          - generic [ref=f4e494]:
+            - generic [ref=f4e495]:
+              - heading "Business Partner lineage" [level=1] [ref=f4e496]
+              - paragraph [ref=f4e497]: Trace systems, transformations, canonical objects, and downstream impact.
+            - generic [ref=f4e498]:
+              - button "Export" [ref=f4e499] [cursor=pointer]:
+                - img [ref=f4e500]
+                - text: Export
+              - button "View object" [ref=f4e502] [cursor=pointer]:
+                - img [ref=f4e503]
+                - text: View object
+          - generic [ref=f4e505]:
+            - generic [ref=f4e506]:
+              - img [ref=f4e507]
+              - textbox [ref=f4e509]:
+                - /placeholder: Find a node or field…
+            - generic [ref=f4e510]:
+              - generic [ref=f4e511]: Depth
+              - combobox "Depth" [ref=f4e512]:
+                - option "1 level"
+                - option "2 levels" [selected]
+                - option "All levels"
+            - button "Filters" [ref=f4e513] [cursor=pointer]:
+              - img [ref=f4e514]
+              - text: Filters
+            - button [ref=f4e516] [cursor=pointer]:
+              - img [ref=f4e517]
+        - generic [ref=f4e519]:
+          - generic [ref=f4e520]:
+            - generic [ref=f4e521]:
+              - generic [ref=f4e522]: Source
+              - generic [ref=f4e524]: Transformation
+              - generic [ref=f4e526]: Canonical
+              - generic [ref=f4e528]: Target
+            - application [ref=f4e530]:
+              - generic [ref=f4e532]:
+                - generic:
+                  - generic:
+                    - img:
+                      - group "Edge from salesforce to staging" [ref=f4e533] [cursor=pointer]
+                    - img:
+                      - group "Edge from sap to staging" [ref=f4e536] [cursor=pointer]
+                    - img:
+                      - group "Edge from staging to canonical"
+                    - img:
+                      - group "Edge from canonical to mdm" [ref=f4e539] [cursor=pointer]
+                    - img:
+                      - group "Edge from canonical to analytics" [ref=f4e542] [cursor=pointer]
+                  - generic:
+                    - group [ref=f4e545]:
+                      - generic [ref=f4e546]:
+                        - img [ref=f4e549]
+                        - generic [ref=f4e552]:
+                          - strong [ref=f4e553]: Salesforce CRM
+                          - generic [ref=f4e554]: Source system
+                    - group [ref=f4e556]:
+                      - generic [ref=f4e557]:
+                        - img [ref=f4e560]
+                        - generic [ref=f4e563]:
+                          - strong [ref=f4e564]: SAP S/4HANA
+                          - generic [ref=f4e565]: Source system
+                    - group [ref=f4e567]:
+                      - generic [ref=f4e568]:
+                        - img [ref=f4e571]
+                        - generic [ref=f4e574]:
+                          - strong [ref=f4e575]: BP staging model
+                          - generic [ref=f4e576]: Transformation
+                    - group [ref=f4e578]:
+                      - generic [ref=f4e579]:
+                        - img [ref=f4e582]
+                        - generic [ref=f4e585]:
+                          - strong [ref=f4e586]: Business Partner
+                          - generic [ref=f4e587]: Canonical model
+                    - group [ref=f4e589]:
+                      - generic [ref=f4e590]:
+                        - img [ref=f4e593]
+                        - generic [ref=f4e596]:
+                          - strong [ref=f4e597]: Informatica MDM
+                          - generic [ref=f4e598]: Target system
+                    - group [ref=f4e600]:
+                      - generic [ref=f4e601]:
+                        - img [ref=f4e604]
+                        - generic [ref=f4e607]:
+                          - strong [ref=f4e608]: Customer analytics
+                          - generic [ref=f4e609]: Downstream dataset
+              - img
+              - generic "Control Panel" [ref=f4e611]:
+                - button "Zoom In" [ref=f4e612] [cursor=pointer]:
+                  - img [ref=f4e613]
+                - button "Zoom Out" [ref=f4e615] [cursor=pointer]:
+                  - img [ref=f4e616]
+                - button "Fit View" [ref=f4e618] [cursor=pointer]:
+                  - img [ref=f4e619]
+              - img "Mini Map" [ref=f4e622]
+              - link "React Flow attribution" [ref=f4e630] [cursor=pointer]:
+                - /url: https://reactflow.dev?utm_source=attribution
+                - text: React Flow
+          - complementary [ref=f4e632]:
+            - generic [ref=f4e633]:
+              - generic [ref=f4e634]:
+                - generic [ref=f4e635]: Canonical model
+                - heading "Business Partner" [level=2] [ref=f4e636]
+              - button [ref=f4e637] [cursor=pointer]:
+                - img [ref=f4e638]
+            - paragraph [ref=f4e640]: Selected node details, validation context, and visible path evidence.
+            - generic [ref=f4e641]:
+              - generic [ref=f4e642]: Object ID
+              - code [ref=f4e643]: DOMAIN-CUSTOMER-BP
+            - generic [ref=f4e644]:
+              - generic [ref=f4e645]: Visible impact
+              - generic [ref=f4e646]:
+                - generic [ref=f4e647]:
+                  - strong [ref=f4e648]: "2"
+                  - text: upstream
+                - generic [ref=f4e649]:
+                  - strong [ref=f4e650]: "2"
+                  - text: downstream
+            - generic [ref=f4e651]:
+              - generic [ref=f4e652]: Path evidence
+              - list [ref=f4e653]:
+                - listitem [ref=f4e654]:
+                  - img [ref=f4e655]
+                  - text: Salesforce → BP staging
+                - listitem [ref=f4e657]:
+                  - img [ref=f4e658]
+                  - text: SAP S/4HANA → BP staging
+                - listitem [ref=f4e660]:
+                  - img [ref=f4e661]
+                  - text: BP staging → Canonical
+            - button "Open object details" [ref=f4e663] [cursor=pointer]
+            - button "Review related gaps" [ref=f4e664] [cursor=pointer]

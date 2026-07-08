@@ -1,0 +1,4 @@
+Initialized model repository at /private/tmp/martenweave-fixloop-repo
+  Config:   /private/tmp/martenweave-fixloop-repo/modelops.config.yaml
+  Model:    /private/tmp/martenweave-fixloop-repo/model
+  Generated: /private/tmp/martenweave-fixloop-repo/generated

@@ -1,0 +1,20 @@
+Impact Report for DOMAIN-PRODUCT
+  Type: MasterDataDomain
+  Affected objects: 13
+┏━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━┓
+┃ Object ID               ┃ Type           ┃ Direction ┃ Depth ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━┩
+│ ATTR-PRODUCT-ACTIVE     │ Attribute      │ upstream  │ 1     │
+│ ATTR-PRODUCT-CATEGORY   │ Attribute      │ upstream  │ 1     │
+│ ATTR-PRODUCT-ID         │ Attribute      │ upstream  │ 1     │
+│ ATTR-PRODUCT-NAME       │ Attribute      │ upstream  │ 1     │
+│ ATTR-PRODUCT-UNIT-PRICE │ Attribute      │ upstream  │ 1     │
+│ DS-PRODUCT-CSV          │ Dataset        │ upstream  │ 1     │
+│ ENTITY-PRODUCT          │ BusinessEntity │ upstream  │ 1     │
+│ FEP-PRODUCT-ACTIVE      │ FieldEndpoint  │ upstream  │ 1     │
+│ FEP-PRODUCT-CATEGORY    │ FieldEndpoint  │ upstream  │ 1     │
+│ FEP-PRODUCT-ID          │ FieldEndpoint  │ upstream  │ 1     │
+│ FEP-PRODUCT-NAME        │ FieldEndpoint  │ upstream  │ 1     │
+│ FEP-PRODUCT-UNIT-PRICE  │ FieldEndpoint  │ upstream  │ 1     │
+│ VLIST-PRODUCT-CATEGORY  │ ValueList      │ upstream  │ 1     │
+└─────────────────────────┴────────────────┴───────────┴───────┘

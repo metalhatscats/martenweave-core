@@ -1,0 +1,167 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e9]:
+        - strong [ref=e10]: Martenweave
+        - generic [ref=e11]: Model intelligence
+      - navigation "Primary navigation" [ref=e12]:
+        - button "Home" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+          - generic [ref=e16]: Home
+        - button "Models" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e20]: Models
+        - button "Lineage" [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+          - generic [ref=e24]: Lineage
+        - button "Gaps 5" [ref=e25] [cursor=pointer]:
+          - img [ref=e26]
+          - generic [ref=e28]: Gaps
+          - generic [ref=e29]: "5"
+        - button "Proposals" [ref=e30] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e33]: Proposals
+    - generic [ref=e34]:
+      - generic [ref=e36]:
+        - strong [ref=e37]: Customer migration
+        - generic [ref=e38]: Production · v2.4.1
+      - img [ref=e39]
+  - generic [ref=e41]:
+    - banner [ref=e42]:
+      - generic [ref=e44]:
+        - generic [ref=e45]: Customer migration
+        - img [ref=e46]
+        - strong [ref=e48]: Global model search
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - img [ref=e51]
+          - textbox "Search model" [ref=e53]
+        - generic [ref=e54]: Production
+        - button "Notifications" [ref=e56] [cursor=pointer]:
+          - img [ref=e57]
+        - button "AC Alex Chen Data Steward" [ref=e859] [cursor=pointer]:
+          - generic [ref=e62]: AC
+          - generic [ref=e63]:
+            - strong [ref=e64]: Alex Chen
+            - generic [ref=e65]: Data Steward
+          - img [ref=e66]
+    - main [ref=e68]:
+      - generic [ref=e1029]:
+        - generic [ref=e1031]:
+          - heading "Global model search" [level=1] [ref=e1032]
+          - paragraph [ref=e1033]: Search across canonical objects, fields, mappings, datasets, and proposals.
+        - generic [ref=e1034]:
+          - img [ref=e1035]
+          - textbox [ref=e1037]: business partner
+          - button [ref=e1038] [cursor=pointer]:
+            - img [ref=e1039]
+          - button [ref=e1041] [cursor=pointer]:
+            - img [ref=e1042]
+        - generic [ref=e1044]:
+          - button "All52" [ref=e1045] [cursor=pointer]
+          - button "Objects12" [ref=e1046] [cursor=pointer]
+          - button "Fields18" [ref=e1047] [cursor=pointer]
+          - button "Mappings7" [ref=e1048] [cursor=pointer]
+          - button "Proposals7" [ref=e1049] [cursor=pointer]
+        - generic [ref=e1050]:
+          - img [ref=e1052]
+          - generic [ref=e1054]:
+            - generic [ref=e1055]:
+              - text: AI answer
+              - generic [ref=e1056]: Beta
+            - paragraph [ref=e1057]:
+              - text: The canonical object is
+              - strong [ref=e1058]: Business Partner
+              - text: . It is used by eight source systems, referenced by fourteen rules, and currently has three open field gaps.
+          - button "Ask follow-up" [ref=e1059] [cursor=pointer]:
+            - text: Ask follow-up
+            - img [ref=e1060]
+        - generic [ref=e1062]:
+          - strong [ref=e1063]: 4 results
+          - generic [ref=e1064]:
+            - generic [ref=e1065]:
+              - text: Sorted by
+              - combobox "Sorted by" [ref=e1066]:
+                - option "Relevance" [selected]
+                - option "Recently updated"
+                - option "Name"
+            - button "Filters" [ref=e1067] [cursor=pointer]:
+              - img [ref=e1068]
+              - text: Filters
+        - generic [ref=e1071]:
+          - button "Domain Business Partner Canonical domain for organizations and people that participate in commercial relationships. 3 owners 8 systems Validated Updated 18m ago" [ref=e1072] [cursor=pointer]:
+            - img [ref=e1074]
+            - generic [ref=e1077]:
+              - generic [ref=e1078]:
+                - generic [ref=e1079]: Domain
+                - strong [ref=e1080]: Business Partner
+              - generic [ref=e1081]: Canonical domain for organizations and people that participate in commercial relationships.
+              - generic [ref=e1082]:
+                - generic [ref=e1083]:
+                  - img [ref=e1084]
+                  - text: 3 owners
+                - generic [ref=e1086]:
+                  - img [ref=e1087]
+                  - text: 8 systems
+                - generic [ref=e1089]:
+                  - img [ref=e1090]
+                  - text: Validated
+            - generic [ref=e1092]: Updated 18m ago
+            - img [ref=e1093]
+          - button "Attribute ADDRESS_ID Unique identifier for the address record associated with a business partner. 1 owners 8 systems Validated Updated 2d ago" [ref=e1095] [cursor=pointer]:
+            - img [ref=e1097]
+            - generic [ref=e1100]:
+              - generic [ref=e1101]:
+                - generic [ref=e1102]: Attribute
+                - strong [ref=e1103]: ADDRESS_ID
+              - generic [ref=e1104]: Unique identifier for the address record associated with a business partner.
+              - generic [ref=e1105]:
+                - generic [ref=e1106]:
+                  - img [ref=e1107]
+                  - text: 1 owners
+                - generic [ref=e1109]:
+                  - img [ref=e1110]
+                  - text: 8 systems
+                - generic [ref=e1112]:
+                  - img [ref=e1113]
+                  - text: Validated
+            - generic [ref=e1115]: Updated 2d ago
+            - img [ref=e1116]
+          - button "Attribute COUNTRY Country or region of the business partner address, standardized to ISO-2. 1 owners 12 systems Validated Updated 2d ago" [ref=e1118] [cursor=pointer]:
+            - img [ref=e1120]
+            - generic [ref=e1123]:
+              - generic [ref=e1124]:
+                - generic [ref=e1125]: Attribute
+                - strong [ref=e1126]: COUNTRY
+              - generic [ref=e1127]: Country or region of the business partner address, standardized to ISO-2.
+              - generic [ref=e1128]:
+                - generic [ref=e1129]:
+                  - img [ref=e1130]
+                  - text: 1 owners
+                - generic [ref=e1132]:
+                  - img [ref=e1133]
+                  - text: 12 systems
+                - generic [ref=e1135]:
+                  - img [ref=e1136]
+                  - text: Validated
+            - generic [ref=e1138]: Updated 2d ago
+            - img [ref=e1139]
+          - button "Mapping BP Address Standardization Standardizes source addresses against the canonical Business Partner model. 2 owners 4 systems Validated Updated 3d ago" [ref=e1141] [cursor=pointer]:
+            - img [ref=e1143]
+            - generic [ref=e1146]:
+              - generic [ref=e1147]:
+                - generic [ref=e1148]: Mapping
+                - strong [ref=e1149]: BP Address Standardization
+              - generic [ref=e1150]: Standardizes source addresses against the canonical Business Partner model.
+              - generic [ref=e1151]:
+                - generic [ref=e1152]:
+                  - img [ref=e1153]
+                  - text: 2 owners
+                - generic [ref=e1155]:
+                  - img [ref=e1156]
+                  - text: 4 systems
+                - generic [ref=e1158]:
+                  - img [ref=e1159]
+                  - text: Validated
+            - generic [ref=e1161]: Updated 3d ago
+            - img [ref=e1162]

@@ -1,0 +1,422 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Gaps" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Generated local static read-only viewer over the SQLite index.
+    - navigation "Viewer navigation" [ref=e7]:
+      - link "Dashboard" [ref=e8] [cursor=pointer]:
+        - /url: index.html
+      - link "Objects" [ref=e9] [cursor=pointer]:
+        - /url: objects.html
+      - link "Gaps" [ref=e10] [cursor=pointer]:
+        - /url: gaps.html
+      - link "Decisions" [ref=e11] [cursor=pointer]:
+        - /url: decisions.html
+      - link "Owners" [ref=e12] [cursor=pointer]:
+        - /url: owners.html
+      - link "Manifest" [ref=e13] [cursor=pointer]:
+        - /url: viewer-manifest.json
+  - generic [ref=e14]:
+    - text: "Index freshness:"
+    - strong [ref=e15]: fresh
+    - text: . Viewer content is generated from the current SQLite index.
+  - generic [ref=e16]:
+    - generic [ref=e17]:
+      - heading "Total gap count" [level=3] [ref=e18]
+      - generic [ref=e19]: "67"
+      - generic [ref=e20]: Deterministic gap sources
+    - generic [ref=e21]:
+      - heading "Gap score" [level=3] [ref=e22]
+      - generic [ref=e23]: "1.0"
+      - generic [ref=e24]: Capped ratio of gaps to objects
+    - generic [ref=e25]:
+      - heading "Sources checked" [level=3] [ref=e26]
+      - generic [ref=e27]: "5"
+      - generic [ref=e28]: model_gaps, analysis_report, health_report, scorecard, validation_results
+  - generic [ref=e29]:
+    - heading "Gap types" [level=2] [ref=e30]
+    - table [ref=e31]:
+      - rowgroup [ref=e32]:
+        - row "Gap type Count Samples" [ref=e33]:
+          - columnheader "Gap type" [ref=e34]
+          - columnheader "Count" [ref=e35]
+          - columnheader "Samples" [ref=e36]
+      - rowgroup [ref=e37]:
+        - row "missing_owner 13 ATTR-PRODUCT-ACTIVE, ATTR-PRODUCT-CATEGORY, ATTR-PRODUCT-ID, ATTR-PRODUCT-NAME, ATTR-PRODUCT-UNIT-PRICE" [ref=e38]:
+          - cell "missing_owner" [ref=e39]
+          - cell "13" [ref=e40]
+          - cell "ATTR-PRODUCT-ACTIVE, ATTR-PRODUCT-CATEGORY, ATTR-PRODUCT-ID, ATTR-PRODUCT-NAME, ATTR-PRODUCT-UNIT-PRICE" [ref=e41]:
+            - link "ATTR-PRODUCT-ACTIVE" [ref=e42] [cursor=pointer]:
+              - /url: objects/attr-product-active.html
+              - code [ref=e43]: ATTR-PRODUCT-ACTIVE
+            - text: ","
+            - link "ATTR-PRODUCT-CATEGORY" [ref=e44] [cursor=pointer]:
+              - /url: objects/attr-product-category.html
+              - code [ref=e45]: ATTR-PRODUCT-CATEGORY
+            - text: ","
+            - link "ATTR-PRODUCT-ID" [ref=e46] [cursor=pointer]:
+              - /url: objects/attr-product-id.html
+              - code [ref=e47]: ATTR-PRODUCT-ID
+            - text: ","
+            - link "ATTR-PRODUCT-NAME" [ref=e48] [cursor=pointer]:
+              - /url: objects/attr-product-name.html
+              - code [ref=e49]: ATTR-PRODUCT-NAME
+            - text: ","
+            - link "ATTR-PRODUCT-UNIT-PRICE" [ref=e50] [cursor=pointer]:
+              - /url: objects/attr-product-unit-price.html
+              - code [ref=e51]: ATTR-PRODUCT-UNIT-PRICE
+        - row "validation_ownership_missing 13 ATTR-PRODUCT-ACTIVE, ATTR-PRODUCT-CATEGORY, ATTR-PRODUCT-ID, ATTR-PRODUCT-NAME, ATTR-PRODUCT-UNIT-PRICE" [ref=e52]:
+          - cell "validation_ownership_missing" [ref=e53]
+          - cell "13" [ref=e54]
+          - cell "ATTR-PRODUCT-ACTIVE, ATTR-PRODUCT-CATEGORY, ATTR-PRODUCT-ID, ATTR-PRODUCT-NAME, ATTR-PRODUCT-UNIT-PRICE" [ref=e55]:
+            - link "ATTR-PRODUCT-ACTIVE" [ref=e56] [cursor=pointer]:
+              - /url: objects/attr-product-active.html
+              - code [ref=e57]: ATTR-PRODUCT-ACTIVE
+            - text: ","
+            - link "ATTR-PRODUCT-CATEGORY" [ref=e58] [cursor=pointer]:
+              - /url: objects/attr-product-category.html
+              - code [ref=e59]: ATTR-PRODUCT-CATEGORY
+            - text: ","
+            - link "ATTR-PRODUCT-ID" [ref=e60] [cursor=pointer]:
+              - /url: objects/attr-product-id.html
+              - code [ref=e61]: ATTR-PRODUCT-ID
+            - text: ","
+            - link "ATTR-PRODUCT-NAME" [ref=e62] [cursor=pointer]:
+              - /url: objects/attr-product-name.html
+              - code [ref=e63]: ATTR-PRODUCT-NAME
+            - text: ","
+            - link "ATTR-PRODUCT-UNIT-PRICE" [ref=e64] [cursor=pointer]:
+              - /url: objects/attr-product-unit-price.html
+              - code [ref=e65]: ATTR-PRODUCT-UNIT-PRICE
+        - row "MISSING_OWNER 10 ATTR-PRODUCT-ACTIVE, ATTR-PRODUCT-CATEGORY, ATTR-PRODUCT-ID, ATTR-PRODUCT-NAME, ATTR-PRODUCT-UNIT-PRICE" [ref=e66]:
+          - cell "MISSING_OWNER" [ref=e67]
+          - cell "10" [ref=e68]
+          - cell "ATTR-PRODUCT-ACTIVE, ATTR-PRODUCT-CATEGORY, ATTR-PRODUCT-ID, ATTR-PRODUCT-NAME, ATTR-PRODUCT-UNIT-PRICE" [ref=e69]:
+            - link "ATTR-PRODUCT-ACTIVE" [ref=e70] [cursor=pointer]:
+              - /url: objects/attr-product-active.html
+              - code [ref=e71]: ATTR-PRODUCT-ACTIVE
+            - text: ","
+            - link "ATTR-PRODUCT-CATEGORY" [ref=e72] [cursor=pointer]:
+              - /url: objects/attr-product-category.html
+              - code [ref=e73]: ATTR-PRODUCT-CATEGORY
+            - text: ","
+            - link "ATTR-PRODUCT-ID" [ref=e74] [cursor=pointer]:
+              - /url: objects/attr-product-id.html
+              - code [ref=e75]: ATTR-PRODUCT-ID
+            - text: ","
+            - link "ATTR-PRODUCT-NAME" [ref=e76] [cursor=pointer]:
+              - /url: objects/attr-product-name.html
+              - code [ref=e77]: ATTR-PRODUCT-NAME
+            - text: ","
+            - link "ATTR-PRODUCT-UNIT-PRICE" [ref=e78] [cursor=pointer]:
+              - /url: objects/attr-product-unit-price.html
+              - code [ref=e79]: ATTR-PRODUCT-UNIT-PRICE
+        - row "MODEL_ATTRIBUTE_MISSING_SOURCE 5 ATTR-PRODUCT-ACTIVE, ATTR-PRODUCT-CATEGORY, ATTR-PRODUCT-ID, ATTR-PRODUCT-NAME, ATTR-PRODUCT-UNIT-PRICE" [ref=e80]:
+          - cell "MODEL_ATTRIBUTE_MISSING_SOURCE" [ref=e81]
+          - cell "5" [ref=e82]
+          - cell "ATTR-PRODUCT-ACTIVE, ATTR-PRODUCT-CATEGORY, ATTR-PRODUCT-ID, ATTR-PRODUCT-NAME, ATTR-PRODUCT-UNIT-PRICE" [ref=e83]:
+            - link "ATTR-PRODUCT-ACTIVE" [ref=e84] [cursor=pointer]:
+              - /url: objects/attr-product-active.html
+              - code [ref=e85]: ATTR-PRODUCT-ACTIVE
+            - text: ","
+            - link "ATTR-PRODUCT-CATEGORY" [ref=e86] [cursor=pointer]:
+              - /url: objects/attr-product-category.html
+              - code [ref=e87]: ATTR-PRODUCT-CATEGORY
+            - text: ","
+            - link "ATTR-PRODUCT-ID" [ref=e88] [cursor=pointer]:
+              - /url: objects/attr-product-id.html
+              - code [ref=e89]: ATTR-PRODUCT-ID
+            - text: ","
+            - link "ATTR-PRODUCT-NAME" [ref=e90] [cursor=pointer]:
+              - /url: objects/attr-product-name.html
+              - code [ref=e91]: ATTR-PRODUCT-NAME
+            - text: ","
+            - link "ATTR-PRODUCT-UNIT-PRICE" [ref=e92] [cursor=pointer]:
+              - /url: objects/attr-product-unit-price.html
+              - code [ref=e93]: ATTR-PRODUCT-UNIT-PRICE
+        - row "attribute_without_field 5 ATTR-PRODUCT-ACTIVE, ATTR-PRODUCT-CATEGORY, ATTR-PRODUCT-ID, ATTR-PRODUCT-NAME, ATTR-PRODUCT-UNIT-PRICE" [ref=e94]:
+          - cell "attribute_without_field" [ref=e95]
+          - cell "5" [ref=e96]
+          - cell "ATTR-PRODUCT-ACTIVE, ATTR-PRODUCT-CATEGORY, ATTR-PRODUCT-ID, ATTR-PRODUCT-NAME, ATTR-PRODUCT-UNIT-PRICE" [ref=e97]:
+            - link "ATTR-PRODUCT-ACTIVE" [ref=e98] [cursor=pointer]:
+              - /url: objects/attr-product-active.html
+              - code [ref=e99]: ATTR-PRODUCT-ACTIVE
+            - text: ","
+            - link "ATTR-PRODUCT-CATEGORY" [ref=e100] [cursor=pointer]:
+              - /url: objects/attr-product-category.html
+              - code [ref=e101]: ATTR-PRODUCT-CATEGORY
+            - text: ","
+            - link "ATTR-PRODUCT-ID" [ref=e102] [cursor=pointer]:
+              - /url: objects/attr-product-id.html
+              - code [ref=e103]: ATTR-PRODUCT-ID
+            - text: ","
+            - link "ATTR-PRODUCT-NAME" [ref=e104] [cursor=pointer]:
+              - /url: objects/attr-product-name.html
+              - code [ref=e105]: ATTR-PRODUCT-NAME
+            - text: ","
+            - link "ATTR-PRODUCT-UNIT-PRICE" [ref=e106] [cursor=pointer]:
+              - /url: objects/attr-product-unit-price.html
+              - code [ref=e107]: ATTR-PRODUCT-UNIT-PRICE
+        - row "missing_lov 5 FEP-PRODUCT-ACTIVE, FEP-PRODUCT-CATEGORY, FEP-PRODUCT-ID, FEP-PRODUCT-NAME, FEP-PRODUCT-UNIT-PRICE" [ref=e108]:
+          - cell "missing_lov" [ref=e109]
+          - cell "5" [ref=e110]
+          - cell "FEP-PRODUCT-ACTIVE, FEP-PRODUCT-CATEGORY, FEP-PRODUCT-ID, FEP-PRODUCT-NAME, FEP-PRODUCT-UNIT-PRICE" [ref=e111]:
+            - link "FEP-PRODUCT-ACTIVE" [ref=e112] [cursor=pointer]:
+              - /url: objects/fep-product-active.html
+              - code [ref=e113]: FEP-PRODUCT-ACTIVE
+            - text: ","
+            - link "FEP-PRODUCT-CATEGORY" [ref=e114] [cursor=pointer]:
+              - /url: objects/fep-product-category.html
+              - code [ref=e115]: FEP-PRODUCT-CATEGORY
+            - text: ","
+            - link "FEP-PRODUCT-ID" [ref=e116] [cursor=pointer]:
+              - /url: objects/fep-product-id.html
+              - code [ref=e117]: FEP-PRODUCT-ID
+            - text: ","
+            - link "FEP-PRODUCT-NAME" [ref=e118] [cursor=pointer]:
+              - /url: objects/fep-product-name.html
+              - code [ref=e119]: FEP-PRODUCT-NAME
+            - text: ","
+            - link "FEP-PRODUCT-UNIT-PRICE" [ref=e120] [cursor=pointer]:
+              - /url: objects/fep-product-unit-price.html
+              - code [ref=e121]: FEP-PRODUCT-UNIT-PRICE
+        - row "missing_validation_rule 5 ATTR-PRODUCT-ACTIVE, ATTR-PRODUCT-CATEGORY, ATTR-PRODUCT-ID, ATTR-PRODUCT-NAME, ATTR-PRODUCT-UNIT-PRICE" [ref=e122]:
+          - cell "missing_validation_rule" [ref=e123]
+          - cell "5" [ref=e124]
+          - cell "ATTR-PRODUCT-ACTIVE, ATTR-PRODUCT-CATEGORY, ATTR-PRODUCT-ID, ATTR-PRODUCT-NAME, ATTR-PRODUCT-UNIT-PRICE" [ref=e125]:
+            - link "ATTR-PRODUCT-ACTIVE" [ref=e126] [cursor=pointer]:
+              - /url: objects/attr-product-active.html
+              - code [ref=e127]: ATTR-PRODUCT-ACTIVE
+            - text: ","
+            - link "ATTR-PRODUCT-CATEGORY" [ref=e128] [cursor=pointer]:
+              - /url: objects/attr-product-category.html
+              - code [ref=e129]: ATTR-PRODUCT-CATEGORY
+            - text: ","
+            - link "ATTR-PRODUCT-ID" [ref=e130] [cursor=pointer]:
+              - /url: objects/attr-product-id.html
+              - code [ref=e131]: ATTR-PRODUCT-ID
+            - text: ","
+            - link "ATTR-PRODUCT-NAME" [ref=e132] [cursor=pointer]:
+              - /url: objects/attr-product-name.html
+              - code [ref=e133]: ATTR-PRODUCT-NAME
+            - text: ","
+            - link "ATTR-PRODUCT-UNIT-PRICE" [ref=e134] [cursor=pointer]:
+              - /url: objects/attr-product-unit-price.html
+              - code [ref=e135]: ATTR-PRODUCT-UNIT-PRICE
+        - row "orphan_field 5 FEP-PRODUCT-ACTIVE, FEP-PRODUCT-CATEGORY, FEP-PRODUCT-ID, FEP-PRODUCT-NAME, FEP-PRODUCT-UNIT-PRICE" [ref=e136]:
+          - cell "orphan_field" [ref=e137]
+          - cell "5" [ref=e138]
+          - cell "FEP-PRODUCT-ACTIVE, FEP-PRODUCT-CATEGORY, FEP-PRODUCT-ID, FEP-PRODUCT-NAME, FEP-PRODUCT-UNIT-PRICE" [ref=e139]:
+            - link "FEP-PRODUCT-ACTIVE" [ref=e140] [cursor=pointer]:
+              - /url: objects/fep-product-active.html
+              - code [ref=e141]: FEP-PRODUCT-ACTIVE
+            - text: ","
+            - link "FEP-PRODUCT-CATEGORY" [ref=e142] [cursor=pointer]:
+              - /url: objects/fep-product-category.html
+              - code [ref=e143]: FEP-PRODUCT-CATEGORY
+            - text: ","
+            - link "FEP-PRODUCT-ID" [ref=e144] [cursor=pointer]:
+              - /url: objects/fep-product-id.html
+              - code [ref=e145]: FEP-PRODUCT-ID
+            - text: ","
+            - link "FEP-PRODUCT-NAME" [ref=e146] [cursor=pointer]:
+              - /url: objects/fep-product-name.html
+              - code [ref=e147]: FEP-PRODUCT-NAME
+            - text: ","
+            - link "FEP-PRODUCT-UNIT-PRICE" [ref=e148] [cursor=pointer]:
+              - /url: objects/fep-product-unit-price.html
+              - code [ref=e149]: FEP-PRODUCT-UNIT-PRICE
+        - row "validation_field_endpoint_missing_enrichment 5 FEP-PRODUCT-ACTIVE, FEP-PRODUCT-CATEGORY, FEP-PRODUCT-ID, FEP-PRODUCT-NAME, FEP-PRODUCT-UNIT-PRICE" [ref=e150]:
+          - cell "validation_field_endpoint_missing_enrichment" [ref=e151]
+          - cell "5" [ref=e152]
+          - cell "FEP-PRODUCT-ACTIVE, FEP-PRODUCT-CATEGORY, FEP-PRODUCT-ID, FEP-PRODUCT-NAME, FEP-PRODUCT-UNIT-PRICE" [ref=e153]:
+            - link "FEP-PRODUCT-ACTIVE" [ref=e154] [cursor=pointer]:
+              - /url: objects/fep-product-active.html
+              - code [ref=e155]: FEP-PRODUCT-ACTIVE
+            - text: ","
+            - link "FEP-PRODUCT-CATEGORY" [ref=e156] [cursor=pointer]:
+              - /url: objects/fep-product-category.html
+              - code [ref=e157]: FEP-PRODUCT-CATEGORY
+            - text: ","
+            - link "FEP-PRODUCT-ID" [ref=e158] [cursor=pointer]:
+              - /url: objects/fep-product-id.html
+              - code [ref=e159]: FEP-PRODUCT-ID
+            - text: ","
+            - link "FEP-PRODUCT-NAME" [ref=e160] [cursor=pointer]:
+              - /url: objects/fep-product-name.html
+              - code [ref=e161]: FEP-PRODUCT-NAME
+            - text: ","
+            - link "FEP-PRODUCT-UNIT-PRICE" [ref=e162] [cursor=pointer]:
+              - /url: objects/fep-product-unit-price.html
+              - code [ref=e163]: FEP-PRODUCT-UNIT-PRICE
+        - row "missing_profile 1 DS-PRODUCT-CSV" [ref=e164]:
+          - cell "missing_profile" [ref=e165]
+          - cell "1" [ref=e166]
+          - cell "DS-PRODUCT-CSV" [ref=e167]:
+            - link "DS-PRODUCT-CSV" [ref=e168] [cursor=pointer]:
+              - /url: objects/ds-product-csv.html
+              - code [ref=e169]: DS-PRODUCT-CSV
+  - generic [ref=e170]:
+    - heading "Validation findings" [level=2] [ref=e171]
+    - table [ref=e172]:
+      - rowgroup [ref=e173]:
+        - row "Severity Code Object Message" [ref=e174]:
+          - columnheader "Severity" [ref=e175]
+          - columnheader "Code" [ref=e176]
+          - columnheader "Object" [ref=e177]
+          - columnheader "Message" [ref=e178]
+      - rowgroup [ref=e179]:
+        - 'row "WARNING FIELD_ENDPOINT_MISSING_ENRICHMENT FEP-PRODUCT-ACTIVE FieldEndpoint ''FEP-PRODUCT-ACTIVE'' lacks enrichment: no value_list." [ref=e180]':
+          - cell "WARNING" [ref=e181]
+          - cell "FIELD_ENDPOINT_MISSING_ENRICHMENT" [ref=e182]
+          - cell "FEP-PRODUCT-ACTIVE" [ref=e183]:
+            - link "FEP-PRODUCT-ACTIVE" [ref=e184] [cursor=pointer]:
+              - /url: objects/fep-product-active.html
+              - code [ref=e185]: FEP-PRODUCT-ACTIVE
+          - 'cell "FieldEndpoint ''FEP-PRODUCT-ACTIVE'' lacks enrichment: no value_list." [ref=e186]'
+        - 'row "WARNING FIELD_ENDPOINT_MISSING_ENRICHMENT FEP-PRODUCT-CATEGORY FieldEndpoint ''FEP-PRODUCT-CATEGORY'' lacks enrichment: no value_list." [ref=e187]':
+          - cell "WARNING" [ref=e188]
+          - cell "FIELD_ENDPOINT_MISSING_ENRICHMENT" [ref=e189]
+          - cell "FEP-PRODUCT-CATEGORY" [ref=e190]:
+            - link "FEP-PRODUCT-CATEGORY" [ref=e191] [cursor=pointer]:
+              - /url: objects/fep-product-category.html
+              - code [ref=e192]: FEP-PRODUCT-CATEGORY
+          - 'cell "FieldEndpoint ''FEP-PRODUCT-CATEGORY'' lacks enrichment: no value_list." [ref=e193]'
+        - 'row "WARNING FIELD_ENDPOINT_MISSING_ENRICHMENT FEP-PRODUCT-ID FieldEndpoint ''FEP-PRODUCT-ID'' lacks enrichment: no value_list." [ref=e194]':
+          - cell "WARNING" [ref=e195]
+          - cell "FIELD_ENDPOINT_MISSING_ENRICHMENT" [ref=e196]
+          - cell "FEP-PRODUCT-ID" [ref=e197]:
+            - link "FEP-PRODUCT-ID" [ref=e198] [cursor=pointer]:
+              - /url: objects/fep-product-id.html
+              - code [ref=e199]: FEP-PRODUCT-ID
+          - 'cell "FieldEndpoint ''FEP-PRODUCT-ID'' lacks enrichment: no value_list." [ref=e200]'
+        - 'row "WARNING FIELD_ENDPOINT_MISSING_ENRICHMENT FEP-PRODUCT-NAME FieldEndpoint ''FEP-PRODUCT-NAME'' lacks enrichment: no value_list." [ref=e201]':
+          - cell "WARNING" [ref=e202]
+          - cell "FIELD_ENDPOINT_MISSING_ENRICHMENT" [ref=e203]
+          - cell "FEP-PRODUCT-NAME" [ref=e204]:
+            - link "FEP-PRODUCT-NAME" [ref=e205] [cursor=pointer]:
+              - /url: objects/fep-product-name.html
+              - code [ref=e206]: FEP-PRODUCT-NAME
+          - 'cell "FieldEndpoint ''FEP-PRODUCT-NAME'' lacks enrichment: no value_list." [ref=e207]'
+        - 'row "WARNING FIELD_ENDPOINT_MISSING_ENRICHMENT FEP-PRODUCT-UNIT-PRICE FieldEndpoint ''FEP-PRODUCT-UNIT-PRICE'' lacks enrichment: no value_list." [ref=e208]':
+          - cell "WARNING" [ref=e209]
+          - cell "FIELD_ENDPOINT_MISSING_ENRICHMENT" [ref=e210]
+          - cell "FEP-PRODUCT-UNIT-PRICE" [ref=e211]:
+            - link "FEP-PRODUCT-UNIT-PRICE" [ref=e212] [cursor=pointer]:
+              - /url: objects/fep-product-unit-price.html
+              - code [ref=e213]: FEP-PRODUCT-UNIT-PRICE
+          - 'cell "FieldEndpoint ''FEP-PRODUCT-UNIT-PRICE'' lacks enrichment: no value_list." [ref=e214]'
+        - row "WARNING OWNERSHIP_MISSING ATTR-PRODUCT-ACTIVE Attribute 'ATTR-PRODUCT-ACTIVE' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e215]:
+          - cell "WARNING" [ref=e216]
+          - cell "OWNERSHIP_MISSING" [ref=e217]
+          - cell "ATTR-PRODUCT-ACTIVE" [ref=e218]:
+            - link "ATTR-PRODUCT-ACTIVE" [ref=e219] [cursor=pointer]:
+              - /url: objects/attr-product-active.html
+              - code [ref=e220]: ATTR-PRODUCT-ACTIVE
+          - cell "Attribute 'ATTR-PRODUCT-ACTIVE' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e221]
+        - row "WARNING OWNERSHIP_MISSING ATTR-PRODUCT-CATEGORY Attribute 'ATTR-PRODUCT-CATEGORY' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e222]:
+          - cell "WARNING" [ref=e223]
+          - cell "OWNERSHIP_MISSING" [ref=e224]
+          - cell "ATTR-PRODUCT-CATEGORY" [ref=e225]:
+            - link "ATTR-PRODUCT-CATEGORY" [ref=e226] [cursor=pointer]:
+              - /url: objects/attr-product-category.html
+              - code [ref=e227]: ATTR-PRODUCT-CATEGORY
+          - cell "Attribute 'ATTR-PRODUCT-CATEGORY' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e228]
+        - row "WARNING OWNERSHIP_MISSING ATTR-PRODUCT-ID Attribute 'ATTR-PRODUCT-ID' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e229]:
+          - cell "WARNING" [ref=e230]
+          - cell "OWNERSHIP_MISSING" [ref=e231]
+          - cell "ATTR-PRODUCT-ID" [ref=e232]:
+            - link "ATTR-PRODUCT-ID" [ref=e233] [cursor=pointer]:
+              - /url: objects/attr-product-id.html
+              - code [ref=e234]: ATTR-PRODUCT-ID
+          - cell "Attribute 'ATTR-PRODUCT-ID' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e235]
+        - row "WARNING OWNERSHIP_MISSING ATTR-PRODUCT-NAME Attribute 'ATTR-PRODUCT-NAME' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e236]:
+          - cell "WARNING" [ref=e237]
+          - cell "OWNERSHIP_MISSING" [ref=e238]
+          - cell "ATTR-PRODUCT-NAME" [ref=e239]:
+            - link "ATTR-PRODUCT-NAME" [ref=e240] [cursor=pointer]:
+              - /url: objects/attr-product-name.html
+              - code [ref=e241]: ATTR-PRODUCT-NAME
+          - cell "Attribute 'ATTR-PRODUCT-NAME' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e242]
+        - row "WARNING OWNERSHIP_MISSING ATTR-PRODUCT-UNIT-PRICE Attribute 'ATTR-PRODUCT-UNIT-PRICE' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e243]:
+          - cell "WARNING" [ref=e244]
+          - cell "OWNERSHIP_MISSING" [ref=e245]
+          - cell "ATTR-PRODUCT-UNIT-PRICE" [ref=e246]:
+            - link "ATTR-PRODUCT-UNIT-PRICE" [ref=e247] [cursor=pointer]:
+              - /url: objects/attr-product-unit-price.html
+              - code [ref=e248]: ATTR-PRODUCT-UNIT-PRICE
+          - cell "Attribute 'ATTR-PRODUCT-UNIT-PRICE' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e249]
+        - row "WARNING OWNERSHIP_MISSING DS-PRODUCT-CSV Dataset 'DS-PRODUCT-CSV' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e250]:
+          - cell "WARNING" [ref=e251]
+          - cell "OWNERSHIP_MISSING" [ref=e252]
+          - cell "DS-PRODUCT-CSV" [ref=e253]:
+            - link "DS-PRODUCT-CSV" [ref=e254] [cursor=pointer]:
+              - /url: objects/ds-product-csv.html
+              - code [ref=e255]: DS-PRODUCT-CSV
+          - cell "Dataset 'DS-PRODUCT-CSV' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e256]
+        - row "WARNING OWNERSHIP_MISSING ENTITY-PRODUCT BusinessEntity 'ENTITY-PRODUCT' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e257]:
+          - cell "WARNING" [ref=e258]
+          - cell "OWNERSHIP_MISSING" [ref=e259]
+          - cell "ENTITY-PRODUCT" [ref=e260]:
+            - link "ENTITY-PRODUCT" [ref=e261] [cursor=pointer]:
+              - /url: objects/entity-product.html
+              - code [ref=e262]: ENTITY-PRODUCT
+          - cell "BusinessEntity 'ENTITY-PRODUCT' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e263]
+        - row "WARNING OWNERSHIP_MISSING FEP-PRODUCT-ACTIVE FieldEndpoint 'FEP-PRODUCT-ACTIVE' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e264]:
+          - cell "WARNING" [ref=e265]
+          - cell "OWNERSHIP_MISSING" [ref=e266]
+          - cell "FEP-PRODUCT-ACTIVE" [ref=e267]:
+            - link "FEP-PRODUCT-ACTIVE" [ref=e268] [cursor=pointer]:
+              - /url: objects/fep-product-active.html
+              - code [ref=e269]: FEP-PRODUCT-ACTIVE
+          - cell "FieldEndpoint 'FEP-PRODUCT-ACTIVE' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e270]
+        - row "WARNING OWNERSHIP_MISSING FEP-PRODUCT-CATEGORY FieldEndpoint 'FEP-PRODUCT-CATEGORY' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e271]:
+          - cell "WARNING" [ref=e272]
+          - cell "OWNERSHIP_MISSING" [ref=e273]
+          - cell "FEP-PRODUCT-CATEGORY" [ref=e274]:
+            - link "FEP-PRODUCT-CATEGORY" [ref=e275] [cursor=pointer]:
+              - /url: objects/fep-product-category.html
+              - code [ref=e276]: FEP-PRODUCT-CATEGORY
+          - cell "FieldEndpoint 'FEP-PRODUCT-CATEGORY' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e277]
+        - row "WARNING OWNERSHIP_MISSING FEP-PRODUCT-ID FieldEndpoint 'FEP-PRODUCT-ID' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e278]:
+          - cell "WARNING" [ref=e279]
+          - cell "OWNERSHIP_MISSING" [ref=e280]
+          - cell "FEP-PRODUCT-ID" [ref=e281]:
+            - link "FEP-PRODUCT-ID" [ref=e282] [cursor=pointer]:
+              - /url: objects/fep-product-id.html
+              - code [ref=e283]: FEP-PRODUCT-ID
+          - cell "FieldEndpoint 'FEP-PRODUCT-ID' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e284]
+        - row "WARNING OWNERSHIP_MISSING FEP-PRODUCT-NAME FieldEndpoint 'FEP-PRODUCT-NAME' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e285]:
+          - cell "WARNING" [ref=e286]
+          - cell "OWNERSHIP_MISSING" [ref=e287]
+          - cell "FEP-PRODUCT-NAME" [ref=e288]:
+            - link "FEP-PRODUCT-NAME" [ref=e289] [cursor=pointer]:
+              - /url: objects/fep-product-name.html
+              - code [ref=e290]: FEP-PRODUCT-NAME
+          - cell "FieldEndpoint 'FEP-PRODUCT-NAME' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e291]
+        - row "WARNING OWNERSHIP_MISSING FEP-PRODUCT-UNIT-PRICE FieldEndpoint 'FEP-PRODUCT-UNIT-PRICE' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e292]:
+          - cell "WARNING" [ref=e293]
+          - cell "OWNERSHIP_MISSING" [ref=e294]
+          - cell "FEP-PRODUCT-UNIT-PRICE" [ref=e295]:
+            - link "FEP-PRODUCT-UNIT-PRICE" [ref=e296] [cursor=pointer]:
+              - /url: objects/fep-product-unit-price.html
+              - code [ref=e297]: FEP-PRODUCT-UNIT-PRICE
+          - cell "FieldEndpoint 'FEP-PRODUCT-UNIT-PRICE' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e298]
+        - row "WARNING OWNERSHIP_MISSING VLIST-PRODUCT-CATEGORY ValueList 'VLIST-PRODUCT-CATEGORY' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e299]:
+          - cell "WARNING" [ref=e300]
+          - cell "OWNERSHIP_MISSING" [ref=e301]
+          - cell "VLIST-PRODUCT-CATEGORY" [ref=e302]:
+            - link "VLIST-PRODUCT-CATEGORY" [ref=e303] [cursor=pointer]:
+              - /url: objects/vlist-product-category.html
+              - code [ref=e304]: VLIST-PRODUCT-CATEGORY
+          - cell "ValueList 'VLIST-PRODUCT-CATEGORY' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver." [ref=e305]
+  - generic [ref=e306]:
+    - heading "Canonical issues" [level=2] [ref=e307]
+    - generic [ref=e308]: No canonical Issue objects are present in this model.
+  - generic [ref=e309]:
+    - heading "Dataset gap metrics" [level=2] [ref=e310]
+    - generic [ref=e311]:
+      - text: Dataset-specific metrics are not included unless deterministic dataset gap artifacts have been produced. Run
+      - code [ref=e312]: martenweave gaps --repo examples/customer_bp_model
+      - text: for a local dataset-oriented gap pass, then rebuild generated artifacts as needed.
+  - generic [ref=e313]: Generated output is disposable. Canonical Markdown + YAML files remain authoritative. No hosted UI, login, editor, SAP write-back, or AI auto-mutation is included.

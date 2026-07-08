@@ -1,0 +1,143 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Owners" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Generated local static read-only viewer over the SQLite index.
+    - navigation "Viewer navigation" [ref=e7]:
+      - link "Dashboard" [ref=e8] [cursor=pointer]:
+        - /url: index.html
+      - link "Objects" [ref=e9] [cursor=pointer]:
+        - /url: objects.html
+      - link "Gaps" [ref=e10] [cursor=pointer]:
+        - /url: gaps.html
+      - link "Decisions" [ref=e11] [cursor=pointer]:
+        - /url: decisions.html
+      - link "Owners" [ref=e12] [cursor=pointer]:
+        - /url: owners.html
+      - link "Manifest" [ref=e13] [cursor=pointer]:
+        - /url: viewer-manifest.json
+  - generic [ref=e14]:
+    - text: "Index freshness:"
+    - strong [ref=e15]: fresh
+    - text: . Viewer content is generated from the current SQLite index.
+  - generic [ref=e16]:
+    - generic [ref=e17]:
+      - heading "Coverage" [level=3] [ref=e18]
+      - generic [ref=e19]: 0.0%
+      - generic [ref=e20]: Ownership-eligible active objects
+    - generic [ref=e21]:
+      - heading "Eligible" [level=3] [ref=e22]
+      - generic [ref=e23]: "13"
+      - generic [ref=e24]: Objects in ownership scope
+    - generic [ref=e25]:
+      - heading "With owner" [level=3] [ref=e26]
+      - generic [ref=e27]: "0"
+      - generic [ref=e28]: Objects with at least one owner field
+    - generic [ref=e29]:
+      - heading "Missing owner" [level=3] [ref=e30]
+      - generic [ref=e31]: "13"
+      - generic [ref=e32]: Objects needing stewardship
+  - generic [ref=e33]:
+    - heading "Owner workload by role and type" [level=2] [ref=e34]
+    - generic [ref=e35]: No owner assignments are present on active ownership-eligible objects.
+  - generic [ref=e36]:
+    - heading "Missing-owner objects" [level=2] [ref=e37]
+    - table [ref=e38]:
+      - rowgroup [ref=e39]:
+        - row "Object Type Name" [ref=e40]:
+          - columnheader "Object" [ref=e41]
+          - columnheader "Type" [ref=e42]
+          - columnheader "Name" [ref=e43]
+      - rowgroup [ref=e44]:
+        - row "ATTR-PRODUCT-ACTIVE Attribute Active" [ref=e45]:
+          - cell "ATTR-PRODUCT-ACTIVE" [ref=e46]:
+            - link "ATTR-PRODUCT-ACTIVE" [ref=e47] [cursor=pointer]:
+              - /url: objects/attr-product-active.html
+              - code [ref=e48]: ATTR-PRODUCT-ACTIVE
+          - cell "Attribute" [ref=e49]
+          - cell "Active" [ref=e50]
+        - row "ATTR-PRODUCT-CATEGORY Attribute Category" [ref=e51]:
+          - cell "ATTR-PRODUCT-CATEGORY" [ref=e52]:
+            - link "ATTR-PRODUCT-CATEGORY" [ref=e53] [cursor=pointer]:
+              - /url: objects/attr-product-category.html
+              - code [ref=e54]: ATTR-PRODUCT-CATEGORY
+          - cell "Attribute" [ref=e55]
+          - cell "Category" [ref=e56]
+        - row "ATTR-PRODUCT-ID Attribute Product ID" [ref=e57]:
+          - cell "ATTR-PRODUCT-ID" [ref=e58]:
+            - link "ATTR-PRODUCT-ID" [ref=e59] [cursor=pointer]:
+              - /url: objects/attr-product-id.html
+              - code [ref=e60]: ATTR-PRODUCT-ID
+          - cell "Attribute" [ref=e61]
+          - cell "Product ID" [ref=e62]
+        - row "ATTR-PRODUCT-NAME Attribute Product Name" [ref=e63]:
+          - cell "ATTR-PRODUCT-NAME" [ref=e64]:
+            - link "ATTR-PRODUCT-NAME" [ref=e65] [cursor=pointer]:
+              - /url: objects/attr-product-name.html
+              - code [ref=e66]: ATTR-PRODUCT-NAME
+          - cell "Attribute" [ref=e67]
+          - cell "Product Name" [ref=e68]
+        - row "ATTR-PRODUCT-UNIT-PRICE Attribute Unit Price" [ref=e69]:
+          - cell "ATTR-PRODUCT-UNIT-PRICE" [ref=e70]:
+            - link "ATTR-PRODUCT-UNIT-PRICE" [ref=e71] [cursor=pointer]:
+              - /url: objects/attr-product-unit-price.html
+              - code [ref=e72]: ATTR-PRODUCT-UNIT-PRICE
+          - cell "Attribute" [ref=e73]
+          - cell "Unit Price" [ref=e74]
+        - row "DS-PRODUCT-CSV Dataset product_sample.csv" [ref=e75]:
+          - cell "DS-PRODUCT-CSV" [ref=e76]:
+            - link "DS-PRODUCT-CSV" [ref=e77] [cursor=pointer]:
+              - /url: objects/ds-product-csv.html
+              - code [ref=e78]: DS-PRODUCT-CSV
+          - cell "Dataset" [ref=e79]
+          - cell "product_sample.csv" [ref=e80]
+        - row "ENTITY-PRODUCT BusinessEntity Product" [ref=e81]:
+          - cell "ENTITY-PRODUCT" [ref=e82]:
+            - link "ENTITY-PRODUCT" [ref=e83] [cursor=pointer]:
+              - /url: objects/entity-product.html
+              - code [ref=e84]: ENTITY-PRODUCT
+          - cell "BusinessEntity" [ref=e85]
+          - cell "Product" [ref=e86]
+        - row "FEP-PRODUCT-ACTIVE FieldEndpoint active" [ref=e87]:
+          - cell "FEP-PRODUCT-ACTIVE" [ref=e88]:
+            - link "FEP-PRODUCT-ACTIVE" [ref=e89] [cursor=pointer]:
+              - /url: objects/fep-product-active.html
+              - code [ref=e90]: FEP-PRODUCT-ACTIVE
+          - cell "FieldEndpoint" [ref=e91]
+          - cell "active" [ref=e92]
+        - row "FEP-PRODUCT-CATEGORY FieldEndpoint category" [ref=e93]:
+          - cell "FEP-PRODUCT-CATEGORY" [ref=e94]:
+            - link "FEP-PRODUCT-CATEGORY" [ref=e95] [cursor=pointer]:
+              - /url: objects/fep-product-category.html
+              - code [ref=e96]: FEP-PRODUCT-CATEGORY
+          - cell "FieldEndpoint" [ref=e97]
+          - cell "category" [ref=e98]
+        - row "FEP-PRODUCT-ID FieldEndpoint product_id" [ref=e99]:
+          - cell "FEP-PRODUCT-ID" [ref=e100]:
+            - link "FEP-PRODUCT-ID" [ref=e101] [cursor=pointer]:
+              - /url: objects/fep-product-id.html
+              - code [ref=e102]: FEP-PRODUCT-ID
+          - cell "FieldEndpoint" [ref=e103]
+          - cell "product_id" [ref=e104]
+        - row "FEP-PRODUCT-NAME FieldEndpoint name" [ref=e105]:
+          - cell "FEP-PRODUCT-NAME" [ref=e106]:
+            - link "FEP-PRODUCT-NAME" [ref=e107] [cursor=pointer]:
+              - /url: objects/fep-product-name.html
+              - code [ref=e108]: FEP-PRODUCT-NAME
+          - cell "FieldEndpoint" [ref=e109]
+          - cell "name" [ref=e110]
+        - row "FEP-PRODUCT-UNIT-PRICE FieldEndpoint unit_price" [ref=e111]:
+          - cell "FEP-PRODUCT-UNIT-PRICE" [ref=e112]:
+            - link "FEP-PRODUCT-UNIT-PRICE" [ref=e113] [cursor=pointer]:
+              - /url: objects/fep-product-unit-price.html
+              - code [ref=e114]: FEP-PRODUCT-UNIT-PRICE
+          - cell "FieldEndpoint" [ref=e115]
+          - cell "unit_price" [ref=e116]
+        - row "VLIST-PRODUCT-CATEGORY ValueList Product Categories" [ref=e117]:
+          - cell "VLIST-PRODUCT-CATEGORY" [ref=e118]:
+            - link "VLIST-PRODUCT-CATEGORY" [ref=e119] [cursor=pointer]:
+              - /url: objects/vlist-product-category.html
+              - code [ref=e120]: VLIST-PRODUCT-CATEGORY
+          - cell "ValueList" [ref=e121]
+          - cell "Product Categories" [ref=e122]
+  - generic [ref=e123]: Generated output is disposable. Canonical Markdown + YAML files remain authoritative. No hosted UI, login, editor, SAP write-back, or AI auto-mutation is included.

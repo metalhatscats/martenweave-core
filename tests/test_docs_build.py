@@ -129,6 +129,8 @@ class TestStaticDocGenerator:
             text = html_file.read_text(encoding="utf-8")
             attrs = re.findall(r'(?:href|src)="([^"]+)"', text)
             for href in attrs:
+                if href.startswith("data:"):
+                    continue
                 if href.startswith(("http://", "https://", "//")):
                     external_links.append((str(html_file.relative_to(output)), href))
                     continue
@@ -197,6 +199,29 @@ class TestStaticDocGenerator:
         )
         assert "<script>alert" not in detail
         assert "&lt;script&gt;alert" in detail
+
+    def test_viewer_has_inline_favicon(self, indexed_repo: Path) -> None:
+        output = indexed_repo / "generated" / "docs_site"
+        generate_static_docs(indexed_repo, output)
+        index_html = (output / "index.html").read_text(encoding="utf-8")
+        assert '<link rel="icon" href="data:image/svg+xml' in index_html
+        assert "favicon.ico" not in index_html
+
+    def test_viewer_search_input_has_label(self, indexed_repo: Path) -> None:
+        output = indexed_repo / "generated" / "docs_site"
+        generate_static_docs(indexed_repo, output)
+        index_html = (output / "index.html").read_text(encoding="utf-8")
+        objects_html = (output / "objects.html").read_text(encoding="utf-8")
+        assert 'id="viewer-search"' in index_html
+        assert 'aria-label="Filter objects"' in index_html
+        assert 'aria-label="Search objects"' in objects_html
+
+    def test_viewer_has_landmark_regions(self, indexed_repo: Path) -> None:
+        output = indexed_repo / "generated" / "docs_site"
+        generate_static_docs(indexed_repo, output)
+        index_html = (output / "index.html").read_text(encoding="utf-8")
+        assert "<main" in index_html
+        assert 'aria-label="Viewer navigation"' in index_html
 
 
 class TestDocsBuildCli:

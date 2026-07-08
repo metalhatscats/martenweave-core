@@ -1,0 +1,8 @@
+Index freshness: fresh
+  DB: /private/tmp/martenweave-fixloop-repo/generated/modelops.db
+  DB mtime: 2026-06-29 17:20:58
+  Newest source: 2026-06-29 17:21:27
+  Stored hash:   1bf2550fe06072b3
+  Current hash:  1bf2550fe06072b3
+  Stale sources: 1 file(s)
+    model/DOMAIN-PRODUCT.md

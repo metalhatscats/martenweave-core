@@ -1,0 +1,103 @@
+- generic [ref=f4e4]:
+  - complementary [ref=f4e5]:
+    - generic [ref=f4e6]:
+      - generic [ref=f4e9]:
+        - strong [ref=f4e10]: Martenweave
+        - generic [ref=f4e11]: Model intelligence
+      - navigation "Primary navigation" [ref=f4e12]:
+        - button "Home" [ref=f4e13] [cursor=pointer]:
+          - img [ref=f4e14]
+          - generic [ref=f4e16]: Home
+        - button "Models" [ref=f4e17] [cursor=pointer]:
+          - img [ref=f4e18]
+          - generic [ref=f4e20]: Models
+        - button "Lineage" [ref=f4e21] [cursor=pointer]:
+          - img [ref=f4e22]
+          - generic [ref=f4e24]: Lineage
+        - button "Gaps 5" [ref=f4e25] [cursor=pointer]:
+          - img [ref=f4e26]
+          - generic [ref=f4e28]: Gaps
+          - generic [ref=f4e29]: "5"
+        - button "Proposals" [ref=f4e30] [cursor=pointer]:
+          - img [ref=f4e31]
+          - generic [ref=f4e33]: Proposals
+    - generic [ref=f4e34]:
+      - generic [ref=f4e36]:
+        - strong [ref=f4e37]: Customer migration
+        - generic [ref=f4e38]: Production · v2.4.1
+      - img [ref=f4e39]
+  - generic [ref=f4e41]:
+    - banner [ref=f4e42]:
+      - generic [ref=f4e44]:
+        - generic [ref=f4e45]: Customer migration
+        - img [ref=f4e46]
+        - strong [ref=f4e48]: Proposals
+      - generic [ref=f4e49]:
+        - generic [ref=f4e50]:
+          - img [ref=f4e51]
+          - textbox "Search model" [ref=f4e53]
+        - generic [ref=f4e54]: Production
+        - button "Notifications" [ref=f4e56] [cursor=pointer]:
+          - img [ref=f4e57]
+        - button "AC Alex Chen Data Steward" [ref=f4e61] [cursor=pointer]:
+          - generic [ref=f4e62]: AC
+          - generic [ref=f4e63]:
+            - strong [ref=f4e64]: Alex Chen
+            - generic [ref=f4e65]: Data Steward
+          - img [ref=f4e66]
+    - main [ref=f4e68]:
+      - generic [ref=f4e838]:
+        - generic [ref=f4e839]:
+          - generic [ref=f4e840]:
+            - heading "Proposals" [level=1] [ref=f4e841]
+            - paragraph [ref=f4e842]: Review AI-assisted model changes before they become canonical.
+          - button "New proposal" [ref=f4e844] [cursor=pointer]:
+            - img [ref=f4e845]
+            - text: New proposal
+        - generic [ref=f4e847]:
+          - generic [ref=f4e848]:
+            - button "All" [ref=f4e849] [cursor=pointer]
+            - button "In review" [ref=f4e850] [cursor=pointer]
+            - button "Draft" [ref=f4e851] [cursor=pointer]
+            - button "Approved" [ref=f4e852] [cursor=pointer]
+          - generic [ref=f4e853]:
+            - img [ref=f4e854]
+            - textbox [ref=f4e856]:
+              - /placeholder: Search proposals
+        - generic [ref=f4e857]:
+          - button "#27 In review High risk Customer alternative key mapping Map KNVV.STCD1 to canonical TAX_NUMBER and add lineage evidence. 4 proposed changes · Martenweave AI · Updated 18m ago Review" [ref=f4e858] [cursor=pointer]:
+            - generic [ref=f4e859]: "#27"
+            - generic [ref=f4e860]:
+              - generic [ref=f4e861]:
+                - generic [ref=f4e862]: In review
+                - generic [ref=f4e863]: High risk
+              - strong [ref=f4e864]: Customer alternative key mapping
+              - paragraph [ref=f4e865]: Map KNVV.STCD1 to canonical TAX_NUMBER and add lineage evidence.
+              - generic [ref=f4e866]: 4 proposed changes · Martenweave AI · Updated 18m ago
+            - generic [ref=f4e867]:
+              - text: Review
+              - img [ref=f4e868]
+          - button "#31 Draft Medium risk Normalize business partner language code Convert legacy language strings to ISO codes and attach the controlled value list. 3 proposed changes · Alex Chen · Updated 2h ago Review" [ref=f4e870] [cursor=pointer]:
+            - generic [ref=f4e871]: "#31"
+            - generic [ref=f4e872]:
+              - generic [ref=f4e873]:
+                - generic [ref=f4e874]: Draft
+                - generic [ref=f4e875]: Medium risk
+              - strong [ref=f4e876]: Normalize business partner language code
+              - paragraph [ref=f4e877]: Convert legacy language strings to ISO codes and attach the controlled value list.
+              - generic [ref=f4e878]: 3 proposed changes · Alex Chen · Updated 2h ago
+            - generic [ref=f4e879]:
+              - text: Review
+              - img [ref=f4e880]
+          - button "#29 Draft Low risk Standardize customer country code Normalize customer country values to ISO-2 before canonical mapping. 2 proposed changes · Mia Wong · Updated 1h ago Review" [ref=f4e882] [cursor=pointer]:
+            - generic [ref=f4e883]: "#29"
+            - generic [ref=f4e884]:
+              - generic [ref=f4e885]:
+                - generic [ref=f4e886]: Draft
+                - generic [ref=f4e887]: Low risk
+              - strong [ref=f4e888]: Standardize customer country code
+              - paragraph [ref=f4e889]: Normalize customer country values to ISO-2 before canonical mapping.
+              - generic [ref=f4e890]: 2 proposed changes · Mia Wong · Updated 1h ago
+            - generic [ref=f4e891]:
+              - text: Review
+              - img [ref=f4e892]

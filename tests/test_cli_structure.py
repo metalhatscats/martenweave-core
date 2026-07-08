@@ -75,6 +75,7 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
     "trace",
     "impact",
     "propose-patch",
+    "agent",
     "serve",
     "mcp",
     "import-model-sheet",
@@ -101,6 +102,7 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
 }
 
 EXPECTED_GROUPS = {
+    "agent": {"product-owner", "readiness"},
     "issue-draft": {"create"},
     "change-request": {"create", "list", "show", "update-status", "approve", "reject"},
     "notifications": {"preview", "list"},

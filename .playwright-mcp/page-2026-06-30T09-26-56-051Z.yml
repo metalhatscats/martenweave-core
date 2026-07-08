@@ -1,0 +1,181 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e9]:
+        - strong [ref=e10]: Martenweave
+        - generic [ref=e11]: Model intelligence
+      - navigation "Primary navigation" [ref=e12]:
+        - button "Home" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+          - generic [ref=e16]: Home
+        - button "Models" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e20]: Models
+        - button "Lineage" [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+          - generic [ref=e24]: Lineage
+        - button "Gaps 5" [ref=e25] [cursor=pointer]:
+          - img [ref=e26]
+          - generic [ref=e28]: Gaps
+          - generic [ref=e29]: "5"
+        - button "Proposals" [ref=e30] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e33]: Proposals
+    - generic [ref=e34]:
+      - generic [ref=e36]:
+        - strong [ref=e37]: Customer migration
+        - generic [ref=e38]: Production · v2.4.1
+      - img [ref=e39]
+  - generic [ref=e41]:
+    - banner [ref=e42]:
+      - generic [ref=e44]:
+        - generic [ref=e45]: Customer migration
+        - img [ref=e46]
+        - strong [ref=e48]: Lineage
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - img [ref=e51]
+          - textbox "Search model" [ref=e53]
+        - generic [ref=e54]: Production
+        - button "Notifications" [ref=e56] [cursor=pointer]:
+          - img [ref=e57]
+        - button "AC Alex Chen Data Steward" [ref=e61] [cursor=pointer]:
+          - generic [ref=e62]: AC
+          - generic [ref=e63]:
+            - strong [ref=e64]: Alex Chen
+            - generic [ref=e65]: Data Steward
+          - img [ref=e66]
+    - main [ref=e68]:
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - generic [ref=e71]:
+            - generic [ref=e72]:
+              - heading "Business Partner lineage" [level=1] [ref=e73]
+              - paragraph [ref=e74]: Trace systems, transformations, canonical objects, and downstream impact.
+            - generic [ref=e75]:
+              - button "Export" [ref=e76] [cursor=pointer]:
+                - img [ref=e77]
+                - text: Export
+              - button "View object" [ref=e79] [cursor=pointer]:
+                - img [ref=e80]
+                - text: View object
+          - generic [ref=e82]:
+            - generic [ref=e83]:
+              - img [ref=e84]
+              - textbox [ref=e86]:
+                - /placeholder: Find a node or field…
+            - generic [ref=e87]:
+              - generic [ref=e88]: Depth
+              - combobox "Depth" [ref=e89]:
+                - option "1 level"
+                - option "2 levels" [selected]
+                - option "All levels"
+            - button "Filters" [ref=e90] [cursor=pointer]:
+              - img [ref=e91]
+              - text: Filters
+            - button [ref=e93] [cursor=pointer]:
+              - img [ref=e94]
+        - generic [ref=e96]:
+          - generic [ref=e97]:
+            - generic [ref=e98]:
+              - generic [ref=e99]: Source
+              - generic [ref=e101]: Transformation
+              - generic [ref=e103]: Canonical
+              - generic [ref=e105]: Target
+            - application [ref=e107]:
+              - generic [ref=e109]:
+                - generic:
+                  - generic:
+                    - img:
+                      - group "Edge from salesforce to staging" [ref=e110] [cursor=pointer]
+                    - img:
+                      - group "Edge from sap to staging" [ref=e113] [cursor=pointer]
+                    - img:
+                      - group "Edge from staging to canonical"
+                    - img:
+                      - group "Edge from canonical to mdm" [ref=e116] [cursor=pointer]
+                    - img:
+                      - group "Edge from canonical to analytics" [ref=e119] [cursor=pointer]
+                  - generic:
+                    - group [ref=e122]:
+                      - generic [ref=e123]:
+                        - img [ref=e126]
+                        - generic [ref=e129]:
+                          - strong [ref=e130]: Salesforce CRM
+                          - generic [ref=e131]: Source system
+                    - group [ref=e133]:
+                      - generic [ref=e134]:
+                        - img [ref=e137]
+                        - generic [ref=e140]:
+                          - strong [ref=e141]: SAP S/4HANA
+                          - generic [ref=e142]: Source system
+                    - group [ref=e144]:
+                      - generic [ref=e145]:
+                        - img [ref=e148]
+                        - generic [ref=e151]:
+                          - strong [ref=e152]: BP staging model
+                          - generic [ref=e153]: Transformation
+                    - group [ref=e155]:
+                      - generic [ref=e156]:
+                        - img [ref=e159]
+                        - generic [ref=e162]:
+                          - strong [ref=e163]: Business Partner
+                          - generic [ref=e164]: Canonical model
+                    - group [ref=e166]:
+                      - generic [ref=e167]:
+                        - img [ref=e170]
+                        - generic [ref=e173]:
+                          - strong [ref=e174]: Informatica MDM
+                          - generic [ref=e175]: Target system
+                    - group [ref=e177]:
+                      - generic [ref=e178]:
+                        - img [ref=e181]
+                        - generic [ref=e184]:
+                          - strong [ref=e185]: Customer analytics
+                          - generic [ref=e186]: Downstream dataset
+              - img
+              - generic "Control Panel" [ref=e188]:
+                - button "Zoom In" [ref=e189] [cursor=pointer]:
+                  - img [ref=e190]
+                - button "Zoom Out" [disabled]:
+                  - img
+                - button "Fit View" [ref=e192] [cursor=pointer]:
+                  - img [ref=e193]
+              - img "Mini Map" [ref=e196]
+              - link "React Flow attribution" [ref=e204] [cursor=pointer]:
+                - /url: https://reactflow.dev/attribution
+                - text: React Flow
+          - complementary [ref=e206]:
+            - generic [ref=e207]:
+              - generic [ref=e208]:
+                - generic [ref=e209]: Canonical model
+                - heading "Business Partner" [level=2] [ref=e210]
+              - button [ref=e211] [cursor=pointer]:
+                - img [ref=e212]
+            - paragraph [ref=e214]: Selected node details, validation context, and visible path evidence.
+            - generic [ref=e215]:
+              - generic [ref=e216]: Object ID
+              - code [ref=e217]: DOMAIN-CUSTOMER-BP
+            - generic [ref=e218]:
+              - generic [ref=e219]: Visible impact
+              - generic [ref=e220]:
+                - generic [ref=e221]:
+                  - strong [ref=e222]: "2"
+                  - text: upstream
+                - generic [ref=e223]:
+                  - strong [ref=e224]: "2"
+                  - text: downstream
+            - generic [ref=e225]:
+              - generic [ref=e226]: Path evidence
+              - list [ref=e227]:
+                - listitem [ref=e228]:
+                  - img [ref=e229]
+                  - text: Salesforce → BP staging
+                - listitem [ref=e231]:
+                  - img [ref=e232]
+                  - text: SAP S/4HANA → BP staging
+                - listitem [ref=e234]:
+                  - img [ref=e235]
+                  - text: BP staging → Canonical
+            - button "Open object details" [ref=e237] [cursor=pointer]
+            - button "Review related gaps" [ref=e238] [cursor=pointer]

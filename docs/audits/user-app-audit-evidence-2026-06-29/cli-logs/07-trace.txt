@@ -1,0 +1,22 @@
+Trace: ATTR-PRODUCT-NAME
+  Name: Product Name
+  Direction: both
+  Max depth: 5
+┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
+┃ ID               ┃ Type             ┃ Name              ┃ Depth ┃ Direction  ┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
+│ DOMAIN-PRODUCT   │ MasterDataDomain │ Product Domain    │ 1     │ upstream   │
+│ ENTITY-PRODUCT   │ BusinessEntity   │ Product           │ 1     │ upstream   │
+│ FEP-PRODUCT-NAME │ FieldEndpoint    │ name              │ 1     │ downstream │
+│ ATTR-PRODUCT-AC… │ Attribute        │ Active            │ 2     │ upstream   │
+│ ATTR-PRODUCT-CA… │ Attribute        │ Category          │ 2     │ upstream   │
+│ ATTR-PRODUCT-ID  │ Attribute        │ Product ID        │ 2     │ upstream   │
+│ ATTR-PRODUCT-UN… │ Attribute        │ Unit Price        │ 2     │ upstream   │
+│ DS-PRODUCT-CSV   │ Dataset          │ product_sample.c… │ 2     │ downstream │
+│ FEP-PRODUCT-ACT… │ FieldEndpoint    │ active            │ 2     │ downstream │
+│ FEP-PRODUCT-CAT… │ FieldEndpoint    │ category          │ 2     │ downstream │
+│ FEP-PRODUCT-ID   │ FieldEndpoint    │ product_id        │ 2     │ downstream │
+│ FEP-PRODUCT-UNI… │ FieldEndpoint    │ unit_price        │ 2     │ downstream │
+│ VLIST-PRODUCT-C… │ ValueList        │ Product           │ 2     │ downstream │
+│                  │                  │ Categories        │       │            │
+└──────────────────┴──────────────────┴───────────────────┴───────┴────────────┘

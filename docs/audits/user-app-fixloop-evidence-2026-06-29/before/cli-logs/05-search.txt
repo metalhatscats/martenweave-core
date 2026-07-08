@@ -1,0 +1,9 @@
+Search Results (4)
+┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━┓
+┃ ID             ┃ Type           ┃ Name         ┃ Status ┃ Score ┃ Matched    ┃
+┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━┩
+│ ATTR-PRODUCT-… │ Attribute      │ Product ID   │ active │ 2     │ name, body │
+│ ATTR-PRODUCT-… │ Attribute      │ Product Name │ active │ 2     │ name, body │
+│ DOMAIN-PRODUCT │ MasterDataDom… │ Product      │ active │ 2     │ name, body │
+│ ENTITY-PRODUCT │ BusinessEntity │ Product      │ active │ 2     │ name, body │
+└────────────────┴────────────────┴──────────────┴────────┴───────┴────────────┘

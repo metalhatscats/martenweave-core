@@ -1,0 +1,4 @@
+Impact Report for UNKNOWN-ID
+  Type: Unknown
+  Affected objects: 0
+EXIT:0

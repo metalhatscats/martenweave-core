@@ -1,0 +1,10 @@
+Index freshness: fresh
+  DB: 
+/Users/dzmitryikharlanau/Developments/martenweave/examples/simple_product_model/
+generated/modelops.db
+  DB mtime: 2026-06-29 17:01:22
+  Newest source: 2026-06-29 17:06:12
+  Stored hash:   cfdbadda58a0d2d9
+  Current hash:  cfdbadda58a0d2d9
+  Stale sources: 1 file(s)
+    model/DOMAIN-PRODUCT.md

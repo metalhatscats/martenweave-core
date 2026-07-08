@@ -1,0 +1,5 @@
+::ffff:127.0.0.1 - - [29/Jun/2026 20:06:39] "GET /index.html HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [29/Jun/2026 20:06:39] "GET /assets/viewer.js HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [29/Jun/2026 20:06:39] "GET /assets/viewer.css HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [29/Jun/2026 20:06:39] code 404, message File not found
+::ffff:127.0.0.1 - - [29/Jun/2026 20:06:39] "GET /favicon.ico HTTP/1.1" 404 -

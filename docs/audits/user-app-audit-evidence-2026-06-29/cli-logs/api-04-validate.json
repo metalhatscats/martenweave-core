@@ -1,0 +1,133 @@
+{
+    "is_valid": true,
+    "error_count": 0,
+    "warning_count": 18,
+    "results": [
+        {
+            "severity": "WARNING",
+            "code": "OWNERSHIP_MISSING",
+            "message": "Attribute 'ATTR-PRODUCT-ACTIVE' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver.",
+            "object_id": "ATTR-PRODUCT-ACTIVE",
+            "suggested_fix": "Add an ownership field to this object."
+        },
+        {
+            "severity": "WARNING",
+            "code": "OWNERSHIP_MISSING",
+            "message": "Attribute 'ATTR-PRODUCT-CATEGORY' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver.",
+            "object_id": "ATTR-PRODUCT-CATEGORY",
+            "suggested_fix": "Add an ownership field to this object."
+        },
+        {
+            "severity": "WARNING",
+            "code": "OWNERSHIP_MISSING",
+            "message": "Attribute 'ATTR-PRODUCT-ID' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver.",
+            "object_id": "ATTR-PRODUCT-ID",
+            "suggested_fix": "Add an ownership field to this object."
+        },
+        {
+            "severity": "WARNING",
+            "code": "OWNERSHIP_MISSING",
+            "message": "Attribute 'ATTR-PRODUCT-NAME' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver.",
+            "object_id": "ATTR-PRODUCT-NAME",
+            "suggested_fix": "Add an ownership field to this object."
+        },
+        {
+            "severity": "WARNING",
+            "code": "OWNERSHIP_MISSING",
+            "message": "Attribute 'ATTR-PRODUCT-UNIT-PRICE' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver.",
+            "object_id": "ATTR-PRODUCT-UNIT-PRICE",
+            "suggested_fix": "Add an ownership field to this object."
+        },
+        {
+            "severity": "WARNING",
+            "code": "OWNERSHIP_MISSING",
+            "message": "Dataset 'DS-PRODUCT-CSV' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver.",
+            "object_id": "DS-PRODUCT-CSV",
+            "suggested_fix": "Add an ownership field to this object."
+        },
+        {
+            "severity": "WARNING",
+            "code": "OWNERSHIP_MISSING",
+            "message": "BusinessEntity 'ENTITY-PRODUCT' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver.",
+            "object_id": "ENTITY-PRODUCT",
+            "suggested_fix": "Add an ownership field to this object."
+        },
+        {
+            "severity": "WARNING",
+            "code": "OWNERSHIP_MISSING",
+            "message": "FieldEndpoint 'FEP-PRODUCT-ACTIVE' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver.",
+            "object_id": "FEP-PRODUCT-ACTIVE",
+            "suggested_fix": "Add an ownership field to this object."
+        },
+        {
+            "severity": "WARNING",
+            "code": "OWNERSHIP_MISSING",
+            "message": "FieldEndpoint 'FEP-PRODUCT-CATEGORY' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver.",
+            "object_id": "FEP-PRODUCT-CATEGORY",
+            "suggested_fix": "Add an ownership field to this object."
+        },
+        {
+            "severity": "WARNING",
+            "code": "OWNERSHIP_MISSING",
+            "message": "FieldEndpoint 'FEP-PRODUCT-ID' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver.",
+            "object_id": "FEP-PRODUCT-ID",
+            "suggested_fix": "Add an ownership field to this object."
+        },
+        {
+            "severity": "WARNING",
+            "code": "OWNERSHIP_MISSING",
+            "message": "FieldEndpoint 'FEP-PRODUCT-NAME' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver.",
+            "object_id": "FEP-PRODUCT-NAME",
+            "suggested_fix": "Add an ownership field to this object."
+        },
+        {
+            "severity": "WARNING",
+            "code": "OWNERSHIP_MISSING",
+            "message": "FieldEndpoint 'FEP-PRODUCT-UNIT-PRICE' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver.",
+            "object_id": "FEP-PRODUCT-UNIT-PRICE",
+            "suggested_fix": "Add an ownership field to this object."
+        },
+        {
+            "severity": "WARNING",
+            "code": "OWNERSHIP_MISSING",
+            "message": "ValueList 'VLIST-PRODUCT-CATEGORY' has no owner or steward. Consider adding business_owner, technical_owner, data_steward, accountable_team, or approver.",
+            "object_id": "VLIST-PRODUCT-CATEGORY",
+            "suggested_fix": "Add an ownership field to this object."
+        },
+        {
+            "severity": "WARNING",
+            "code": "FIELD_ENDPOINT_MISSING_ENRICHMENT",
+            "message": "FieldEndpoint 'FEP-PRODUCT-ACTIVE' lacks enrichment: no value_list.",
+            "object_id": "FEP-PRODUCT-ACTIVE",
+            "suggested_fix": "Add value_list, mapping, or validation rule coverage where relevant."
+        },
+        {
+            "severity": "WARNING",
+            "code": "FIELD_ENDPOINT_MISSING_ENRICHMENT",
+            "message": "FieldEndpoint 'FEP-PRODUCT-CATEGORY' lacks enrichment: no value_list.",
+            "object_id": "FEP-PRODUCT-CATEGORY",
+            "suggested_fix": "Add value_list, mapping, or validation rule coverage where relevant."
+        },
+        {
+            "severity": "WARNING",
+            "code": "FIELD_ENDPOINT_MISSING_ENRICHMENT",
+            "message": "FieldEndpoint 'FEP-PRODUCT-ID' lacks enrichment: no value_list.",
+            "object_id": "FEP-PRODUCT-ID",
+            "suggested_fix": "Add value_list, mapping, or validation rule coverage where relevant."
+        },
+        {
+            "severity": "WARNING",
+            "code": "FIELD_ENDPOINT_MISSING_ENRICHMENT",
+            "message": "FieldEndpoint 'FEP-PRODUCT-NAME' lacks enrichment: no value_list.",
+            "object_id": "FEP-PRODUCT-NAME",
+            "suggested_fix": "Add value_list, mapping, or validation rule coverage where relevant."
+        },
+        {
+            "severity": "WARNING",
+            "code": "FIELD_ENDPOINT_MISSING_ENRICHMENT",
+            "message": "FieldEndpoint 'FEP-PRODUCT-UNIT-PRICE' lacks enrichment: no value_list.",
+            "object_id": "FEP-PRODUCT-UNIT-PRICE",
+            "suggested_fix": "Add value_list, mapping, or validation rule coverage where relevant."
+        }
+    ]
+}

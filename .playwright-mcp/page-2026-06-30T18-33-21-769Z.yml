@@ -1,0 +1,194 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e9]:
+        - strong [ref=e10]: Martenweave
+        - generic [ref=e11]: Model intelligence
+      - navigation "Primary navigation" [ref=e12]:
+        - button "Home" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+          - generic [ref=e16]: Home
+        - button "Models" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e20]: Models
+        - button "Lineage" [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+          - generic [ref=e24]: Lineage
+        - button "Gaps 5" [ref=e25] [cursor=pointer]:
+          - img [ref=e26]
+          - generic [ref=e28]: Gaps
+          - generic [ref=e29]: "5"
+        - button "Proposals" [ref=e30] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e33]: Proposals
+    - button "Customer migration Production · v2.4.1" [disabled] [ref=e34]:
+      - generic [ref=e36]:
+        - strong [ref=e37]: Customer migration
+        - generic [ref=e38]: Production · v2.4.1
+  - generic [ref=e39]:
+    - banner [ref=e40]:
+      - generic [ref=e42]:
+        - generic [ref=e43]: Customer migration
+        - img [ref=e44]
+        - strong [ref=e46]: Business Partner
+      - generic [ref=e47]:
+        - generic [ref=e48]:
+          - img [ref=e49]
+          - textbox "Search model" [ref=e51]
+        - generic [ref=e52]: Production
+        - button "Notifications — No local notification feed" [disabled] [ref=e54]:
+          - img [ref=e55]
+        - button "AC Alex Chen Data Steward" [ref=e58] [cursor=pointer]:
+          - generic [ref=e59]: AC
+          - generic [ref=e60]:
+            - strong [ref=e61]: Alex Chen
+            - generic [ref=e62]: Data Steward
+          - img [ref=e63]
+    - main [ref=e65]:
+      - generic [ref=e185]:
+        - button "Back to search" [ref=e186] [cursor=pointer]:
+          - img [ref=e187]
+          - text: Back to search
+        - generic [ref=e189]:
+          - generic [ref=e190]:
+            - img [ref=e192]
+            - generic [ref=e195]:
+              - generic [ref=e196]:
+                - generic [ref=e197]: Master data domain
+                - generic [ref=e198]:
+                  - img [ref=e199]
+                  - text: Validated
+              - heading "Business Partner" [level=1] [ref=e201]
+              - button "DOMAIN-CUSTOMER-BP" [ref=e202] [cursor=pointer]:
+                - text: DOMAIN-CUSTOMER-BP
+                - img [ref=e203]
+          - generic [ref=e205]:
+            - button "Export — Export requires generated index (backend)" [disabled] [ref=e206]:
+              - img [ref=e207]
+              - text: Export
+            - button "Trace lineage" [ref=e209] [cursor=pointer]:
+              - img [ref=e210]
+              - text: Trace lineage
+            - button "More options — Object actions require backend" [disabled] [ref=e212]:
+              - img [ref=e213]
+        - paragraph [ref=e215]: Business Partner is the canonical master record for any organization or person with whom the enterprise conducts business. It provides a stable semantic layer above source-system-specific customer and vendor structures, unifying identity, address, tax, and communication data across SAP, CRM, MDM, and analytics platforms.
+        - generic [ref=e216]:
+          - button "Overview" [ref=e217] [cursor=pointer]
+          - button "Fields5" [ref=e218] [cursor=pointer]
+          - button "Relationships" [ref=e219] [cursor=pointer]
+          - button "Governance" [ref=e220] [cursor=pointer]
+        - generic [ref=e221]:
+          - generic [ref=e222]:
+            - generic [ref=e223]:
+              - generic [ref=e225]:
+                - heading "Model overview" [level=2] [ref=e226]
+                - paragraph [ref=e227]: Canonical scope and operating context
+              - generic [ref=e228]:
+                - generic [ref=e229]:
+                  - generic [ref=e230]: Business owner
+                  - strong [ref=e231]: Customer Data Office
+                - generic [ref=e232]:
+                  - generic [ref=e233]: Technical steward
+                  - strong [ref=e234]: Priya Nair
+                - generic [ref=e235]:
+                  - generic [ref=e236]: Lifecycle
+                  - strong [ref=e237]: Active
+                - generic [ref=e238]:
+                  - generic [ref=e239]: Last validated
+                  - strong [ref=e240]: Today, 10:18
+              - generic [ref=e241]:
+                - heading "Business definition" [level=3] [ref=e242]
+                - paragraph [ref=e243]: Business Partner is the canonical master record for any organization or person with whom the enterprise conducts business. It provides a stable semantic layer above source-system-specific customer and vendor structures, unifying identity, address, tax, and communication data across SAP, CRM, MDM, and analytics platforms.
+              - generic [ref=e244]:
+                - img [ref=e245]
+                - generic [ref=e247]: SAP migration
+                - generic [ref=e248]: MDM
+                - generic [ref=e249]: Customer
+                - generic [ref=e250]: Vendor
+            - generic [ref=e251]:
+              - generic [ref=e252]:
+                - generic [ref=e253]:
+                  - heading "Key fields" [level=2] [ref=e254]
+                  - paragraph [ref=e255]: Frequently referenced canonical attributes
+                - button "View all 5" [ref=e256] [cursor=pointer]:
+                  - text: View all 5
+                  - img [ref=e257]
+              - generic [ref=e259]:
+                - generic [ref=e260]:
+                  - generic [ref=e261]: Aa
+                  - generic [ref=e262]:
+                    - strong [ref=e263]: PARTNER_ID
+                    - generic [ref=e264]: Stable business partner identifier across source and target systems.
+                  - code [ref=e265]: String (40)
+                  - generic [ref=e266]: Validated
+                - generic [ref=e267]:
+                  - generic [ref=e268]: Aa
+                  - generic [ref=e269]:
+                    - strong [ref=e270]: PARTNER_TYPE
+                    - generic [ref=e271]: Organization, person, or group classification.
+                  - code [ref=e272]: Code
+                  - generic [ref=e273]: Validated
+                - generic [ref=e274]:
+                  - generic [ref=e275]: Aa
+                  - generic [ref=e276]:
+                    - strong [ref=e277]: TAX_NUMBER
+                    - generic [ref=e278]: Tax identification number used for reporting and matching.
+                  - code [ref=e279]: String (20)
+                  - generic [ref=e280]: Gap
+                - generic [ref=e281]:
+                  - generic [ref=e282]: Aa
+                  - generic [ref=e283]:
+                    - strong [ref=e284]: COUNTRY
+                    - generic [ref=e285]: Country or region of the primary business partner address.
+                  - code [ref=e286]: Code (ISO-2)
+                  - generic [ref=e287]: Validated
+          - complementary [ref=e288]:
+            - generic [ref=e289]:
+              - generic [ref=e291]:
+                - heading "Model health" [level=2] [ref=e292]
+                - paragraph [ref=e293]: Deterministic validation
+              - generic [ref=e294]:
+                - strong [ref=e295]: 93%
+                - generic [ref=e296]: Validated
+              - list [ref=e299]:
+                - listitem [ref=e300]:
+                  - img [ref=e301]
+                  - text: Domain health
+                  - strong [ref=e303]: 93%
+                - listitem [ref=e304]:
+                  - img [ref=e305]
+                  - text: Open field gaps
+                  - strong [ref=e307]: Review
+                - listitem [ref=e308]:
+                  - img [ref=e309]
+                  - text: Ownership coverage
+                  - strong [ref=e311]: 96%
+              - button "Review open gaps" [ref=e312] [cursor=pointer]
+            - generic [ref=e313]:
+              - generic [ref=e315]:
+                - heading "Connected systems" [level=2] [ref=e316]
+                - paragraph [ref=e317]: 4 upstream and downstream
+              - button "SAP S/4HANA Source" [ref=e318] [cursor=pointer]:
+                - img [ref=e320]
+                - generic [ref=e322]:
+                  - strong [ref=e323]: SAP S/4HANA
+                  - generic [ref=e324]: Source
+                - img [ref=e325]
+              - button "Salesforce CRM Source" [ref=e327] [cursor=pointer]:
+                - img [ref=e329]
+                - generic [ref=e331]:
+                  - strong [ref=e332]: Salesforce CRM
+                  - generic [ref=e333]: Source
+                - img [ref=e334]
+              - button "Informatica MDM Target" [ref=e336] [cursor=pointer]:
+                - img [ref=e338]
+                - generic [ref=e340]:
+                  - strong [ref=e341]: Informatica MDM
+                  - generic [ref=e342]: Target
+                - img [ref=e343]
+              - button "Customer analytics Target" [ref=e345] [cursor=pointer]:
+                - img [ref=e347]
+                - generic [ref=e349]:
+                  - strong [ref=e350]: Customer analytics
+                  - generic [ref=e351]: Target
+                - img [ref=e352]

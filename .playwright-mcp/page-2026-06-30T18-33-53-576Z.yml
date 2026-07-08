@@ -1,0 +1,247 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e9]:
+        - strong [ref=e10]: Martenweave
+        - generic [ref=e11]: Model intelligence
+      - navigation "Primary navigation" [ref=e12]:
+        - button "Home" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+          - generic [ref=e16]: Home
+        - button "Models" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e20]: Models
+        - button "Lineage" [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+          - generic [ref=e24]: Lineage
+        - button "Gaps 5" [ref=e25] [cursor=pointer]:
+          - img [ref=e26]
+          - generic [ref=e28]: Gaps
+          - generic [ref=e29]: "5"
+        - button "Proposals" [ref=e30] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e33]: Proposals
+    - button "Customer migration Production · v2.4.1" [disabled] [ref=e34]:
+      - generic [ref=e36]:
+        - strong [ref=e37]: Customer migration
+        - generic [ref=e38]: Production · v2.4.1
+  - generic [ref=e39]:
+    - banner [ref=e40]:
+      - generic [ref=e42]:
+        - generic [ref=e43]: Customer migration
+        - img [ref=e44]
+        - strong [ref=e46]: Open gaps
+      - generic [ref=e47]:
+        - generic [ref=e48]:
+          - img [ref=e49]
+          - textbox "Search model" [ref=e51]
+        - generic [ref=e52]: Production
+        - button "Notifications — No local notification feed" [disabled] [ref=e54]:
+          - img [ref=e55]
+        - button "AC Alex Chen Data Steward" [ref=e58] [cursor=pointer]:
+          - generic [ref=e59]: AC
+          - generic [ref=e60]:
+            - strong [ref=e61]: Alex Chen
+            - generic [ref=e62]: Data Steward
+          - img [ref=e63]
+    - main [ref=e65]:
+      - generic [ref=e545]:
+        - generic [ref=e546]:
+          - generic [ref=e547]:
+            - heading "Open gaps" [level=1] [ref=e548]
+            - paragraph [ref=e549]: Review missing mappings, inconsistent types, and unresolved model coverage.
+          - button "Create issue — Creating issues requires backend PatchProposal service" [disabled] [ref=e551]:
+            - img [ref=e552]
+            - text: Create issue
+        - generic [ref=e554]:
+          - generic [ref=e555]:
+            - img [ref=e556]
+            - textbox [ref=e558]:
+              - /placeholder: Search gaps by field, object, or source…
+          - combobox [ref=e559]:
+            - option "All severities" [selected]
+            - option "High"
+            - option "Medium"
+            - option "Low"
+          - combobox [ref=e560]:
+            - option "Risk first" [selected]
+            - option "Recently detected"
+            - option "Object name"
+          - button "More filters — Additional filters require backend" [disabled] [ref=e561]:
+            - img [ref=e562]
+            - text: More filters
+        - generic [ref=e564]:
+          - generic [ref=e565]:
+            - article [ref=e566]:
+              - button "1 Missing mapping for TAX_NUMBER High Tax identification number is not mapped from SAP Sales Order to the canonical model. PN Owner Priya Nair" [ref=e567] [cursor=pointer]:
+                - generic [ref=e568]: "1"
+                - generic [ref=e569]:
+                  - generic [ref=e570]:
+                    - strong [ref=e571]: Missing mapping for TAX_NUMBER
+                    - generic [ref=e572]: High
+                  - generic [ref=e573]: Tax identification number is not mapped from SAP Sales Order to the canonical model.
+                - generic [ref=e574]:
+                  - generic [ref=e575]: PN
+                  - generic [ref=e576]:
+                    - generic [ref=e577]: Owner
+                    - strong [ref=e578]: Priya Nair
+                - img [ref=e579]
+              - generic [ref=e581]:
+                - generic [ref=e582]:
+                  - generic [ref=e583]: Impacted object
+                  - strong [ref=e584]:
+                    - img [ref=e585]
+                    - text: Business Partner
+                - generic [ref=e587]:
+                  - generic [ref=e588]: Source → target
+                  - strong [ref=e589]:
+                    - text: Sales Order (SAP)
+                    - img [ref=e590]
+                    - text: Business Partner (Canonical)
+                - generic [ref=e592]:
+                  - generic [ref=e593]: Proposal
+                  - strong [ref=e594]: "Proposal #27"
+                - button "Review proposal" [ref=e596] [cursor=pointer]
+              - generic [ref=e597]:
+                - generic [ref=e598]:
+                  - text: Proposal
+                  - generic [ref=e599]: In review
+                - generic [ref=e600]: "Proposal #27"
+                - generic [ref=e601]: Detected 18m ago
+            - article [ref=e602]:
+              - 'button "4 Unmapped field: EMAIL_ADDRESS High EMAIL_ADDRESS exists in source but is not mapped to target. Contact completeness is at risk. PN Owner Priya Nair" [ref=e603] [cursor=pointer]':
+                - generic [ref=e604]: "4"
+                - generic [ref=e605]:
+                  - generic [ref=e606]:
+                    - strong [ref=e607]: "Unmapped field: EMAIL_ADDRESS"
+                    - generic [ref=e608]: High
+                  - generic [ref=e609]: EMAIL_ADDRESS exists in source but is not mapped to target. Contact completeness is at risk.
+                - generic [ref=e610]:
+                  - generic [ref=e611]: PN
+                  - generic [ref=e612]:
+                    - generic [ref=e613]: Owner
+                    - strong [ref=e614]: Priya Nair
+                - img [ref=e615]
+              - generic [ref=e617]:
+                - generic [ref=e618]:
+                  - text: Proposal
+                  - generic [ref=e619]: Needs proposal
+                - generic [ref=e620]: —
+                - generic [ref=e621]: Detected 3h ago
+            - article [ref=e622]:
+              - 'button "2 Inconsistent data type: LANGUAGE Medium LANGUAGE is String in source but ISO code in target. Type standardization is required. AC Owner Alex Chen" [ref=e623] [cursor=pointer]':
+                - generic [ref=e624]: "2"
+                - generic [ref=e625]:
+                  - generic [ref=e626]:
+                    - strong [ref=e627]: "Inconsistent data type: LANGUAGE"
+                    - generic [ref=e628]: Medium
+                  - generic [ref=e629]: LANGUAGE is String in source but ISO code in target. Type standardization is required.
+                - generic [ref=e630]:
+                  - generic [ref=e631]: AC
+                  - generic [ref=e632]:
+                    - generic [ref=e633]: Owner
+                    - strong [ref=e634]: Alex Chen
+                - img [ref=e635]
+              - generic [ref=e637]:
+                - generic [ref=e638]:
+                  - text: Proposal
+                  - generic [ref=e639]: Draft
+                - generic [ref=e640]: "Proposal #31"
+                - generic [ref=e641]: Detected 2h ago
+            - article [ref=e642]:
+              - button "3 Country code standardization Low Country code formats differ between source and target. Standardize to ISO-2. MW Owner Mia Wong" [ref=e643] [cursor=pointer]:
+                - generic [ref=e644]: "3"
+                - generic [ref=e645]:
+                  - generic [ref=e646]:
+                    - strong [ref=e647]: Country code standardization
+                    - generic [ref=e648]: Low
+                  - generic [ref=e649]: Country code formats differ between source and target. Standardize to ISO-2.
+                - generic [ref=e650]:
+                  - generic [ref=e651]: MW
+                  - generic [ref=e652]:
+                    - generic [ref=e653]: Owner
+                    - strong [ref=e654]: Mia Wong
+                - img [ref=e655]
+              - generic [ref=e657]:
+                - generic [ref=e658]:
+                  - text: Proposal
+                  - generic [ref=e659]: Draft
+                - generic [ref=e660]: "Proposal #29"
+                - generic [ref=e661]: Detected 1h ago
+            - article [ref=e662]:
+              - button "5 Missing mapping for INDUSTRY Low INDUSTRY is absent from the target model. Business segmentation impact is possible. AC Owner Alex Chen" [ref=e663] [cursor=pointer]:
+                - generic [ref=e664]: "5"
+                - generic [ref=e665]:
+                  - generic [ref=e666]:
+                    - strong [ref=e667]: Missing mapping for INDUSTRY
+                    - generic [ref=e668]: Low
+                  - generic [ref=e669]: INDUSTRY is absent from the target model. Business segmentation impact is possible.
+                - generic [ref=e670]:
+                  - generic [ref=e671]: AC
+                  - generic [ref=e672]:
+                    - generic [ref=e673]: Owner
+                    - strong [ref=e674]: Alex Chen
+                - img [ref=e675]
+              - generic [ref=e677]:
+                - generic [ref=e678]:
+                  - text: Proposal
+                  - generic [ref=e679]: Needs proposal
+                - generic [ref=e680]: —
+                - generic [ref=e681]: Detected 5h ago
+          - complementary [ref=e682]:
+            - generic [ref=e683]:
+              - generic [ref=e684]:
+                - generic [ref=e685]:
+                  - heading "Gap summary" [level=2] [ref=e686]
+                  - paragraph [ref=e687]: Current model coverage
+                - button "Gap summary details — Summary details require backend" [disabled] [ref=e688]:
+                  - img [ref=e689]
+              - strong [ref=e691]: "5"
+              - generic [ref=e692]: Total open gaps
+              - generic [ref=e693]:
+                - generic [ref=e694]:
+                  - text: High
+                  - strong [ref=e696]: "2"
+                - generic [ref=e697]:
+                  - text: Medium
+                  - strong [ref=e699]: "1"
+                - generic [ref=e700]:
+                  - text: Low
+                  - strong [ref=e702]: "2"
+              - generic [ref=e703]:
+                - generic [ref=e704]: Proposals linked
+                - strong [ref=e705]: 60%
+              - generic [ref=e706]:
+                - generic [ref=e707]: Validation risk
+                - generic [ref=e708]: High
+            - generic [ref=e709]:
+              - generic [ref=e711]:
+                - heading "Missing mapping for TAX_NUMBER" [level=2] [ref=e712]
+                - paragraph [ref=e713]:
+                  - generic [ref=e714]: High
+              - paragraph [ref=e715]: Tax identification number is not mapped from SAP Sales Order to the canonical model.
+              - generic [ref=e716]:
+                - generic [ref=e717]: Recommendation
+                - paragraph [ref=e718]: Map SAP field KNVV.STCD1 to canonical TAX_NUMBER and attach lineage evidence from the source table to the target attribute.
+              - generic [ref=e719]:
+                - generic [ref=e720]: Evidence
+                - list [ref=e721]:
+                  - listitem [ref=e722]:
+                    - img [ref=e723]
+                    - text: Source field KNVV.STCD1 is present in SAP S/4HANA Sales Order.
+                  - listitem [ref=e725]:
+                    - img [ref=e726]
+                    - text: Canonical Tax Number attribute is undefined in the Business Partner model.
+                  - listitem [ref=e728]:
+                    - img [ref=e729]
+                    - text: Gap impacts migration validation, reporting, and downstream customer processes.
+              - generic [ref=e731]:
+                - button "Open object" [ref=e732] [cursor=pointer]
+                - button "Review proposal" [ref=e733] [cursor=pointer]
+            - generic [ref=e734]:
+              - img [ref=e736]
+              - heading "Recommended next step" [level=2] [ref=e738]
+              - generic [ref=e739]:
+                - strong [ref=e740]: "Review Proposal #27"
+                - paragraph [ref=e741]: It addresses the highest-risk gap and includes all required evidence.
+                - button "Review proposal" [ref=e742] [cursor=pointer]

@@ -1,0 +1,116 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Product Name" [level=1] [ref=e5]
+      - paragraph [ref=e6]: Generated local static read-only viewer over the SQLite index.
+    - navigation "Viewer navigation" [ref=e7]:
+      - link "Dashboard" [ref=e8] [cursor=pointer]:
+        - /url: ../index.html
+      - link "Objects" [ref=e9] [cursor=pointer]:
+        - /url: ../objects.html
+      - link "Gaps" [ref=e10] [cursor=pointer]:
+        - /url: ../gaps.html
+      - link "Decisions" [ref=e11] [cursor=pointer]:
+        - /url: ../decisions.html
+      - link "Owners" [ref=e12] [cursor=pointer]:
+        - /url: ../owners.html
+      - link "Manifest" [ref=e13] [cursor=pointer]:
+        - /url: ../viewer-manifest.json
+  - generic [ref=e14]:
+    - text: "Index freshness:"
+    - strong [ref=e15]: fresh
+    - text: . Viewer content is generated from the current SQLite index.
+  - generic [ref=e16]:
+    - generic [ref=e17]:
+      - heading "Product Name" [level=2] [ref=e18]
+      - generic [ref=e19]: ATTR-PRODUCT-NAME
+      - generic [ref=e20]: Attribute
+      - generic [ref=e21]: active
+    - generic [ref=e22]:
+      - text: Read-only generated artifact. Canonical files in
+      - code [ref=e23]: model/
+      - text: remain the source of truth; this viewer can be deleted and rebuilt at any time.
+  - generic [ref=e24]:
+    - generic [ref=e25]:
+      - heading "Facts" [level=2] [ref=e26]
+      - table [ref=e27]:
+        - rowgroup [ref=e28]:
+          - row "ID ATTR-PRODUCT-NAME" [ref=e29]:
+            - rowheader "ID" [ref=e30]
+            - cell "ATTR-PRODUCT-NAME" [ref=e31]
+          - row "Type Attribute" [ref=e32]:
+            - rowheader "Type" [ref=e33]
+            - cell "Attribute" [ref=e34]
+          - row "Status active" [ref=e35]:
+            - rowheader "Status" [ref=e36]
+            - cell "active" [ref=e37]
+          - row "Domain DOMAIN-PRODUCT" [ref=e38]:
+            - rowheader "Domain" [ref=e39]
+            - cell "DOMAIN-PRODUCT" [ref=e40]
+          - row "Semantic Category text" [ref=e41]:
+            - rowheader "Semantic Category" [ref=e42]
+            - cell "text" [ref=e43]
+    - generic [ref=e44]:
+      - heading "Owners" [level=2] [ref=e45]
+      - generic [ref=e46]: No owner fields are assigned on this object.
+  - generic [ref=e47]:
+    - heading "Description" [level=2] [ref=e48]
+    - generic [ref=e49]: No description is present in the index.
+    - heading "Canonical body" [level=3] [ref=e50]
+    - generic [ref=e51]: "# Product Name Human-readable product name."
+  - generic [ref=e52]:
+    - generic [ref=e53]:
+      - heading "Outgoing relationships" [level=2] [ref=e54]
+      - table [ref=e55]:
+        - rowgroup [ref=e56]:
+          - row "Relationship Object Class" [ref=e57]:
+            - columnheader "Relationship" [ref=e58]
+            - columnheader "Object" [ref=e59]
+            - columnheader "Class" [ref=e60]
+        - rowgroup [ref=e61]:
+          - row "belongs_to_domain DOMAIN-PRODUCT core_dependency" [ref=e62]:
+            - cell "belongs_to_domain" [ref=e63]
+            - cell "DOMAIN-PRODUCT" [ref=e64]:
+              - link "DOMAIN-PRODUCT" [ref=e65] [cursor=pointer]:
+                - /url: ../objects/domain-product.html
+                - code [ref=e66]: DOMAIN-PRODUCT
+            - cell "core_dependency" [ref=e67]
+          - row "belongs_to_entity ENTITY-PRODUCT core_dependency" [ref=e68]:
+            - cell "belongs_to_entity" [ref=e69]
+            - cell "ENTITY-PRODUCT" [ref=e70]:
+              - link "ENTITY-PRODUCT" [ref=e71] [cursor=pointer]:
+                - /url: ../objects/entity-product.html
+                - code [ref=e72]: ENTITY-PRODUCT
+            - cell "core_dependency" [ref=e73]
+    - generic [ref=e74]:
+      - heading "Incoming relationships" [level=2] [ref=e75]
+      - table [ref=e76]:
+        - rowgroup [ref=e77]:
+          - row "Relationship Object Class" [ref=e78]:
+            - columnheader "Relationship" [ref=e79]
+            - columnheader "Object" [ref=e80]
+            - columnheader "Class" [ref=e81]
+        - rowgroup [ref=e82]:
+          - row "has_attribute FEP-PRODUCT-NAME core_dependency" [ref=e83]:
+            - cell "has_attribute" [ref=e84]
+            - cell "FEP-PRODUCT-NAME" [ref=e85]:
+              - link "FEP-PRODUCT-NAME" [ref=e86] [cursor=pointer]:
+                - /url: ../objects/fep-product-name.html
+                - code [ref=e87]: FEP-PRODUCT-NAME
+            - cell "core_dependency" [ref=e88]
+  - generic [ref=e89]:
+    - heading "Mappings" [level=2] [ref=e90]
+    - generic [ref=e91]: No mappings are connected by one-hop indexed relationships.
+  - generic [ref=e92]:
+    - heading "Rules" [level=2] [ref=e93]
+    - generic [ref=e94]: No rules are connected by one-hop indexed relationships.
+  - generic [ref=e95]:
+    - heading "Issues" [level=2] [ref=e96]
+    - generic [ref=e97]: No issues are connected by one-hop indexed relationships.
+  - generic [ref=e98]:
+    - heading "Decisions" [level=2] [ref=e99]
+    - generic [ref=e100]: No decisions are connected by one-hop indexed relationships.
+  - generic [ref=e101]:
+    - heading "Evidence" [level=2] [ref=e102]
+    - generic [ref=e103]: No evidence are connected by one-hop indexed relationships.
+  - generic [ref=e104]: Generated output is disposable. Canonical Markdown + YAML files remain authoritative. No hosted UI, login, editor, SAP write-back, or AI auto-mutation is included.

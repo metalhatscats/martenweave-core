@@ -140,6 +140,9 @@ def trace(
         raise HTTPException(status_code=400, detail="Index not found. Run build-index first.")
 
     result = trace_object(db_path, obj_id, max_depth=max_depth, direction=direction)
+    if result.root_object_type is None:
+        raise HTTPException(status_code=404, detail=f"Object {obj_id} not found")
+
     return {
         "root_object_id": result.root_object_id,
         "root_object_type": result.root_object_type,
@@ -178,6 +181,9 @@ def impact(
         raise HTTPException(status_code=400, detail="Index not found. Run build-index first.")
 
     report = generate_impact_report(db_path, obj_id)
+    if report.root_object_type is None:
+        raise HTTPException(status_code=404, detail=f"Object {obj_id} not found")
+
     return {
         "object_id": report.root_object_id,
         "root_object_type": report.root_object_type,

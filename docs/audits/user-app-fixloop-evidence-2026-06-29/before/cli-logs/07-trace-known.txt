@@ -1,0 +1,5 @@
+Trace: ATTR-PRODUCT-NAME
+  Name: Product Name
+  Direction: both
+  Max depth: 5
+  No related objects found.

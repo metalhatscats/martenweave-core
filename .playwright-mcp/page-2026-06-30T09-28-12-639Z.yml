@@ -1,0 +1,143 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e9]:
+        - strong [ref=e10]: Martenweave
+        - generic [ref=e11]: Model intelligence
+      - navigation "Primary navigation" [ref=e12]:
+        - button "Home" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+          - generic [ref=e16]: Home
+        - button "Models" [ref=e17] [cursor=pointer]:
+          - img [ref=e18]
+          - generic [ref=e20]: Models
+        - button "Lineage" [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+          - generic [ref=e24]: Lineage
+        - button "Gaps 5" [ref=e25] [cursor=pointer]:
+          - img [ref=e26]
+          - generic [ref=e28]: Gaps
+          - generic [ref=e29]: "5"
+        - button "Proposals" [ref=e30] [cursor=pointer]:
+          - img [ref=e31]
+          - generic [ref=e33]: Proposals
+    - generic [ref=e34]:
+      - generic [ref=e36]:
+        - strong [ref=e37]: Customer migration
+        - generic [ref=e38]: Production · v2.4.1
+      - img [ref=e39]
+  - generic [ref=e41]:
+    - banner [ref=e42]:
+      - generic [ref=e43]:
+        - button "Open navigation" [ref=e239] [cursor=pointer]:
+          - img [ref=e240]
+        - strong [ref=e48]: Global model search
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - img [ref=e51]
+          - textbox "Search model" [ref=e53]
+        - button "Notifications" [ref=e56] [cursor=pointer]:
+          - img [ref=e57]
+        - button "AC" [ref=e242] [cursor=pointer]:
+          - generic [ref=e62]: AC
+    - main [ref=e68]:
+      - generic [ref=e363]:
+        - generic [ref=e365]:
+          - heading "Global model search" [level=1] [ref=e366]
+          - paragraph [ref=e367]: Search across canonical objects, fields, mappings, datasets, and proposals.
+        - generic [ref=e368]:
+          - img [ref=e369]
+          - textbox [ref=e371]: business partner
+          - button [ref=e372] [cursor=pointer]:
+            - img [ref=e373]
+          - button [ref=e375] [cursor=pointer]:
+            - img [ref=e376]
+        - generic [ref=e378]:
+          - button "All52" [ref=e379] [cursor=pointer]
+          - button "Objects12" [ref=e380] [cursor=pointer]
+          - button "Fields18" [ref=e381] [cursor=pointer]
+          - button "Mappings7" [ref=e382] [cursor=pointer]
+          - button "Proposals7" [ref=e383] [cursor=pointer]
+        - generic [ref=e384]:
+          - img [ref=e386]
+          - generic [ref=e388]:
+            - generic [ref=e389]:
+              - text: AI answer
+              - generic [ref=e390]: Beta
+            - paragraph [ref=e391]:
+              - text: The canonical object is
+              - strong [ref=e392]: Business Partner
+              - text: . It is used by eight source systems, referenced by fourteen rules, and currently has three open field gaps.
+        - generic [ref=e393]:
+          - strong [ref=e394]: 4 results
+          - generic [ref=e395]:
+            - generic [ref=e396]:
+              - text: Sorted by
+              - combobox "Sorted by" [ref=e397]:
+                - option "Relevance" [selected]
+                - option "Recently updated"
+                - option "Name"
+            - button "Filters" [ref=e398] [cursor=pointer]:
+              - img [ref=e399]
+              - text: Filters
+        - generic [ref=e402]:
+          - button "Domain Business Partner Canonical domain for organizations and people that participate in commercial relationships. 3 owners 8 systems" [ref=e403] [cursor=pointer]:
+            - img [ref=e405]
+            - generic [ref=e408]:
+              - generic [ref=e409]:
+                - generic [ref=e410]: Domain
+                - strong [ref=e411]: Business Partner
+              - generic [ref=e412]: Canonical domain for organizations and people that participate in commercial relationships.
+              - generic [ref=e413]:
+                - generic [ref=e414]:
+                  - img [ref=e415]
+                  - text: 3 owners
+                - generic [ref=e417]:
+                  - img [ref=e418]
+                  - text: 8 systems
+            - img [ref=e420]
+          - button "Attribute ADDRESS_ID Unique identifier for the address record associated with a business partner. 1 owners 8 systems" [ref=e422] [cursor=pointer]:
+            - img [ref=e424]
+            - generic [ref=e427]:
+              - generic [ref=e428]:
+                - generic [ref=e429]: Attribute
+                - strong [ref=e430]: ADDRESS_ID
+              - generic [ref=e431]: Unique identifier for the address record associated with a business partner.
+              - generic [ref=e432]:
+                - generic [ref=e433]:
+                  - img [ref=e434]
+                  - text: 1 owners
+                - generic [ref=e436]:
+                  - img [ref=e437]
+                  - text: 8 systems
+            - img [ref=e439]
+          - button "Attribute COUNTRY Country or region of the business partner address, standardized to ISO-2. 1 owners 12 systems" [ref=e441] [cursor=pointer]:
+            - img [ref=e443]
+            - generic [ref=e446]:
+              - generic [ref=e447]:
+                - generic [ref=e448]: Attribute
+                - strong [ref=e449]: COUNTRY
+              - generic [ref=e450]: Country or region of the business partner address, standardized to ISO-2.
+              - generic [ref=e451]:
+                - generic [ref=e452]:
+                  - img [ref=e453]
+                  - text: 1 owners
+                - generic [ref=e455]:
+                  - img [ref=e456]
+                  - text: 12 systems
+            - img [ref=e458]
+          - button "Mapping BP Address Standardization Standardizes source addresses against the canonical Business Partner model. 2 owners 4 systems" [ref=e460] [cursor=pointer]:
+            - img [ref=e462]
+            - generic [ref=e465]:
+              - generic [ref=e466]:
+                - generic [ref=e467]: Mapping
+                - strong [ref=e468]: BP Address Standardization
+              - generic [ref=e469]: Standardizes source addresses against the canonical Business Partner model.
+              - generic [ref=e470]:
+                - generic [ref=e471]:
+                  - img [ref=e472]
+                  - text: 2 owners
+                - generic [ref=e474]:
+                  - img [ref=e475]
+                  - text: 4 systems
+            - img [ref=e477]

@@ -1,0 +1,3 @@
+Index built at /private/tmp/martenweave-fixloop-repo/generated/modelops.db
+  Objects: 85
+  Valid:   True
