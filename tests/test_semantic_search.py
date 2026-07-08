@@ -7,6 +7,9 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+from typer.testing import CliRunner
+
+from modelops_core.cli import app
 from modelops_core.index.semantic_search import (
     SemanticIndexBuilder,
     SemanticSearcher,
@@ -348,3 +351,67 @@ def test_build_index_creates_semantic_index(tmp_path: Path) -> None:
     ).fetchone()
     assert row is not None
     conn.close()
+
+
+def test_cli_search_semantic_json(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    model_dir = repo / "model"
+    model_dir.mkdir(parents=True)
+    generated = repo / "generated"
+    generated.mkdir()
+
+    db = generated / "modelops.db"
+    conn = __import__("sqlite3").connect(str(db))
+    conn.executescript(
+        """
+        CREATE TABLE objects (
+            id TEXT PRIMARY KEY,
+            type TEXT NOT NULL,
+            status TEXT NOT NULL,
+            name TEXT,
+            title TEXT,
+            domain TEXT,
+            description TEXT,
+            body TEXT,
+            source_file TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            frontmatter_json TEXT NOT NULL,
+            created_at TEXT,
+            updated_at TEXT
+        );
+        """
+    )
+    conn.execute(
+        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "ATTR-001", "Attribute", "active", "Customer Group", "Customer Group", None,
+            "Sales-area-dependent customer grouping", "# Customer Group",
+            "model/ATTR-001.md", "hash", '{"id": "ATTR-001", "type": "Attribute"}',
+            None, None,
+        ),
+    )
+    conn.execute(
+        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "FEP-001", "FieldEndpoint", "active", "KNVV KDGRP", None, None,
+            "SAP field for customer grouping", "# KNVV KDGRP",
+            "model/FEP-001.md",
+            "hash",
+            '{"id": "FEP-001", "type": "FieldEndpoint", "technical_name": "KDGRP"}',
+            None, None,
+        ),
+    )
+    SemanticIndexBuilder().build(conn)
+    conn.close()
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        ["search", "customer grouping", "--repo", str(repo), "--semantic", "--json"],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert "results" in data
+    assert data["total_count"] == 2
+    assert all("semantic_score" in r for r in data["results"])
+    assert data["results"][0]["semantic_score"] >= data["results"][1]["semantic_score"]

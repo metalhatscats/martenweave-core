@@ -85,6 +85,7 @@ from modelops_core.index import build_index as _build_index
 from modelops_core.index.query_service import (
     query_objects,
     search_objects,
+    semantic_search_objects,
 )
 from modelops_core.issue_draft import (
     create_draft_from_change_request,
@@ -5583,6 +5584,12 @@ def search(
     limit: int = typer.Option(50, "--limit", help="Maximum results."),
     offset: int = typer.Option(0, "--offset", help="Skip first N results."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+    semantic: bool = typer.Option(
+        False, "--semantic", help="Rerank keyword results by local semantic similarity."
+    ),
+    semantic_expand: bool = typer.Option(
+        False, "--semantic-expand", help="Expand query with one-hop related object terms."
+    ),
 ) -> None:
     """Search indexed objects by keyword."""
     repo_root = _resolve_repo(repo)
@@ -5606,25 +5613,50 @@ def search(
     )
     results = paginated.results
 
+    if semantic:
+        candidate_ids = {r.object_id for r in results}
+        semantic_results = semantic_search_objects(
+            db_path=db_path,
+            query=query,
+            candidate_ids=candidate_ids,
+            expand=semantic_expand,
+            limit=limit,
+        )
+        semantic_by_id = {r.object_id: r for r in semantic_results}
+        # Preserve keyword filters but attach semantic scores where available.
+        for r in results:
+            sr = semantic_by_id.get(r.object_id)
+            if sr:
+                r.score = sr.semantic_score
+                r.matched_fields = r.matched_fields + ["semantic:" + t for t in sr.matched_terms]
+        results.sort(key=lambda r: r.score, reverse=True)
+
     if json_output:
-        output = {
+        output: dict[str, Any] = {
             "stale_index_warning": stale,
-            "results": [
-                {
-                    "object_id": r.object_id,
-                    "object_type": r.object_type,
-                    "status": r.status,
-                    "name": r.name,
-                    "title": r.title,
-                    "domain": r.domain,
-                    "source_file": r.source_file,
-                    "score": r.score,
-                    "matched_fields": r.matched_fields,
-                }
-                for r in results
-            ],
+            "results": [],
             "total_count": paginated.total_count,
         }
+        for r in results:
+            result_obj = {
+                "object_id": r.object_id,
+                "object_type": r.object_type,
+                "status": r.status,
+                "name": r.name,
+                "title": r.title,
+                "domain": r.domain,
+                "source_file": r.source_file,
+                "score": r.score,
+                "matched_fields": r.matched_fields,
+            }
+            if semantic:
+                result_obj["semantic_score"] = r.score
+                result_obj["semantic_matched_terms"] = [
+                    f.removeprefix("semantic:")
+                    for f in r.matched_fields
+                    if f.startswith("semantic:")
+                ]
+            output["results"].append(result_obj)
         print(json.dumps(output, indent=2, default=str))
         raise typer.Exit()
 
