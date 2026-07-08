@@ -44,6 +44,7 @@ def _infer_objects_from_sheet(
     dataset_id: str,
     file_name: str,
     sheet_index: int,
+    domain_override: str | None = None,
 ) -> tuple[list[dict[str, Any]], list[str], list[str]]:
     """Generate draft objects from a single sheet/profile.
 
@@ -58,8 +59,9 @@ def _infer_objects_from_sheet(
     sheet_stem = _sanitize_id(sheet_name)
 
     # Domain object
-    domain_obj_id = f"DOMAIN-{stem}"
+    domain_obj_id = domain_override if domain_override else f"DOMAIN-{stem}"
     if sheet_index == 0:
+        domain_name = domain_override if domain_override else f"{sheet_name} Domain"
         operations.append(
             {
                 "op": "create_object",
@@ -69,7 +71,7 @@ def _infer_objects_from_sheet(
                     "id": domain_obj_id,
                     "type": "MasterDataDomain",
                     "status": "draft",
-                    "name": f"{sheet_name} Domain",
+                    "name": domain_name,
                     "description": f"Inferred domain from profile {dataset_id}.",
                 },
                 "reason": "Domain inferred from profiled file.",
@@ -206,6 +208,7 @@ def _infer_objects_from_sheet(
 def infer_model_from_profile(
     profile: dict[str, Any],
     dataset_id: str,
+    domain: str | None = None,
 ) -> dict[str, Any]:
     """Generate a PatchProposal from a dataset profile dict.
 
@@ -230,13 +233,17 @@ def infer_model_from_profile(
                     f"Sheet {sheet.get('sheet_name')} was skipped due to errors."
                 )
                 continue
-            ops, assump, checks = _infer_objects_from_sheet(sheet, dataset_id, file_name, idx)
+            ops, assump, checks = _infer_objects_from_sheet(
+                sheet, dataset_id, file_name, idx, domain_override=domain
+            )
             all_operations.extend(ops)
             all_assumptions.extend(assump)
             all_human_checks.extend(checks)
     else:
         # CSV single-profile
-        ops, assump, checks = _infer_objects_from_sheet(profile, dataset_id, file_name, 0)
+        ops, assump, checks = _infer_objects_from_sheet(
+            profile, dataset_id, file_name, 0, domain_override=domain
+        )
         all_operations.extend(ops)
         all_assumptions.extend(assump)
         all_human_checks.extend(checks)

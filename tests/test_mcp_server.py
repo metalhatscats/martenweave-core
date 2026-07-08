@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from modelops_core.mcp_server import _MCP_AVAILABLE, create_mcp_server
+from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
 
 pytestmark = pytest.mark.skipif(not _MCP_AVAILABLE, reason="mcp package not installed")
 
@@ -309,6 +310,27 @@ class TestMCPWriteIntentTools:
         assert "proposal_id" in result
         assert "operations_count" in result
         assert "path" in result
+        assert isinstance(result.get("assumptions"), list)
+        assert isinstance(result.get("human_checks"), list)
+
+    def test_propose_model_change_triggers_telemetry(self, sample_repo):
+        """propose_model_change should log an AI usage event when repo_root is provided."""
+        server = create_mcp_server(repo=str(sample_repo))
+        _call_tool_sync(
+            server,
+            "propose_model_change",
+            {"note": "Update the description of Customer Group to clarify usage."},
+        )
+        log_path = sample_repo / "generated" / "ai_usage_events.jsonl"
+        assert log_path.exists()
+        raw_lines = log_path.read_text(encoding="utf-8").splitlines()
+        events = [json.loads(line) for line in raw_lines if line.strip()]
+        matching = [e for e in events if e.get("command") == "mcp-propose-model-change"]
+        assert matching, (
+            "Expected a telemetry event with command='mcp-propose-model-change' "
+            f"in {events}"
+        )
+        assert matching[-1]["provider"] == "NoProviderAdapter"
 
     def test_proposal_dry_run_not_found(self, sample_repo):
         """proposal_dry_run should error for a missing proposal."""
@@ -319,6 +341,29 @@ class TestMCPWriteIntentTools:
             {"proposal_id": "PP-DOES-NOT-EXIST"},
         )
         assert "error" in result
+        assert isinstance(result.get("assumptions"), list)
+        assert isinstance(result.get("human_checks"), list)
+
+    def test_proposal_dry_run_returns_assumptions_and_human_checks(self, sample_repo):
+        """proposal_dry_run should include assumptions and human_checks for a valid proposal."""
+        server = create_mcp_server(repo=str(sample_repo))
+        created = _call_tool_sync(
+            server,
+            "propose_model_change",
+            {"note": "Update the description of Customer Group to clarify usage."},
+        )
+        proposal_path = Path(created["path"])
+        transition_patch_proposal_status(proposal_path, "accepted", reviewer="tester")
+
+        result = _call_tool_sync(
+            server,
+            "proposal_dry_run",
+            {"proposal_id": created["proposal_id"]},
+        )
+        assert result.get("error") is None
+        assert result.get("would_change") is True
+        assert isinstance(result.get("assumptions"), list)
+        assert isinstance(result.get("human_checks"), list)
 
     def test_proposal_impact_not_found(self, sample_repo):
         """proposal_impact should error for a missing proposal."""
@@ -329,6 +374,26 @@ class TestMCPWriteIntentTools:
             {"proposal_id": "PP-DOES-NOT-EXIST"},
         )
         assert "error" in result
+        assert isinstance(result.get("assumptions"), list)
+        assert isinstance(result.get("human_checks"), list)
+
+    def test_proposal_impact_returns_assumptions_and_human_checks(self, sample_repo):
+        """proposal_impact should include assumptions and human_checks for a valid proposal."""
+        server = create_mcp_server(repo=str(sample_repo))
+        created = _call_tool_sync(
+            server,
+            "propose_model_change",
+            {"note": "Update the description of Customer Group to clarify usage."},
+        )
+        result = _call_tool_sync(
+            server,
+            "proposal_impact",
+            {"proposal_id": created["proposal_id"]},
+        )
+        assert "error" not in result
+        assert "affected_objects" in result
+        assert isinstance(result.get("assumptions"), list)
+        assert isinstance(result.get("human_checks"), list)
 
     def test_create_change_request_tool(self, sample_repo):
         """create_change_request_tool should create a CR file."""
@@ -346,6 +411,8 @@ class TestMCPWriteIntentTools:
         assert "error" not in result
         assert result.get("id") == "CR-TEST-001"
         assert "path" in result
+        assert isinstance(result.get("assumptions"), list)
+        assert isinstance(result.get("human_checks"), list)
 
     def test_create_change_request_tool_invalid_id(self, sample_repo):
         """create_change_request_tool should error for invalid ID."""
@@ -371,6 +438,8 @@ class TestMCPWriteIntentTools:
         assert "error" not in result
         assert result.get("format") == "csv"
         assert "files" in result
+        assert isinstance(result.get("assumptions"), list)
+        assert isinstance(result.get("human_checks"), list)
 
     def test_export_model_unknown_format(self, sample_repo):
         """export_model should error for unknown format."""
@@ -381,6 +450,56 @@ class TestMCPWriteIntentTools:
             {"fmt": "pdf"},
         )
         assert "error" in result
+
+    def test_infer_model_with_dataset_id_and_domain(self, sample_repo, tmp_path: Path):
+        """infer_model should accept dataset_id and domain hints."""
+        profile = {
+            "file_path": "customer_sample.csv",
+            "columns": [
+                {"name": "customer_id", "inferred_type": "string"},
+                {"name": "name", "inferred_type": "string"},
+            ],
+        }
+        profile_path = tmp_path / "customer_profile.json"
+        profile_path.write_text(json.dumps(profile), encoding="utf-8")
+
+        server = create_mcp_server(repo=str(sample_repo))
+        result = _call_tool_sync(
+            server,
+            "infer_model",
+            {
+                "profile_path": str(profile_path),
+                "dataset_id": "my-dataset",
+                "domain": "DOMAIN-MY-DOMAIN",
+            },
+        )
+        assert "error" not in result
+        assert result["proposal_id"] == "PP-INFER-MY-DATASET"
+        assert isinstance(result.get("assumptions"), list)
+        assert isinstance(result.get("human_checks"), list)
+        operations = result.get("operations", [])
+        assert all(op.get("after", {}).get("domain") == "DOMAIN-MY-DOMAIN" for op in operations)
+
+    def test_infer_model_returns_assumptions_and_human_checks(self, sample_repo, tmp_path: Path):
+        """infer_model should return assumptions and human_checks arrays."""
+        profile = {
+            "file_path": "customer_sample.csv",
+            "columns": [
+                {"name": "customer_id", "inferred_type": "string"},
+            ],
+        }
+        profile_path = tmp_path / "customer_profile.json"
+        profile_path.write_text(json.dumps(profile), encoding="utf-8")
+
+        server = create_mcp_server(repo=str(sample_repo))
+        result = _call_tool_sync(
+            server,
+            "infer_model",
+            {"profile_path": str(profile_path)},
+        )
+        assert "error" not in result
+        assert isinstance(result.get("assumptions"), list)
+        assert isinstance(result.get("human_checks"), list)
 
     def test_list_write_intent_tools(self, sample_repo):
         """Server should register write-intent tools."""

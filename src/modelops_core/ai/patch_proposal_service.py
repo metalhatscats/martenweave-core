@@ -48,6 +48,7 @@ def build_patch_proposal_from_note(
     include_raw_samples: bool = False,
     adapter: AIProviderAdapter | None = None,
     repo_root: Path | None = None,
+    command: str = "propose-patch",
 ) -> dict[str, Any]:
     """Build a PatchProposal from a free-text note.
 
@@ -85,7 +86,7 @@ def build_patch_proposal_from_note(
     if repo_root is not None:
         from modelops_core.telemetry.ai_usage import wrap_ai_adapter
 
-        adapter = wrap_ai_adapter(adapter, repo_root=repo_root, command="propose-patch")
+        adapter = wrap_ai_adapter(adapter, repo_root=repo_root, command=command)
 
     candidates = adapter.generate_candidates(context)
     if not candidates:
