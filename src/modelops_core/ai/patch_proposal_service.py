@@ -24,6 +24,14 @@ def _get_default_adapter() -> AIProviderAdapter:
         from modelops_core.ai.kimi_adapter import KimiAdapter
 
         return KimiAdapter()
+    if provider == "openai":
+        from modelops_core.ai.openai_compatible_adapter import OpenAICompatibleAdapter
+
+        return OpenAICompatibleAdapter()
+    if provider == "ollama":
+        from modelops_core.ai.ollama_adapter import OllamaAdapter
+
+        return OllamaAdapter()
     return NoProviderAdapter()
 
 

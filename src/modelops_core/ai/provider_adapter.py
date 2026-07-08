@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 from modelops_core.patching.patch_model import _ALLOWED_OPERATIONS, PatchOperation
 from modelops_core.patching.patch_validator import validate_patch_proposal
+from modelops_core.schemas.registry import get_all_types
 
 
 @dataclass
@@ -65,6 +67,9 @@ class AIRateLimitError(AIProviderError):
     """AI provider rate limited."""
 
 
+_OBJECT_ID_PATTERN = re.compile(r"^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$")
+
+
 class AIProviderAdapter(Protocol):
     """Protocol for AI provider adapters."""
 
@@ -116,7 +121,7 @@ class ProviderOutputValidator:
     """Validates candidate outputs from AI providers."""
 
     def __init__(self) -> None:
-        pass
+        self._registered_types = set(get_all_types())
 
     def validate(self, candidate: AICandidateOutput) -> dict[str, Any]:
         """Validate a candidate and return a structured result."""
@@ -130,6 +135,24 @@ class ProviderOutputValidator:
         for op in candidate.operations:
             if op.get("op") not in _ALLOWED_OPERATIONS:
                 raise AIOutputValidationError(f"Disallowed operation: {op.get('op')}")
+
+            object_id = op.get("object_id")
+            if not isinstance(object_id, str) or not _OBJECT_ID_PATTERN.match(object_id):
+                raise AIOutputValidationError(
+                    f"Invalid object_id '{object_id}' in operation."
+                )
+
+            object_type = op.get("object_type")
+            if object_type is not None and object_type not in self._registered_types:
+                raise AIOutputValidationError(
+                    f"Unregistered object_type '{object_type}' in operation."
+                )
+
+        for idx, ref in enumerate(candidate.affected_objects):
+            if not isinstance(ref, str) or not _OBJECT_ID_PATTERN.match(ref):
+                raise AIOutputValidationError(
+                    f"Invalid object ID '{ref}' in affected_objects[{idx}]."
+                )
 
         return {"valid": True, "candidate": candidate}
 
