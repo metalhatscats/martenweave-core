@@ -221,17 +221,34 @@ def run_agent_loop(
     result = AgentLoopResult(goal=goal, iterations=0, final_status=AgentLoopStatus.FAILED)
     log: list[IterationLogEntry] = []
 
+    # Guard against an unusable iteration budget.
+    if max_iterations < 1:
+        result.human_checks = [
+            "max_iterations must be at least 1 to run the agent loop."
+        ]
+        return result
+
     # Baseline validation before first propose.
     baseline = _run_baseline_validation(repo_root)
+    baseline_errors = [r for r in baseline["results"] if r.get("severity") == "ERROR"]
     _emit_iteration_audit(
         repo_root=repo_root,
         iteration=0,
         proposal_id=None,
         action="baseline_validation",
         validation_status="valid" if baseline["is_valid"] else "invalid",
-        errors=[r for r in baseline["results"] if r.get("severity") == "ERROR"],
+        errors=baseline_errors,
         dry_run=dry_run,
     )
+
+    if not baseline["is_valid"]:
+        result.final_status = AgentLoopStatus.FAILED
+        result.validation_status = "invalid"
+        result.human_checks = [
+            f"Baseline validation failed with {len(baseline_errors)} error(s). "
+            "Fix the existing model before running the agent loop."
+        ]
+        return result
 
     current_note = goal
     previous_errors: list[dict[str, Any]] | None = None
@@ -352,6 +369,17 @@ def run_agent_loop(
         "risk_level": risk.risk_level,
         "risk_reasons": risk.risk_reasons,
     }
+
+    # Audit the terminal impact assessment before returning DONE or HIGH_RISK.
+    _emit_iteration_audit(
+        repo_root=repo_root,
+        iteration=result.iterations,
+        proposal_id=final_proposal.get("id"),
+        action="impact_analysis",
+        validation_status="valid",
+        errors=[],
+        dry_run=dry_run,
+    )
 
     # Persist the proposal unless this is a dry-run preview.
     if not dry_run:

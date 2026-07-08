@@ -282,6 +282,84 @@ def test_agent_loop_failed(
     assert result.proposal_id is None
 
 
+@patch("modelops_core.ai.agent_loop._run_baseline_validation")
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+def test_agent_loop_blocks_on_invalid_baseline(
+    mock_build,
+    mock_baseline,
+    sample_repo: Path,
+) -> None:
+    mock_baseline.return_value = {
+        "is_valid": False,
+        "error_count": 1,
+        "warning_count": 0,
+        "info_count": 0,
+        "results": [
+            {
+                "severity": "ERROR",
+                "code": "BROKEN_REFERENCE",
+                "message": "Reference points to missing object.",
+                "object_id": "ATTR-TEST",
+            }
+        ],
+        "message": "Baseline validation failed.",
+    }
+
+    result = run_agent_loop(sample_repo, "Fix the broken reference.", max_iterations=3)
+
+    assert result.final_status == AgentLoopStatus.FAILED
+    assert result.validation_status == "invalid"
+    assert result.iterations == 0
+    assert any("Baseline validation failed" in check for check in result.human_checks)
+    mock_build.assert_not_called()
+
+
+def test_agent_loop_rejects_zero_max_iterations(sample_repo: Path) -> None:
+    result = run_agent_loop(sample_repo, "Do nothing useful.", max_iterations=0)
+
+    assert result.final_status == AgentLoopStatus.FAILED
+    assert result.iterations == 0
+    assert any("max_iterations must be at least 1" in check for check in result.human_checks)
+
+
+@patch("modelops_core.ai.agent_loop._emit_iteration_audit")
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+@patch("modelops_core.ai.agent_loop.generate_proposal_impact_report")
+@patch("modelops_core.ai.agent_loop.compute_proposal_risk")
+def test_agent_loop_emits_terminal_impact_audit(
+    mock_risk,
+    mock_impact,
+    mock_build,
+    mock_audit,
+    sample_repo: Path,
+) -> None:
+    proposal = _valid_proposal()
+    mock_build.return_value = _make_result(proposal)
+    mock_impact.return_value = ProposalImpactReport(
+        proposal_id=proposal["id"],
+        operation_reports=[],
+        high_risk=False,
+    )
+    mock_risk.return_value = RiskAssessment(
+        requires_approval=False,
+        risk_level="low",
+        risk_reasons=[],
+        affected_object_count=0,
+        max_impact_depth=0,
+    )
+
+    result = run_agent_loop(sample_repo, "Add a safe attribute.", max_iterations=3)
+
+    assert result.final_status == AgentLoopStatus.VALID_PROPOSAL
+    impact_calls = [
+        call for call in mock_audit.call_args_list
+        if call.kwargs.get("action") == "impact_analysis"
+    ]
+    assert len(impact_calls) == 1
+    assert impact_calls[0].kwargs["proposal_id"] == proposal["id"]
+    assert impact_calls[0].kwargs["validation_status"] == "valid"
+
+
 def test_iteration_log_entry_to_dict() -> None:
     entry = IterationLogEntry(
         iteration=1,
