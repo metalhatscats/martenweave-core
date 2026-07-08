@@ -8,7 +8,8 @@ from unittest import mock
 
 import pytest
 
-from modelops_core.ai.ollama_adapter import OllamaAdapter, _parse_candidate
+from modelops_core.ai._candidate_common import _parse_candidate
+from modelops_core.ai.ollama_adapter import OllamaAdapter
 from modelops_core.ai.provider_adapter import (
     AIContextBundle,
     AIOutputValidationError,

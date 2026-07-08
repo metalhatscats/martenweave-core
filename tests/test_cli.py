@@ -497,3 +497,94 @@ def test_ai_provider_list_configured_with_key_only(monkeypatch) -> None:
     assert by_provider["openai"]["configured"] is False
     assert by_provider["ollama"]["configured"] is True
     assert by_provider["no_provider"]["configured"] is True
+
+
+def test_ai_provider_health_non_200_status(monkeypatch) -> None:
+    monkeypatch.setenv("MOONSHOT_API_KEY", "test-key")
+
+    mock_resp = MagicMock()
+    mock_resp.status = 503
+    mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+    mock_resp.__exit__ = MagicMock(return_value=False)
+
+    def mock_urlopen(req, **_kwargs):
+        return mock_resp
+
+    monkeypatch.setattr(urllib.request, "urlopen", mock_urlopen)
+
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["provider"] == "kimi"
+    assert data["configured"] is True
+    assert data["reachable"] is False
+    assert data["error"] == "Provider returned HTTP 503"
+
+
+def test_ai_provider_health_http_error(monkeypatch) -> None:
+    monkeypatch.setenv("MOONSHOT_API_KEY", "test-key")
+
+    http_error = urllib.error.HTTPError(
+        url="https://api.moonshot.cn/v1/models",
+        code=401,
+        msg="Unauthorized",
+        hdrs={},
+        fp=None,
+    )
+
+    def mock_urlopen(req, **_kwargs):
+        raise http_error
+
+    monkeypatch.setattr(urllib.request, "urlopen", mock_urlopen)
+
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["reachable"] is False
+    assert data["error"] == "Provider returned HTTP 401"
+
+
+def test_ai_provider_health_url_error(monkeypatch) -> None:
+    monkeypatch.setenv("MOONSHOT_API_KEY", "test-key")
+
+    def mock_urlopen(req, **_kwargs):
+        raise urllib.error.URLError("Connection refused")
+
+    monkeypatch.setattr(urllib.request, "urlopen", mock_urlopen)
+
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["reachable"] is False
+    assert "Connection refused" in data["error"]
+
+
+def test_ai_provider_health_timeout(monkeypatch) -> None:
+    monkeypatch.setenv("MOONSHOT_API_KEY", "test-key")
+
+    def mock_urlopen(req, **_kwargs):
+        raise TimeoutError("Request timed out")
+
+    monkeypatch.setattr(urllib.request, "urlopen", mock_urlopen)
+
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["reachable"] is False
+    assert data["error"] == "Provider health check timed out"
+
+
+def test_ai_provider_health_unexpected_error_redacts_secret(monkeypatch) -> None:
+    monkeypatch.setenv("MOONSHOT_API_KEY", "super-secret-key")
+
+    def mock_urlopen(req, **_kwargs):
+        raise RuntimeError("leaked header: Bearer super-secret-key")
+
+    monkeypatch.setattr(urllib.request, "urlopen", mock_urlopen)
+
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["reachable"] is False
+    assert "super-secret-key" not in json.dumps(data)
+    assert "[REDACTED]" in data["error"]

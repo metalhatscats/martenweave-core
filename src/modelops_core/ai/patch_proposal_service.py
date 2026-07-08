@@ -54,6 +54,15 @@ def build_patch_proposal_from_note(
 
     Uses the configured provider adapter (default: NoProviderAdapter).
     Set MARTENWEAVE_AI_PROVIDER=kimi to use Kimi/Moonshot.
+
+    Args:
+        note: Free-text description of the desired model change.
+        include_raw_samples: Whether to include raw dataset samples in context.
+        adapter: Optional provider adapter to use instead of the default.
+        repo_root: Optional repository root. When provided, repository context
+            is loaded and telemetry is recorded for the call.
+        command: Command name to record in telemetry when repo_root is given.
+            Defaults to "propose-patch"; MCP callers should pass the tool name.
     """
     context = AIContextBundle(
         note=note,

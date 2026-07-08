@@ -66,8 +66,8 @@ def _post_chat(
                 if attempt < max_retries:
                     time.sleep(0.5 * (attempt + 1))
                     continue
-                # Retries exhausted; fall through to raise below.
-                continue
+                # Retries exhausted; break out of the loop and raise below.
+                break
             raise AIProviderRequestError(
                 f"Ollama API error: {exc.code} {exc.reason}"
             ) from exc

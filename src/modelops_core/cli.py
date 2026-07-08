@@ -377,29 +377,40 @@ def _provider_health(provider: str) -> dict[str, Any]:
     model = os.getenv(config["model_env"], config["default_model"])
     health_url = f"{base_url}{config['health_path']}"
 
+    api_key = os.getenv(api_key_env, "") if api_key_env is not None else ""
     req = urllib.request.Request(health_url, method="GET")
-    if api_key_env is not None:
-        api_key = os.getenv(api_key_env, "")
+    if api_key:
         req.add_header("Authorization", f"Bearer {api_key}")
 
+    error_msg: str | None = None
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
-            reachable = resp.status == 200
+            if resp.status == 200:
+                return {
+                    "provider": provider,
+                    "configured": True,
+                    "reachable": True,
+                    "model": model,
+                    "error": None,
+                }
+            error_msg = f"Provider returned HTTP {resp.status}"
+    except urllib.error.HTTPError as exc:
+        error_msg = f"Provider returned HTTP {exc.code}"
+    except urllib.error.URLError as exc:
+        error_msg = f"Provider request failed: {exc.reason}"
+    except TimeoutError:
+        error_msg = "Provider health check timed out"
     except Exception as exc:
-        return {
-            "provider": provider,
-            "configured": True,
-            "reachable": False,
-            "model": model,
-            "error": str(exc),
-        }
+        # Redact API key from any unexpected error text before returning it.
+        raw_msg = f"{type(exc).__name__}: {exc}"
+        error_msg = raw_msg.replace(api_key, "[REDACTED]") if api_key else raw_msg
 
     return {
         "provider": provider,
         "configured": True,
-        "reachable": reachable,
+        "reachable": False,
         "model": model,
-        "error": None,
+        "error": error_msg,
     }
 
 

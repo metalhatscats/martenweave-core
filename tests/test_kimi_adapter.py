@@ -8,7 +8,8 @@ from unittest import mock
 
 import pytest
 
-from modelops_core.ai.kimi_adapter import KimiAdapter, _parse_candidate
+from modelops_core.ai._candidate_common import _parse_candidate
+from modelops_core.ai.kimi_adapter import KimiAdapter
 from modelops_core.ai.provider_adapter import (
     AIContextBundle,
     AIOutputValidationError,
