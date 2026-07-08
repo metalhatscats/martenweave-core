@@ -312,9 +312,9 @@ _PROVIDER_SLOTS: dict[str, dict[str, Any]] = {
         "health_path": None,
     },
     "kimi": {
-        "api_key_env": "KIMI_API_KEY",
-        "base_url_env": "KIMI_BASE_URL",
-        "model_env": "KIMI_MODEL",
+        "api_key_env": "MOONSHOT_API_KEY",
+        "base_url_env": "MOONSHOT_BASE_URL",
+        "model_env": "MOONSHOT_MODEL",
         "default_base_url": "https://api.moonshot.cn/v1",
         "default_model": "kimi-latest",
         "health_path": "/models",
@@ -328,7 +328,7 @@ _PROVIDER_SLOTS: dict[str, dict[str, Any]] = {
         "health_path": "/models",
     },
     "ollama": {
-        "api_key_env": "OLLAMA_API_KEY",
+        "api_key_env": None,
         "base_url_env": "OLLAMA_BASE_URL",
         "model_env": "OLLAMA_MODEL",
         "default_base_url": "http://localhost:11434",
@@ -413,15 +413,17 @@ def ai_provider_list(
         required: list[str] = []
         if config["api_key_env"]:
             required.append(config["api_key_env"])
-        if config["base_url_env"]:
-            required.append(config["base_url_env"])
-        if config["model_env"]:
-            required.append(config["model_env"])
+        # Base URL and model are optional for all providers because defaults exist.
+        configured = (
+            True
+            if provider == "no_provider"
+            else all(_env_set(v) for v in required)
+        )
         rows.append(
             {
                 "provider": provider,
                 "required_env_vars": required,
-                "configured": all(_env_set(v) for v in required),
+                "configured": configured,
             }
         )
 

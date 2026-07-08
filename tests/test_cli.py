@@ -376,6 +376,12 @@ def test_ai_provider_list_json() -> None:
     providers = {row["provider"] for row in data}
     assert providers == {"no_provider", "kimi", "openai", "ollama"}
 
+    by_provider = {row["provider"]: row for row in data}
+    assert by_provider["kimi"]["required_env_vars"] == ["MOONSHOT_API_KEY"]
+    assert by_provider["openai"]["required_env_vars"] == ["OPENAI_API_KEY"]
+    assert by_provider["ollama"]["required_env_vars"] == []
+    assert by_provider["no_provider"]["required_env_vars"] == []
+
 
 def test_ai_provider_health_no_provider() -> None:
     result = runner.invoke(app, ["ai-provider", "health", "--provider", "no_provider", "--json"])
@@ -399,18 +405,18 @@ def test_ai_provider_health_default_env(monkeypatch) -> None:
 
 
 def test_ai_provider_health_missing_key(monkeypatch) -> None:
-    monkeypatch.delenv("KIMI_API_KEY", raising=False)
+    monkeypatch.delenv("MOONSHOT_API_KEY", raising=False)
     result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["provider"] == "kimi"
     assert data["configured"] is False
     assert data["reachable"] is False
-    assert data["error"] == "KIMI_API_KEY not set"
+    assert data["error"] == "MOONSHOT_API_KEY not set"
 
 
 def test_ai_provider_health_reachable(monkeypatch) -> None:
-    monkeypatch.setenv("KIMI_API_KEY", "test-key")
+    monkeypatch.setenv("MOONSHOT_API_KEY", "test-key")
 
     mock_resp = MagicMock()
     mock_resp.status = 200
@@ -433,7 +439,7 @@ def test_ai_provider_health_reachable(monkeypatch) -> None:
 
 
 def test_ai_provider_health_unreachable(monkeypatch) -> None:
-    monkeypatch.setenv("KIMI_API_KEY", "test-key")
+    monkeypatch.setenv("MOONSHOT_API_KEY", "test-key")
 
     def mock_urlopen(_req, **_kwargs):
         raise urllib.error.URLError("Connection refused")
@@ -447,3 +453,47 @@ def test_ai_provider_health_unreachable(monkeypatch) -> None:
     assert data["configured"] is True
     assert data["reachable"] is False
     assert "test-key" not in json.dumps(data)
+
+
+def test_ai_provider_health_ollama_no_key(monkeypatch) -> None:
+    monkeypatch.delenv("OLLAMA_API_KEY", raising=False)
+
+    mock_resp = MagicMock()
+    mock_resp.status = 200
+    mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+    mock_resp.__exit__ = MagicMock(return_value=False)
+
+    captured_requests: list[urllib.request.Request] = []
+
+    def mock_urlopen(req, **_kwargs):
+        captured_requests.append(req)
+        return mock_resp
+
+    monkeypatch.setattr(urllib.request, "urlopen", mock_urlopen)
+
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "ollama", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["provider"] == "ollama"
+    assert data["configured"] is True
+    assert data["reachable"] is True
+    assert captured_requests
+    assert "Authorization" not in str(captured_requests[0].headers)
+
+
+def test_ai_provider_list_configured_with_key_only(monkeypatch) -> None:
+    monkeypatch.delenv("MOONSHOT_BASE_URL", raising=False)
+    monkeypatch.delenv("MOONSHOT_MODEL", raising=False)
+    monkeypatch.setenv("MOONSHOT_API_KEY", "test-key")
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+    monkeypatch.delenv("OPENAI_MODEL", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    result = runner.invoke(app, ["ai-provider", "list", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    by_provider = {row["provider"]: row for row in data}
+    assert by_provider["kimi"]["configured"] is True
+    assert by_provider["openai"]["configured"] is False
+    assert by_provider["ollama"]["configured"] is True
+    assert by_provider["no_provider"]["configured"] is True
