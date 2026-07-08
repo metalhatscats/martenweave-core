@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from modelops_core.errors import ResourceLimitExceeded
 from modelops_core.schemas.registry import get_search_fields
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
@@ -170,7 +171,7 @@ class SemanticIndexBuilder:
             )
 
         # Build weighted vectors
-        final_entries: list[tuple[str, str, str, float, int]] = []
+        final_entries: list[tuple[str, str, float, int]] = []
         for entry in entries:
             # Re-tokenize to rebuild tf; small repos only, so this is fine.
             row = next(
@@ -243,12 +244,17 @@ class SemanticSearcher:
         limit: int = 50,
         min_score: float = 0.0,
         expand_candidate_ids: set[str] | None = None,
+        max_objects: int | None = None,
     ) -> list[SemanticSearchResult]:
         """Return objects ranked by semantic similarity to ``query``.
 
         ``candidate_ids`` restricts which objects are scored. ``expand`` uses
         one-hop relationships from ``expand_candidate_ids`` (falling back to
         ``candidate_ids``) to broaden the query vector.
+
+        ``max_objects`` enforces ``RepoConfig.resource_limits.max_export_objects``:
+        if more candidates would be loaded than allowed, ``ResourceLimitExceeded``
+        is raised so callers can fall back gracefully.
         """
         query = query.strip()
         if not query or not Path(db_path).exists():
@@ -279,6 +285,16 @@ class SemanticSearcher:
                 )
 
             candidates = self._load_candidates(conn, candidate_ids)
+            if max_objects is not None and len(candidates) > max_objects:
+                raise ResourceLimitExceeded(
+                    resource="max_export_objects",
+                    message=(
+                        f"Semantic search candidate count ({len(candidates)}) exceeds "
+                        f"the configured max_export_objects limit ({max_objects}). "
+                        "Rerun with a narrower query or increase "
+                        "resource_limits.max_export_objects."
+                    ),
+                )
             results: list[SemanticSearchResult] = []
             query_terms = set(_tokenize(query))
             for object_id, obj_type, vector in candidates:

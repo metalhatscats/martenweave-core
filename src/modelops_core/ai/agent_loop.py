@@ -174,11 +174,29 @@ def _run_baseline_validation(repo_root: Path) -> dict[str, Any]:
             "message": "Model path does not exist.",
         }
 
-    files = scan_repository(model_path)
-    parsed_objects = [parse_file(f) for f in files]
-    config = load_repo_config(repo_root)
-    enabled_packs = config.enabled_domain_packs if config else None
-    summary = validate_objects(parsed_objects, enabled_packs)
+    try:
+        files = scan_repository(model_path)
+        parsed_objects = [parse_file(f) for f in files]
+        config = load_repo_config(repo_root)
+        enabled_packs = config.enabled_domain_packs if config else None
+        summary = validate_objects(parsed_objects, enabled_packs)
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "is_valid": False,
+            "error_count": 1,
+            "warning_count": 0,
+            "info_count": 0,
+            "results": [
+                {
+                    "severity": "ERROR",
+                    "code": "BASELINE_VALIDATION_FAILED",
+                    "message": f"Baseline validation could not complete: {exc}",
+                    "object_id": None,
+                    "suggested_fix": "Check model files for syntax errors or corrupted content.",
+                }
+            ],
+            "message": f"Baseline validation could not complete: {exc}",
+        }
 
     return {
         "is_valid": summary.is_valid,
@@ -310,7 +328,7 @@ def run_agent_loop(
                 repo_root=repo_root,
                 command="agent-loop",
             )
-        except AIProviderError as exc:
+        except (AIProviderError, ValueError) as exc:
             log.append(
                 IterationLogEntry(
                     iteration=iteration,
@@ -488,7 +506,7 @@ def run_agent_loop(
                 model_path=model_path,
                 proposal=final_proposal,
             )
-        except Exception as exc:  # noqa: BLE001
+        except (AIProviderError, ValueError, KeyError, OSError) as exc:
             result.operations_preview = []
             result.human_checks.append(
                 f"Dry-run preview could not be generated: {exc}"

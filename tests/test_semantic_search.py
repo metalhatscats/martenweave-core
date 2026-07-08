@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+import pytest
 from typer.testing import CliRunner
 
 from modelops_core.cli import app
@@ -515,3 +516,135 @@ def test_cli_search_semantic_keyword_only_ranks_last(tmp_path: Path) -> None:
     assert attr["score"] == 0.75
     assert attr["semantic_score"] == 0.75
     assert set(attr["semantic_matched_terms"]) == {"customer", "grouping"}
+
+
+def _build_semantic_repo(tmp_path: Path) -> Path:
+    """Create a minimal repo with an index and semantic table."""
+    repo = tmp_path / "repo"
+    model_dir = repo / "model"
+    model_dir.mkdir(parents=True)
+    generated = repo / "generated"
+    generated.mkdir()
+
+    db = generated / "modelops.db"
+    conn = sqlite3.connect(str(db))
+    conn.executescript(
+        """
+        CREATE TABLE objects (
+            id TEXT PRIMARY KEY,
+            type TEXT NOT NULL,
+            status TEXT NOT NULL,
+            name TEXT,
+            title TEXT,
+            domain TEXT,
+            description TEXT,
+            body TEXT,
+            source_file TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            frontmatter_json TEXT NOT NULL,
+            created_at TEXT,
+            updated_at TEXT
+        );
+        """
+    )
+    conn.execute(
+        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "ATTR-001",
+            "Attribute",
+            "active",
+            "Customer Group",
+            "Customer Group",
+            None,
+            "Sales-area-dependent customer grouping",
+            "# Customer Group",
+            "model/ATTR-001.md",
+            "hash",
+            '{"id": "ATTR-001", "type": "Attribute"}',
+            None,
+            None,
+        ),
+    )
+    conn.execute(
+        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "FEP-001",
+            "FieldEndpoint",
+            "active",
+            "KNVV KDGRP",
+            None,
+            None,
+            "SAP field for customer grouping",
+            "# KNVV KDGRP",
+            "model/FEP-001.md",
+            "hash",
+            '{"id": "FEP-001", "type": "FieldEndpoint", "technical_name": "KDGRP"}',
+            None,
+            None,
+        ),
+    )
+    SemanticIndexBuilder().build(conn)
+    conn.close()
+    return repo
+
+
+def test_semantic_search_respects_max_objects(tmp_path: Path) -> None:
+    db = tmp_path / "modelops.db"
+    conn = sqlite3.connect(str(db))
+    _build_objects_table(conn)
+    _insert_object(
+        conn,
+        "OBJ-EXTRA",
+        "Attribute",
+        "Extra Grouping",
+        "Another customer grouping object",
+    )
+    SemanticIndexBuilder().build(conn)
+    conn.close()
+
+    searcher = SemanticSearcher()
+    from modelops_core.errors import ResourceLimitExceeded
+
+    with pytest.raises(ResourceLimitExceeded) as exc_info:
+        searcher.search(db, "grouping", max_objects=1)
+    assert "max_export_objects" in str(exc_info.value)
+
+
+def test_cli_search_semantic_resource_limit_fallback(tmp_path: Path) -> None:
+    repo = _build_semantic_repo(tmp_path)
+    (repo / "modelops.config.yaml").write_text(
+        "name: test\nresource_limits:\n  max_export_objects: 1\n"
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        ["search", "customer grouping", "--repo", str(repo), "--semantic", "--json"],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert "semantic_error" in data
+    assert "max_export_objects" in data["semantic_error"]
+    # Keyword results are still returned as a fallback.
+    assert data["total_count"] >= 1
+    assert all("semantic_score" in r for r in data["results"])
+
+
+def test_cli_search_semantic_unexpected_error_fallback(tmp_path: Path) -> None:
+    repo = _build_semantic_repo(tmp_path)
+
+    def _raise_unexpected(*_args, **_kwargs):
+        raise RuntimeError("semantic engine exploded")
+
+    with patch("modelops_core.cli.semantic_search_objects", side_effect=_raise_unexpected):
+        runner = CliRunner()
+        result = runner.invoke(
+            app,
+            ["search", "customer grouping", "--repo", str(repo), "--semantic", "--json"],
+        )
+
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert "semantic_error" in data
+    assert "semantic engine exploded" in data["semantic_error"]
+    assert data["total_count"] >= 1

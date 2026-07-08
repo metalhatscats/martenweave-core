@@ -484,6 +484,22 @@ def test_agent_loop_provider_failure(
 
 
 @patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+def test_agent_loop_provider_valueerror(
+    mock_build,
+    sample_repo: Path,
+) -> None:
+    mock_build.side_effect = ValueError("Unknown AI provider 'unknown_provider'")
+
+    result = run_agent_loop(sample_repo, "Generate with unknown provider.", max_iterations=3)
+
+    assert result.final_status == AgentLoopStatus.FAILED
+    assert result.validation_status == "failed"
+    assert result.iterations == 1
+    assert any("configuration" in check.lower() for check in result.human_checks)
+    assert not any("Traceback" in check for check in result.human_checks)
+
+
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
 @patch("modelops_core.ai.agent_loop.generate_proposal_impact_report")
 def test_agent_loop_impact_failure(
     mock_impact,

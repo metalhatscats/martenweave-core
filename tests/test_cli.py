@@ -7,6 +7,7 @@ import urllib.request
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
 from typer.testing import CliRunner
 
 from modelops_core.cli import app
@@ -404,6 +405,16 @@ def test_ai_provider_health_default_env(monkeypatch) -> None:
     assert data["reachable"] is True
 
 
+def test_ai_provider_health_empty_env(monkeypatch) -> None:
+    monkeypatch.setenv("MARTENWEAVE_AI_PROVIDER", "")
+    result = runner.invoke(app, ["ai-provider", "health", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["provider"] == "no_provider"
+    assert data["configured"] is True
+    assert data["reachable"] is True
+
+
 def test_ai_provider_health_missing_key(monkeypatch) -> None:
     monkeypatch.delenv("MOONSHOT_API_KEY", raising=False)
     result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
@@ -666,3 +677,42 @@ def test_cli_agent_loop_human_output(sample_repo: Path, monkeypatch) -> None:
     assert "Status: valid_proposal" in result.output
     assert "Iterations: 2" in result.output
     assert "Proposal:   PP-AGENT-TEST-002" in result.output
+
+
+@pytest.mark.parametrize("final_status", ["invalid_proposal", "no_progress", "failed"])
+def test_cli_agent_loop_json_exit_code_on_failure(
+    sample_repo: Path, monkeypatch, final_status: str
+) -> None:
+    from modelops_core.ai.agent_loop import AgentLoopResult
+
+    expected = AgentLoopResult(
+        goal="Add a new attribute.",
+        iterations=1,
+        final_status=final_status,
+        proposal_id=None,
+        proposal_path=None,
+        validation_status="invalid",
+        impact={},
+        assumptions=[],
+        human_checks=["Check 1"],
+        log=[],
+    )
+    monkeypatch.setattr(
+        "modelops_core.cli.run_agent_loop",
+        lambda **_: expected,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "agent-loop",
+            "--goal",
+            "Add a new attribute.",
+            "--repo",
+            str(sample_repo),
+            "--json",
+        ],
+    )
+    assert result.exit_code == 1
+    data = json.loads(result.output)
+    assert data["final_status"] == final_status

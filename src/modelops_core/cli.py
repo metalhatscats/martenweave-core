@@ -348,6 +348,8 @@ def _env_set(env_name: str | None) -> bool:
 
 def _provider_health(provider: str) -> dict[str, Any]:
     """Return a health status dict for the named provider slot."""
+    if not provider:
+        provider = "no_provider"
     config = _PROVIDER_SLOTS.get(provider)
     if config is None:
         return {
@@ -2471,6 +2473,8 @@ def agent_loop(
 
     if json_output:
         print(json.dumps(result.to_dict(), indent=2, default=str))
+        if result.final_status in {"invalid_proposal", "no_progress", "failed"}:
+            raise typer.Exit(code=1)
         return
 
     status_label = result.final_status
@@ -5654,7 +5658,12 @@ def search(
     offset: int = typer.Option(0, "--offset", help="Skip first N results."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
     semantic: bool = typer.Option(
-        False, "--semantic", help="Rerank keyword results by local semantic similarity."
+        False,
+        "--semantic",
+        help=(
+            "Rerank keyword results by local semantic similarity and surface "
+            "additional semantically related objects."
+        ),
     ),
     semantic_expand: bool = typer.Option(
         False, "--semantic-expand", help="Expand query with one-hop related object terms."
@@ -5682,57 +5691,72 @@ def search(
     )
     results = paginated.results
     total_count = paginated.total_count
+    semantic_error: str | None = None
 
     if semantic:
         keyword_by_id = {r.object_id: r for r in results}
         keyword_ids = set(keyword_by_id)
         # Search the full semantic index so related objects are surfaced even when
         # they do not contain the literal query terms.
-        semantic_results = semantic_search_objects(
-            db_path=db_path,
-            query=query,
-            candidate_ids=None,
-            expand=semantic_expand,
-            limit=limit + offset,
-            expand_candidate_ids=keyword_ids,
-        )
-        allowed_ids = _filter_semantic_ids(
-            db_path,
-            semantic_results,
-            object_type=object_type,
-            status=status,
-            domain=domain,
-            tags=tags,
-        )
-        semantic_by_id = {r.object_id: r for r in semantic_results if r.object_id in allowed_ids}
+        try:
+            semantic_results = semantic_search_objects(
+                db_path=db_path,
+                query=query,
+                candidate_ids=None,
+                expand=semantic_expand,
+                limit=limit + offset,
+                expand_candidate_ids=keyword_ids,
+                repo_root=repo_root,
+            )
+            allowed_ids = _filter_semantic_ids(
+                db_path,
+                semantic_results,
+                object_type=object_type,
+                status=status,
+                domain=domain,
+                tags=tags,
+            )
+            semantic_by_id = {
+                r.object_id: r for r in semantic_results if r.object_id in allowed_ids
+            }
 
-        # Fetch metadata for semantic results that keyword search missed.
-        semantic_only_ids = set(semantic_by_id) - keyword_ids
-        metadata = _load_search_results_for_ids(db_path, semantic_only_ids)
+            # Fetch metadata for semantic results that keyword search missed.
+            semantic_only_ids = set(semantic_by_id) - keyword_ids
+            metadata = _load_search_results_for_ids(db_path, semantic_only_ids)
 
-        merged: dict[str, SearchResult] = {}
-        for obj_id, sr in semantic_by_id.items():
-            result = keyword_by_id.get(obj_id) or metadata.get(obj_id)
-            if result is None:
-                continue
-            result.score = sr.semantic_score
-            result.matched_fields = result.matched_fields + [
-                "semantic:" + t for t in sr.matched_terms
-            ]
-            merged[obj_id] = result
+            merged: dict[str, SearchResult] = {}
+            for obj_id, sr in semantic_by_id.items():
+                result = keyword_by_id.get(obj_id) or metadata.get(obj_id)
+                if result is None:
+                    continue
+                result.score = sr.semantic_score
+                result.matched_fields = result.matched_fields + [
+                    "semantic:" + t for t in sr.matched_terms
+                ]
+                merged[obj_id] = result
 
-        # Include keyword-only results with a zero semantic score so the ranking
-        # stays on a single float scale and keyword-only matches do not outrank
-        # real semantic matches.
-        for r in results:
-            if r.object_id not in merged:
-                r.score = 0.0
-                merged[r.object_id] = r
+            # Include keyword-only results with a zero semantic score so the ranking
+            # stays on a single float scale and keyword-only matches do not outrank
+            # real semantic matches.
+            for r in results:
+                if r.object_id not in merged:
+                    r.score = 0.0
+                    merged[r.object_id] = r
 
-        results = sorted(merged.values(), key=lambda r: r.score, reverse=True)
-        results = results[offset : offset + limit]
-        total_count = len(merged)
-        paginated = PaginatedResult(results=results, total_count=total_count)
+            results = sorted(merged.values(), key=lambda r: r.score, reverse=True)
+            results = results[offset : offset + limit]
+            total_count = len(merged)
+            paginated = PaginatedResult(results=results, total_count=total_count)
+        except ResourceLimitExceeded as exc:
+            semantic_error = str(exc)
+            if not json_output:
+                console.print(
+                    f"[yellow]Semantic search disabled: {semantic_error}[/yellow]"
+                )
+        except Exception as exc:  # noqa: BLE001
+            semantic_error = f"Semantic search failed: {exc}"
+            if not json_output:
+                console.print(f"[yellow]{semantic_error}[/yellow]")
 
     if json_output:
         output: dict[str, Any] = {
@@ -5740,6 +5764,8 @@ def search(
             "results": [],
             "total_count": total_count,
         }
+        if semantic and semantic_error is not None:
+            output["semantic_error"] = semantic_error
         for r in results:
             result_obj = {
                 "object_id": r.object_id,

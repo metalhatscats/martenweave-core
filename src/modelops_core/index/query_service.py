@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from modelops_core.config import load_repo_config
 from modelops_core.index.semantic_search import SemanticSearcher, SemanticSearchResult
 from modelops_core.schemas.registry import get_search_fields
 
@@ -317,13 +318,23 @@ def semantic_search_objects(
     limit: int = 50,
     min_score: float = 0.0,
     expand_candidate_ids: set[str] | None = None,
+    repo_root: Path | None = None,
 ) -> list[SemanticSearchResult]:
     """Semantic reranking over a candidate set.
 
     If ``candidate_ids`` is ``None`` all indexed objects are scored.
     ``expand_candidate_ids`` controls query expansion independently; it
     defaults to ``candidate_ids`` when omitted.
+
+    When ``repo_root`` is provided, ``RepoConfig.resource_limits.max_export_objects``
+    is enforced by passing it as ``max_objects``.
     """
+    max_objects: int | None = None
+    if repo_root is not None:
+        config = load_repo_config(repo_root)
+        if config is not None:
+            max_objects = config.resource_limits.max_export_objects
+
     return SemanticSearcher().search(
         db_path=db_path,
         query=query,
@@ -332,4 +343,5 @@ def semantic_search_objects(
         limit=limit,
         min_score=min_score,
         expand_candidate_ids=expand_candidate_ids,
+        max_objects=max_objects,
     )
