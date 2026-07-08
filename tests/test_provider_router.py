@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import pytest
 
@@ -167,3 +168,31 @@ class TestGetDefaultAdapterCommaSeparated:
         monkeypatch.setenv("MARTENWEAVE_AI_PROVIDER", "unknown")
         with pytest.raises(ValueError, match="Unknown AI provider 'unknown'"):
             _get_default_adapter()
+
+
+class TestGetDefaultAdapterFromRepoConfig:
+    def test_ai_providers_from_repo_config(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.delenv("MARTENWEAVE_AI_PROVIDER", raising=False)
+        config_path = tmp_path / "modelops.config.yaml"
+        config_path.write_text(
+            "name: test\n"
+            "ai:\n"
+            "  providers:\n"
+            "    - no_provider\n"
+            "    - kimi\n"
+            "    - ollama\n",
+            encoding="utf-8",
+        )
+
+        adapter = _get_default_adapter(repo_root=tmp_path)
+
+        assert isinstance(adapter, ProviderRouter)
+        assert type(adapter.primary).__name__ == "NoProviderAdapter"
+        assert len(adapter.fallbacks) == 2
+        assert type(adapter.fallbacks[0]).__name__ == "KimiAdapter"
+        assert type(adapter.fallbacks[1]).__name__ == "OllamaAdapter"
+
+    def test_empty_env_var_falls_back_to_no_provider(self, monkeypatch) -> None:
+        monkeypatch.setenv("MARTENWEAVE_AI_PROVIDER", "")
+        adapter = _get_default_adapter()
+        assert type(adapter).__name__ == "NoProviderAdapter"

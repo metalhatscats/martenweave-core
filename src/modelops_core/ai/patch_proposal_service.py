@@ -56,10 +56,12 @@ def _get_default_adapter(repo_root: Path | None = None) -> AIProviderAdapter:
             if isinstance(providers, list):
                 provider = ",".join(str(p) for p in providers if p)
 
-    if provider is None:
+    if not provider:
         provider = "no_provider"
 
     names = [p.strip() for p in provider.split(",") if p.strip()]
+    if not names:
+        names = ["no_provider"]
     if len(names) > 1:
         adapters = [_build_provider_adapter(name) for name in names]
         return ProviderRouter(
