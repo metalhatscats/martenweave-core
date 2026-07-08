@@ -650,7 +650,15 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
 
         profile_file = Path(profile_path)
         if not profile_file.exists():
-            return json.dumps({"error": f"Profile not found: {profile_path}"})
+            return json.dumps(
+                {
+                    "error": f"Profile not found: {profile_path}",
+                    "assumptions": [],
+                    "human_checks": [],
+                },
+                indent=2,
+                default=str,
+            )
 
         profile_dict = json.loads(profile_file.read_text(encoding="utf-8"))
         inferred_dataset_id = dataset_id if dataset_id is not None else profile_file.stem
@@ -803,7 +811,15 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
                 priority=priority,
             )
         except ValueError as exc:
-            return json.dumps({"error": str(exc)})
+            return json.dumps(
+                {
+                    "error": str(exc),
+                    "assumptions": [],
+                    "human_checks": [],
+                },
+                indent=2,
+                default=str,
+            )
 
         return json.dumps(
             {
@@ -874,7 +890,9 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
                 "error": f"Unknown format: {fmt}. Use 'csv' or 'xlsx'.",
                 "assumptions": [],
                 "human_checks": ["Specify a supported export format: 'csv' or 'xlsx'."],
-            }
+            },
+            indent=2,
+            default=str,
         )
 
     return mcp

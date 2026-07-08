@@ -44,3 +44,39 @@
 ## Issues or concerns
 
 - None. The implementation stays within the brief and follows existing patterns.
+
+
+## Task 1.4 Fix Pass — Error-path arrays and export serialization
+
+### What changed
+
+1. **`infer_model` error path now returns required arrays**
+   - `src/modelops_core/mcp_server.py`: when `profile_path` does not exist, the tool now returns `{"error": ..., "assumptions": [], "human_checks": []}` and uses `indent=2, default=str` for consistent JSON serialization.
+
+2. **`create_change_request_tool` error path now returns required arrays**
+   - `src/modelops_core/mcp_server.py`: the `ValueError` handler now returns `{"error": str(exc), "assumptions": [], "human_checks": []}` with consistent serialization.
+
+3. **Optional cleanup: `export_model` unknown-format serialization**
+   - `src/modelops_core/mcp_server.py`: the unknown-format response now serializes with `indent=2, default=str`, matching all other tool outputs.
+
+### Tests updated
+
+- `tests/test_mcp_server.py`:
+  - `test_create_change_request_tool_invalid_id` now asserts `assumptions` and `human_checks` are present on the error path.
+  - `test_export_model_unknown_format` now asserts `assumptions` and `human_checks` are present.
+  - Added `test_infer_model_missing_profile_path` to assert the missing-profile error path includes `assumptions` and `human_checks` arrays.
+
+### Verification
+
+- Focused tests: `pytest tests/test_mcp_server.py -v` — **48 passed**.
+- Full validation ladder: `pytest -q && ruff check .` — **1393 passed, 3 skipped; ruff clean**.
+
+### Files changed
+
+- `src/modelops_core/mcp_server.py`
+- `tests/test_mcp_server.py`
+- `.superpowers/sdd/task-1-4-report.md` (this append)
+
+### Concerns
+
+- None. The fixes are minimal, backward-compatible, and the validation ladder is green.

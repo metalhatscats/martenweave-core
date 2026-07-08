@@ -426,6 +426,8 @@ class TestMCPWriteIntentTools:
             },
         )
         assert "error" in result
+        assert isinstance(result.get("assumptions"), list)
+        assert isinstance(result.get("human_checks"), list)
 
     def test_export_model_tool(self, sample_repo):
         """export_model should return exported file summary."""
@@ -450,6 +452,8 @@ class TestMCPWriteIntentTools:
             {"fmt": "pdf"},
         )
         assert "error" in result
+        assert isinstance(result.get("assumptions"), list)
+        assert isinstance(result.get("human_checks"), list)
 
     def test_infer_model_with_dataset_id_and_domain(self, sample_repo, tmp_path: Path):
         """infer_model should accept dataset_id and domain hints."""
@@ -498,6 +502,18 @@ class TestMCPWriteIntentTools:
             {"profile_path": str(profile_path)},
         )
         assert "error" not in result
+        assert isinstance(result.get("assumptions"), list)
+        assert isinstance(result.get("human_checks"), list)
+
+    def test_infer_model_missing_profile_path(self, sample_repo):
+        """infer_model should include assumptions and human_checks on error path."""
+        server = create_mcp_server(repo=str(sample_repo))
+        result = _call_tool_sync(
+            server,
+            "infer_model",
+            {"profile_path": "/does/not/exist/profile.json"},
+        )
+        assert "error" in result
         assert isinstance(result.get("assumptions"), list)
         assert isinstance(result.get("human_checks"), list)
 
