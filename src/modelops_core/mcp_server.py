@@ -586,6 +586,36 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
             }
         ]
 
+    @mcp.prompt()
+    def run_agent_loop(goal: str) -> list[dict[str, str]]:
+        """Guide an agent through a closed propose-validate-refine cycle."""
+        return [
+            {
+                "role": "user",
+                "content": (
+                    f"Run the agent loop for this modeling goal: {goal}\n\n"
+                    "Follow this sequence exactly:\n"
+                    "1. Use validate_model to check the current repository state.\n"
+                    "2. Use propose_model_change with the goal as the note to create a "
+                    "PatchProposal.\n"
+                    "3. If the proposal is invalid, refine the note by appending the "
+                    "validation errors and call propose_model_change again. Stop if errors "
+                    "do not change between iterations.\n"
+                    "4. Once the proposal is valid, use proposal_impact to assess "
+                    "downstream risk.\n"
+                    "5. Use proposal_dry_run to preview what applying the proposal would do.\n"
+                    "6. If the impact is high-risk, create a ChangeRequest before applying.\n\n"
+                    "Rules:\n"
+                    "- Never apply proposals automatically.\n"
+                    "- Stop after at most 5 iterations if the proposal remains invalid.\n"
+                    "- Only write canonical PatchProposal files; do not mutate other "
+                    "canonical objects.\n"
+                    "- Return the final proposal ID, validation status, impact summary, "
+                    "and next steps."
+                ),
+            }
+        ]
+
     # ------------------------------------------------------------------
     # Write-intent tools (safe — all go through PatchProposal / CR)
     # ------------------------------------------------------------------

@@ -17,6 +17,7 @@ from rich.console import Console
 from rich.table import Table
 
 from modelops_core import __version__
+from modelops_core.ai.agent_loop import run_agent_loop
 from modelops_core.approval import compute_proposal_risk
 from modelops_core.assessment.assessment_service import (
     generate_assessment_package,
@@ -2435,6 +2436,89 @@ def propose_patch(
                 },
             )
         )
+
+
+@app.command("agent-loop")
+@with_telemetry("agent-loop")
+def agent_loop(
+    goal: str = typer.Option(..., "--goal", help="Free-text modeling goal."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    max_iterations: int = typer.Option(
+        5, "--max-iterations", help="Maximum refinement iterations."
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Preview the loop without writing any proposals."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output stable JSON."),
+) -> None:
+    """Run a closed-loop propose-validate-refine cycle for a modeling goal."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+
+    if not model_path.exists():
+        console.print(f"[red]Model path does not exist: {model_path}[/red]")
+        raise typer.Exit(code=1)
+
+    result = run_agent_loop(
+        repo_root=repo_root,
+        goal=goal,
+        max_iterations=max_iterations,
+        dry_run=dry_run,
+    )
+
+    if json_output:
+        print(json.dumps(result.to_dict(), indent=2, default=str))
+        return
+
+    status_label = result.final_status
+    status_color = {
+        "valid_proposal": "[green]",
+        "high_risk": "[yellow]",
+        "invalid_proposal": "[red]",
+        "no_progress": "[red]",
+        "failed": "[red]",
+    }.get(result.final_status, "")
+
+    if dry_run:
+        console.print("[bold]Dry-run: agent-loop preview[/bold]")
+    console.print(f"{status_color}Status: {status_label}[/]")
+    console.print(f"Iterations: {result.iterations}")
+    if result.proposal_id:
+        console.print(f"Proposal:   {result.proposal_id}")
+    if result.proposal_path:
+        console.print(f"Path:       {result.proposal_path}")
+    if result.validation_status:
+        console.print(f"Validation: {result.validation_status}")
+    if result.impact:
+        console.print(
+            f"Impact:     {result.impact.get('affected_objects_count', 0)} affected objects, "
+            f"risk={result.impact.get('risk_level', 'unknown')}"
+        )
+
+    if result.assumptions:
+        console.print("\n[bold]Assumptions:[/bold]")
+        for a in result.assumptions:
+            console.print(f"  • {a}")
+
+    if result.human_checks:
+        console.print("\n[bold]Human checks:[/bold]")
+        for h in result.human_checks:
+            console.print(f"  • {h}")
+
+    if result.log:
+        console.print("\n[bold]Iteration log:[/bold]")
+        table = Table("Iteration", "Action", "Proposal", "Validation")
+        for entry in result.log:
+            table.add_row(
+                str(entry.iteration),
+                entry.action,
+                entry.proposal_id or "—",
+                entry.validation_status or "—",
+            )
+        console.print(table)
+
+    if result.final_status in {"invalid_proposal", "no_progress", "failed"}:
+        raise typer.Exit(code=1)
 
 
 # ---------------------------------------------------------------------------

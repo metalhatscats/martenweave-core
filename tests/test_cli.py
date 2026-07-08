@@ -588,3 +588,81 @@ def test_ai_provider_health_unexpected_error_redacts_secret(monkeypatch) -> None
     assert data["reachable"] is False
     assert "super-secret-key" not in json.dumps(data)
     assert "[REDACTED]" in data["error"]
+
+
+def test_cli_agent_loop_json_output(sample_repo: Path, monkeypatch) -> None:
+    from modelops_core.ai.agent_loop import AgentLoopResult
+
+    expected = AgentLoopResult(
+        goal="Add a new attribute.",
+        iterations=1,
+        final_status="valid_proposal",
+        proposal_id="PP-AGENT-TEST-001",
+        proposal_path=str(sample_repo / "model" / "patch-proposals" / "PP-AGENT-TEST-001.md"),
+        validation_status="valid",
+        impact={"high_risk": False, "requires_approval": False, "affected_objects_count": 0},
+        assumptions=["Assumption 1"],
+        human_checks=["Check 1"],
+        log=[],
+    )
+    monkeypatch.setattr(
+        "modelops_core.cli.run_agent_loop",
+        lambda **_: expected,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "agent-loop",
+            "--goal",
+            "Add a new attribute.",
+            "--repo",
+            str(sample_repo),
+            "--json",
+        ],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["goal"] == "Add a new attribute."
+    assert data["iterations"] == 1
+    assert data["final_status"] == "valid_proposal"
+    assert data["proposal_id"] == "PP-AGENT-TEST-001"
+    assert data["validation_status"] == "valid"
+    assert "impact" in data
+    assert "log" in data
+
+
+def test_cli_agent_loop_human_output(sample_repo: Path, monkeypatch) -> None:
+    from modelops_core.ai.agent_loop import AgentLoopResult
+
+    expected = AgentLoopResult(
+        goal="Add a new attribute.",
+        iterations=2,
+        final_status="valid_proposal",
+        proposal_id="PP-AGENT-TEST-002",
+        proposal_path=str(sample_repo / "model" / "patch-proposals" / "PP-AGENT-TEST-002.md"),
+        validation_status="valid",
+        impact={"high_risk": False, "requires_approval": False, "affected_objects_count": 1},
+        assumptions=["Assumption 1"],
+        human_checks=["Check 1"],
+        log=[],
+    )
+    monkeypatch.setattr(
+        "modelops_core.cli.run_agent_loop",
+        lambda **_: expected,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "agent-loop",
+            "--goal",
+            "Add a new attribute.",
+            "--repo",
+            str(sample_repo),
+        ],
+    )
+    assert result.exit_code == 0
+    assert "Status: valid_proposal" in result.output
+    assert "Iterations: 2" in result.output
+    assert "Proposal:   PP-AGENT-TEST-002" in result.output

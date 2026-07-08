@@ -1,0 +1,332 @@
+"""Tests for the closed-loop agent command."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from unittest.mock import patch
+
+from modelops_core.ai.agent_loop import (
+    AgentLoopStatus,
+    IterationLogEntry,
+    _build_refined_note,
+    _errors_unchanged,
+    run_agent_loop,
+)
+from modelops_core.approval.risk_service import RiskAssessment
+from modelops_core.impact.proposal_impact_service import ProposalImpactReport
+
+
+def _valid_proposal(proposal_id: str = "PP-TEST-001") -> dict:
+    return {
+        "id": proposal_id,
+        "type": "PatchProposal",
+        "status": "pending_review",
+        "operations": [
+            {
+                "op": "update_object",
+                "object_id": "ATTR-TEST",
+                "object_type": "Attribute",
+                "target_path": "description",
+                "after": "Updated description.",
+            }
+        ],
+        "validation_status": "valid",
+        "validation_results": [],
+    }
+
+
+def _invalid_proposal(
+    proposal_id: str = "PP-TEST-001",
+    errors: list[dict] | None = None,
+) -> dict:
+    return {
+        "id": proposal_id,
+        "type": "PatchProposal",
+        "status": "pending_review",
+        "operations": [
+            {
+                "op": "update_object",
+                "object_id": "ATTR-TEST",
+                "object_type": "Attribute",
+                "target_path": "description",
+                "after": "Updated description.",
+            }
+        ],
+        "validation_status": "invalid",
+        "validation_results": errors or [
+            {
+                "severity": "ERROR",
+                "code": "PATCH_UPDATE_OBJECT_NOT_FOUND",
+                "message": "update_object targets non-existent object 'ATTR-TEST'.",
+                "object_id": proposal_id,
+            }
+        ],
+    }
+
+
+def _make_result(proposal: dict | None, **overrides) -> dict:
+    result = {
+        "is_safe": proposal is not None and proposal.get("validation_status") == "valid",
+        "proposal": proposal,
+        "validation": proposal.get("validation_results", []) if proposal else [],
+        "markdown": "",
+        "assumptions": ["Assumption 1"],
+        "human_checks": ["Check 1"],
+    }
+    result.update(overrides)
+    return result
+
+
+def test_errors_unchanged_true() -> None:
+    errors = [
+        {"code": "A", "message": "msg", "object_id": "O1"},
+        {"code": "B", "message": "msg2", "object_id": "O2"},
+    ]
+    assert _errors_unchanged(errors, list(reversed(errors))) is True
+
+
+def test_errors_unchanged_false() -> None:
+    prev = [{"code": "A", "message": "msg", "object_id": "O1"}]
+    curr = [{"code": "B", "message": "msg", "object_id": "O1"}]
+    assert _errors_unchanged(prev, curr) is False
+
+
+def test_build_refined_note_includes_goal_and_errors() -> None:
+    proposal = {"id": "PP-TEST-001"}
+    errors = [
+        {
+            "severity": "ERROR",
+            "code": "PATCH_UPDATE_OBJECT_NOT_FOUND",
+            "message": "update_object targets non-existent object 'ATTR-TEST'.",
+            "object_id": "PP-TEST-001",
+        }
+    ]
+    note = _build_refined_note("Add a new attribute.", proposal, errors)
+    assert "Original goal: Add a new attribute." in note
+    assert "Previous proposal PP-TEST-001 had these validation errors:" in note
+    assert "update_object targets non-existent object 'ATTR-TEST'." in note
+    assert "object: PP-TEST-001, code: PATCH_UPDATE_OBJECT_NOT_FOUND" in note
+
+
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+@patch("modelops_core.ai.agent_loop.generate_proposal_impact_report")
+@patch("modelops_core.ai.agent_loop.compute_proposal_risk")
+def test_agent_loop_valid_goal(
+    mock_risk,
+    mock_impact,
+    mock_build,
+    sample_repo: Path,
+) -> None:
+    proposal = _valid_proposal()
+    mock_build.return_value = _make_result(proposal)
+    mock_impact.return_value = ProposalImpactReport(
+        proposal_id=proposal["id"],
+        operation_reports=[],
+        high_risk=False,
+    )
+    mock_risk.return_value = RiskAssessment(
+        requires_approval=False,
+        risk_level="low",
+        risk_reasons=[],
+        affected_object_count=0,
+        max_impact_depth=0,
+    )
+
+    result = run_agent_loop(sample_repo, "Add a new Attribute.", max_iterations=3)
+
+    assert result.final_status == AgentLoopStatus.VALID_PROPOSAL
+    assert result.iterations == 1
+    assert result.validation_status == "valid"
+    assert result.proposal_id == proposal["id"]
+    assert result.proposal_path is not None
+
+
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+@patch("modelops_core.ai.agent_loop.generate_proposal_impact_report")
+@patch("modelops_core.ai.agent_loop.compute_proposal_risk")
+def test_agent_loop_refines_on_validation_error(
+    mock_risk,
+    mock_impact,
+    mock_build,
+    sample_repo: Path,
+) -> None:
+    invalid = _invalid_proposal(errors=[
+        {
+            "severity": "ERROR",
+            "code": "PATCH_UPDATE_OBJECT_NOT_FOUND",
+            "message": "Target missing.",
+            "object_id": "PP-TEST-001",
+        }
+    ])
+    valid = _valid_proposal()
+    mock_build.side_effect = [
+        _make_result(invalid),
+        _make_result(valid),
+    ]
+    mock_impact.return_value = ProposalImpactReport(
+        proposal_id=valid["id"],
+        operation_reports=[],
+        high_risk=False,
+    )
+    mock_risk.return_value = RiskAssessment(
+        requires_approval=False,
+        risk_level="low",
+        risk_reasons=[],
+        affected_object_count=0,
+        max_impact_depth=0,
+    )
+
+    result = run_agent_loop(sample_repo, "Fix the attribute.", max_iterations=3)
+
+    assert result.final_status == AgentLoopStatus.VALID_PROPOSAL
+    assert result.iterations == 2
+    assert mock_build.call_count == 2
+    # Second call should include the validation error from the first iteration.
+    second_note = mock_build.call_args_list[1][0][0]
+    assert "Target missing." in second_note
+
+
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+def test_agent_loop_max_iterations(
+    mock_build,
+    sample_repo: Path,
+) -> None:
+    # Return a different error each iteration so no_progress is not triggered.
+    def _make_invalid(iteration: int) -> dict:
+        return _invalid_proposal(errors=[
+            {
+                "severity": "ERROR",
+                "code": "PATCH_UPDATE_OBJECT_NOT_FOUND",
+                "message": f"Target missing in iteration {iteration}.",
+                "object_id": "PP-TEST-001",
+            }
+        ])
+
+    mock_build.side_effect = [
+        _make_result(_make_invalid(1)),
+        _make_result(_make_invalid(2)),
+        _make_result(_make_invalid(3)),
+    ]
+
+    result = run_agent_loop(sample_repo, "Invalid goal.", max_iterations=3)
+
+    assert result.final_status == AgentLoopStatus.INVALID_PROPOSAL
+    assert result.iterations == 3
+    assert result.validation_status == "invalid"
+
+
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+def test_agent_loop_no_progress(
+    mock_build,
+    sample_repo: Path,
+) -> None:
+    error = {
+        "severity": "ERROR",
+        "code": "PATCH_UPDATE_OBJECT_NOT_FOUND",
+        "message": "Target missing.",
+        "object_id": "PP-TEST-001",
+    }
+    invalid = _invalid_proposal(errors=[error])
+    mock_build.return_value = _make_result(invalid)
+
+    result = run_agent_loop(sample_repo, "Stuck goal.", max_iterations=3)
+
+    assert result.final_status == AgentLoopStatus.NO_PROGRESS
+    assert result.iterations == 2
+    assert result.validation_status == "invalid"
+
+
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+@patch("modelops_core.ai.agent_loop.generate_proposal_impact_report")
+@patch("modelops_core.ai.agent_loop.compute_proposal_risk")
+def test_agent_loop_high_risk(
+    mock_risk,
+    mock_impact,
+    mock_build,
+    sample_repo: Path,
+) -> None:
+    proposal = _valid_proposal()
+    mock_build.return_value = _make_result(proposal)
+    mock_impact.return_value = ProposalImpactReport(
+        proposal_id=proposal["id"],
+        operation_reports=[],
+        high_risk=True,
+    )
+    mock_risk.return_value = RiskAssessment(
+        requires_approval=True,
+        risk_level="high",
+        risk_reasons=["Touches high-risk object type."],
+        affected_object_count=6,
+        max_impact_depth=3,
+    )
+
+    result = run_agent_loop(sample_repo, "Add risky mapping.", max_iterations=3)
+
+    assert result.final_status == AgentLoopStatus.HIGH_RISK
+    assert result.validation_status == "valid"
+    assert result.impact["requires_approval"] is True
+    assert result.impact["high_risk"] is True
+
+
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+def test_agent_loop_failed(
+    mock_build,
+    sample_repo: Path,
+) -> None:
+    mock_build.return_value = _make_result(None)
+
+    result = run_agent_loop(sample_repo, "Generate nothing.", max_iterations=3)
+
+    assert result.final_status == AgentLoopStatus.FAILED
+    assert result.validation_status == "not_generated"
+    assert result.proposal_id is None
+
+
+def test_iteration_log_entry_to_dict() -> None:
+    entry = IterationLogEntry(
+        iteration=1,
+        action="propose",
+        proposal_id="PP-TEST-001",
+        validation_status="invalid",
+        errors=[{"code": "A"}],
+    )
+    assert entry.to_dict() == {
+        "iteration": 1,
+        "action": "propose",
+        "proposal_id": "PP-TEST-001",
+        "validation_status": "invalid",
+        "errors": [{"code": "A"}],
+    }
+
+
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+@patch("modelops_core.ai.agent_loop.generate_proposal_impact_report")
+@patch("modelops_core.ai.agent_loop.compute_proposal_risk")
+@patch("modelops_core.ai.agent_loop.write_patch_proposal")
+def test_agent_loop_dry_run_does_not_write(
+    mock_write,
+    mock_risk,
+    mock_impact,
+    mock_build,
+    sample_repo: Path,
+) -> None:
+    proposal = _valid_proposal()
+    mock_build.return_value = _make_result(proposal)
+    mock_impact.return_value = ProposalImpactReport(
+        proposal_id=proposal["id"],
+        operation_reports=[],
+        high_risk=False,
+    )
+    mock_risk.return_value = RiskAssessment(
+        requires_approval=False,
+        risk_level="low",
+        risk_reasons=[],
+        affected_object_count=0,
+        max_impact_depth=0,
+    )
+
+    result = run_agent_loop(sample_repo, "Dry-run goal.", max_iterations=3, dry_run=True)
+
+    assert result.final_status == AgentLoopStatus.VALID_PROPOSAL
+    mock_write.assert_not_called()
+    assert result.proposal_path is not None
