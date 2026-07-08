@@ -12,6 +12,7 @@ from modelops_core.ai.ollama_adapter import OllamaAdapter, _parse_candidate
 from modelops_core.ai.provider_adapter import (
     AIContextBundle,
     AIOutputValidationError,
+    AIProviderRequestError,
     AITimeoutError,
 )
 
@@ -161,3 +162,83 @@ def test_post_chat_parses_json_response() -> None:
         )
 
     assert response == {"message": {"content": "hello"}}
+
+
+def test_post_chat_requests_json_format() -> None:
+    from modelops_core.ai.ollama_adapter import _post_chat
+
+    captured: list[urllib.request.Request] = []
+
+    class MockResponse:
+        def read(self) -> bytes:
+            return json.dumps({"message": {"content": "{}"}}).encode("utf-8")
+
+        def __enter__(self) -> MockResponse:
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+    def capture_request(*args: object, **kwargs: object) -> MockResponse:
+        captured.append(args[0])  # type: ignore[arg-type]
+        return MockResponse()
+
+    with mock.patch("urllib.request.urlopen", side_effect=capture_request):
+        _post_chat(
+            messages=[{"role": "user", "content": "test"}],
+            model="llama3.1",
+            base_url="http://localhost:11434",
+            timeout=30,
+        )
+
+    assert len(captured) == 1
+    payload = json.loads(captured[0].data)
+    assert payload.get("format") == "json"
+
+
+def test_post_chat_retries_on_transient_error() -> None:
+    from modelops_core.ai.ollama_adapter import _post_chat
+
+    http_error = urllib.error.HTTPError(
+        url="http://localhost:11434/api/chat",
+        code=500,
+        msg="Internal Server Error",
+        hdrs={},
+        fp=None,
+    )
+
+    with mock.patch("urllib.request.urlopen", side_effect=http_error) as mock_urlopen:
+        with mock.patch("modelops_core.ai.ollama_adapter.time.sleep"):
+            with pytest.raises(AIProviderRequestError, match="after 2 retries"):
+                _post_chat(
+                    messages=[{"role": "user", "content": "test"}],
+                    model="llama3.1",
+                    base_url="http://localhost:11434",
+                    timeout=30,
+                    max_retries=2,
+                )
+
+    assert mock_urlopen.call_count == 3
+
+
+def test_post_chat_http_error_4xx() -> None:
+    from modelops_core.ai.ollama_adapter import _post_chat
+
+    http_error = urllib.error.HTTPError(
+        url="http://localhost:11434/api/chat",
+        code=400,
+        msg="Bad Request",
+        hdrs={},
+        fp=None,
+    )
+
+    with mock.patch("urllib.request.urlopen", side_effect=http_error) as mock_urlopen:
+        with pytest.raises(AIProviderRequestError, match="API error: 400"):
+            _post_chat(
+                messages=[{"role": "user", "content": "test"}],
+                model="llama3.1",
+                base_url="http://localhost:11434",
+                timeout=30,
+            )
+
+    assert mock_urlopen.call_count == 1

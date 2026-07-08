@@ -67,6 +67,10 @@ class AIRateLimitError(AIProviderError):
     """AI provider rate limited."""
 
 
+class AIProviderRequestError(AIProviderError):
+    """Non-retryable request error from an AI provider."""
+
+
 _OBJECT_ID_PATTERN = re.compile(r"^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$")
 
 

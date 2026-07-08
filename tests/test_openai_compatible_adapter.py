@@ -15,6 +15,7 @@ from modelops_core.ai.openai_compatible_adapter import (
 from modelops_core.ai.provider_adapter import (
     AIContextBundle,
     AIOutputValidationError,
+    AIProviderRequestError,
     AIRateLimitError,
     AITimeoutError,
 )
@@ -171,6 +172,30 @@ def test_post_chat_completion_http_error_rate_limit() -> None:
             )
 
 
+def test_post_chat_completion_http_error_4xx() -> None:
+    from modelops_core.ai.openai_compatible_adapter import _post_chat_completion
+
+    http_error = urllib.error.HTTPError(
+        url="https://api.openai.com/v1/chat/completions",
+        code=400,
+        msg="Bad Request",
+        hdrs={},
+        fp=None,
+    )
+
+    with mock.patch("urllib.request.urlopen", side_effect=http_error) as mock_urlopen:
+        with pytest.raises(AIProviderRequestError, match="API error: 400"):
+            _post_chat_completion(
+                api_key="fake-key",
+                messages=[{"role": "user", "content": "test"}],
+                model="gpt-4o-mini",
+                base_url="https://api.openai.com/v1",
+                timeout=30,
+            )
+
+    assert mock_urlopen.call_count == 1
+
+
 def test_post_chat_completion_timeout() -> None:
     from modelops_core.ai.openai_compatible_adapter import _post_chat_completion
 
@@ -198,13 +223,16 @@ def test_post_chat_completion_retries_on_transient_error() -> None:
         fp=None,
     )
 
-    with mock.patch("urllib.request.urlopen", side_effect=http_error):
-        with pytest.raises(AIOutputValidationError, match="API error"):
-            _post_chat_completion(
-                api_key="fake-key",
-                messages=[{"role": "user", "content": "test"}],
-                model="gpt-4o-mini",
-                base_url="https://api.openai.com/v1",
-                timeout=30,
-                max_retries=2,
-            )
+    with mock.patch("urllib.request.urlopen", side_effect=http_error) as mock_urlopen:
+        with mock.patch("modelops_core.ai.openai_compatible_adapter.time.sleep"):
+            with pytest.raises(AIProviderRequestError, match="after 2 retries"):
+                _post_chat_completion(
+                    api_key="fake-key",
+                    messages=[{"role": "user", "content": "test"}],
+                    model="gpt-4o-mini",
+                    base_url="https://api.openai.com/v1",
+                    timeout=30,
+                    max_retries=2,
+                )
+
+    assert mock_urlopen.call_count == 3
