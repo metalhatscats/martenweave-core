@@ -15,6 +15,7 @@ from modelops_core.index.semantic_search import (
     _term_frequencies,
     _tokenize,
 )
+from modelops_core.index.sqlite_builder import build_index
 
 
 def _build_objects_table(conn: sqlite3.Connection) -> None:
@@ -320,3 +321,30 @@ def test_semantic_search_expand_surfaces_related_objects(tmp_path: Path) -> None
     # With expansion the related object's vector is blended into the query,
     # surfacing the related object with a non-zero score.
     assert target_with_expand.semantic_score > target_no_expand.semantic_score
+
+
+def test_build_index_creates_semantic_index(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    generated = tmp_path / "generated"
+    generated.mkdir()
+    (model_dir / "DOMAIN-EXAMPLE.md").write_text(
+        "---\n"
+        "id: DOMAIN-EXAMPLE\n"
+        "type: MasterDataDomain\n"
+        "status: active\n"
+        "name: Example Domain\n"
+        "---\n"
+        "\n"
+        "# Example\n"
+    )
+
+    build_index(repo_root=tmp_path)
+
+    db = generated / "modelops.db"
+    conn = sqlite3.connect(str(db))
+    row = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='semantic_index'"
+    ).fetchone()
+    assert row is not None
+    conn.close()

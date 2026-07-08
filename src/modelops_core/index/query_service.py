@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from modelops_core.index.semantic_search import SemanticSearcher
 from modelops_core.schemas.registry import get_search_fields
 
 
@@ -306,3 +307,25 @@ def list_related_objects(
         }
         for row in rows
     ]
+
+
+def semantic_search_objects(
+    db_path: Path,
+    query: str,
+    candidate_ids: set[str] | None = None,
+    expand: bool = False,
+    limit: int = 50,
+    min_score: float = 0.0,
+) -> list[Any]:
+    """Semantic reranking over a candidate set.
+
+    If ``candidate_ids`` is ``None`` all indexed objects are scored.
+    """
+    return SemanticSearcher().search(
+        db_path=db_path,
+        query=query,
+        candidate_ids=candidate_ids,
+        expand=expand,
+        limit=limit,
+        min_score=min_score,
+    )
