@@ -46,22 +46,42 @@
 ├── src/modelops_core/          # Main Python package
 │   ├── __init__.py             # Exports __version__
 │   ├── __version__.py          # "0.4.1"
-│   ├── cli.py                  # Typer CLI: init, validate, build-index, health, impact, propose-patch
+│   ├── cli.py                  # Typer CLI entry point (all commands)
 │   ├── config.py               # RepoConfig, Settings, path resolution
 │   ├── errors.py               # Custom exceptions
+│   ├── mcp_server.py           # MCP server for agent integration
 │   ├── paths.py                # Path utilities
+│   ├── release_preflight.py    # Release packaging checks
+│   ├── agents/                 # Agent orchestrators (product-owner, readiness, etc.)
 │   ├── ai/                     # AI patch proposal services
 │   │   ├── patch_proposal_service.py  # Build PatchProposal from notes
 │   │   └── provider_adapter.py        # AI provider abstraction (NoProviderAdapter stub)
+│   ├── api/                    # FastAPI server and route handlers
+│   ├── approval/               # Approval gate and reviewer workflows
+│   ├── assessment/             # Migration readiness assessment packages
+│   ├── bundle/                 # GitHub-ready change bundles
+│   ├── change_request/         # ChangeRequest lifecycle and validation
+│   ├── connectors/             # External source connectors (Google Drive, Sheets, etc.)
+│   ├── diff/                   # Repository diff utilities
+│   ├── docs/                   # Static documentation and viewer generation
+│   ├── domain_packs/           # Domain-specific rules (SAP context validation)
+│   ├── exports/                # CSV/XLSX/JSON Schema export services
+│   ├── fixtures/               # Canonical object fixture generation
 │   ├── gaps/                   # Gap detection between datasets and model
+│   ├── guardrails/             # Safety guardrails for AI-assisted workflows
 │   ├── impact/                 # Impact analysis via BFS traversal
 │   ├── imports/                # Dataset profiling, import sessions, privacy
 │   ├── index/                  # SQLite index builder, search documents, lineage edges
+│   ├── issue_draft/            # GitHub issue draft generation
 │   ├── lineage/                # Lineage edge models and service
+│   ├── notifications/          # Notification event generation
 │   ├── patching/               # Patch proposal, change request, apply services
-│   ├── reports/                # Health reports, audit service
+│   ├── reports/                # Health, ownership, scorecard, and audit reports
 │   ├── repository/             # File parser (Markdown/YAML frontmatter), scanner
+│   ├── run/                    # End-to-end workflow runners
 │   ├── schemas/                # Pydantic models and object type registry
+│   ├── telemetry/              # Audit and usage telemetry
+│   ├── trace/                  # Object relationship tracing
 │   └── validation/             # Deterministic validation pipeline (Layer 1–3)
 │
 ├── tests/                      # pytest test suite
@@ -115,26 +135,46 @@ ruff format .
 
 ### CLI Usage
 
-After installation, the `modelops` command is available:
+After installation, the `modelops` command is available. Run `modelops --help`
+for the full command list; the major groups are:
 
 ```bash
-# Scaffold a new repository
+# Scaffold and maintain a repository
 modelops init ./my-model
+modelops clean --repo ./my-model
+modelops doctor --repo ./my-model
 
-# Validate canonical files
+# Validate, index, and query
 modelops validate --repo ./my-model
-
-# Build SQLite index + JSONL exports
 modelops build-index --repo ./my-model --jsonl
+modelops index-fresh --repo ./my-model
+modelops search "customer group" --repo ./my-model
+modelops query --repo ./my-model
 
-# Show repository health report
+# Datasets and gaps
+modelops profile-dataset ./data/sample.csv --repo ./my-model
+modelops gaps --repo ./my-model
+modelops gap-report --repo ./my-model
+modelops infer-model --from-profile ./my-model/generated/profiles/sample.csv.json
+
+# Analysis, impact, and lineage
 modelops health --repo ./my-model
-
-# Impact analysis for an object
+modelops scorecard --repo ./my-model
+modelops analyze --repo ./my-model
 modelops impact FEP-S4-KNVV-KDGRP --repo ./my-model
+modelops trace FEP-S4-KNVV-KDGRP --repo ./my-model
 
-# Propose a patch from a note
+# Proposals, change requests, and reviews
 modelops propose-patch --from ./note.md --repo ./my-model
+modelops proposal review --proposal PP-0001 --repo ./my-model
+modelops change-request create --proposal PP-0001 --repo ./my-model
+modelops git-bundle --proposal PP-0001 --repo ./my-model
+
+# Exports, assessment, and lifecycle
+modelops export-model --format xlsx --repo ./my-model
+modelops export-schema --repo ./my-model
+modelops assessment --repo ./my-model
+modelops run dataset-readiness --repo ./my-model
 
 # Optional local integration surfaces, not a product UI
 modelops serve --repo ./my-model --host 127.0.0.1 --port 8000
@@ -163,23 +203,44 @@ Quick reference:
 - **Configuration**: `testpaths = ["tests"]` and `pythonpath = ["src"]` in `pyproject.toml`
 - **Fixtures** in `tests/conftest.py`:
   - `sample_repo`: Copies `examples/customer_bp_model` into a temp directory
+  - `supplier_repo`: Copies `examples/supplier_vendor_model` into a temp directory
   - `temp_model_dir`: Creates a minimal temp model with DOMAIN and ATTR objects
+  - `domain_factory`, `attribute_factory`, `entity_context_factory`,
+    `field_endpoint_factory`, `mapping_factory`, `patch_proposal_factory`:
+    Frontmatter dict factories for canonical object tests
 
 ### Test Coverage Areas
 
 | Test File | Coverage |
 |---|---|
-| `test_cli.py` | All CLI commands: init, validate, build-index, health, impact |
+| `test_cli.py` | Core CLI commands: init, validate, build-index, health, impact |
+| `test_cli_structure.py` | CLI command discovery and argument contracts |
+| `test_e2e_demo.py` | End-to-end repository workflow |
+| `test_e2e_dataset_workflow.py` | Profile → gap → infer → propose workflow |
+| `test_e2e_proposal_full_lifecycle.py` | Proposal → review → bundle → issue/PR lifecycle |
 | `test_schema_validation.py` | Pydantic schema validation |
 | `test_reference_validation.py` | Reference resolution and broken reference detection |
 | `test_sap_context_validation.py` | SAP-specific context rules (KNVV, KNB1, KNVP, BUT000, LFA1, LFB1, LFM1) |
 | `test_index_builder.py` | SQLite index generation |
+| `test_search_documents.py` | Search document generation |
 | `test_lineage_edges.py` | Lineage edge export |
-| `test_impact_service.py` | BFS impact traversal |
+| `test_impact_service.py` / `test_impact_report.py` | BFS impact traversal and report output |
+| `test_trace.py` | Upstream/downstream relationship tracing |
 | `test_patch_apply.py` | Patch application logic |
 | `test_patch_proposal_validation.py` | Patch proposal safety checks |
+| `test_proposal_cli.py` / `test_proposal_review_bundle.py` | Proposal review and bundle commands |
+| `test_change_request_service.py` / `test_change_request_cli.py` | ChangeRequest lifecycle |
+| `test_approval_gates.py` | Approval gate rules |
+| `test_gaps.py` / `test_gap_summary_report.py` | Gap detection and reporting |
+| `test_dataset_profiler.py` | CSV/XLSX profiling |
+| `test_import_model_sheet.py` / `test_export_model.py` | Spreadsheet import/export |
+| `test_git_bundle.py` / `test_issue_draft.py` | GitHub bundle and issue draft generation |
+| `test_assessment_package.py` / `test_readiness_agent.py` | Assessment and readiness workflows |
+| `test_audit_log.py` / `test_telemetry.py` / `test_usage_report.py` | Audit and telemetry |
 | `test_repository_parser.py` | Frontmatter parsing |
-| `test_e2e_demo.py` | End-to-end workflows |
+| `test_guardrails.py` / `test_secret_guardrails.py` | Safety and secret guardrails |
+| `test_docs_build.py` / `test_static_viewer.py` | Documentation and viewer generation |
+| `test_mcp_server.py` / `test_api.py` | API and MCP surfaces |
 
 ---
 
