@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import sqlite3
+import warnings
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -251,6 +252,19 @@ def build_index(
     enabled_packs = config.enabled_domain_packs if config else None
     if max_objects is None:
         max_objects = config.resource_limits.max_index_objects if config else 10_000
+
+    if config:
+        warning_threshold = config.resource_limits.max_index_objects_warning_threshold
+    else:
+        warning_threshold = int(max_objects * 0.8)
+    if warning_threshold is not None and len(files) > warning_threshold:
+        warnings.warn(
+            f"Repository contains {len(files)} canonical files, above the recommended "
+            f"warning threshold of {warning_threshold}. build-index rebuilds the entire "
+            f"SQLite database on every run; consider enabling domain-pack filtering or "
+            f"splitting the model into multiple repositories for faster incremental builds.",
+            stacklevel=2,
+        )
 
     if len(files) > max_objects:
         raise ResourceLimitExceeded(

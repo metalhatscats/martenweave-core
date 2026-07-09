@@ -27,6 +27,13 @@ class ResourceLimits(BaseModel):
     max_index_objects: int = Field(
         default=10_000, description="Maximum canonical objects in a single index build"
     )
+    max_index_objects_warning_threshold: int | None = Field(
+        default=None,
+        description=(
+            "Object count at which build-index emits a performance warning. "
+            "Defaults to 80% of max_index_objects."
+        ),
+    )
     max_export_objects: int = Field(default=10_000, description="Maximum objects per export type")
     max_import_rows: int = Field(
         default=100_000, description="Maximum rows to import per spreadsheet sheet"
@@ -44,6 +51,12 @@ class ResourceLimits(BaseModel):
         default=None,
         description=("If set, profile every Nth row for large files instead of a full scan."),
     )
+
+    @model_validator(mode="after")
+    def _default_index_warning_threshold(self) -> ResourceLimits:
+        if self.max_index_objects_warning_threshold is None:
+            self.max_index_objects_warning_threshold = int(self.max_index_objects * 0.8)
+        return self
 
 
 class RepoConfig(BaseModel):

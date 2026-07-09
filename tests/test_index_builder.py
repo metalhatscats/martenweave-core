@@ -11,6 +11,25 @@ from modelops_core.index import build_index
 from modelops_core.index.queries import get_object_by_id
 
 
+def test_build_index_warns_above_threshold(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    model_dir = repo_root / "model"
+    model_dir.mkdir()
+    # Create enough objects to exceed the default 80% warning threshold with max=10.
+    (repo_root / "modelops.config.yaml").write_text(
+        "resource_limits:\n  max_index_objects: 10\n", encoding="utf-8"
+    )
+    for i in range(9):
+        (model_dir / f"OBJ-{i:04d}.md").write_text(
+            f"---\nid: OBJ-{i:04d}\ntype: MasterDataDomain\nstatus: draft\nname: Object {i}\n---\n",
+            encoding="utf-8",
+        )
+
+    with pytest.warns(UserWarning, match="above the recommended warning threshold"):
+        build_index(repo_root=repo_root)
+
+
 def test_build_index_creates_db(temp_model_dir: Path) -> None:
     repo_root = temp_model_dir.parent
     db_path = repo_root / "generated" / "modelops.db"

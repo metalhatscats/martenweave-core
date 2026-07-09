@@ -35,6 +35,23 @@ Generated artifacts are rebuildable outputs, usually under a repository's `gener
 - Viewer pages may warn about stale indexes, but freshness warnings do not make generated artifacts
   canonical.
 
+## Index rebuild behavior
+
+`build-index` is intentionally a full rebuild: it drops and recreates all SQLite tables from
+canonical files. This keeps the generated index deterministic and simple to reason about. There is
+no incremental index update in the default path.
+
+For large repositories, this rebuild cost grows with object count. A warning is emitted when the
+number of canonical files exceeds `max_index_objects_warning_threshold` (default: 80% of
+`max_index_objects`). When the hard `max_index_objects` limit is exceeded, the build fails with
+`ResourceLimitExceeded`.
+
+Recommended practice:
+
+- Keep a single repository under a few thousand canonical objects for fast local rebuilds.
+- If you need more objects, raise `max_index_objects` and `max_index_objects_warning_threshold` in
+  `modelops.config.yaml`, or split the model across repositories.
+
 ## Commands
 
 ```bash

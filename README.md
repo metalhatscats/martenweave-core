@@ -47,6 +47,9 @@ supported for backward compatibility with scripts, CI jobs, and early adopters.
 
 - **Canonical files are the source of truth.** Markdown + YAML frontmatter objects live in `model/`.
 - **Generated index is disposable.** SQLite and JSONL outputs are rebuildable from canonical files.
+  `build-index` performs a full rebuild (drops and recreates tables) to keep the index deterministic.
+  A warning is emitted when the model grows above a configurable threshold; very large repos may
+  need a higher limit or split into multiple repositories.
 - **Deterministic validation first.** Every object is validated for IDs, types, references, and domain context rules before indexing.
 - **AI must not silently mutate.** AI creates `PatchProposal` objects for human review. Approved changes become `ChangeRequest`s.
 - **Local-first.** No cloud dependencies, no SaaS lock-in.
