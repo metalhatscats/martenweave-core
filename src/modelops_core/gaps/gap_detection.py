@@ -120,23 +120,48 @@ def _severity_for_gap(gap_code: str) -> str:
 
 
 def _build_recommended_op(gap: ColumnGap) -> dict[str, Any] | None:
-    if gap.gap_code == "UNMODELED_DATASET_COLUMN":
-        return {
-            "op": "create_object",
-            "object_type": "FieldEndpoint",
-            "target_path": "column_name",
-            "after": gap.column_name,
-            "reason": gap.message,
-        }
-    if gap.gap_code == "DATASET_COLUMN_MULTIPLE_MATCHES":
-        return {
-            "op": "create_issue",
-            "object_type": "Issue",
-            "target_path": "source_column",
-            "after": gap.column_name,
-            "reason": gap.message,
-        }
-    return None
+    """Build a valid PatchOperation for a dataset gap.
+
+    Gaps are promoted into ``create_issue`` operations rather than direct
+    ``create_object FieldEndpoint`` operations because a new FieldEndpoint
+    requires domain context, attribute linkage, and owner assignment that
+    cannot be inferred from a column name alone. Creating an Issue preserves
+    the AI-proposes/human-approves model and gives reviewers a concrete
+    artifact to triage.
+    """
+    if gap.gap_code not in {
+        "UNMODELED_DATASET_COLUMN",
+        "DATASET_COLUMN_MULTIPLE_MATCHES",
+        "DUPLICATE_COLUMN_NAME",
+    }:
+        return None
+
+    dataset_id = (gap.source_dataset_metadata or {}).get("dataset_id", "DATASET")
+    safe_dataset = _sanitize_id_part(dataset_id)
+    safe_column = _sanitize_id_part(gap.column_name) if gap.column_name else "ALL"
+    safe_code = _sanitize_id_part(gap.gap_code)
+    object_id = f"ISSUE-GAP-{safe_dataset}-{safe_column}-{safe_code}"
+
+    after = {
+        "id": object_id,
+        "type": "Issue",
+        "status": "open",
+        "name": f"Dataset gap: {gap.gap_code}",
+        "issue_type": "dataset_gap",
+        "severity": gap.severity,
+        "source_dataset_id": dataset_id,
+        "source_column": gap.column_name or None,
+        "source_gap_code": gap.gap_code,
+        "recommended_action": gap.message,
+    }
+
+    return {
+        "op": "create_issue",
+        "object_id": object_id,
+        "object_type": "Issue",
+        "after": after,
+        "reason": gap.message,
+    }
 
 
 def detect_dataset_gaps(profile: DatasetProfile, db_path: Path) -> DatasetGapReport:
@@ -178,22 +203,15 @@ def detect_dataset_gaps(profile: DatasetProfile, db_path: Path) -> DatasetGapRep
     seen: set[str] = set()
     for col in profile.columns:
         if col.name in seen:
-            gaps.append(
-                ColumnGap(
-                    column_name=col.name,
-                    gap_code="DUPLICATE_COLUMN_NAME",
-                    severity=_severity_for_gap("DUPLICATE_COLUMN_NAME"),
-                    message=f"Duplicate column name '{col.name}' in dataset.",
-                    source_dataset_metadata=dataset_meta,
-                    recommended_proposal_op={
-                        "op": "create_issue",
-                        "object_type": "Issue",
-                        "target_path": "source_column",
-                        "after": col.name,
-                        "reason": f"Duplicate column name '{col.name}' in dataset.",
-                    },
-                )
+            gap = ColumnGap(
+                column_name=col.name,
+                gap_code="DUPLICATE_COLUMN_NAME",
+                severity=_severity_for_gap("DUPLICATE_COLUMN_NAME"),
+                message=f"Duplicate column name '{col.name}' in dataset.",
+                source_dataset_metadata=dataset_meta,
             )
+            gap.recommended_proposal_op = _build_recommended_op(gap)
+            gaps.append(gap)
         seen.add(col.name)
 
     for col in profile.columns:

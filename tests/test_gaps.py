@@ -519,7 +519,9 @@ def test_detect_dataset_gaps_includes_metadata(tmp_path: Path) -> None:
     assert gap.source_dataset_metadata.get("dataset_id") == "test-dataset"
     assert gap.source_dataset_metadata.get("row_count") == 10
     assert gap.recommended_proposal_op is not None
-    assert gap.recommended_proposal_op["op"] == "create_object"
+    assert gap.recommended_proposal_op["op"] == "create_issue"
+    assert gap.recommended_proposal_op.get("object_id") is not None
+    assert gap.recommended_proposal_op.get("after", {}).get("type") == "Issue"
 
 
 def test_detect_dataset_gaps_duplicate_columns(tmp_path: Path) -> None:
@@ -591,9 +593,21 @@ def test_promote_gaps_to_proposal(tmp_path: Path) -> None:
                 severity="warning",
                 message="No matching endpoint.",
                 recommended_proposal_op={
-                    "op": "create_object",
-                    "object_type": "FieldEndpoint",
-                    "after": "UNKNOWN_COL",
+                    "op": "create_issue",
+                    "object_id": "ISSUE-GAP-TEST-DATASET-UNKNOWN-COL-UNMODELED",
+                    "object_type": "Issue",
+                    "after": {
+                        "id": "ISSUE-GAP-TEST-DATASET-UNKNOWN-COL-UNMODELED",
+                        "type": "Issue",
+                        "status": "open",
+                        "name": "Dataset gap: UNMODELED_DATASET_COLUMN",
+                        "issue_type": "dataset_gap",
+                        "severity": "warning",
+                        "source_dataset_id": "test-dataset",
+                        "source_column": "UNKNOWN_COL",
+                        "source_gap_code": "UNMODELED_DATASET_COLUMN",
+                        "recommended_action": "No matching endpoint.",
+                    },
                 },
             )
         ],
@@ -604,7 +618,8 @@ def test_promote_gaps_to_proposal(tmp_path: Path) -> None:
     text = proposal_path.read_text(encoding="utf-8")
     assert "PP-GAP-TEST-DATASET-001" in text
     assert "pending_review" in text
-    assert "create_object" in text
+    assert "create_issue" in text
+    assert "ISSUE-GAP-TEST-DATASET-UNKNOWN-COL-UNMODELED" in text
 
 
 class TestGapsPromoteCli:
@@ -1072,9 +1087,21 @@ def test_promote_gaps_to_proposal_avoids_collision(tmp_path: Path) -> None:
                 severity="warning",
                 message="No matching endpoint.",
                 recommended_proposal_op={
-                    "op": "create_object",
-                    "object_type": "FieldEndpoint",
-                    "after": "UNKNOWN_COL",
+                    "op": "create_issue",
+                    "object_id": "ISSUE-GAP-TEST-DATASET-UNKNOWN-COL-UNMODELED",
+                    "object_type": "Issue",
+                    "after": {
+                        "id": "ISSUE-GAP-TEST-DATASET-UNKNOWN-COL-UNMODELED",
+                        "type": "Issue",
+                        "status": "open",
+                        "name": "Dataset gap: UNMODELED_DATASET_COLUMN",
+                        "issue_type": "dataset_gap",
+                        "severity": "warning",
+                        "source_dataset_id": "test-dataset",
+                        "source_column": "UNKNOWN_COL",
+                        "source_gap_code": "UNMODELED_DATASET_COLUMN",
+                        "recommended_action": "No matching endpoint.",
+                    },
                 },
             )
         ],

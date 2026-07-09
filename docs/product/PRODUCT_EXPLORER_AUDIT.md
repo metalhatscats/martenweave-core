@@ -62,7 +62,7 @@ We also score: **functional** (F), **understandable** (U), **actionable** (A), *
 | Build index (SAP) | PASS | ✅ | ✅ | ✅ | ✅ | 85 objects indexed; freshness check works. |
 | Search / trace / impact (SAP) | PASS | ✅ | ✅ | ✅ | ✅ | `KNVV-KDGRP` trace includes Attribute, FieldEndpoint, Mapping, ValidationRule, Issue, Decision, owners. |
 | Static viewer (SAP) | PASS | ✅ | ✅ | ✅ | ✅ | Object detail page for `fep-s4-knvv-kdgrp.html` exists; search index contains KNVV/KDGRP/Customer Group. |
-| Dataset gaps (SAP) | PASS | ✅ | ✅ | ✅ | ✅ | Realistic 1/6 match rate; unmatched columns get clear `UNMODELED_DATASET_COLUMN` gaps with proposed FieldEndpoint creates. |
+| Dataset gaps (SAP) | PASS | ✅ | ✅ | ✅ | ✅ | Realistic 1/6 match rate; unmatched columns get clear `UNMODELED_DATASET_COLUMN` gaps promoted to a PatchProposal of `create_issue` operations for human triage. |
 | Evidence-to-patch-proposal | **PARTIAL** | ✅ | ⚠️ | ⚠️ | ⚠️ | Dry-run produces a proposal with correct affected objects, but the operation is generic ("Updated description from note") and the CLI does not warn that this is a deterministic scaffold, not AI output. |
 | Health / scorecard / owners / decisions (SAP) | **PARTIAL** | ✅ | ⚠️ | ⚠️ | ✅ | Owners and decisions are excellent. Scorecard again shows misleading PASS for zero-coverage metrics and prints "Untitled Repository" despite config. |
 | Gap-to-GitHub-issue | **FAIL** | ❌ | ❌ | ❌ | ❌ | `martenweave issue-draft` is a command group; `issue-draft create` requires `--change-request`, `--proposal`, or `--from-validation`. There is no `--from-gaps` source. The documented gap-to-issue workflow does not exist as a single command. |
