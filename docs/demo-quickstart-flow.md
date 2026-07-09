@@ -105,6 +105,18 @@ Use this before mock loads or data readiness reviews to compare sample datasets 
 
 This produces a single shareable report (`readiness.json` + `readiness.md`) that combines validation, coverage, gaps, and a readiness verdict.
 
+Promote dataset gaps directly to a draft PatchProposal for review:
+
+```bash
+.venv/bin/martenweave run dataset-readiness \
+  --repo examples/customer_bp_model \
+  --dataset examples/customer_bp_model/data/samples/customer_sales_area_sample.csv \
+  --out /tmp/mw-readiness \
+  --promote-to-proposal
+```
+
+The proposal is written to `model/patch-proposals/` in `pending_review` status and remains subject to human review.
+
 ## 9. Proposal-First AI Flow
 
 ```bash

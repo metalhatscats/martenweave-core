@@ -330,3 +330,124 @@ def test_cli_dataset_readiness_with_sample_repo(sample_repo: Path, tmp_path: Pat
     data = json.loads((out_dir / "readiness.json").read_text(encoding="utf-8"))
     assert data["verdict"] in {"ready", "ready_with_warnings", "blocked"}
     assert data["dataset_profile"]["row_count"] > 0
+
+
+def test_cli_promote_to_proposal_creates_patch_proposal(tmp_path: Path) -> None:
+    """--promote-to-proposal writes a draft PatchProposal for dataset gaps."""
+    repo = tmp_path / "repo"
+    model_dir = repo / "model"
+    model_dir.mkdir(parents=True)
+
+    (model_dir / "DOMAIN-TEST.md").write_text(
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n",
+        encoding="utf-8",
+    )
+    (model_dir / "ATTR-TEST.md").write_text(
+        "---\n"
+        "id: ATTR-TEST\n"
+        "type: Attribute\n"
+        "status: draft\n"
+        "name: Test Attribute\n"
+        "domain: DOMAIN-TEST\n"
+        "---\n",
+        encoding="utf-8",
+    )
+    (model_dir / "FEP-TEST.md").write_text(
+        "---\n"
+        "id: FEP-TEST\n"
+        "type: FieldEndpoint\n"
+        "status: draft\n"
+        "name: Test Field\n"
+        "domain: DOMAIN-TEST\n"
+        "attribute: ATTR-TEST\n"
+        "column_name: customer_id\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    dataset = tmp_path / "customers.csv"
+    _write_csv(dataset, ["customer_id", "legacy_code"], [["1", "A"], ["2", "B"]])
+
+    out_dir = tmp_path / "out"
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "dataset-readiness",
+            str(dataset),
+            "--repo",
+            str(repo),
+            "--out",
+            str(out_dir),
+            "--promote-to-proposal",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Promoted to proposal" in result.output
+
+    data = json.loads((out_dir / "readiness.json").read_text(encoding="utf-8"))
+    assert data["promoted_proposal_path"] is not None
+    assert Path(data["promoted_proposal_path"]).exists()
+    assert "PP-GAP-" in data["promoted_proposal_path"]
+
+
+def test_cli_promote_to_proposal_respects_dry_run(tmp_path: Path) -> None:
+    """--promote-to-proposal must not write a proposal when --dry-run is set."""
+    repo = tmp_path / "repo"
+    model_dir = repo / "model"
+    model_dir.mkdir(parents=True)
+
+    (model_dir / "DOMAIN-TEST.md").write_text(
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n",
+        encoding="utf-8",
+    )
+
+    dataset = tmp_path / "customers.csv"
+    _write_csv(dataset, ["legacy_code"], [["A"]])
+
+    out_dir = tmp_path / "out"
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "dataset-readiness",
+            str(dataset),
+            "--repo",
+            str(repo),
+            "--out",
+            str(out_dir),
+            "--promote-to-proposal",
+            "--dry-run",
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.output)
+    assert data["promoted_proposal_path"] is None
+    assert not (repo / "model" / "patch-proposals").exists()
+
+
+def test_service_promote_to_proposal_returns_path(tmp_path: Path) -> None:
+    """The service function returns the promoted proposal path when requested."""
+    repo = tmp_path / "repo"
+    model_dir = repo / "model"
+    model_dir.mkdir(parents=True)
+
+    (model_dir / "DOMAIN-TEST.md").write_text(
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n",
+        encoding="utf-8",
+    )
+
+    dataset = tmp_path / "customers.csv"
+    _write_csv(dataset, ["legacy_code"], [["A"]])
+
+    report = generate_dataset_readiness_report(
+        repo_root=repo,
+        dataset_path=dataset,
+        promote_to_proposal=True,
+    )
+
+    assert report.promoted_proposal_path is not None
+    assert Path(report.promoted_proposal_path).exists()

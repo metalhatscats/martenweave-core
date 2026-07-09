@@ -27,6 +27,7 @@ from modelops_core.gaps.gap_detection import (
     DatasetGapReport,
     detect_dataset_gaps,
     detect_model_gaps,
+    promote_gaps_to_proposal,
 )
 from modelops_core.imports.dataset_profiler import (
     DatasetProfile,
@@ -64,6 +65,7 @@ class DatasetReadinessReport:
     gap_summary: dict[str, Any]
     verdict: str
     dry_run: bool = False
+    promoted_proposal_path: str | None = None
 
 
 def _profile_dataset(
@@ -157,7 +159,14 @@ def _detect_gaps(
     if check_model:
         model_gaps = detect_model_gaps(db_path)
 
-    return all_matches, all_dataset_gaps, model_gaps, coverage
+    promotion_report = DatasetGapReport(
+        dataset_id=profile.dataset_id,
+        matches=all_matches,
+        gaps=all_dataset_gaps,
+        coverage=coverage,
+    )
+
+    return all_matches, all_dataset_gaps, model_gaps, coverage, promotion_report
 
 
 def _compute_verdict(
@@ -243,6 +252,7 @@ def generate_dataset_readiness_report(
     dataset_path: Path,
     check_model: bool = False,
     dry_run: bool = False,
+    promote_to_proposal: bool = False,
 ) -> DatasetReadinessReport:
     """Generate a consolidated dataset readiness report.
 
@@ -255,12 +265,15 @@ def generate_dataset_readiness_report(
       5. Detect optional model-side gaps.
       6. Generate a consolidated gap summary.
       7. Compute a readiness verdict.
+      8. Optionally promote dataset gaps to a draft PatchProposal.
 
     Args:
         repo_root: Path to the canonical model repository.
         dataset_path: Path to the CSV or XLSX dataset file.
         check_model: If True, also include model-side gaps in the report.
         dry_run: If True, do not persist any generated artifacts.
+        promote_to_proposal: If True, create a draft PatchProposal from dataset
+            gaps in ``model/patch-proposals/``. Ignored when ``dry_run`` is True.
 
     Returns:
         A ``DatasetReadinessReport`` dataclass with the full results.
@@ -309,6 +322,7 @@ def generate_dataset_readiness_report(
                 temp_db,
                 check_model,
                 dry_run=True,
+                promote_to_proposal=False,
             )
 
     return _build_report(
@@ -318,6 +332,7 @@ def generate_dataset_readiness_report(
         db_path,
         check_model,
         dry_run=dry_run,
+        promote_to_proposal=promote_to_proposal,
     )
 
 
@@ -328,14 +343,22 @@ def _build_report(
     db_path: Path,
     check_model: bool,
     dry_run: bool,
+    promote_to_proposal: bool,
 ) -> DatasetReadinessReport:
     """Assemble the readiness report from already-built inputs."""
     profile, privacy_warnings = _profile_dataset(dataset_path, repo_root)
-    matches, dataset_gaps, model_gaps, coverage = _detect_gaps(
+    matches, dataset_gaps, model_gaps, coverage, promotion_report = _detect_gaps(
         profile, db_path, check_model
     )
     gap_summary_report = generate_gap_summary_report(db_path, repo_root)
     verdict = _compute_verdict(summary, coverage, dataset_gaps, model_gaps)
+
+    promoted_proposal_path: str | None = None
+    if promote_to_proposal and not dry_run and promotion_report.gaps:
+        proposal_path = promote_gaps_to_proposal(
+            promotion_report, resolve_model_path(repo_root)
+        )
+        promoted_proposal_path = str(proposal_path)
 
     coverage_dict: dict[str, Any] = {}
     if coverage:
@@ -379,6 +402,7 @@ def _build_report(
         },
         verdict=verdict,
         dry_run=dry_run,
+        promoted_proposal_path=promoted_proposal_path,
     )
 
 
@@ -414,16 +438,25 @@ def _render_markdown(report: DatasetReadinessReport) -> str:
         "",
         f"## Verdict: {report.verdict}",
         "",
-        "## Validation Summary",
-        "",
-        f"- Errors: {report.validation['error_count']}",
-        f"- Warnings: {report.validation['warning_count']}",
-        f"- Info: {report.validation['info_count']}",
-        f"- Valid: {report.validation['is_valid']}",
-        "",
-        "## Dataset Profile",
-        "",
     ]
+
+    if report.promoted_proposal_path:
+        lines.append(f"**Promoted to proposal:** `{report.promoted_proposal_path}`")
+        lines.append("")
+
+    lines.extend(
+        [
+            "## Validation Summary",
+            "",
+            f"- Errors: {report.validation['error_count']}",
+            f"- Warnings: {report.validation['warning_count']}",
+            f"- Info: {report.validation['info_count']}",
+            f"- Valid: {report.validation['is_valid']}",
+            "",
+            "## Dataset Profile",
+            "",
+        ]
+    )
 
     profile = report.dataset_profile
     if profile.get("type") == "workbook":

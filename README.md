@@ -180,6 +180,13 @@ Option B. `.venv/bin/modelops` and `modelops` still work as compatibility aliase
   --repo ./my-model \
   --dataset ./my-model/data/samples/customers.csv \
   --out ./reports/readiness
+
+# Promote dataset gaps to a reviewable PatchProposal
+.venv/bin/martenweave run dataset-readiness \
+  --repo ./my-model \
+  --dataset ./my-model/data/samples/customers.csv \
+  --out ./reports/readiness \
+  --promote-to-proposal
 ```
 
 ## First 15 Minutes

@@ -9,6 +9,8 @@ All notable changes to Martenweave Core.
 - **`martenweave run dataset-readiness`**: one-command workflow that orchestrates validation,
   indexing, dataset profiling, gap detection, and gap summarization into a single shareable
   `readiness.json` + `readiness.md` report with a ready / ready_with_warnings / blocked verdict.
+- **`--promote-to-proposal`**: dataset-readiness can now turn detected dataset gaps into a draft
+  `PatchProposal` in `model/patch-proposals/`, keeping the AI-proposes / human-approves model intact.
 - **Model Ledger workbench**: added a canonical model workspace with searchable model objects,
   evidence coverage, impact context, ownership, validation state, and detailed object views.
 - **Operational workflows**: added guided model import, configurable exports, reports, workspace

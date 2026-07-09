@@ -103,6 +103,8 @@ This compares dataset columns against your model's FieldEndpoints and reports ma
 
 This validates the model, profiles the dataset, detects gaps, and writes a consolidated `readiness.json` + `readiness.md` report with a ready / ready_with_warnings / blocked verdict.
 
+Add `--promote-to-proposal` to turn dataset gaps into a draft PatchProposal for review.
+
 ## 9. Review a proposal (dry-run)
 
 If a PatchProposal exists in `model/patch-proposals/`:
