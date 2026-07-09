@@ -109,6 +109,10 @@ from modelops_core.patching.patch_proposal_service import (
     transition_patch_proposal_status,
     write_patch_proposal,
 )
+from modelops_core.patching.proposal_reviewer_summary import (
+    generate_reviewer_summary,
+    reviewer_summary_to_dict,
+)
 from modelops_core.reports.analysis_service import generate_analysis_report
 from modelops_core.reports.audit_service import (
     AuditEventService,
@@ -3571,8 +3575,17 @@ def proposal_show(
     parsed = parse_file(proposal_path)
     fm = parsed.frontmatter or {}
 
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+    summary = generate_reviewer_summary(
+        proposal=fm,
+        repo_model_path=model_path,
+        db_path=db_path,
+    )
+
     if json_output:
-        print(json.dumps(fm, indent=2, default=str))
+        result = dict(fm)
+        result["reviewer_summary"] = reviewer_summary_to_dict(summary)
+        print(json.dumps(result, indent=2, default=str))
         raise typer.Exit()
 
     console.print(f"[bold]PatchProposal: {proposal_id}[/bold]")
@@ -3593,8 +3606,54 @@ def proposal_show(
         console.print(f"  Applied at: {fm['applied_at']}")
         console.print(f"  Changed files: {fm.get('applied_changed_files', [])}")
 
+    # ---- Reviewer summary ----
+    action_color = {
+        "approve": "green",
+        "approve_with_review": "yellow",
+        "inspect": "red",
+        "reject": "red",
+    }.get(summary.recommended_action, "white")
+    console.print("")
+    console.print("[bold]Reviewer summary[/bold]")
+    action_text = f"[{action_color}]{summary.recommended_action}[/{action_color}]"
+    console.print(f"  Recommended action: {action_text}")
+    console.print(f"  Risk level: {summary.risk_level}")
+    console.print(f"  Requires approval: {summary.requires_approval}")
+    console.print(f"  Affected objects: {len(summary.affected_object_ids)}")
+    if summary.operations_by_type:
+        console.print(
+            "  Operations by type: "
+            + ", ".join(f"{k}: {v}" for k, v in summary.operations_by_type.items())
+        )
+
+    if summary.risk_reasons:
+        console.print("\n[bold]Risk reasons[/bold]")
+        for reason in summary.risk_reasons:
+            console.print(f"  - {reason}")
+
+    if summary.validation_errors:
+        console.print("\n[bold]Validation errors[/bold]")
+        for message in summary.validation_errors:
+            console.print(f"  - {message}")
+
+    if summary.validation_warnings:
+        console.print("\n[bold]Validation warnings[/bold]")
+        for message in summary.validation_warnings:
+            console.print(f"  - {message}")
+
+    if summary.files_touched:
+        console.print("\n[bold]Files touched[/bold]")
+        for path in summary.files_touched:
+            console.print(f"  - {path}")
+
+    if summary.review_notes:
+        console.print("\n[bold]Review notes[/bold]")
+        for note in summary.review_notes:
+            console.print(f"  - {note}")
+
     operations = fm.get("operations", [])
     if operations:
+        console.print("")
         table = Table("Op", "Object ID", "Type", "Target")
         for op in operations:
             table.add_row(
