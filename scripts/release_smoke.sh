@@ -41,6 +41,7 @@ assert_jq() {
 }
 
 require_tool jq
+require_tool npm
 
 if [[ -z "${MODELOPS}" ]]; then
     if [[ -x "${DEFAULT_MODELOPS}" ]]; then
@@ -172,5 +173,9 @@ run_step "config-guard release mode"
 "${MODELOPS}" config-guard --repo . --mode release --json \
     >"${SMOKE_DIR}/config-guard-release.json"
 assert_jq "${SMOKE_DIR}/config-guard-release.json" 'type == "object"'
+
+run_step "frontend tests"
+cd "${REPO_ROOT}/frontend"
+npm test
 
 echo "Release smoke checks passed"
