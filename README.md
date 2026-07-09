@@ -84,7 +84,7 @@ editable UI, tenant platform, generic workflow engine, or direct SAP write-back 
 6. Generate AI patch proposals.
 7. Publish a GitHub issue or pull request only for human review.
 
-Proposed roadmap workflow — this command is **not implemented**:
+One-command dataset readiness workflow:
 
 ```bash
 martenweave run dataset-readiness --repo ./model --dataset customers.xlsx --out ./reports/readiness
@@ -174,6 +174,12 @@ Option B. `.venv/bin/modelops` and `modelops` still work as compatibility aliase
 
 # Clean generated artifacts (dry-run first)
 .venv/bin/martenweave clean --repo ./my-model --dry-run
+
+# One-command dataset readiness report
+.venv/bin/martenweave run dataset-readiness \
+  --repo ./my-model \
+  --dataset ./my-model/data/samples/customers.csv \
+  --out ./reports/readiness
 ```
 
 ## First 15 Minutes
@@ -204,6 +210,7 @@ For a release-grade demo path that exercises validation, indexing, search, trace
 | `owners` | Ownership coverage and steward workload |
 | `analyze` | Analyze model completeness, risk, and readiness |
 | `gap-report` | Consolidated gap summary across all sources |
+| `run dataset-readiness` | One-command dataset readiness: validate, index, profile, gaps, report |
 | `trace` | Trace upstream/downstream relationships for an object |
 | `impact` | Generate impact report for an object or proposal |
 | `propose-patch` | Create a PatchProposal from a note |

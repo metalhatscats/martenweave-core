@@ -127,6 +127,7 @@ from modelops_core.reports.source_registry_service import (
 )
 from modelops_core.reports.usage_report_service import generate_usage_report
 from modelops_core.repository import parse_file, scan_repository
+from modelops_core.run import generate_dataset_readiness_report, write_readiness_report
 from modelops_core.schemas.migration import migrate_object, needs_migration
 from modelops_core.schemas.versioning import (
     CURRENT_SCHEMA_VERSION,
@@ -2299,6 +2300,96 @@ def propose_patch(
                 },
             )
         )
+
+
+# ---------------------------------------------------------------------------
+# Run subcommands — end-to-end workflow orchestration
+# ---------------------------------------------------------------------------
+run_app = typer.Typer(
+    name="run",
+    help="Run end-to-end model governance workflows.",
+)
+app.add_typer(run_app, name="run")
+
+
+@run_app.command("dataset-readiness")
+@with_telemetry("run_dataset_readiness")
+def dataset_readiness(
+    dataset: Path = typer.Argument(  # noqa: B008
+        ..., help="Path to CSV or XLSX dataset file."
+    ),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Directory where readiness reports will be written."
+    ),
+    check_model: bool = typer.Option(
+        False, "--check-model", help="Also include model-side gaps in the report."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Preview the report without writing files."
+    ),
+) -> None:
+    """Run a dataset readiness workflow: validate, index, profile, gaps, report."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+
+    if not model_path.exists():
+        console.print(f"[red]Model path does not exist: {model_path}[/red]")
+        raise typer.Exit(code=1)
+
+    if not dataset.exists():
+        console.print(f"[red]Dataset not found: {dataset}[/red]")
+        raise typer.Exit(code=1)
+
+    try:
+        report = generate_dataset_readiness_report(
+            repo_root=repo_root,
+            dataset_path=dataset,
+            check_model=check_model,
+            dry_run=dry_run,
+        )
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if not dry_run:
+        json_path, md_path = write_readiness_report(report, out)
+
+    if json_output:
+        print(json.dumps(report.__dict__, indent=2, default=str, sort_keys=True))
+        raise typer.Exit()
+
+    verdict_color = {
+        "ready": "green",
+        "ready_with_warnings": "yellow",
+        "blocked": "red",
+    }.get(report.verdict, "white")
+
+    console.print(
+        f"[bold]Dataset Readiness:[/bold] [{verdict_color}]"
+        f"{report.verdict}[/{verdict_color}]"
+    )
+    console.print(f"  Repository: {repo_root}")
+    console.print(f"  Dataset:    {dataset}")
+    console.print(f"  Validation: {report.validation['error_count']} errors, "
+                  f"{report.validation['warning_count']} warnings")
+    if report.coverage:
+        console.print(
+            f"  Coverage:   {report.coverage.get('match_rate', 0.0):.1%} match rate "
+            f"({report.coverage.get('matched_columns', 0)} / "
+            f"{report.coverage.get('total_columns', 0)} columns)"
+        )
+    if report.dataset_gaps:
+        console.print(f"  Dataset gaps: {len(report.dataset_gaps)}")
+    if report.model_gaps:
+        console.print(f"  Model gaps:   {len(report.model_gaps)}")
+
+    if dry_run:
+        console.print("[yellow]Dry-run: no files written.[/yellow]")
+    else:
+        console.print(f"[green]Report written to {json_path}[/green]")
+        console.print(f"[green]Report written to {md_path}[/green]")
 
 
 # ---------------------------------------------------------------------------

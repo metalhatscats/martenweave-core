@@ -99,10 +99,12 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
     "decisions",
     "proposal",
     "assessment",
+    "run",
 }
 
 EXPECTED_GROUPS = {
     "agent": {"product-owner", "readiness"},
+    "run": {"dataset-readiness"},
     "issue-draft": {"create"},
     "change-request": {"create", "list", "show", "update-status", "approve", "reject"},
     "notifications": {"preview", "list"},

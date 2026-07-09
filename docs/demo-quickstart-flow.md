@@ -93,7 +93,19 @@ Use this to show what works today: deterministic checks, model coverage reportin
 
 Use this before mock loads or data readiness reviews to compare sample datasets with expected field endpoints.
 
-## 8. Proposal-First AI Flow
+## 8. One-Command Dataset Readiness
+
+```bash
+.venv/bin/martenweave run dataset-readiness \
+  --repo examples/customer_bp_model \
+  --dataset examples/customer_bp_model/data/samples/customer_sales_area_sample.csv \
+  --out /tmp/mw-readiness \
+  --check-model
+```
+
+This produces a single shareable report (`readiness.json` + `readiness.md`) that combines validation, coverage, gaps, and a readiness verdict.
+
+## 9. Proposal-First AI Flow
 
 ```bash
 cat >/tmp/martenweave-note.md <<'NOTE'

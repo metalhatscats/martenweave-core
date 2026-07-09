@@ -92,7 +92,18 @@ canonical files in `model/` remain authoritative.
 
 This compares dataset columns against your model's FieldEndpoints and reports matches, gaps, and coverage.
 
-## 8. Review a proposal (dry-run)
+## 8. Run a dataset readiness report
+
+```bash
+.venv/bin/martenweave run dataset-readiness \
+  examples/simple_product_model/data/samples/product_sample.csv \
+  --repo examples/simple_product_model \
+  --out /tmp/mw-readiness
+```
+
+This validates the model, profiles the dataset, detects gaps, and writes a consolidated `readiness.json` + `readiness.md` report with a ready / ready_with_warnings / blocked verdict.
+
+## 9. Review a proposal (dry-run)
 
 If a PatchProposal exists in `model/patch-proposals/`:
 
