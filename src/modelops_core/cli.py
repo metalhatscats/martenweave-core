@@ -119,6 +119,10 @@ from modelops_core.reports.decisions_report import generate_decisions_report
 from modelops_core.reports.gap_summary import generate_gap_summary_report
 from modelops_core.reports.health_report import generate_repository_health
 from modelops_core.reports.index_freshness import check_index_freshness
+from modelops_core.reports.object_card_service import (
+    generate_object_card,
+    object_card_to_dict,
+)
 from modelops_core.reports.ownership_report import generate_ownership_report
 from modelops_core.reports.scorecard_service import generate_scorecard
 from modelops_core.reports.source_registry_service import (
@@ -1693,6 +1697,118 @@ def readiness(
     """Run pilot/demo/release readiness gates and show blockers."""
     repo_root = _resolve_repo(repo)
     _run_readiness_cli(repo_root, profile, dry_run, json_output)
+
+
+@app.command("object-card")
+@with_telemetry("object_card")
+def object_card(
+    object_id: str = typer.Argument(..., help="Stable ID of the model object."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Show a compact context card for one canonical object."""
+    repo_root = _resolve_repo(repo)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+
+    if not db_path.exists():
+        console.print("[yellow]No index found. Run `martenweave build-index` first.[/yellow]")
+        raise typer.Exit(code=1)
+
+    card = generate_object_card(repo_root, object_id, db_path=db_path)
+
+    if card.object_type == "Unknown":
+        console.print(f"[red]Object '{object_id}' not found in index.[/red]")
+        raise typer.Exit(code=1)
+
+    if card.stale_index:
+        console.print(
+            f"[yellow]Warning: generated index is stale ({card.stale_reason}). "
+            f"Run `martenweave build-index` for up-to-date results.[/yellow]"
+        )
+
+    if json_output:
+        print(json.dumps(object_card_to_dict(card), indent=2, default=str))
+        raise typer.Exit()
+
+    console.print(f"[bold]{card.object_id}[/bold] ({card.object_type})")
+    console.print(f"  Status: {card.status}")
+    if card.name:
+        console.print(f"  Name: {card.name}")
+    if card.title:
+        console.print(f"  Title: {card.title}")
+    if card.domain:
+        console.print(f"  Domain: {card.domain}")
+    if card.description:
+        console.print(f"  Description: {card.description}")
+    console.print(f"  Source: {card.source_file}")
+
+    if card.evidence:
+        console.print("\n[bold]Evidence[/bold]")
+        for item in card.evidence:
+            console.print(f"  - {item}")
+
+    if card.validation_results:
+        console.print("\n[bold]Validation results[/bold]")
+        table = Table("Severity", "Code", "Message")
+        for v in card.validation_results:
+            table.add_row(v["severity"], v["code"], v["message"])
+        console.print(table)
+
+    def _print_relationships(label: str, rels: dict[str, list[dict[str, Any]]]) -> None:
+        if not rels:
+            console.print(f"\n[bold]{label}[/bold]: none")
+            return
+        console.print(f"\n[bold]{label}[/bold]")
+        table = Table("Relationship", "Object ID", "Type", "Name")
+        for rel_type, targets in sorted(rels.items()):
+            for target in targets:
+                table.add_row(
+                    rel_type,
+                    target.get("object_id", "—"),
+                    target.get("type", "—"),
+                    target.get("name") or "—",
+                )
+        console.print(table)
+
+    _print_relationships("Incoming relationships", card.incoming)
+    _print_relationships("Outgoing relationships", card.outgoing)
+
+    if card.open_issues:
+        console.print("\n[bold]Open issues[/bold]")
+        table = Table("ID", "Severity", "Name")
+        for issue in card.open_issues:
+            table.add_row(
+                issue.get("object_id", "—"),
+                issue.get("severity") or "—",
+                issue.get("name") or "—",
+            )
+        console.print(table)
+    else:
+        console.print("\n[bold]Open issues[/bold]: none")
+
+    if card.decisions:
+        console.print("\n[bold]Decisions[/bold]")
+        table = Table("ID", "Name", "Evidence")
+        for decision in card.decisions:
+            table.add_row(
+                decision.get("object_id", "—"),
+                decision.get("name") or "—",
+                decision.get("evidence") or "—",
+            )
+        console.print(table)
+    else:
+        console.print("\n[bold]Decisions[/bold]: none")
+
+    console.print("\n[bold]Impact summary[/bold]")
+    console.print(f"  Affected objects: {card.impact.get('affected_object_count', 0)}")
+    console.print(f"  Downstream: {card.impact.get('downstream_count', 0)}")
+    console.print(f"  Upstream: {card.impact.get('upstream_count', 0)}")
+
+    console.print("\n[bold]Trace summary[/bold]")
+    upstream = card.trace.get("upstream_ids", [])
+    downstream = card.trace.get("downstream_ids", [])
+    console.print(f"  Upstream IDs: {', '.join(upstream) if upstream else '—'}")
+    console.print(f"  Downstream IDs: {', '.join(downstream) if downstream else '—'}")
 
 
 @app.command("owners")

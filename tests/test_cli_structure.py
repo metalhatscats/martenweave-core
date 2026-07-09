@@ -70,6 +70,7 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
     "doctor",
     "scorecard",
     "readiness",
+    "object-card",
     "owners",
     "analyze",
     "gap-report",

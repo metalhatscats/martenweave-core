@@ -64,7 +64,7 @@ canonical files in `model/` remain authoritative.
 .venv/bin/martenweave query --type Attribute --repo examples/simple_product_model
 ```
 
-## 5. Trace and impact
+## 5. Trace, impact, and object context
 
 ```bash
 # Trace relationships for an object
@@ -72,6 +72,10 @@ canonical files in `model/` remain authoritative.
 
 # Impact analysis
 .venv/bin/martenweave impact DOMAIN-PRODUCT --repo examples/simple_product_model
+
+# Compact object card: identity, relationships, issues, decisions, evidence, impact
+.venv/bin/martenweave object-card ATTR-PRODUCT-NAME --repo examples/simple_product_model
+.venv/bin/martenweave object-card ATTR-PRODUCT-NAME --repo examples/simple_product_model --json
 ```
 
 ## 6. Profile a dataset
