@@ -1720,3 +1720,94 @@ class TestStableGapIds:
         for g in data["gaps"]:
             if g.get("sheet_name"):
                 assert g["sheet_name"].upper().replace(" ", "-") in g["gap_id"]
+
+
+class TestCustomerBpExampleDatasets:
+    """Realistic messy/clean CSVs in examples/customer_bp_model produce credible gaps."""
+
+    def test_messy_csv_reports_duplicate_renamed_and_extra_columns(
+        self, sample_repo: Path
+    ) -> None:
+        csv_path = sample_repo / "data" / "samples" / "customer_messy.csv"
+        result = runner.invoke(
+            app, ["gaps", str(csv_path), "--repo", str(sample_repo), "--json"]
+        )
+        assert result.exit_code == 0, result.output
+        data = json.loads(result.output)
+
+        assert data["coverage"]["total_columns"] == 8
+        assert data["coverage"]["duplicate_columns"] == 1
+        assert data["coverage"]["matched_columns"] == 0
+        assert data["coverage"]["match_rate"] == 0.0
+
+        gap_codes = [g["gap_code"] for g in data["gaps"]]
+        assert "DUPLICATE_COLUMN_NAME" in gap_codes
+        assert "NO_MATCHING_ENDPOINTS" in gap_codes
+
+        unmodeled = [
+            g["column_name"]
+            for g in data["gaps"]
+            if g["gap_code"] == "UNMODELED_DATASET_COLUMN"
+        ]
+        assert set(unmodeled) >= {
+            "CUSTOMER_ID",
+            "SALES_ORG",
+            "DIST_CHANNEL",
+            "DIV",
+            "CUST_GRP",
+            "EMAIL",
+            "PHONE",
+        }
+        # The duplicated CUST_GRP column produces two unmodeled gap records.
+        assert unmodeled.count("CUST_GRP") == 2
+        # The model expects CUSTOMER_GROUP, which was renamed in the messy file.
+        assert "CUSTOMER_GROUP" not in unmodeled
+
+    def test_clean_csv_matches_customer_group_and_has_no_duplicate_gap(
+        self, sample_repo: Path
+    ) -> None:
+        csv_path = sample_repo / "data" / "samples" / "customer_clean.csv"
+        result = runner.invoke(
+            app, ["gaps", str(csv_path), "--repo", str(sample_repo), "--json"]
+        )
+        assert result.exit_code == 0, result.output
+        data = json.loads(result.output)
+
+        assert data["coverage"]["total_columns"] == 5
+        assert data["coverage"]["duplicate_columns"] == 0
+        assert data["coverage"]["matched_columns"] == 1
+        assert data["coverage"]["match_rate"] == 0.2
+
+        gap_codes = {g["gap_code"] for g in data["gaps"]}
+        assert "DUPLICATE_COLUMN_NAME" not in gap_codes
+        assert "NO_MATCHING_ENDPOINTS" not in gap_codes
+
+        match = next(
+            (m for m in data["matches"] if m["column_name"] == "CUSTOMER_GROUP"), None
+        )
+        assert match is not None
+        assert match["matched_endpoint_id"] == "FEP-MIGFILE-CUSTOMER-GROUP"
+        assert match["match_type"] == "exact"
+
+        messy_unmodeled_count = len(
+            [
+                g
+                for g in json.loads(
+                    runner.invoke(
+                        app,
+                        [
+                            "gaps",
+                            str(sample_repo / "data" / "samples" / "customer_messy.csv"),
+                            "--repo",
+                            str(sample_repo),
+                            "--json",
+                        ],
+                    ).output
+                )["gaps"]
+                if g["gap_code"] == "UNMODELED_DATASET_COLUMN"
+            ]
+        )
+        clean_unmodeled_count = len(
+            [g for g in data["gaps"] if g["gap_code"] == "UNMODELED_DATASET_COLUMN"]
+        )
+        assert messy_unmodeled_count > clean_unmodeled_count

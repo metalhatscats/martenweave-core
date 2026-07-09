@@ -96,6 +96,44 @@ canonical files in `model/` remain authoritative.
 
 This compares dataset columns against your model's FieldEndpoints and reports matches, gaps, and coverage.
 
+## 7a. Realistic gap-detection demo (SAP customer data)
+
+The `examples/customer_bp_model` includes two small synthetic datasets so you can compare a clean migration file with a messy legacy extract:
+
+- `data/samples/customer_clean.csv` — canonical column names aligned with the model.
+- `data/samples/customer_messy.csv` — renamed, duplicated, and extra columns.
+
+Both files are synthetic; no real customer data is used.
+
+```bash
+.venv/bin/martenweave build-index --repo examples/customer_bp_model
+
+# Messy extract: expect duplicate, renamed, and unmodeled columns
+.venv/bin/martenweave gaps \
+  examples/customer_bp_model/data/samples/customer_messy.csv \
+  --repo examples/customer_bp_model
+```
+
+Expected gap highlights:
+
+- `DUPLICATE_COLUMN_NAME` for `CUST_GRP`
+- `UNMODELED_DATASET_COLUMN` for renamed columns such as `DIST_CHANNEL` and extra columns such as `EMAIL` and `PHONE`
+- `NO_MATCHING_ENDPOINTS` because none of the messy columns map to a model FieldEndpoint
+
+Compare with the clean extract:
+
+```bash
+.venv/bin/martenweave gaps \
+  examples/customer_bp_model/data/samples/customer_clean.csv \
+  --repo examples/customer_bp_model
+```
+
+Expected highlights:
+
+- One exact match: `CUSTOMER_GROUP` → `FEP-MIGFILE-CUSTOMER-GROUP`
+- No `DUPLICATE_COLUMN_NAME` or `NO_MATCHING_ENDPOINTS` gaps
+- Remaining unmodeled columns show where the model still needs dataset FieldEndpoints
+
 ## 8. Run a dataset readiness report
 
 ```bash
