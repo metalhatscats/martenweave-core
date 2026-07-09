@@ -134,6 +134,12 @@ run_step "gap-report customer_bp_model"
 assert_jq "${SMOKE_DIR}/customer-gap-report.json" \
     '.total_gap_count >= 0 and (.gaps_by_type | type == "object")'
 
+run_step "risk-report customer_bp_model"
+"${MODELOPS}" risk-report --repo examples/customer_bp_model --json \
+    >"${SMOKE_DIR}/customer-risk-report.json"
+assert_jq "${SMOKE_DIR}/customer-risk-report.json" \
+    '(.risk_items | type == "array") and .repo_name != null and .generated_at != null'
+
 run_step "docs-build local viewer customer_bp_model"
 VIEWER_DIR="${SMOKE_DIR}/customer-viewer"
 "${MODELOPS}" docs-build --repo examples/customer_bp_model --site "${VIEWER_DIR}" --json \

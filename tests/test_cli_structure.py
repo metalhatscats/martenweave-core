@@ -74,6 +74,7 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
     "model-summary",
     "owners",
     "analyze",
+    "risk-report",
     "gap-report",
     "trace",
     "impact",

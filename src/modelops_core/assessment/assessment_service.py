@@ -445,3 +445,24 @@ def generate_assessment_package(
         high_risk_count=len(risk_items),
         artifacts=artifacts,
     )
+
+
+def generate_risk_report(repo_root: Path) -> str:
+    """Generate a standalone high-risk fields Markdown report.
+
+    Args:
+        repo_root: Path to the model repository.
+
+    Returns:
+        Markdown content for the high-risk fields report.
+    """
+    repo_root = repo_root.resolve()
+    config = load_repo_config(repo_root)
+    repo_name = config.name if config else repo_root.name
+
+    db_path = _ensure_index(repo_root)
+    analysis = generate_analysis_report(db_path, repo_root)
+    validation_errors = _collect_validation_errors(db_path)
+    risk_items = _build_high_risk_items(analysis, validation_errors)
+
+    return _render_high_risk_fields_md(risk_items, repo_name)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import sqlite3
 from pathlib import Path
@@ -23,6 +24,7 @@ from modelops_core.agents import (
 from modelops_core.approval import compute_proposal_risk
 from modelops_core.assessment.assessment_service import (
     generate_assessment_package,
+    generate_risk_report,
 )
 from modelops_core.bundle import create_git_bundle
 from modelops_core.change_request import (
@@ -2139,6 +2141,68 @@ def analyze(
                 item.get("proposal_id") or "—",
             )
         console.print(table)
+
+
+@app.command("risk-report")
+@with_telemetry("risk_report")
+def risk_report(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    out: Path | None = typer.Option(  # noqa: B008
+        None, "--out", help="Output file path. Prints to stdout if omitted."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Generate a standalone high-risk fields report for a repository."""
+    repo_root = _resolve_repo(repo)
+
+    try:
+        content = generate_risk_report(repo_root)
+    except (ValueError, RuntimeError) as exc:
+        if json_output:
+            print(json.dumps({"error": str(exc)}, indent=2))
+        else:
+            console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        from datetime import UTC, datetime
+
+        repo_name_match = re.search(r"\*\*Repository\*\*: ([^\n]+)", content)
+        total_match = re.search(r"\*\*Total High Risk Items\*\*: (\d+)", content)
+        rows: list[dict[str, Any]] = []
+        # Extract table rows from the risk register section.
+        in_table = False
+        for line in content.splitlines():
+            if line.startswith("| Object ID |"):
+                in_table = True
+                continue
+            if in_table and line.startswith("|`"):
+                cells = [c.strip().strip("`") for c in line.split("|") if c.strip()]
+                if len(cells) >= 5:
+                    rows.append(
+                        {
+                            "object_id": cells[0],
+                            "object_type": cells[1],
+                            "object_name": cells[2],
+                            "severity": cells[3],
+                            "reasons": [r.strip() for r in cells[4].split(";") if r.strip()],
+                        }
+                    )
+        result = {
+            "repo_name": repo_name_match.group(1) if repo_name_match else repo_root.name,
+            "generated_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+            "total_high_risk_items": int(total_match.group(1)) if total_match else len(rows),
+            "risk_items": rows,
+        }
+        print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
+    if out:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(content, encoding="utf-8")
+        console.print(f"[bold]Risk report written to {out}[/bold]")
+    else:
+        console.print(content)
 
 
 @app.command("gap-report")
