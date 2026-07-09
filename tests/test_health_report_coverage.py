@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from modelops_core.index import build_index
+from modelops_core.index.dataset_profile_sync import link_dataset_profile_to_index
 from modelops_core.reports.health_report import (
     CoverageGap,
     DataQualityCoverage,
@@ -203,3 +204,41 @@ def test_coverage_gap_dataclass() -> None:
     )
     assert gap.object_id == "OBJ-1"
     assert gap.suggested_action == "Add a rule."
+
+
+def test_link_dataset_profile_to_index_updates_dataset(tmp_path: Path) -> None:
+    db_path = _build_repo(
+        tmp_path,
+        [
+            {"id": "DS-1", "type": "Dataset", "status": "active", "name": "data.csv"},
+        ],
+    )
+    profile_path = tmp_path / "generated" / "dataset_profiles" / "data.json"
+    profile_path.parent.mkdir(parents=True, exist_ok=True)
+    profile_path.write_text('{"dataset_id": "data"}', encoding="utf-8")
+
+    linked_id = link_dataset_profile_to_index(
+        tmp_path,
+        dataset_id="data",
+        profile_path=profile_path,
+        file_name="data.csv",
+    )
+    assert linked_id == "DS-1"
+
+    report = generate_repository_health(db_path)
+    assert report.data_quality_coverage is not None
+    assert report.data_quality_coverage.datasets_with_profile == 1
+
+
+def test_link_dataset_profile_to_index_returns_none_without_index(tmp_path: Path) -> None:
+    profile_path = tmp_path / "generated" / "dataset_profiles" / "data.json"
+    profile_path.parent.mkdir(parents=True, exist_ok=True)
+    profile_path.write_text('{"dataset_id": "data"}', encoding="utf-8")
+
+    linked_id = link_dataset_profile_to_index(
+        tmp_path,
+        dataset_id="data",
+        profile_path=profile_path,
+        file_name="data.csv",
+    )
+    assert linked_id is None

@@ -216,6 +216,89 @@ def test_cli_infer_model(sample_repo: Path) -> None:
     assert proposal_path.exists()
 
 
+def test_cli_profile_dataset_updates_index_by_name_match(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    model_dir = repo_root / "model"
+    model_dir.mkdir(parents=True, exist_ok=True)
+    generated_dir = repo_root / "generated"
+    generated_dir.mkdir(parents=True, exist_ok=True)
+
+    (model_dir / "DOMAIN-TEST.md").write_text(
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test\n---\n",
+        encoding="utf-8",
+    )
+    (model_dir / "DS-TEST.md").write_text(
+        "---\nid: DS-TEST\ntype: Dataset\nstatus: active\nname: customer_sample.csv\n---\n",
+        encoding="utf-8",
+    )
+
+    runner.invoke(app, ["build-index", "--repo", str(repo_root)])
+    csv_file = FIXTURES_DIR / "customer_sample.csv"
+    result = runner.invoke(app, ["profile-dataset", str(csv_file), "--repo", str(repo_root)])
+    assert result.exit_code == 0
+
+    health_result = runner.invoke(app, ["health", "--repo", str(repo_root)])
+    assert health_result.exit_code == 0
+    assert "Datasets with profile:" in health_result.output
+    assert "1/1" in health_result.output
+
+
+def test_cli_profile_dataset_updates_index_with_explicit_id(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    model_dir = repo_root / "model"
+    model_dir.mkdir(parents=True, exist_ok=True)
+    generated_dir = repo_root / "generated"
+    generated_dir.mkdir(parents=True, exist_ok=True)
+
+    (model_dir / "DOMAIN-TEST.md").write_text(
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test\n---\n",
+        encoding="utf-8",
+    )
+    (model_dir / "DS-TEST.md").write_text(
+        "---\nid: DS-TEST\ntype: Dataset\nstatus: active\nname: Other Dataset\n---\n",
+        encoding="utf-8",
+    )
+
+    runner.invoke(app, ["build-index", "--repo", str(repo_root)])
+    csv_file = FIXTURES_DIR / "customer_sample.csv"
+    result = runner.invoke(
+        app,
+        [
+            "profile-dataset",
+            str(csv_file),
+            "--repo",
+            str(repo_root),
+            "--dataset-id",
+            "DS-TEST",
+        ],
+    )
+    assert result.exit_code == 0
+
+    health_result = runner.invoke(app, ["health", "--repo", str(repo_root)])
+    assert health_result.exit_code == 0
+    assert "Datasets with profile:" in health_result.output
+    assert "1/1" in health_result.output
+
+
+def test_cli_profile_dataset_warns_when_no_dataset_match(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    model_dir = repo_root / "model"
+    model_dir.mkdir(parents=True, exist_ok=True)
+    generated_dir = repo_root / "generated"
+    generated_dir.mkdir(parents=True, exist_ok=True)
+
+    (model_dir / "DOMAIN-TEST.md").write_text(
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test\n---\n",
+        encoding="utf-8",
+    )
+
+    runner.invoke(app, ["build-index", "--repo", str(repo_root)])
+    csv_file = FIXTURES_DIR / "customer_sample.csv"
+    result = runner.invoke(app, ["profile-dataset", str(csv_file), "--repo", str(repo_root)])
+    assert result.exit_code == 0
+    assert "No matching Dataset object found" in result.output
+
+
 # Global option tests ---------------------------------------------------------
 
 

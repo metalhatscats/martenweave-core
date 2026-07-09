@@ -84,6 +84,7 @@ from modelops_core.imports.privacy import (
     detect_high_risk_columns,
 )
 from modelops_core.index import build_index as _build_index
+from modelops_core.index.dataset_profile_sync import link_dataset_profile_to_index
 from modelops_core.index.query_service import (
     query_objects,
     search_objects,
@@ -379,6 +380,14 @@ def init(
 def profile_dataset(
     file: Path = typer.Argument(..., help="Path to CSV or XLSX file."),  # noqa: B008
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    dataset_id: str | None = typer.Option(
+        None,
+        "--dataset-id",
+        help=(
+            "Dataset object ID to link the profile to. "
+            "Defaults to the file stem; falls back to matching by Dataset name."
+        ),
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
     include_raw_samples: bool = typer.Option(
         False,
@@ -397,13 +406,13 @@ def profile_dataset(
         raise typer.Exit(code=1)
 
     limits = load_resource_limits(repo_root)
-    dataset_id = file.stem
+    effective_dataset_id = dataset_id or file.stem
     suffix = file.suffix.lower()
 
     if suffix == ".csv":
         raw_profile = profile_csv(
             file,
-            dataset_id=dataset_id,
+            dataset_id=effective_dataset_id,
             max_file_size=limits.max_file_size_bytes,
             max_rows=limits.max_profile_rows,
             max_columns=limits.max_profile_columns,
@@ -412,7 +421,7 @@ def profile_dataset(
     elif suffix in {".xlsx", ".xls"}:
         raw_profile = profile_xlsx(
             file,
-            dataset_id=dataset_id,
+            dataset_id=effective_dataset_id,
             max_file_size=limits.max_file_size_bytes,
             max_rows=limits.max_profile_rows,
             max_columns=limits.max_profile_columns,
@@ -434,7 +443,7 @@ def profile_dataset(
         high_risk_cols = detect_high_risk_columns(profile)
 
     profile_dict = dataset_profile_to_dict(profile)
-    output_path = profile_dir / f"{dataset_id}.json"
+    output_path = profile_dir / f"{effective_dataset_id}.json"
     output_path.write_text(
         json.dumps(profile_dict, indent=2, default=str, sort_keys=True),
         encoding="utf-8",
@@ -444,12 +453,25 @@ def profile_dataset(
     src_service = SourceRegistryService(repo_root)
     register_dataset_source(
         src_service,
-        dataset_id=dataset_id,
+        dataset_id=effective_dataset_id,
         file_path=file,
         file_hash=profile_dict.get("file_hash", ""),
         row_count=profile_dict.get("row_count", 0),
         column_count=profile_dict.get("column_count", 0),
     )
+
+    # Keep the disposable index in sync so health/scorecard reflect the profile.
+    linked_id = link_dataset_profile_to_index(
+        repo_root,
+        dataset_id=effective_dataset_id,
+        profile_path=output_path,
+        file_name=file.name,
+    )
+    if linked_id is None and not json_output:
+        console.print(
+            "[yellow]No matching Dataset object found in the index. "
+            "Run `martenweave build-index` if the index is missing or outdated.[/yellow]"
+        )
 
     if json_output:
         print(json.dumps(profile_dict, indent=2, default=str, sort_keys=True))
