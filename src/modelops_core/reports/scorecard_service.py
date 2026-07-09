@@ -556,10 +556,16 @@ def generate_scorecard(
             ev_explanation = (
                 f"{decisions_with_evidence} of {decisions_total} decisions have evidence."
             )
+            ev_suggested_action = (
+                "Add evidence references to decisions."
+                if decisions_with_evidence < decisions_total
+                else None
+            )
         else:
             ev_value = 0.0
-            ev_status = "pass"
+            ev_status = _status(ev_value, 80.0, 50.0)
             ev_explanation = "No Decision objects in model."
+            ev_suggested_action = "Add Decision objects with evidence references."
         metrics.append(
             ScorecardMetric(
                 name="evidence_coverage",
@@ -567,9 +573,7 @@ def generate_scorecard(
                 target=80.0,
                 status=ev_status,
                 explanation=ev_explanation,
-                suggested_action="Add evidence references to decisions."
-                if decisions_total > decisions_with_evidence
-                else None,
+                suggested_action=ev_suggested_action,
             )
         )
 
@@ -581,10 +585,16 @@ def generate_scorecard(
                 f"{sap_with_attribute} of {sap_total} "
                 f"target SAP FieldEndpoints have attribute linkage."
             )
+            sap_suggested_action = (
+                "Link attributes to SAP FieldEndpoints."
+                if sap_with_attribute < sap_total
+                else None
+            )
         else:
             sap_value = 0.0
-            sap_status = "pass"
+            sap_status = _status(sap_value, 90.0, 60.0)
             sap_explanation = "No target SAP FieldEndpoints in model."
+            sap_suggested_action = "Add target SAP FieldEndpoints with attribute linkage."
         metrics.append(
             ScorecardMetric(
                 name="sap_table_coverage",
@@ -592,9 +602,7 @@ def generate_scorecard(
                 target=90.0,
                 status=sap_status,
                 explanation=sap_explanation,
-                suggested_action="Link attributes to SAP FieldEndpoints."
-                if sap_total > sap_with_attribute
-                else None,
+                suggested_action=sap_suggested_action,
             )
         )
 

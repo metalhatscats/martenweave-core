@@ -168,7 +168,7 @@ class TestScorecardEvidenceCoverage:
         report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
         ev_metric = next(m for m in report.metrics if m.name == "evidence_coverage")
         assert ev_metric.value == 0.0
-        assert ev_metric.status == "pass"
+        assert ev_metric.status == "fail"
         assert "No Decision objects" in ev_metric.explanation
 
 
@@ -258,7 +258,7 @@ class TestScorecardSapTableCoverage:
         report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
         sap_metric = next(m for m in report.metrics if m.name == "sap_table_coverage")
         assert sap_metric.value == 0.0
-        assert sap_metric.status == "pass"
+        assert sap_metric.status == "fail"
         assert "No target SAP FieldEndpoints" in sap_metric.explanation
 
     def test_sap_table_coverage_ignores_non_target_tables(self, tmp_path: Path) -> None:
@@ -284,7 +284,55 @@ class TestScorecardSapTableCoverage:
         report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
         sap_metric = next(m for m in report.metrics if m.name == "sap_table_coverage")
         assert sap_metric.value == 0.0
-        assert sap_metric.status == "pass"
+        assert sap_metric.status == "fail"
+
+
+class TestScorecardRepoName:
+    def test_scorecard_uses_name_from_config(self, tmp_path: Path) -> None:
+        from modelops_core.index.sqlite_builder import build_index
+
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        generated_dir = tmp_path / "generated"
+        generated_dir.mkdir()
+        (model_dir / "DOMAIN-TEST.md").write_text(
+            "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\n"
+            "name: Test Domain\nschema_version: '1.0'\n---\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "modelops.config.yaml").write_text(
+            "name: Official Repo Name\n", encoding="utf-8"
+        )
+        build_index(
+            repo_root=tmp_path,
+            db_path=generated_dir / "modelops.db",
+            allow_invalid=True,
+        )
+        report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
+        assert report.repo_name == "Official Repo Name"
+
+    def test_scorecard_uses_workspace_name_fallback(self, tmp_path: Path) -> None:
+        from modelops_core.index.sqlite_builder import build_index
+
+        model_dir = tmp_path / "model"
+        model_dir.mkdir()
+        generated_dir = tmp_path / "generated"
+        generated_dir.mkdir()
+        (model_dir / "DOMAIN-TEST.md").write_text(
+            "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\n"
+            "name: Test Domain\nschema_version: '1.0'\n---\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "modelops.config.yaml").write_text(
+            "workspace_name: Customer BP Example\n", encoding="utf-8"
+        )
+        build_index(
+            repo_root=tmp_path,
+            db_path=generated_dir / "modelops.db",
+            allow_invalid=True,
+        )
+        report = generate_scorecard(generated_dir / "modelops.db", tmp_path)
+        assert report.repo_name == "Customer BP Example"
 
 
 class TestScorecardReadinessLevels:

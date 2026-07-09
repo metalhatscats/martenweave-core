@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class ResourceLimits(BaseModel):
@@ -50,6 +50,7 @@ class RepoConfig(BaseModel):
     """Repository-level configuration from modelops.config.yaml."""
 
     name: str = "Untitled Repository"
+    workspace_name: str | None = None
     description: str = ""
     version: str = "1.0.0"
     schema_version: str = "1.0"
@@ -63,6 +64,15 @@ class RepoConfig(BaseModel):
         description="Minimum unique approvers required for high-risk ChangeRequests.",
     )
     resource_limits: ResourceLimits = Field(default_factory=ResourceLimits)
+
+    model_config = ConfigDict(extra="ignore")
+
+    @model_validator(mode="after")
+    def _resolve_name(self) -> RepoConfig:
+        """Use workspace_name as a fallback for repositories that use that key."""
+        if self.workspace_name and self.name == "Untitled Repository":
+            self.name = self.workspace_name
+        return self
 
 
 class Settings(BaseModel):

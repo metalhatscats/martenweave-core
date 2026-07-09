@@ -102,7 +102,7 @@ class TestReadinessAgent:
         result = agent.run(ReadinessInput(repo_root=repo_root, profile="pilot"))
 
         assert result.ready is False
-        assert len(result.issues_created) == 2
+        assert len(result.issues_created) == 1
         assert all(i.startswith("ISS-READINESS-") for i in result.issues_created)
         issue_paths = [model_dir / "issues" / f"{i}.md" for i in result.issues_created]
         assert all(p.exists() for p in issue_paths)
@@ -133,29 +133,55 @@ class TestReadinessAgent:
         assert result.ready is False
         assert "invalid_open_proposal" in result.failed_gates
 
-    def test_detects_scorecard_zero_coverage_pass(self, tmp_path: Path) -> None:
+    def test_scorecard_zero_coverage_no_longer_reports_pass(self, tmp_path: Path) -> None:
         repo_root = _build_minimal_repo(tmp_path)
         build_index(repo_root, allow_invalid=True)
 
         agent = ReadinessAgent(dry_run=True)
         result = agent.run(ReadinessInput(repo_root=repo_root, profile="pilot"))
 
-        # The minimal repo has no Decision objects, so evidence_coverage is 0.0 pass.
-        assert any(
+        # The minimal repo has no Decision objects; evidence_coverage is 0.0 and
+        # should be reported as fail, so the readiness safety gate must not trigger.
+        assert not any(
             b.gate == "scorecard_zero_coverage_pass" and "evidence_coverage" in b.message
             for b in result.blockers
         )
 
 
 class TestReadinessCli:
-    def test_cli_dry_run(self, sample_repo: Path) -> None:
+    def test_cli_dry_run_ready_repo(self, sample_repo: Path) -> None:
         runner = CliRunner()
         result = runner.invoke(
             app,
             ["agent", "readiness", "--repo", str(sample_repo), "--dry-run"],
         )
+        assert result.exit_code == 0
+        assert "Gates checked:" in result.output
+        assert "ready" in result.output.lower()
+
+    def test_cli_dry_run_not_ready(self, tmp_path: Path) -> None:
+        repo_root = _build_minimal_repo(tmp_path)
+        model_dir = repo_root / "model"
+        (model_dir / "ATTR-TEST.md").write_text(
+            "---\n"
+            "id: ATTR-TEST\n"
+            "type: Attribute\n"
+            "status: active\n"
+            "name: Test Attribute\n"
+            "domain: DOMAIN-TEST\n"
+            "---\n",
+            encoding="utf-8",
+        )
+        build_index(repo_root, allow_invalid=True)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            app,
+            ["agent", "readiness", "--repo", str(repo_root), "--dry-run"],
+        )
         assert result.exit_code == 1  # not ready
         assert "Gates checked:" in result.output
+        assert "active_object_missing_owner" in result.output
 
     def test_cli_json_output(self, sample_repo: Path) -> None:
         runner = CliRunner()

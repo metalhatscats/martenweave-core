@@ -180,6 +180,26 @@ class TestLoadRepoConfig:
         assert config is not None
         assert config.name == "YAML Repo"
 
+    def test_workspace_name_used_when_name_missing(self, tmp_path: Path) -> None:
+        config_file = tmp_path / "modelops.config.yaml"
+        config_file.write_text(
+            yaml.safe_dump({"workspace_name": "Customer BP Example"}),
+            encoding="utf-8",
+        )
+        config = load_repo_config(tmp_path)
+        assert config is not None
+        assert config.name == "Customer BP Example"
+
+    def test_name_takes_precedence_over_workspace_name(self, tmp_path: Path) -> None:
+        config_file = tmp_path / "modelops.config.yaml"
+        config_file.write_text(
+            yaml.safe_dump({"name": "Official Name", "workspace_name": "Legacy Name"}),
+            encoding="utf-8",
+        )
+        config = load_repo_config(tmp_path)
+        assert config is not None
+        assert config.name == "Official Name"
+
 
 class TestResolvePaths:
     def test_resolve_model_path_with_config(self, tmp_path: Path) -> None:
