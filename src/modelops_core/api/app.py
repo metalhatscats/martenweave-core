@@ -16,6 +16,7 @@ from modelops_core.impact.impact_service import generate_impact_report
 from modelops_core.patching.apply_service import apply_patch_proposal, dry_run_patch_proposal
 from modelops_core.patching.patch_validator import validate_patch_proposal
 from modelops_core.repository import parse_file, scan_repository
+from modelops_core.run import generate_dataset_readiness_report
 from modelops_core.trace import trace_object
 from modelops_core.validation import validate_objects
 
@@ -387,3 +388,74 @@ def export(
         return {"format": "xlsx", "file": str(path)}
     else:
         raise HTTPException(status_code=400, detail=f"Unknown format: {format}")
+
+
+@app.post("/gaps")
+def gaps(
+    dataset: str = Query(..., description="Path to CSV or XLSX dataset file"),
+    repo: str | None = Query(None, description="Path to model repository"),
+    check_model: bool = Query(False, description="Also include model-side gaps"),
+) -> dict[str, Any]:
+    """Detect dataset-to-model gaps for a CSV or XLSX file.
+
+    The endpoint builds (or refreshes) the SQLite index for the repository so
+    the report reflects the current canonical files.
+    """
+    repo_root = _resolve_repo(repo)
+    dataset_path = Path(dataset)
+    if not dataset_path.exists():
+        raise HTTPException(status_code=404, detail=f"Dataset not found: {dataset}")
+
+    try:
+        report = generate_dataset_readiness_report(
+            repo_root=repo_root,
+            dataset_path=dataset_path,
+            check_model=check_model,
+            dry_run=True,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "dataset_id": dataset_path.stem,
+        "verdict": report.verdict,
+        "coverage": report.coverage,
+        "matches": report.matches,
+        "dataset_gaps": report.dataset_gaps,
+        "model_gaps": report.model_gaps,
+    }
+
+
+@app.post("/dataset-readiness")
+def dataset_readiness(
+    dataset: str = Query(..., description="Path to CSV or XLSX dataset file"),
+    repo: str | None = Query(None, description="Path to model repository"),
+    check_model: bool = Query(False, description="Also include model-side gaps"),
+    promote_to_proposal: bool = Query(
+        False, description="Promote dataset gaps to a draft PatchProposal"
+    ),
+    issue_draft: bool = Query(False, description="Generate a GitHub-ready issue draft"),
+) -> dict[str, Any]:
+    """Run the full dataset-readiness workflow.
+
+    By default this returns a read-only readiness report. Pass
+    ``promote_to_proposal`` or ``issue_draft`` to persist artifacts for human
+    review, following the same AI-proposes/human-approves model as the CLI.
+    """
+    repo_root = _resolve_repo(repo)
+    dataset_path = Path(dataset)
+    if not dataset_path.exists():
+        raise HTTPException(status_code=404, detail=f"Dataset not found: {dataset}")
+
+    try:
+        report = generate_dataset_readiness_report(
+            repo_root=repo_root,
+            dataset_path=dataset_path,
+            check_model=check_model,
+            promote_to_proposal=promote_to_proposal,
+            issue_draft=issue_draft,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return report.__dict__

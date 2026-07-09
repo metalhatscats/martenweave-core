@@ -440,3 +440,105 @@ def test_api_apply_medium_risk_blocked_without_cr(tmp_path: Path) -> None:
     assert response.status_code == 400
     data = response.json()
     assert "approval required" in data["detail"].lower()
+
+
+# ---------------------------------------------------------------------------
+# dataset gaps and readiness
+# ---------------------------------------------------------------------------
+
+
+def _write_csv(path: Path, columns: list[str], rows: list[list[str]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [",".join(columns)]
+    for row in rows:
+        lines.append(",".join(row))
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _build_repo_with_endpoint(tmp_path: Path) -> Path:
+    repo = tmp_path / "repo"
+    model_dir = repo / "model"
+    model_dir.mkdir(parents=True)
+    (repo / "generated").mkdir(parents=True)
+
+    (repo / "modelops.config.yaml").write_text(
+        'schema_version: "1.0"\nworkspace_name: API Test Repo\n',
+        encoding="utf-8",
+    )
+    (model_dir / "DOMAIN-TEST.md").write_text(
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n",
+        encoding="utf-8",
+    )
+    (model_dir / "ATTR-TEST.md").write_text(
+        "---\n"
+        "id: ATTR-TEST\n"
+        "type: Attribute\n"
+        "status: draft\n"
+        "name: Test Attribute\n"
+        "domain: DOMAIN-TEST\n"
+        "---\n",
+        encoding="utf-8",
+    )
+    (model_dir / "FEP-TEST.md").write_text(
+        "---\n"
+        "id: FEP-TEST\n"
+        "type: FieldEndpoint\n"
+        "status: draft\n"
+        "name: Test Field\n"
+        "domain: DOMAIN-TEST\n"
+        "attribute: ATTR-TEST\n"
+        "column_name: CUSTOMER_GROUP\n"
+        "---\n",
+        encoding="utf-8",
+    )
+    return repo
+
+
+def test_api_gaps_success(tmp_path: Path) -> None:
+    repo = _build_repo_with_endpoint(tmp_path)
+    dataset = tmp_path / "customers.csv"
+    _write_csv(dataset, ["CUSTOMER_GROUP", "UNKNOWN"], [["A", "1"]])
+
+    response = client.post("/gaps", params={"repo": str(repo), "dataset": str(dataset)})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["coverage"]["total_columns"] == 2
+    assert data["coverage"]["matched_columns"] == 1
+    assert data["coverage"]["unmatched_columns"] == 1
+    assert any(g["gap_code"] == "UNMODELED_DATASET_COLUMN" for g in data["dataset_gaps"])
+
+
+def test_api_gaps_missing_dataset(tmp_path: Path) -> None:
+    repo = _build_repo_with_endpoint(tmp_path)
+    response = client.post(
+        "/gaps", params={"repo": str(repo), "dataset": str(tmp_path / "missing.csv")}
+    )
+    assert response.status_code == 404
+    assert "Dataset not found" in response.json()["detail"]
+
+
+def test_api_dataset_readiness_success(tmp_path: Path) -> None:
+    repo = _build_repo_with_endpoint(tmp_path)
+    dataset = tmp_path / "customers.csv"
+    _write_csv(dataset, ["CUSTOMER_GROUP", "UNKNOWN"], [["A", "1"]])
+
+    response = client.post(
+        "/dataset-readiness", params={"repo": str(repo), "dataset": str(dataset)}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["verdict"] == "ready_with_warnings"
+    assert data["validation"]["error_count"] == 0
+    assert data["coverage"]["matched_columns"] == 1
+
+
+def test_api_dataset_readiness_unsupported_format(tmp_path: Path) -> None:
+    repo = _build_repo_with_endpoint(tmp_path)
+    dataset = tmp_path / "customers.txt"
+    dataset.write_text("CUSTOMER_GROUP\nA\n", encoding="utf-8")
+
+    response = client.post(
+        "/dataset-readiness", params={"repo": str(repo), "dataset": str(dataset)}
+    )
+    assert response.status_code == 400
+    assert "Unsupported" in response.json()["detail"]
