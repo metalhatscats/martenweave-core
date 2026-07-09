@@ -24,6 +24,7 @@ class ColumnGap:
     gap_code: str
     severity: str
     message: str
+    gap_id: str | None = None
     evidence_ids: list[str] = field(default_factory=list)
     source_dataset_metadata: dict[str, Any] = field(default_factory=dict)
     recommended_proposal_op: dict[str, Any] | None = None
@@ -49,6 +50,39 @@ class DatasetGapReport:
 
 def _normalize(name: str) -> str:
     return name.strip().lower().replace("_", "-").replace(" ", "-")
+
+
+def _compute_gap_id(
+    gap_code: str,
+    dataset_id: str | None = None,
+    sheet_name: str | None = None,
+    column_name: str | None = None,
+    object_id: str | None = None,
+) -> str:
+    """Return a deterministic, stable gap ID.
+
+    The ID is derived from the gap code, dataset, sheet, column, and any
+    related object ID so that the same dataset/model state always produces
+    the same ID. Changing a column name, sheet name, gap code, or related
+    object produces a different ID.
+    """
+    safe_code = _sanitize_id_part(gap_code) or "NONE"
+
+    if object_id and not dataset_id:
+        # Model-side gap (e.g. MODEL_ATTRIBUTE_MISSING_SOURCE, MISSING_OWNER)
+        safe_object = _sanitize_id_part(object_id) or "NONE"
+        return f"GAP-MODEL-{safe_object}-{safe_code}"
+
+    safe_dataset = _sanitize_id_part(dataset_id) if dataset_id else "NONE"
+    safe_sheet = _sanitize_id_part(sheet_name) if sheet_name else "NONE"
+    safe_column = _sanitize_id_part(column_name) if column_name else "NONE"
+
+    # Fallback for model gaps that also carry a dataset context
+    if object_id:
+        safe_object = _sanitize_id_part(object_id) or "NONE"
+        return f"GAP-{safe_dataset}-{safe_sheet}-{safe_column}-{safe_object}-{safe_code}"
+
+    return f"GAP-{safe_dataset}-{safe_sheet}-{safe_column}-{safe_code}"
 
 
 def _build_endpoint_index(db_path: Path) -> dict[str, dict[str, Any]]:
@@ -137,13 +171,15 @@ def _build_recommended_op(gap: ColumnGap) -> dict[str, Any] | None:
         return None
 
     dataset_id = (gap.source_dataset_metadata or {}).get("dataset_id", "DATASET")
-    safe_dataset = _sanitize_id_part(dataset_id)
-    safe_column = _sanitize_id_part(gap.column_name) if gap.column_name else "ALL"
-    safe_code = _sanitize_id_part(gap.gap_code)
-    object_id = f"ISSUE-GAP-{safe_dataset}-{safe_column}-{safe_code}"
+    issue_id = gap.gap_id or _compute_gap_id(
+        gap_code=gap.gap_code,
+        dataset_id=dataset_id,
+        sheet_name=gap.sheet_name,
+        column_name=gap.column_name,
+    )
 
     after = {
-        "id": object_id,
+        "id": issue_id,
         "type": "Issue",
         "status": "open",
         "name": f"Dataset gap: {gap.gap_code}",
@@ -152,19 +188,22 @@ def _build_recommended_op(gap: ColumnGap) -> dict[str, Any] | None:
         "source_dataset_id": dataset_id,
         "source_column": gap.column_name or None,
         "source_gap_code": gap.gap_code,
+        "source_gap_id": issue_id,
         "recommended_action": gap.message,
     }
 
     return {
         "op": "create_issue",
-        "object_id": object_id,
+        "object_id": issue_id,
         "object_type": "Issue",
         "after": after,
         "reason": gap.message,
     }
 
 
-def detect_dataset_gaps(profile: DatasetProfile, db_path: Path) -> DatasetGapReport:
+def detect_dataset_gaps(
+    profile: DatasetProfile, db_path: Path, sheet_name: str | None = None
+) -> DatasetGapReport:
     """Match dataset columns against FieldEndpoint objects in the index."""
     endpoints = _build_endpoint_index(db_path)
     matches: list[ColumnMatch] = []
@@ -183,6 +222,11 @@ def detect_dataset_gaps(profile: DatasetProfile, db_path: Path) -> DatasetGapRep
                 gap_code="EMPTY_DATASET",
                 severity=_severity_for_gap("EMPTY_DATASET"),
                 message=f"Dataset '{profile.dataset_id}' has no columns.",
+                gap_id=_compute_gap_id(
+                    gap_code="EMPTY_DATASET",
+                    dataset_id=profile.dataset_id,
+                    sheet_name=sheet_name,
+                ),
                 source_dataset_metadata=dataset_meta,
             )
         )
@@ -208,6 +252,12 @@ def detect_dataset_gaps(profile: DatasetProfile, db_path: Path) -> DatasetGapRep
                 gap_code="DUPLICATE_COLUMN_NAME",
                 severity=_severity_for_gap("DUPLICATE_COLUMN_NAME"),
                 message=f"Duplicate column name '{col.name}' in dataset.",
+                gap_id=_compute_gap_id(
+                    gap_code="DUPLICATE_COLUMN_NAME",
+                    dataset_id=profile.dataset_id,
+                    sheet_name=sheet_name,
+                    column_name=col.name,
+                ),
                 source_dataset_metadata=dataset_meta,
             )
             gap.recommended_proposal_op = _build_recommended_op(gap)
@@ -222,6 +272,12 @@ def detect_dataset_gaps(profile: DatasetProfile, db_path: Path) -> DatasetGapRep
                 gap_code="UNMODELED_DATASET_COLUMN",
                 severity=_severity_for_gap("UNMODELED_DATASET_COLUMN"),
                 message=f"Dataset column '{col.name}' has no matching FieldEndpoint.",
+                gap_id=_compute_gap_id(
+                    gap_code="UNMODELED_DATASET_COLUMN",
+                    dataset_id=profile.dataset_id,
+                    sheet_name=sheet_name,
+                    column_name=col.name,
+                ),
                 source_dataset_metadata=dataset_meta,
             )
             gap.recommended_proposal_op = _build_recommended_op(gap)
@@ -232,6 +288,12 @@ def detect_dataset_gaps(profile: DatasetProfile, db_path: Path) -> DatasetGapRep
                 gap_code="DATASET_COLUMN_MULTIPLE_MATCHES",
                 severity=_severity_for_gap("DATASET_COLUMN_MULTIPLE_MATCHES"),
                 message=f"Dataset column '{col.name}' matches multiple endpoints.",
+                gap_id=_compute_gap_id(
+                    gap_code="DATASET_COLUMN_MULTIPLE_MATCHES",
+                    dataset_id=profile.dataset_id,
+                    sheet_name=sheet_name,
+                    column_name=col.name,
+                ),
                 source_dataset_metadata=dataset_meta,
             )
             gap.recommended_proposal_op = _build_recommended_op(gap)
@@ -250,6 +312,11 @@ def detect_dataset_gaps(profile: DatasetProfile, db_path: Path) -> DatasetGapRep
                 message=(
                     f"None of the {len(profile.columns)} columns in "
                     f"'{profile.dataset_id}' matched a FieldEndpoint."
+                ),
+                gap_id=_compute_gap_id(
+                    gap_code="NO_MATCHING_ENDPOINTS",
+                    dataset_id=profile.dataset_id,
+                    sheet_name=sheet_name,
                 ),
                 source_dataset_metadata=dataset_meta,
             )
@@ -306,6 +373,10 @@ def detect_model_gaps(db_path: Path) -> list[ColumnGap]:
                         gap_code="MODEL_ATTRIBUTE_MISSING_SOURCE",
                         severity=_severity_for_gap("MODEL_ATTRIBUTE_MISSING_SOURCE"),
                         message=(f"Attribute '{attr_id}' has no linked FieldEndpoint."),
+                        gap_id=_compute_gap_id(
+                            gap_code="MODEL_ATTRIBUTE_MISSING_SOURCE",
+                            object_id=attr_id,
+                        ),
                     )
                 )
 
@@ -324,6 +395,10 @@ def detect_model_gaps(db_path: Path) -> list[ColumnGap]:
                         gap_code="MISSING_OWNER",
                         severity=_severity_for_gap("MISSING_OWNER"),
                         message=f"{obj_type} '{obj_id}' is missing an owner.",
+                        gap_id=_compute_gap_id(
+                            gap_code="MISSING_OWNER",
+                            object_id=obj_id,
+                        ),
                     )
                 )
     finally:

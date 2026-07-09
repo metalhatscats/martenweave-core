@@ -554,8 +554,8 @@ def gaps(
     sheet_reports: list[DatasetGapReport] = []
     if isinstance(profile, WorkbookProfile):
         for sheet in profile.sheets:
-            sheet_report = detect_dataset_gaps(sheet, db_path)
-            # Annotate sheet name
+            sheet_report = detect_dataset_gaps(sheet, db_path, sheet_name=sheet.sheet_name)
+            # Annotate sheet name on matches for output
             for m in sheet_report.matches:
                 m.sheet_name = sheet.sheet_name
             for g in sheet_report.gaps:
@@ -614,6 +614,7 @@ def gaps(
             ],
             "gaps": [
                 {
+                    "gap_id": g.gap_id,
                     "column_name": g.column_name,
                     "gap_code": g.gap_code,
                     "severity": g.severity,
@@ -675,8 +676,9 @@ def gaps(
             )
             if create_issues and all_gaps:
                 console.print(f"  Would create {len(all_gaps)} Issue(s):")
-                for idx in range(1, len(all_gaps) + 1):
-                    console.print(f"    ISSUE-GAP-{dataset_id.upper()}-{idx:03d}.md")
+                for idx, g in enumerate(all_gaps, start=1):
+                    issue_id = g.gap_id or f"ISSUE-GAP-{dataset_id.upper()}-{idx:03d}"
+                    console.print(f"    {issue_id}.md")
             if promote_to_proposal and all_dataset_gaps:
                 console.print(
                     f"  Would promote {len(all_dataset_gaps)} gap(s) to a draft PatchProposal."
@@ -691,7 +693,7 @@ def gaps(
             issues_dir = model_path / "issues"
             issues_dir.mkdir(parents=True, exist_ok=True)
             for idx, g in enumerate(all_gaps, start=1):
-                issue_id = f"ISSUE-GAP-{dataset_id.upper()}-{idx:03d}"
+                issue_id = g.gap_id or f"ISSUE-GAP-{dataset_id.upper()}-{idx:03d}"
                 issue_fm = {
                     "id": issue_id,
                     "type": "Issue",
@@ -702,6 +704,7 @@ def gaps(
                     "source_dataset_id": dataset_id,
                     "source_column": g.column_name,
                     "source_gap_code": g.gap_code,
+                    "source_gap_id": g.gap_id,
                     "recommended_action": g.message,
                 }
                 issue_path = issues_dir / f"{issue_id}.md"

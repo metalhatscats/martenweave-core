@@ -342,7 +342,7 @@ class TestGapsCli:
         assert result.exit_code == 0
         assert "Preview only" in result.output
         assert "--write" in result.output
-        issue_file = model_dir / "issues" / "ISSUE-GAP-DATA-001.md"
+        issue_file = model_dir / "issues" / "GAP-DATA-NONE-UNKNOWN-COL-UNMODELED-DATASET-COLUMN.md"
         assert not issue_file.exists()
 
     def test_gaps_create_issues_with_write(self, tmp_path: Path) -> None:
@@ -393,11 +393,12 @@ class TestGapsCli:
             ],
         )
         assert result.exit_code == 0
-        issue_file = model_dir / "issues" / "ISSUE-GAP-DATA-001.md"
+        issue_file = model_dir / "issues" / "GAP-DATA-NONE-UNKNOWN-COL-UNMODELED-DATASET-COLUMN.md"
         assert issue_file.exists()
         text = issue_file.read_text(encoding="utf-8")
         assert "Issue" in text
         assert "UNKNOWN_COL" in text
+        assert "source_gap_id" in text
         assert "Audit event written" in result.output
 
     def test_gaps_create_issues_dry_run(self, tmp_path: Path) -> None:
@@ -449,7 +450,7 @@ class TestGapsCli:
         )
         assert result.exit_code == 0
         assert "Dry-run" in result.output
-        issue_file = model_dir / "issues" / "ISSUE-GAP-DATA-001.md"
+        issue_file = model_dir / "issues" / "GAP-DATA-NONE-UNKNOWN-COL-UNMODELED-DATASET-COLUMN.md"
         assert not issue_file.exists()
 
 
@@ -584,6 +585,8 @@ def test_promote_gaps_to_proposal(tmp_path: Path) -> None:
     model_dir = tmp_path / "model"
     model_dir.mkdir()
 
+    stable_gap_id = "GAP-TEST-DATASET-NONE-UNKNOWN-COL-UNMODELED-DATASET-COLUMN"
+
     report = DatasetGapReport(
         dataset_id="test-dataset",
         gaps=[
@@ -592,12 +595,13 @@ def test_promote_gaps_to_proposal(tmp_path: Path) -> None:
                 gap_code="UNMODELED_DATASET_COLUMN",
                 severity="warning",
                 message="No matching endpoint.",
+                gap_id=stable_gap_id,
                 recommended_proposal_op={
                     "op": "create_issue",
-                    "object_id": "ISSUE-GAP-TEST-DATASET-UNKNOWN-COL-UNMODELED",
+                    "object_id": stable_gap_id,
                     "object_type": "Issue",
                     "after": {
-                        "id": "ISSUE-GAP-TEST-DATASET-UNKNOWN-COL-UNMODELED",
+                        "id": stable_gap_id,
                         "type": "Issue",
                         "status": "open",
                         "name": "Dataset gap: UNMODELED_DATASET_COLUMN",
@@ -606,6 +610,7 @@ def test_promote_gaps_to_proposal(tmp_path: Path) -> None:
                         "source_dataset_id": "test-dataset",
                         "source_column": "UNKNOWN_COL",
                         "source_gap_code": "UNMODELED_DATASET_COLUMN",
+                        "source_gap_id": stable_gap_id,
                         "recommended_action": "No matching endpoint.",
                     },
                 },
@@ -619,7 +624,7 @@ def test_promote_gaps_to_proposal(tmp_path: Path) -> None:
     assert "PP-GAP-TEST-DATASET-001" in text
     assert "pending_review" in text
     assert "create_issue" in text
-    assert "ISSUE-GAP-TEST-DATASET-UNKNOWN-COL-UNMODELED" in text
+    assert stable_gap_id in text
 
 
 class TestGapsPromoteCli:
@@ -1078,6 +1083,8 @@ def test_promote_gaps_to_proposal_avoids_collision(tmp_path: Path) -> None:
     model_dir = tmp_path / "model"
     model_dir.mkdir()
 
+    stable_gap_id = "GAP-TEST-DATASET-NONE-UNKNOWN-COL-UNMODELED-DATASET-COLUMN"
+
     report = DatasetGapReport(
         dataset_id="test-dataset",
         gaps=[
@@ -1086,12 +1093,13 @@ def test_promote_gaps_to_proposal_avoids_collision(tmp_path: Path) -> None:
                 gap_code="UNMODELED_DATASET_COLUMN",
                 severity="warning",
                 message="No matching endpoint.",
+                gap_id=stable_gap_id,
                 recommended_proposal_op={
                     "op": "create_issue",
-                    "object_id": "ISSUE-GAP-TEST-DATASET-UNKNOWN-COL-UNMODELED",
+                    "object_id": stable_gap_id,
                     "object_type": "Issue",
                     "after": {
-                        "id": "ISSUE-GAP-TEST-DATASET-UNKNOWN-COL-UNMODELED",
+                        "id": stable_gap_id,
                         "type": "Issue",
                         "status": "open",
                         "name": "Dataset gap: UNMODELED_DATASET_COLUMN",
@@ -1100,6 +1108,7 @@ def test_promote_gaps_to_proposal_avoids_collision(tmp_path: Path) -> None:
                         "source_dataset_id": "test-dataset",
                         "source_column": "UNKNOWN_COL",
                         "source_gap_code": "UNMODELED_DATASET_COLUMN",
+                        "source_gap_id": stable_gap_id,
                         "recommended_action": "No matching endpoint.",
                     },
                 },
@@ -1334,3 +1343,286 @@ class TestGapsMultiSheetXlsx:
         assert result.exit_code == 0
         assert "Coverage" in result.output
         assert "Sheet" in result.output
+
+
+
+class TestStableGapIds:
+    """Stable gap IDs make gap results traceable across repeated runs."""
+
+    def test_compute_gap_id_is_deterministic(self) -> None:
+        from modelops_core.gaps.gap_detection import _compute_gap_id
+
+        id1 = _compute_gap_id(
+            gap_code="UNMODELED_DATASET_COLUMN",
+            dataset_id="sales-data",
+            sheet_name="Sheet1",
+            column_name="CUSTOMER_GROUP",
+        )
+        id2 = _compute_gap_id(
+            gap_code="UNMODELED_DATASET_COLUMN",
+            dataset_id="sales-data",
+            sheet_name="Sheet1",
+            column_name="CUSTOMER_GROUP",
+        )
+        assert id1 == id2
+        assert id1.startswith("GAP-")
+
+    def test_compute_gap_id_changes_with_inputs(self) -> None:
+        from modelops_core.gaps.gap_detection import _compute_gap_id
+
+        base = _compute_gap_id(
+            gap_code="UNMODELED_DATASET_COLUMN",
+            dataset_id="sales-data",
+            column_name="CUSTOMER_GROUP",
+        )
+        different_column = _compute_gap_id(
+            gap_code="UNMODELED_DATASET_COLUMN",
+            dataset_id="sales-data",
+            column_name="CUSTOMER_TYPE",
+        )
+        different_code = _compute_gap_id(
+            gap_code="DUPLICATE_COLUMN_NAME",
+            dataset_id="sales-data",
+            column_name="CUSTOMER_GROUP",
+        )
+        different_dataset = _compute_gap_id(
+            gap_code="UNMODELED_DATASET_COLUMN",
+            dataset_id="other-data",
+            column_name="CUSTOMER_GROUP",
+        )
+        assert base != different_column
+        assert base != different_code
+        assert base != different_dataset
+
+    def test_compute_gap_id_sheet_aware(self) -> None:
+        from modelops_core.gaps.gap_detection import _compute_gap_id
+
+        sheet1 = _compute_gap_id(
+            gap_code="UNMODELED_DATASET_COLUMN",
+            dataset_id="sales-data",
+            sheet_name="Sheet1",
+            column_name="CUSTOMER_GROUP",
+        )
+        sheet2 = _compute_gap_id(
+            gap_code="UNMODELED_DATASET_COLUMN",
+            dataset_id="sales-data",
+            sheet_name="Sheet2",
+            column_name="CUSTOMER_GROUP",
+        )
+        assert sheet1 != sheet2
+
+    def test_compute_gap_id_model_gap(self) -> None:
+        from modelops_core.gaps.gap_detection import _compute_gap_id
+
+        gap_id = _compute_gap_id(
+            gap_code="MODEL_ATTRIBUTE_MISSING_SOURCE",
+            object_id="ATTR-001",
+        )
+        assert gap_id == "GAP-MODEL-ATTR-001-MODEL-ATTRIBUTE-MISSING-SOURCE"
+
+    def test_detect_dataset_gaps_includes_stable_gap_id(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        import sqlite3
+
+        conn = sqlite3.connect(str(db))
+        conn.executescript(
+            """
+            CREATE TABLE objects (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                name TEXT,
+                title TEXT,
+                domain TEXT,
+                description TEXT,
+                source_file TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                frontmatter_json TEXT NOT NULL,
+                body TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            );
+            """
+        )
+        conn.commit()
+        conn.close()
+
+        profile = _make_profile(["CUSTOMER_ID", "UNKNOWN_LEGACY_FIELD"])
+        report = detect_dataset_gaps(profile, db)
+
+        unmodeled = [g for g in report.gaps if g.gap_code == "UNMODELED_DATASET_COLUMN"]
+        assert len(unmodeled) == 2
+        gap = [g for g in unmodeled if g.column_name == "UNKNOWN_LEGACY_FIELD"][0]
+        assert gap.gap_id is not None
+        assert gap.gap_id.startswith("GAP-")
+        assert "UNKNOWN-LEGACY-FIELD" in gap.gap_id
+        assert "UNMODELED-DATASET-COLUMN" in gap.gap_id
+
+    def test_detect_model_gaps_includes_stable_gap_id(self, tmp_path: Path) -> None:
+        from modelops_core.gaps.gap_detection import detect_model_gaps
+
+        db = tmp_path / "modelops.db"
+        import sqlite3
+
+        conn = sqlite3.connect(str(db))
+        conn.executescript(
+            """
+            CREATE TABLE objects (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                name TEXT,
+                title TEXT,
+                domain TEXT,
+                description TEXT,
+                source_file TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                frontmatter_json TEXT NOT NULL,
+                body TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            );
+            CREATE TABLE object_relationships (
+                from_object_id TEXT NOT NULL,
+                to_object_id TEXT NOT NULL,
+                relationship_type TEXT NOT NULL,
+                relationship_class TEXT
+            );
+            """
+        )
+        conn.execute(
+            "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "ATTR-001",
+                "Attribute",
+                "active",
+                "Test Attr",
+                None,
+                None,
+                None,
+                "model/ATTR-001.md",
+                "abc",
+                '{"id": "ATTR-001"}',
+                None,
+                None,
+                None,
+            ),
+        )
+        conn.commit()
+        conn.close()
+
+        gaps = detect_model_gaps(db)
+        missing = [g for g in gaps if g.gap_code == "MODEL_ATTRIBUTE_MISSING_SOURCE"]
+        assert len(missing) == 1
+        assert missing[0].gap_id == "GAP-MODEL-ATTR-001-MODEL-ATTRIBUTE-MISSING-SOURCE"
+
+    def test_gaps_json_output_includes_gap_id(self, tmp_path: Path) -> None:
+        repo = tmp_path / "repo"
+        model_dir = repo / "model"
+        model_dir.mkdir(parents=True)
+        generated = repo / "generated"
+        generated.mkdir()
+        db = generated / "modelops.db"
+
+        import sqlite3
+
+        conn = sqlite3.connect(str(db))
+        conn.executescript(
+            """
+            CREATE TABLE objects (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                name TEXT,
+                title TEXT,
+                domain TEXT,
+                description TEXT,
+                source_file TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                frontmatter_json TEXT NOT NULL,
+                body TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            );
+            """
+        )
+        conn.commit()
+        conn.close()
+
+        csv_path = tmp_path / "data.csv"
+        csv_path.write_text("UNKNOWN_COL\n1\n", encoding="utf-8")
+
+        result = runner.invoke(app, ["gaps", str(csv_path), "--repo", str(repo), "--json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert len(data["gaps"]) > 0
+        for gap in data["gaps"]:
+            assert "gap_id" in gap
+            assert gap["gap_id"] is not None
+            assert gap["gap_id"].startswith("GAP-")
+
+    def test_gaps_multisheet_sheet_aware_gap_ids(self, tmp_path: Path) -> None:
+        """The same column on different sheets produces different stable gap IDs."""
+        repo = tmp_path / "repo"
+        model_dir = repo / "model"
+        model_dir.mkdir(parents=True)
+        generated = repo / "generated"
+        generated.mkdir()
+        db = generated / "modelops.db"
+
+        import sqlite3
+
+        conn = sqlite3.connect(str(db))
+        conn.executescript(
+            """
+            CREATE TABLE objects (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                name TEXT,
+                title TEXT,
+                domain TEXT,
+                description TEXT,
+                source_file TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                frontmatter_json TEXT NOT NULL,
+                body TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            );
+            """
+        )
+        # Match customer_id on both sheets so only other columns are gaps
+        conn.execute(
+            "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "FEP-CUSTOMER-ID",
+                "FieldEndpoint",
+                "active",
+                "Customer ID",
+                None,
+                None,
+                None,
+                "model/FEP-CUSTOMER-ID.md",
+                "abc",
+                '{"id": "FEP-CUSTOMER-ID", "column_name": "customer_id"}',
+                None,
+                None,
+                None,
+            ),
+        )
+        conn.commit()
+        conn.close()
+
+        xlsx_path = Path(__file__).parent / "fixtures" / "customer_sample_multi.xlsx"
+        result = runner.invoke(app, ["gaps", str(xlsx_path), "--repo", str(repo), "--json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+
+        gap_ids = [g["gap_id"] for g in data["gaps"] if g.get("gap_id")]
+        assert len(gap_ids) == len(set(gap_ids)), "All gap IDs must be unique"
+
+        # Every gap with a sheet context should encode the sheet name
+        for g in data["gaps"]:
+            if g.get("sheet_name"):
+                assert g["sheet_name"].upper().replace(" ", "-") in g["gap_id"]
