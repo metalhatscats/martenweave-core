@@ -1075,6 +1075,100 @@ class TestGapsCheckModelCli:
         data = json.loads(result.output)
         assert len(data["gaps"]) >= 1
 
+    def test_gaps_check_model_no_false_positive_for_has_attribute(
+        self, tmp_path: Path
+    ) -> None:
+        """Attributes linked via 'has_attribute' relationship must not be flagged."""
+        repo = tmp_path / "repo"
+        model_dir = repo / "model"
+        model_dir.mkdir(parents=True)
+        generated = repo / "generated"
+        generated.mkdir()
+        db = generated / "modelops.db"
+
+        import sqlite3
+
+        conn = sqlite3.connect(str(db))
+        conn.executescript(
+            """
+            CREATE TABLE objects (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                name TEXT,
+                title TEXT,
+                domain TEXT,
+                description TEXT,
+                source_file TEXT NOT NULL,
+                content_hash TEXT NOT NULL,
+                frontmatter_json TEXT NOT NULL,
+                body TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            );
+            CREATE TABLE object_relationships (
+                from_object_id TEXT NOT NULL,
+                to_object_id TEXT NOT NULL,
+                relationship_type TEXT NOT NULL,
+                relationship_class TEXT
+            );
+            """
+        )
+        conn.execute(
+            "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "FEP-001",
+                "FieldEndpoint",
+                "active",
+                "Product ID",
+                None,
+                None,
+                None,
+                "model/FEP-001.md",
+                "abc",
+                '{"id": "FEP-001", "column_name": "product_id", "attribute": "ATTR-001"}',
+                None,
+                None,
+                None,
+            ),
+        )
+        conn.execute(
+            "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "ATTR-001",
+                "Attribute",
+                "active",
+                "Product Identifier",
+                None,
+                None,
+                None,
+                "model/ATTR-001.md",
+                "def",
+                '{"id": "ATTR-001"}',
+                None,
+                None,
+                None,
+            ),
+        )
+        conn.execute(
+            "INSERT INTO object_relationships VALUES (?, ?, ?, ?)",
+            ("FEP-001", "ATTR-001", "has_attribute", None),
+        )
+        conn.commit()
+        conn.close()
+
+        csv_path = tmp_path / "data.csv"
+        csv_path.write_text("product_id\n1\n", encoding="utf-8")
+
+        result = runner.invoke(
+            app, ["gaps", str(csv_path), "--repo", str(repo), "--check-model", "--json"]
+        )
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["coverage"]["matched_columns"] == 1
+        model_gaps = [g for g in data["gaps"] if g["gap_code"] == "MODEL_ATTRIBUTE_MISSING_SOURCE"]
+        assert len(model_gaps) == 0, model_gaps
+
 
 def test_promote_gaps_to_proposal_avoids_collision(tmp_path: Path) -> None:
     """Repeated promotion on the same dataset must not overwrite."""

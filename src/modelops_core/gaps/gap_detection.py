@@ -361,7 +361,7 @@ def detect_model_gaps(db_path: Path) -> list[ColumnGap]:
 
         rel_rows = conn.execute(
             "SELECT to_object_id FROM object_relationships "
-            "WHERE relationship_type = 'represents_attribute'"
+            "WHERE relationship_type IN ('represents_attribute', 'has_attribute')"
         ).fetchall()
         linked_attrs = {r[0] for r in rel_rows}
 
