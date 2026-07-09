@@ -2330,6 +2330,11 @@ def dataset_readiness(
         "--promote-to-proposal",
         help="Promote dataset gaps to a draft PatchProposal in model/patch-proposals/.",
     ),
+    issue_draft: bool = typer.Option(
+        False,
+        "--issue-draft",
+        help="Generate a GitHub-ready issue draft from the readiness report.",
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Preview the report without writing files."
@@ -2354,6 +2359,7 @@ def dataset_readiness(
             check_model=check_model,
             dry_run=dry_run,
             promote_to_proposal=promote_to_proposal,
+            issue_draft=issue_draft,
         )
     except ValueError as exc:
         console.print(f"[red]{exc}[/red]")
@@ -2392,6 +2398,8 @@ def dataset_readiness(
         console.print(f"  Model gaps:   {len(report.model_gaps)}")
     if report.promoted_proposal_path:
         console.print(f"[green]Promoted to proposal: {report.promoted_proposal_path}[/green]")
+    if report.issue_draft_path:
+        console.print(f"[green]Issue draft: {report.issue_draft_path}[/green]")
 
     if dry_run:
         console.print("[yellow]Dry-run: no files written.[/yellow]")

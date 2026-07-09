@@ -42,6 +42,12 @@ from modelops_core.imports.privacy import (
     detect_high_risk_columns,
 )
 from modelops_core.index import build_index as _build_index
+from modelops_core.issue_draft.draft_service import (
+    create_draft_from_readiness,
+)
+from modelops_core.issue_draft.draft_service import (
+    write_draft as _write_issue_draft,
+)
 from modelops_core.reports.gap_summary import generate_gap_summary_report
 from modelops_core.repository import parse_file, scan_repository
 from modelops_core.validation import validate_objects
@@ -66,6 +72,7 @@ class DatasetReadinessReport:
     verdict: str
     dry_run: bool = False
     promoted_proposal_path: str | None = None
+    issue_draft_path: str | None = None
 
 
 def _profile_dataset(
@@ -253,6 +260,7 @@ def generate_dataset_readiness_report(
     check_model: bool = False,
     dry_run: bool = False,
     promote_to_proposal: bool = False,
+    issue_draft: bool = False,
 ) -> DatasetReadinessReport:
     """Generate a consolidated dataset readiness report.
 
@@ -266,6 +274,7 @@ def generate_dataset_readiness_report(
       6. Generate a consolidated gap summary.
       7. Compute a readiness verdict.
       8. Optionally promote dataset gaps to a draft PatchProposal.
+      9. Optionally generate a GitHub-ready issue draft.
 
     Args:
         repo_root: Path to the canonical model repository.
@@ -274,6 +283,8 @@ def generate_dataset_readiness_report(
         dry_run: If True, do not persist any generated artifacts.
         promote_to_proposal: If True, create a draft PatchProposal from dataset
             gaps in ``model/patch-proposals/``. Ignored when ``dry_run`` is True.
+        issue_draft: If True, create a GitHub-ready issue draft in
+            ``generated/issues/``. Ignored when ``dry_run`` is True.
 
     Returns:
         A ``DatasetReadinessReport`` dataclass with the full results.
@@ -323,6 +334,7 @@ def generate_dataset_readiness_report(
                 check_model,
                 dry_run=True,
                 promote_to_proposal=False,
+                issue_draft=False,
             )
 
     return _build_report(
@@ -333,6 +345,7 @@ def generate_dataset_readiness_report(
         check_model,
         dry_run=dry_run,
         promote_to_proposal=promote_to_proposal,
+        issue_draft=issue_draft,
     )
 
 
@@ -344,6 +357,7 @@ def _build_report(
     check_model: bool,
     dry_run: bool,
     promote_to_proposal: bool,
+    issue_draft: bool,
 ) -> DatasetReadinessReport:
     """Assemble the readiness report from already-built inputs."""
     profile, privacy_warnings = _profile_dataset(dataset_path, repo_root)
@@ -370,7 +384,7 @@ def _build_report(
             "match_rate": coverage.match_rate,
         }
 
-    return DatasetReadinessReport(
+    report = DatasetReadinessReport(
         martenweave_version=__version__,
         repo=str(repo_root),
         dataset=str(dataset_path),
@@ -404,6 +418,13 @@ def _build_report(
         dry_run=dry_run,
         promoted_proposal_path=promoted_proposal_path,
     )
+
+    if issue_draft and not dry_run:
+        draft = create_draft_from_readiness(report.__dict__)
+        draft_path = _write_issue_draft(repo_root, draft)
+        report.issue_draft_path = str(draft_path)
+
+    return report
 
 
 def write_readiness_report(
@@ -442,6 +463,10 @@ def _render_markdown(report: DatasetReadinessReport) -> str:
 
     if report.promoted_proposal_path:
         lines.append(f"**Promoted to proposal:** `{report.promoted_proposal_path}`")
+        lines.append("")
+
+    if report.issue_draft_path:
+        lines.append(f"**Issue draft:** `{report.issue_draft_path}`")
         lines.append("")
 
     lines.extend(

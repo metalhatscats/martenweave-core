@@ -187,6 +187,13 @@ Option B. `.venv/bin/modelops` and `modelops` still work as compatibility aliase
   --dataset ./my-model/data/samples/customers.csv \
   --out ./reports/readiness \
   --promote-to-proposal
+
+# Generate a GitHub-ready issue draft from the readiness report
+.venv/bin/martenweave run dataset-readiness \
+  --repo ./my-model \
+  --dataset ./my-model/data/samples/customers.csv \
+  --out ./reports/readiness \
+  --issue-draft
 ```
 
 ## First 15 Minutes

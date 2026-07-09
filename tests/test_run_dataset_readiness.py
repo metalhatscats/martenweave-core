@@ -451,3 +451,103 @@ def test_service_promote_to_proposal_returns_path(tmp_path: Path) -> None:
 
     assert report.promoted_proposal_path is not None
     assert Path(report.promoted_proposal_path).exists()
+
+
+def test_cli_issue_draft_creates_draft(tmp_path: Path) -> None:
+    """--issue-draft writes a GitHub-ready issue draft from the readiness report."""
+    repo = tmp_path / "repo"
+    model_dir = repo / "model"
+    model_dir.mkdir(parents=True)
+
+    (model_dir / "DOMAIN-TEST.md").write_text(
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n",
+        encoding="utf-8",
+    )
+
+    dataset = tmp_path / "customers.csv"
+    _write_csv(dataset, ["legacy_code"], [["A"]])
+
+    out_dir = tmp_path / "out"
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "dataset-readiness",
+            str(dataset),
+            "--repo",
+            str(repo),
+            "--out",
+            str(out_dir),
+            "--issue-draft",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Issue draft" in result.output
+
+    data = json.loads((out_dir / "readiness.json").read_text(encoding="utf-8"))
+    assert data["issue_draft_path"] is not None
+    draft_path = Path(data["issue_draft_path"])
+    assert draft_path.exists()
+    assert "[Readiness]" in draft_path.read_text(encoding="utf-8")
+
+
+def test_cli_issue_draft_respects_dry_run(tmp_path: Path) -> None:
+    """--issue-draft must not write a draft when --dry-run is set."""
+    repo = tmp_path / "repo"
+    model_dir = repo / "model"
+    model_dir.mkdir(parents=True)
+
+    (model_dir / "DOMAIN-TEST.md").write_text(
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n",
+        encoding="utf-8",
+    )
+
+    dataset = tmp_path / "customers.csv"
+    _write_csv(dataset, ["legacy_code"], [["A"]])
+
+    out_dir = tmp_path / "out"
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "dataset-readiness",
+            str(dataset),
+            "--repo",
+            str(repo),
+            "--out",
+            str(out_dir),
+            "--issue-draft",
+            "--dry-run",
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    data = json.loads(result.output)
+    assert data["issue_draft_path"] is None
+    assert not (repo / "generated" / "issues").exists()
+
+
+def test_service_issue_draft_returns_path(tmp_path: Path) -> None:
+    """The service function returns the issue draft path when requested."""
+    repo = tmp_path / "repo"
+    model_dir = repo / "model"
+    model_dir.mkdir(parents=True)
+
+    (model_dir / "DOMAIN-TEST.md").write_text(
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n",
+        encoding="utf-8",
+    )
+
+    dataset = tmp_path / "customers.csv"
+    _write_csv(dataset, ["legacy_code"], [["A"]])
+
+    report = generate_dataset_readiness_report(
+        repo_root=repo,
+        dataset_path=dataset,
+        issue_draft=True,
+    )
+
+    assert report.issue_draft_path is not None
+    assert Path(report.issue_draft_path).exists()
