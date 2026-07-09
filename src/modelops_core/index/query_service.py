@@ -138,7 +138,6 @@ def search_objects(
 
     results: list[SearchResult] = []
     terms = [t.lower() for t in query.split() if t.strip()]
-    search_fields = get_search_fields()
     for row in rows:
         result = _row_to_result(row)
         score = 0
@@ -149,7 +148,7 @@ def search_objects(
                 score += 1
                 matched.append(col)
         frontmatter = json.loads(row["frontmatter_json"] or "{}")
-        for sf in search_fields:
+        for sf in get_search_fields(row["type"]):
             value = str(frontmatter.get(sf) or "").lower()
             if any(term in value for term in terms):
                 score += 1

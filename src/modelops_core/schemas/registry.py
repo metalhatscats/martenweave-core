@@ -140,6 +140,43 @@ _COMMON_SEARCH_FIELDS: tuple[str, ...] = (
     "grain",
 )
 
+# Type-specific extra search-relevant frontmatter fields.
+_TYPE_SEARCH_EXTRAS: dict[str, tuple[str, ...]] = {
+    "Attribute": ("semantic_category", "data_classification", "target_release"),
+    "AttributeUsage": ("usage_type", "scope"),
+    "EntityContext": ("business_entity", "sap_table", "system"),
+    "FieldEndpoint": (
+        "sap_table",
+        "sap_field",
+        "endpoint_type",
+        "system",
+        "attribute",
+        "business_attribute",
+    ),
+    "Issue": ("priority",),
+    "Decision": ("decision_category",),
+    "Mapping": ("source_endpoint", "target_endpoint", "mapping_set"),
+    "Person": ("role", "email"),
+    "System": ("system_type",),
+    "ValidationRule": ("rule_type", "attribute"),
+    "ValueList": ("value_list_type",),
+    "ValueMapping": ("value_list", "mapping"),
+}
+
+
+def _combine_search_fields(
+    base: tuple[str, ...], extras: tuple[str, ...]
+) -> tuple[str, ...]:
+    """Return a deduplicated tuple preserving base order then extras."""
+    seen: set[str] = set()
+    combined: list[str] = []
+    for item in base + extras:
+        if item not in seen:
+            seen.add(item)
+            combined.append(item)
+    return tuple(combined)
+
+
 # ---------------------------------------------------------------------------
 # Registry entries for all canonical object types.
 # ---------------------------------------------------------------------------
@@ -474,6 +511,20 @@ _REGISTRY: dict[str, ObjectTypeEntry] = {
     ),
 }
 
+# Enrich registry entries with type-specific search fields while preserving
+# the common base fields.
+for _type_id, _entry in list(_REGISTRY.items()):
+    _REGISTRY[_type_id] = ObjectTypeEntry(
+        type_id=_entry.type_id,
+        ui_label_singular=_entry.ui_label_singular,
+        ui_label_plural=_entry.ui_label_plural,
+        reference_fields=_entry.reference_fields,
+        search_fields=_combine_search_fields(
+            _COMMON_SEARCH_FIELDS,
+            _TYPE_SEARCH_EXTRAS.get(_type_id, ()),
+        ),
+    )
+
 # Global reference field map (backward-compatible union of all per-type fields).
 _GLOBAL_REFERENCE_FIELDS: dict[str, ReferenceField] = {}
 for _entry in _REGISTRY.values():
@@ -538,9 +589,19 @@ def get_reference_cardinality(type_id: str | None = None) -> dict[str, bool]:
 
 
 def get_search_fields(type_id: str | None = None) -> tuple[str, ...]:
-    """Return search-relevant frontmatter fields for an object type."""
+    """Return search-relevant frontmatter fields for an object type.
+
+    If no type is given, returns the union of all per-type search fields.
+    """
     if type_id is None:
-        return _COMMON_SEARCH_FIELDS
+        return _combine_search_fields(
+            _COMMON_SEARCH_FIELDS,
+            tuple(
+                field
+                for extras in _TYPE_SEARCH_EXTRAS.values()
+                for field in extras
+            ),
+        )
     entry = _REGISTRY.get(type_id)
     if entry is None or not entry.search_fields:
         return _COMMON_SEARCH_FIELDS

@@ -94,3 +94,83 @@ class TestExportSearchJsonl:
         out = tmp_path / "search_documents.jsonl"
         with pytest.raises(sqlite3.OperationalError):
             export_search_jsonl(db, out)
+
+    def test_export_includes_type_specific_search_fields(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        out = tmp_path / "search_documents.jsonl"
+        conn = sqlite3.connect(str(db))
+        conn.execute(
+            """
+            CREATE TABLE objects (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                name TEXT,
+                title TEXT,
+                domain TEXT,
+                source_file TEXT NOT NULL,
+                frontmatter_json TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "FEP-001",
+                "FieldEndpoint",
+                "active",
+                "Customer Group Field",
+                None,
+                "DOMAIN-A",
+                "model/FEP-001.md",
+                '{"technical_name": "KNVV-KDGRP", "sap_table": "KNVV", "sap_field": "KDGRP"}',
+            ),
+        )
+        conn.commit()
+        conn.close()
+
+        export_search_jsonl(db, out)
+        obj = json.loads(out.read_text(encoding="utf-8").strip().splitlines()[0])
+        assert "search_fields" in obj
+        assert "sap_table" in obj["search_fields"]
+        assert "sap_field" in obj["search_fields"]
+        assert "technical_name" in obj["search_fields"]
+
+    def test_export_attribute_includes_attribute_search_fields(self, tmp_path: Path) -> None:
+        db = tmp_path / "modelops.db"
+        out = tmp_path / "search_documents.jsonl"
+        conn = sqlite3.connect(str(db))
+        conn.execute(
+            """
+            CREATE TABLE objects (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                status TEXT NOT NULL,
+                name TEXT,
+                title TEXT,
+                domain TEXT,
+                source_file TEXT NOT NULL,
+                frontmatter_json TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                "ATTR-001",
+                "Attribute",
+                "active",
+                "Customer Group",
+                None,
+                "DOMAIN-A",
+                "model/ATTR-001.md",
+                '{"semantic_category": "classification"}',
+            ),
+        )
+        conn.commit()
+        conn.close()
+
+        export_search_jsonl(db, out)
+        obj = json.loads(out.read_text(encoding="utf-8").strip().splitlines()[0])
+        assert "search_fields" in obj
+        assert "semantic_category" in obj["search_fields"]
