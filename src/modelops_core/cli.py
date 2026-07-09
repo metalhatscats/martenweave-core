@@ -1674,6 +1674,27 @@ def scorecard(
     console.print(f"[italic]{report.summary}[/italic]")
 
 
+@app.command("readiness")
+@with_telemetry("readiness")
+def readiness(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    profile: str = typer.Option(
+        "pilot",
+        "--profile",
+        help="Readiness profile: demo, pilot, release.",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Preview intended changes without writing files.",
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Run pilot/demo/release readiness gates and show blockers."""
+    repo_root = _resolve_repo(repo)
+    _run_readiness_cli(repo_root, profile, dry_run, json_output)
+
+
 @app.command("owners")
 @with_telemetry("owners")
 def owners(
@@ -5976,31 +5997,22 @@ def agent_product_owner(
         raise typer.Exit(code=1)
 
 
-@agent_app.command("readiness")
-@with_telemetry("agent_readiness")
-def agent_readiness(
-    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
-    profile: str = typer.Option(
-        "pilot",
-        "--profile",
-        help="Readiness profile: demo, pilot, release.",
-    ),
-    dry_run: bool = typer.Option(
-        False,
-        "--dry-run",
-        help="Preview intended changes without writing files.",
-    ),
-    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+def _run_readiness_cli(
+    repo_root: Path,
+    profile: str,
+    dry_run: bool,
+    json_output: bool,
+    require_config: bool = True,
 ) -> None:
-    """Run readiness gates and create Issue/Proposal artifacts for blockers."""
-    repo_root = _resolve_repo(repo)
-    config = load_repo_config(repo_root)
-    if config is None:
-        if json_output:
-            print(json.dumps({"error": "No modelops.config.yaml found."}, indent=2))
-        else:
-            console.print("[red]No modelops.config.yaml found.[/red]")
-        raise typer.Exit(code=1)
+    """Shared implementation for the readiness CLI commands."""
+    if require_config:
+        config = load_repo_config(repo_root)
+        if config is None:
+            if json_output:
+                print(json.dumps({"error": "No modelops.config.yaml found."}, indent=2))
+            else:
+                console.print("[red]No modelops.config.yaml found.[/red]")
+            raise typer.Exit(code=1)
 
     agent = ReadinessAgent(dry_run=dry_run)
     result = agent.run(ReadinessInput(repo_root=repo_root, profile=profile))
@@ -6069,6 +6081,27 @@ def agent_readiness(
         console.print(table)
 
     raise typer.Exit(code=0 if result.ready else 1)
+
+
+@agent_app.command("readiness")
+@with_telemetry("agent_readiness")
+def agent_readiness(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    profile: str = typer.Option(
+        "pilot",
+        "--profile",
+        help="Readiness profile: demo, pilot, release.",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Preview intended changes without writing files.",
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Run readiness gates and create Issue/Proposal artifacts for blockers."""
+    repo_root = _resolve_repo(repo)
+    _run_readiness_cli(repo_root, profile, dry_run, json_output, require_config=True)
 
 
 if __name__ == "__main__":

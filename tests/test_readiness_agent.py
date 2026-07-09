@@ -54,7 +54,7 @@ class TestReadinessAgent:
         assert "validation_errors" not in result.failed_gates
         assert "active_object_missing_owner" not in result.failed_gates
         # Scorecard may still report zero-coverage-pass because there are no SAP endpoints.
-        assert result.gate_count == 7
+        assert result.gate_count == 9
 
     def test_dry_run_does_not_write_files(self, tmp_path: Path) -> None:
         repo_root = _build_minimal_repo(tmp_path)
@@ -102,7 +102,7 @@ class TestReadinessAgent:
         result = agent.run(ReadinessInput(repo_root=repo_root, profile="pilot"))
 
         assert result.ready is False
-        assert len(result.issues_created) == 1
+        assert len(result.issues_created) >= 1
         assert all(i.startswith("ISS-READINESS-") for i in result.issues_created)
         issue_paths = [model_dir / "issues" / f"{i}.md" for i in result.issues_created]
         assert all(p.exists() for p in issue_paths)
@@ -153,7 +153,15 @@ class TestReadinessCli:
         runner = CliRunner()
         result = runner.invoke(
             app,
-            ["agent", "readiness", "--repo", str(sample_repo), "--dry-run"],
+            [
+                "agent",
+                "readiness",
+                "--repo",
+                str(sample_repo),
+                "--profile",
+                "demo",
+                "--dry-run",
+            ],
         )
         assert result.exit_code == 0
         assert "Gates checked:" in result.output

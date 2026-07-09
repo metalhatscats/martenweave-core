@@ -264,7 +264,7 @@ The agent never edits canonical model objects directly. All changes flow through
 
 ## 7.6 Readiness agentic loop
 
-The `ReadinessAgent` (`modelops agent readiness`) runs deterministic trust gates against a repository and creates `Issue` objects for every blocker.
+The `ReadinessAgent` runs deterministic trust gates against a repository and creates `Issue` objects for every blocker. Use the top-level `readiness` command to check gates quickly, or `agent readiness` when you want the same check plus canonical Issue files, a GitHub issue draft, and notification events.
 
 ### Supported gates
 
@@ -274,16 +274,29 @@ The `ReadinessAgent` (`modelops agent readiness`) runs deterministic trust gates
 | `stale_index` | Generated index is older than canonical files | medium |
 | `scorecard_zero_coverage_pass` | A coverage metric is `0.0` but marked `pass` | high |
 | `scorecard_untitled_repository` | Config has a name but scorecard shows "Untitled Repository" | medium |
+| `missing_validation_coverage` | Active attributes lack validation rules for the profile | medium |
+| `unresolved_high_severity_gaps` | Critical/high model gaps exceed profile tolerance | high |
 | `invalid_open_proposal` | Open PatchProposal has `validation_status: invalid` | high |
 | `high_risk_unapproved_proposal` | Open high-risk proposal lacks approved ChangeRequest | high |
 | `active_object_missing_owner` | Active object has no ownership field | medium |
 
+### Profiles
+
+| Profile | `validation_rule_coverage` | Max critical gaps | Max high-severity gaps |
+|---|---|---|---|
+| `demo` | ≥ 0% | 1 | 5 |
+| `pilot` | ≥ 40% | 0 | 2 |
+| `release` | ≥ 70% | 0 | 0 |
+
 ### CLI usage
 
 ```bash
+modelops readiness --repo ./my-model --profile demo
+modelops readiness --repo ./my-model --profile pilot --dry-run
+modelops readiness --repo ./my-model --profile release --json
+
+# Same gates, but also write Issue files, a GitHub draft, and notifications.
 modelops agent readiness --repo ./my-model --profile pilot
-modelops agent readiness --repo ./my-model --profile demo --dry-run
-modelops agent readiness --repo ./my-model --profile release --json
 ```
 
 ### Output

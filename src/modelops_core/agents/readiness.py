@@ -9,6 +9,7 @@ from typing import Any
 
 from modelops_core.approval.risk_service import compute_proposal_risk
 from modelops_core.config import load_repo_config, resolve_generated_path, resolve_model_path
+from modelops_core.gaps.gap_detection import detect_model_gaps
 from modelops_core.issue_draft.draft_service import DraftResult, write_draft
 from modelops_core.notifications.event_service import emit_notification_event
 from modelops_core.notifications.preview_service import preview_notifications
@@ -64,10 +65,31 @@ class ReadinessAgent:
         "stale_index",
         "scorecard_zero_coverage_pass",
         "scorecard_untitled_repository",
+        "missing_validation_coverage",
+        "unresolved_high_severity_gaps",
         "invalid_open_proposal",
         "high_risk_unapproved_proposal",
         "active_object_missing_owner",
     )
+
+    # Profile thresholds: coverage is a percentage; max_high_severity_gaps is a count.
+    _PROFILE_THRESHOLDS: dict[str, dict[str, float | int]] = {
+        "demo": {
+            "min_validation_rule_coverage": 0.0,
+            "max_high_severity_gaps": 5,
+            "max_critical_gaps": 1,
+        },
+        "pilot": {
+            "min_validation_rule_coverage": 40.0,
+            "max_high_severity_gaps": 2,
+            "max_critical_gaps": 0,
+        },
+        "release": {
+            "min_validation_rule_coverage": 70.0,
+            "max_high_severity_gaps": 0,
+            "max_critical_gaps": 0,
+        },
+    }
 
     def __init__(self, dry_run: bool = False) -> None:
         self.dry_run = dry_run
@@ -88,12 +110,14 @@ class ReadinessAgent:
         # Gate 2: stale index
         blockers.extend(self._check_index_freshness(repo_root))
 
-        # Gate 3-4: scorecard trust issues
+        # Gate 3-6: scorecard trust issues and coverage gaps
         if db_path.exists():
             blockers.extend(self._check_scorecard(db_path, repo_root))
             blockers.extend(self._check_ownership(db_path))
+            blockers.extend(self._check_validation_coverage(db_path, profile))
+            blockers.extend(self._check_unresolved_high_severity_gaps(db_path, profile))
 
-        # Gate 5-6: open proposal state
+        # Gate 7-8: open proposal state
         blockers.extend(self._check_open_proposals(model_path))
 
         # Deduplicate by (gate, object_id)
@@ -285,6 +309,73 @@ class ReadinessAgent:
             )
             for orphan in report.orphaned_objects
         ]
+
+    def _check_validation_coverage(
+        self, db_path: Path, profile: str
+    ) -> list[ReadinessBlocker]:
+        """Check that validation-rule coverage meets the profile threshold."""
+        thresholds = self._PROFILE_THRESHOLDS.get(profile, self._PROFILE_THRESHOLDS["pilot"])
+        min_coverage = thresholds.get("min_validation_rule_coverage", 40.0)
+
+        report = generate_scorecard(db_path, db_path.parent.parent)
+        for metric in report.metrics:
+            if metric.name == "validation_rule_coverage":
+                if metric.value < min_coverage:
+                    return [
+                        ReadinessBlocker(
+                            gate="missing_validation_coverage",
+                            severity="medium",
+                            message=(
+                                f"Validation rule coverage is {metric.value}%, "
+                                f"below {profile} threshold of {min_coverage}%. "
+                                f"{metric.explanation}"
+                            ),
+                            object_id=None,
+                        )
+                    ]
+                return []
+        return []
+
+    def _check_unresolved_high_severity_gaps(
+        self, db_path: Path, profile: str
+    ) -> list[ReadinessBlocker]:
+        """Check for unresolved high-severity model gaps beyond profile tolerance."""
+        thresholds = self._PROFILE_THRESHOLDS.get(profile, self._PROFILE_THRESHOLDS["pilot"])
+        max_high = int(thresholds.get("max_high_severity_gaps", 2))
+        max_critical = int(thresholds.get("max_critical_gaps", 0))
+
+        gaps = detect_model_gaps(db_path)
+        high = [g for g in gaps if g.severity == "high"]
+        critical = [g for g in gaps if g.severity == "critical"]
+
+        blockers: list[ReadinessBlocker] = []
+        if len(critical) > max_critical:
+            sample = ", ".join(sorted({g.column_name for g in critical[:3]})) or "model"
+            blockers.append(
+                ReadinessBlocker(
+                    gate="unresolved_high_severity_gaps",
+                    severity="high",
+                    message=(
+                        f"{len(critical)} critical model gap(s) exceed {profile} threshold "
+                        f"of {max_critical}; sample: {sample}."
+                    ),
+                    object_id=None,
+                )
+            )
+        if len(high) > max_high:
+            sample = ", ".join(sorted({g.column_name for g in high[:3]})) or "model"
+            blockers.append(
+                ReadinessBlocker(
+                    gate="unresolved_high_severity_gaps",
+                    severity="high",
+                    message=(
+                        f"{len(high)} high-severity model gap(s) exceed {profile} threshold "
+                        f"of {max_high}; sample: {sample}."
+                    ),
+                    object_id=None,
+                )
+            )
+        return blockers
 
     def _check_open_proposals(self, model_path: Path) -> list[ReadinessBlocker]:
         """Check open PatchProposals for invalid or high-risk state."""
