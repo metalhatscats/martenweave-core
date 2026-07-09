@@ -6,6 +6,7 @@ import json
 import re
 import shutil
 import sqlite3
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,7 @@ from modelops_core.agents import (
 from modelops_core.approval import compute_proposal_risk
 from modelops_core.assessment.assessment_service import (
     generate_assessment_package,
+    generate_review_pack,
     generate_risk_report,
 )
 from modelops_core.bundle import create_git_bundle
@@ -2203,6 +2205,61 @@ def risk_report(
         console.print(f"[bold]Risk report written to {out}[/bold]")
     else:
         console.print(content)
+
+
+# ---------------------------------------------------------------------------
+# Review pack subcommands
+# ---------------------------------------------------------------------------
+review_pack_app = typer.Typer(
+    name="review-pack",
+    help="Generate a client-reviewable business pack.",
+)
+app.add_typer(review_pack_app, name="review-pack")
+
+
+@review_pack_app.command("create")
+@with_telemetry("review_pack_create")
+def review_pack_create(
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Output directory for the review pack."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON metadata."),
+) -> None:
+    """Generate a business-reviewable pack for stakeholders."""
+    repo_root = _resolve_repo(repo)
+
+    try:
+        artifacts = generate_review_pack(repo_root, out)
+    except (ValueError, RuntimeError, ResourceLimitExceeded) as exc:
+        if json_output:
+            print(json.dumps({"error": str(exc)}, indent=2))
+        else:
+            console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        result = {
+            "martenweave_version": __version__,
+            "repo_name": repo_root.name,
+            "generated_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+            "artifact_count": len(artifacts),
+            "artifacts": [
+                {
+                    "path": str(a.path),
+                    "description": a.description,
+                }
+                for a in artifacts
+            ],
+        }
+        print(json.dumps(result, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print("[bold]Review pack generated[/bold]")
+    console.print(f"  Output: {out}")
+    console.print(f"  Artifacts: {len(artifacts)}")
+    for a in artifacts:
+        console.print(f"  {a.path.name} — {a.description}")
 
 
 @app.command("gap-report")

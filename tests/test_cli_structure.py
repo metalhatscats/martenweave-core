@@ -105,6 +105,7 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
     "assessment",
     "run",
     "diagnostics",
+    "review-pack",
 }
 
 EXPECTED_GROUPS = {
@@ -128,6 +129,7 @@ EXPECTED_GROUPS = {
     },
     "assessment": {"run"},
     "diagnostics": {"export"},
+    "review-pack": {"create"},
 }
 
 

@@ -466,3 +466,259 @@ def generate_risk_report(repo_root: Path) -> str:
     risk_items = _build_high_risk_items(analysis, validation_errors)
 
     return _render_high_risk_fields_md(risk_items, repo_name)
+
+
+def _render_summary_md(
+    scorecard: Any,
+    risk_items: list[_RiskItem],
+    repo_name: str,
+    generated_at: str,
+) -> str:
+    lines: list[str] = [
+        "# Business Review Pack",
+        "",
+        f"**Repository**: {repo_name}",
+        f"**Generated**: {generated_at}",
+        f"**Readiness Level**: {scorecard.readiness_level}",
+        f"**Total Objects**: {scorecard.object_count}",
+        f"**High Risk Items**: {len(risk_items)}",
+        "",
+        "## Purpose",
+        "",
+        "This pack is designed for business stakeholders who need to review model content "
+        "without using the CLI, Git, or Markdown editors. Each section highlights a specific "
+        "area that needs attention, decision, or sign-off.",
+        "",
+        "## Pack Contents",
+        "",
+        "- [summary.md](summary.md) — this overview",
+        "- [missing_owners.md](missing_owners.md) — objects without an assigned owner",
+        "- [fields_needing_decision.md](fields_needing_decision.md) — fields needing a decision",
+        "- [high_risk_mappings.md](high_risk_mappings.md) — highest-risk mappings",
+        "- [signoff_checklist.md](signoff_checklist.md) — stakeholder sign-off checklist",
+        "- [business_review.xlsx](business_review.xlsx) — reviewable workbook",
+        "",
+        "## How to Use",
+        "",
+        "1. Review the missing owners list and assign stewards.",
+        "2. Open `fields_needing_decision.md` and record decisions in the model.",
+        "3. Triage `high_risk_mappings.md` by severity.",
+        "4. Complete the sign-off checklist before go-live.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def _render_missing_owners_md(ownership_gaps: list[dict[str, Any]], repo_name: str) -> str:
+    lines: list[str] = [
+        "# Missing Owners",
+        "",
+        f"**Repository**: {repo_name}",
+        f"**Total Objects Without Owner**: {len(ownership_gaps)}",
+        "",
+        "Objects listed below do not have an assigned owner. Assign a steward before final review.",
+        "",
+        "| Object ID | Type | Name |",
+        "|-----------|------|------|",
+    ]
+    for g in ownership_gaps:
+        obj_id = g.get("object_id") or "—"
+        obj_type = g.get("object_type") or "—"
+        name = g.get("object_name") or "—"
+        lines.append(f"| `{obj_id}` | {obj_type} | {name} |")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _render_fields_needing_decision_md(
+    validation_coverage: list[dict[str, Any]],
+    lov_coverage: list[dict[str, Any]],
+    mapping_coverage: list[dict[str, Any]],
+    repo_name: str,
+) -> str:
+    items: list[tuple[str, str, str, str]] = []
+    for g in validation_coverage:
+        items.append(
+            (
+                g.get("object_id") or "—",
+                g.get("object_type") or "Attribute",
+                g.get("object_name") or "—",
+                "Missing validation rule",
+            )
+        )
+    for g in lov_coverage:
+        items.append(
+            (
+                g.get("object_id") or "—",
+                g.get("object_type") or "FieldEndpoint",
+                g.get("object_name") or "—",
+                "Missing value list",
+            )
+        )
+    for g in mapping_coverage:
+        items.append(
+            (
+                g.get("object_id") or "—",
+                g.get("object_type") or "Mapping",
+                g.get("object_name") or "—",
+                "Missing value mapping",
+            )
+        )
+
+    lines: list[str] = [
+        "# Fields Needing Decision",
+        "",
+        f"**Repository**: {repo_name}",
+        f"**Total Items**: {len(items)}",
+        "",
+        "The following objects need a business decision before migration. "
+        "Record the decision as a canonical `Decision` object and link it to the affected object.",
+        "",
+        "| Object ID | Type | Name | Reason |",
+        "|-----------|------|------|--------|",
+    ]
+    for obj_id, obj_type, name, reason in sorted(set(items)):
+        lines.append(f"| `{obj_id}` | {obj_type} | {name} | {reason} |")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _render_high_risk_mappings_md(risk_items: list[_RiskItem], repo_name: str) -> str:
+    mapping_items = [r for r in risk_items if r.object_type == "Mapping"]
+    lines: list[str] = [
+        "# High Risk Mappings",
+        "",
+        f"**Repository**: {repo_name}",
+        f"**Total High Risk Mappings**: {len(mapping_items)}",
+        "",
+        "Mappings listed below have risk signals such as missing value mappings or open issues. "
+        "Review them before cutover.",
+        "",
+        "| Object ID | Name | Severity | Reasons |",
+        "|-----------|------|----------|---------|",
+    ]
+    for item in mapping_items:
+        reasons = "; ".join(item.reasons[:3])
+        if len(item.reasons) > 3:
+            reasons += f"; +{len(item.reasons) - 3} more"
+        name = item.object_name or "—"
+        lines.append(
+            f"| `{item.object_id}` | {name} | {item.severity} | {reasons} |"
+        )
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _render_signoff_checklist_md(
+    scorecard: Any,
+    risk_items: list[_RiskItem],
+    repo_name: str,
+) -> str:
+    high_risk_count = sum(1 for r in risk_items if r.severity == "high")
+    lines: list[str] = [
+        "# Sign-off Checklist",
+        "",
+        f"**Repository**: {repo_name}",
+        f"**Readiness Level**: {scorecard.readiness_level}",
+        f"**High Risk Items**: {high_risk_count}",
+        "",
+        "Use this checklist to confirm that business stakeholders have reviewed and approved "
+        "the model before migration.",
+        "",
+        "- [ ] All missing owners have been assigned",
+        "- [ ] All fields needing a decision have a recorded Decision object",
+        "- [ ] High risk mappings have been triaged and accepted or resolved",
+        "- [ ] Business review workbook has been reviewed and annotated",
+        "- [ ] Readiness level has been accepted by the migration lead",
+        "- [ ] Sign-off has been recorded in the project decision log",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def generate_review_pack(
+    repo_root: Path,
+    out_dir: Path,
+) -> list[AssessmentArtifact]:
+    """Generate a business-reviewable pack for non-technical stakeholders.
+
+    Args:
+        repo_root: Path to the model repository.
+        out_dir: Directory where the review pack will be written.
+
+    Returns:
+        List of artifacts generated.
+    """
+    repo_root = repo_root.resolve()
+    out_dir = out_dir.resolve()
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    config = load_repo_config(repo_root)
+    repo_name = config.name if config else repo_root.name
+
+    db_path = _ensure_index(repo_root)
+    scorecard = generate_scorecard(db_path, repo_root)
+    analysis = generate_analysis_report(db_path, repo_root)
+    validation_errors = _collect_validation_errors(db_path)
+    risk_items = _build_high_risk_items(analysis, validation_errors)
+
+    generated_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    artifacts: list[AssessmentArtifact] = []
+
+    # summary.md
+    summary_path = out_dir / "summary.md"
+    summary_path.write_text(
+        _render_summary_md(scorecard, risk_items, repo_name, generated_at),
+        encoding="utf-8",
+    )
+    artifacts.append(AssessmentArtifact(summary_path, "Review pack summary"))
+
+    # missing_owners.md
+    missing_owners_path = out_dir / "missing_owners.md"
+    missing_owners_path.write_text(
+        _render_missing_owners_md(analysis.ownership_gaps, repo_name),
+        encoding="utf-8",
+    )
+    artifacts.append(AssessmentArtifact(missing_owners_path, "Missing owners list"))
+
+    # fields_needing_decision.md
+    decisions_path = out_dir / "fields_needing_decision.md"
+    decisions_path.write_text(
+        _render_fields_needing_decision_md(
+            analysis.validation_coverage,
+            analysis.lov_coverage,
+            analysis.mapping_coverage,
+            repo_name,
+        ),
+        encoding="utf-8",
+    )
+    artifacts.append(AssessmentArtifact(decisions_path, "Fields needing decision"))
+
+    # high_risk_mappings.md
+    high_risk_path = out_dir / "high_risk_mappings.md"
+    high_risk_path.write_text(
+        _render_high_risk_mappings_md(risk_items, repo_name),
+        encoding="utf-8",
+    )
+    artifacts.append(AssessmentArtifact(high_risk_path, "High risk mappings"))
+
+    # signoff_checklist.md
+    checklist_path = out_dir / "signoff_checklist.md"
+    checklist_path.write_text(
+        _render_signoff_checklist_md(scorecard, risk_items, repo_name),
+        encoding="utf-8",
+    )
+    artifacts.append(AssessmentArtifact(checklist_path, "Sign-off checklist"))
+
+    # business_review.xlsx
+    model_path = repo_root / "model"
+    if model_path.exists():
+        xlsx_path = out_dir / "business_review.xlsx"
+        export_model_xlsx(
+            repo_model_path=model_path,
+            output_path=xlsx_path,
+            business_review=True,
+        )
+        artifacts.append(AssessmentArtifact(xlsx_path, "Business review workbook"))
+
+    return artifacts

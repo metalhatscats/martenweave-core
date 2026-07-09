@@ -141,6 +141,12 @@ run_step "risk-report customer_bp_model"
 assert_jq "${SMOKE_DIR}/customer-risk-report.json" \
     '(.risk_items | type == "array") and .repo_name != null and .generated_at != null'
 
+run_step "review-pack create customer_bp_model"
+"${MODELOPS}" review-pack create --repo examples/customer_bp_model --out "${SMOKE_DIR}/review-pack" --json \
+    >"${SMOKE_DIR}/customer-review-pack.json"
+assert_jq "${SMOKE_DIR}/customer-review-pack.json" \
+    '(.artifacts | length == 6) and .artifact_count == 6'
+
 run_step "docs-build local viewer customer_bp_model"
 VIEWER_DIR="${SMOKE_DIR}/customer-viewer"
 "${MODELOPS}" docs-build --repo examples/customer_bp_model --site "${VIEWER_DIR}" --json \
