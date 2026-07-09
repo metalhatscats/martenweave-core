@@ -53,7 +53,12 @@ def test_e2e_propose_patch(sample_repo: Path) -> None:
     )
     assert result.exit_code == 0
     assert "Patch proposal written" in result.output
-    assert (sample_repo / "model" / "patch-proposals" / "PP-SCAFFOLD-001.md").exists()
+    assert "deterministic scaffold" in result.output
+    assert "no ai provider is configured" in result.output.lower()
+    proposal_path = sample_repo / "model" / "patch-proposals" / "PP-SCAFFOLD-001.md"
+    assert proposal_path.exists()
+    text = proposal_path.read_text(encoding="utf-8")
+    assert "generated_by: no_provider_scaffold" in text
 
 
 def test_e2e_v0_1_command_surface(sample_repo: Path) -> None:

@@ -146,13 +146,50 @@ class TestBuildPatchProposalFromNote:
         proposal = result["proposal"]
         assert proposal["type"] == "PatchProposal"
         assert proposal["status"] == "pending_review"
-        assert proposal["created_by"] == "ai"
+        assert proposal["created_by"] == "no_provider_scaffold"
+        assert proposal["generated_by"] == "no_provider_scaffold"
         assert "created_at" in proposal
         assert "validation_status" in proposal
         assert "validation_results" in proposal
         assert isinstance(result["assumptions"], list)
         assert isinstance(result["human_checks"], list)
         assert isinstance(result["validation"], list)
+
+    def test_no_provider_scaffold_marker(self) -> None:
+        result = build_patch_proposal_from_note("Update CUSTOMER GROUP")
+        proposal = result["proposal"]
+        assert proposal["generated_by"] == "no_provider_scaffold"
+        assert proposal["created_by"] == "no_provider_scaffold"
+        assert any("deterministic scaffold" in a for a in result["assumptions"])
+
+    def test_custom_adapter_does_not_set_scaffold_marker(self) -> None:
+        class CustomAdapter:
+            def generate_candidates(self, context: AIContextBundle) -> list[AICandidateOutput]:
+                return [
+                    AICandidateOutput(
+                        proposal_id="PP-CUSTOM-001",
+                        title="Custom Proposal",
+                        operations=[
+                            {
+                                "op": "update_object",
+                                "object_id": "DOMAIN-TEST",
+                                "object_type": "MasterDataDomain",
+                                "target_path": "name",
+                                "after": "Updated",
+                                "reason": "Test",
+                            }
+                        ],
+                        affected_objects=["DOMAIN-TEST"],
+                        assumptions=["Custom assumption"],
+                        human_checks=["Custom check"],
+                        source_evidence="Custom evidence",
+                    )
+                ]
+
+        result = build_patch_proposal_from_note("any note", adapter=CustomAdapter())
+        proposal = result["proposal"]
+        assert "generated_by" not in proposal
+        assert proposal["created_by"] == "ai"
 
 
 class TestGetDefaultAdapter:

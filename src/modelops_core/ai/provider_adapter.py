@@ -138,13 +138,17 @@ class ProviderOutputValidator:
         """Convert a validated candidate into a PatchProposal dict."""
         from modelops_core.patching.patch_proposal_service import build_patch_proposal
 
+        is_scaffold = any(
+            "deterministic scaffold" in (a or "").lower() for a in candidate.assumptions
+        )
         operations = [PatchOperation(**op) for op in candidate.operations]
         proposal = build_patch_proposal(
             proposal_id=candidate.proposal_id,
             operations=operations,
             affected_objects=candidate.affected_objects,
             source_evidence=candidate.source_evidence,
-            created_by="ai",
+            created_by="no_provider_scaffold" if is_scaffold else "ai",
+            generated_by="no_provider_scaffold" if is_scaffold else None,
         )
 
         validation_results = validate_patch_proposal(proposal)

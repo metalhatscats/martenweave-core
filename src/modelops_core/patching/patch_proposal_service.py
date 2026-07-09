@@ -21,9 +21,10 @@ def build_patch_proposal(
     affected_objects: list[str] | None = None,
     source_evidence: str | None = None,
     created_by: str = "system",
+    generated_by: str | None = None,
 ) -> dict[str, Any]:
     """Build an in-memory PatchProposal dict."""
-    return {
+    proposal: dict[str, Any] = {
         "id": proposal_id,
         "type": "PatchProposal",
         "status": "pending_review",
@@ -37,6 +38,9 @@ def build_patch_proposal(
         "validation_status": "pending",
         "validation_results": [],
     }
+    if generated_by:
+        proposal["generated_by"] = generated_by
+    return proposal
 
 
 def render_patch_proposal_markdown(proposal: dict[str, Any]) -> str:
