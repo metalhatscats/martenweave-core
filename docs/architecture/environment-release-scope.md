@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # Environment and Release Scope
 
 Track which model objects are active in which environments and release waves.

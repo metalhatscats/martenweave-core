@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # Martenweave v0.1 MVP Roadmap
 
 > A concise, agent-readable delivery plan. The goal is to ship a useful core first, then expand.

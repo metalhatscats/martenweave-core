@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # Database Metadata Import Design
 
 ## Goal

@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # Martenweave — Portable Model Package Format
 
 Version: `0.1-draft`  

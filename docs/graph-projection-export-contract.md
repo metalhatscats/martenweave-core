@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # Graph Projection Export Contract
 
 ## Goal

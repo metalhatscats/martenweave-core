@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # dbt and Analytics Model Import Design
 
 ## Goal

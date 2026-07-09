@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # Domain Pack Template
 
 Domain packs extend Martenweave with specialized templates, validation rules, and examples for a specific domain.

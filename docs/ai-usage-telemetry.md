@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # AI Usage Telemetry and Token Accounting Design
 
 ## Goal

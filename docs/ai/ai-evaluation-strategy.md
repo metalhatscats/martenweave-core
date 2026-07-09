@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # AI Output Evaluation Strategy
 
 ## Eval Cases

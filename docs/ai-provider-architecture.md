@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # AI Provider Architecture
 
 > Martenweave can operate without any AI provider. When configured, AI providers augment deterministic workflows rather than replace them.

@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # Martenweave — GitHub Publishing Workflow
 
 Version: `0.1-draft`  

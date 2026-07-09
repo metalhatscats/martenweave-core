@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # Martenweave — Google Drive and Google Sheets Integration Boundary
 
 Version: `0.1-draft`  

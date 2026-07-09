@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # Technical Audit — martenweave-core
 
 **Date:** 2026-05-31

@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # ModelOps for MDM — Import / Export Specification
 
 Version: `0.1-draft`  

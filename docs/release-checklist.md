@@ -13,6 +13,7 @@ bash scripts/smoke_test.sh
 bash scripts/release_smoke.sh
 .venv/bin/martenweave config-guard --repo . --json
 .venv/bin/martenweave config-guard --repo . --mode release --json
+.venv/bin/python scripts/validate_doc_commands.py
 .venv/bin/python -m build
 ```
 

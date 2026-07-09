@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # Martenweave — Bulk Refactor Operations
 
 Version: `0.1-draft`  

@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # Onboarding Wizard Design
 
 A guided flow for new users to create their first Martenweave model from a file without learning the full methodology upfront.

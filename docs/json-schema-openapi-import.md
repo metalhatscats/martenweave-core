@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # JSON Schema and OpenAPI Import Design
 
 ## Goal

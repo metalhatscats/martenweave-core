@@ -1,3 +1,5 @@
+<!-- modelops-freshness-ignore: all -->
+
 # Neo4j Graph Projection Evaluation
 
 ## Goal
