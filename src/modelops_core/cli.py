@@ -124,6 +124,11 @@ from modelops_core.reports.diagnostics_bundle import write_diagnostics_bundle
 from modelops_core.reports.gap_summary import generate_gap_summary_report
 from modelops_core.reports.health_report import generate_repository_health
 from modelops_core.reports.index_freshness import check_index_freshness
+from modelops_core.reports.model_summary_service import (
+    generate_model_summary,
+    model_summary_to_dict,
+    model_summary_to_markdown,
+)
 from modelops_core.reports.object_card_service import (
     generate_object_card,
     object_card_to_dict,
@@ -1862,6 +1867,42 @@ def object_card(
     downstream = card.trace.get("downstream_ids", [])
     console.print(f"  Upstream IDs: {', '.join(upstream) if upstream else '—'}")
     console.print(f"  Downstream IDs: {', '.join(downstream) if downstream else '—'}")
+
+
+@app.command("model-summary")
+@with_telemetry("model_summary")
+def model_summary(
+    domain: str | None = typer.Option(
+        None, "--domain", help="Stable ID of the MasterDataDomain to summarize."
+    ),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    out: Path | None = typer.Option(  # noqa: B008
+        None, "--out", help="Path to write the Markdown report."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Generate a compact Markdown summary for a domain or the whole repository."""
+    repo_root = _resolve_repo(repo)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+
+    if not db_path.exists():
+        console.print("[yellow]No index found. Run `martenweave build-index` first.[/yellow]")
+        raise typer.Exit(code=1)
+
+    report = generate_model_summary(repo_root, domain_id=domain, db_path=db_path)
+
+    if json_output:
+        print(json.dumps(model_summary_to_dict(report), indent=2, default=str))
+        raise typer.Exit()
+
+    markdown = model_summary_to_markdown(report)
+
+    if out:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(markdown, encoding="utf-8")
+        console.print(f"[bold]Model summary written to[/bold] {out}")
+    else:
+        console.print(markdown)
 
 
 @app.command("owners")

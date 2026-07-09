@@ -71,6 +71,7 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
     "scorecard",
     "readiness",
     "object-card",
+    "model-summary",
     "owners",
     "analyze",
     "gap-report",
