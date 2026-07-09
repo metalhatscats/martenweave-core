@@ -157,11 +157,24 @@ If a PatchProposal exists in `model/patch-proposals/`:
 .venv/bin/martenweave proposal apply PP-001 --repo examples/simple_product_model --dry-run
 ```
 
-## 9. Health check
+## 10. Health check
 
 ```bash
 .venv/bin/martenweave health --repo examples/simple_product_model
 ```
+
+## 11. Export a diagnostics bundle
+
+For support handoffs, agent context, or pilot evidence, export a safe, redacted bundle of repository metadata:
+
+```bash
+.venv/bin/martenweave diagnostics export \
+  --repo examples/simple_product_model \
+  --out generated/diagnostics/simple-product \
+  --include-outputs
+```
+
+The bundle includes validation, health, scorecard, source registry, generated manifest, pending changes, and dataset sample metadata. Secrets, raw dataset values, and full canonical contents are excluded by default. Add `--include-outputs` to snapshot key command outputs as JSON under `commands/`.
 
 ---
 
@@ -171,7 +184,7 @@ If a PatchProposal exists in `model/patch-proposals/`:
 - A searchable SQLite index
 - A generated local static read-only viewer
 - Dataset profiles and gap reports
-- A feel for traceability and impact analysis
+- Traceability, impact analysis, and diagnostics bundles
 
 ## Next steps
 

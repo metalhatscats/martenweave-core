@@ -120,6 +120,7 @@ from modelops_core.reports.audit_service import (
     filter_audit_events,
 )
 from modelops_core.reports.decisions_report import generate_decisions_report
+from modelops_core.reports.diagnostics_bundle import write_diagnostics_bundle
 from modelops_core.reports.gap_summary import generate_gap_summary_report
 from modelops_core.reports.health_report import generate_repository_health
 from modelops_core.reports.index_freshness import check_index_freshness
@@ -152,6 +153,12 @@ app = typer.Typer(
 )
 _base_console = Console()
 console = _base_console
+
+diagnostics_app = typer.Typer(
+    help="Export safe diagnostics bundles for support and agent handoffs.",
+    no_args_is_help=True,
+)
+app.add_typer(diagnostics_app, name="diagnostics")
 
 _quiet = False
 _no_color = False
@@ -1593,6 +1600,48 @@ def doctor(
         console.print(f"  Warnings:            {validation_summary['warning_count']}")
     else:
         console.print("  [yellow]Validation skipped (no model path)[/yellow]")
+
+
+@diagnostics_app.command("export")
+@with_telemetry("diagnostics_export")
+def diagnostics_export(
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Output directory for the diagnostics bundle."
+    ),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    include_outputs: bool = typer.Option(
+        False,
+        "--include-outputs",
+        help="Include JSON snapshots of key commands in the bundle.",
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw manifest JSON."),
+) -> None:
+    """Export a safe diagnostics bundle for support and agent handoffs."""
+    repo_root = _resolve_repo(repo)
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+
+    if not db_path.exists():
+        console.print("[yellow]No index found. Run `martenweave build-index` first.[/yellow]")
+        raise typer.Exit(code=1)
+
+    bundle = write_diagnostics_bundle(
+        repo_root,
+        out,
+        include_command_outputs=include_outputs,
+    )
+
+    if json_output:
+        print(json.dumps(bundle.manifest, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print(f"[bold]Diagnostics bundle written to[/bold] {out}")
+    console.print(f"  Total objects: {bundle.manifest.get('object_count', 0)}")
+    console.print(f"  Index fresh:   {bundle.manifest.get('index_fresh')}")
+    console.print(f"  Validation:    {bundle.manifest.get('validation', {}).get('is_valid')}")
+    console.print("\n[bold]Bundle files[/bold]")
+    for child in sorted(out.iterdir()):
+        label = "dir" if child.is_dir() else "file"
+        console.print(f"  [{label}] {child.name}")
 
 
 @app.command()
