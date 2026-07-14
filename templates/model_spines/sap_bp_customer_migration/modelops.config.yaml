@@ -1,0 +1,5 @@
+schema_version: "1.0"
+name: SAP BP Customer Migration
+description: Scenario template for SAP Business Partner to Customer migration.
+enabled_domain_packs:
+  - sap

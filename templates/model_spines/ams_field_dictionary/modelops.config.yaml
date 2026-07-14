@@ -1,0 +1,4 @@
+schema_version: "1.0"
+name: AMS Field Dictionary
+description: Scenario template for an application management services field dictionary.
+enabled_domain_packs: []

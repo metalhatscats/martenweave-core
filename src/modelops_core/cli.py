@@ -343,7 +343,11 @@ def init(
     template: str | None = typer.Option(
         None,
         "--template",
-        help="Model spine template to copy (business_partner, generic_large_object).",
+        help=(
+            "Model spine template to copy "
+            "(business_partner, generic_large_object, "
+            "sap_bp_customer_migration, ams_field_dictionary)."
+        ),
     ),
 ) -> None:
     """Scaffold a new model repository."""
@@ -383,6 +387,10 @@ def init(
         template_config = template_path / "modelops.config.yaml"
         if template_config.exists():
             shutil.copy2(template_config, config_path)
+
+        template_readme = template_path / "README.md"
+        if template_readme.exists():
+            shutil.copy2(template_readme, target / "README.md")
 
         console.print(
             f"[green]Initialized model repository at {target} from template '{template}'[/green]"
