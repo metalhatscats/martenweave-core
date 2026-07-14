@@ -542,3 +542,63 @@ def test_api_dataset_readiness_unsupported_format(tmp_path: Path) -> None:
     )
     assert response.status_code == 400
     assert "Unsupported" in response.json()["detail"]
+
+
+# ---------------------------------------------------------------------------
+# source-state classification (issue #517)
+# ---------------------------------------------------------------------------
+
+
+def test_api_objects_include_source_state(sample_repo: Path) -> None:
+    response = client.get("/objects", params={"repo": str(sample_repo)})
+    assert response.status_code == 200
+    data = response.json()
+    assert data
+    for obj in data:
+        if obj["type"] == "Evidence":
+            assert obj["source_state"] == "evidence"
+        else:
+            assert obj["source_state"] == "canonical"
+
+
+def test_api_get_object_includes_source_state(sample_repo: Path) -> None:
+    response = client.get("/objects/DOMAIN-CUSTOMER-BP", params={"repo": str(sample_repo)})
+    assert response.status_code == 200
+    assert response.json()["source_state"] == "canonical"
+
+
+def test_api_validate_results_are_findings(sample_repo: Path) -> None:
+    response = client.get("/validate", params={"repo": str(sample_repo)})
+    assert response.status_code == 200
+    data = response.json()
+    for result in data["results"]:
+        assert result["source_state"] == "finding"
+
+
+def test_api_gaps_are_findings_and_profile_is_evidence(tmp_path: Path) -> None:
+    repo = _build_repo_with_endpoint(tmp_path)
+    dataset = tmp_path / "customers.csv"
+    _write_csv(dataset, ["CUSTOMER_GROUP", "UNKNOWN"], [["A", "1"]])
+
+    response = client.post("/gaps", params={"repo": str(repo), "dataset": str(dataset)})
+    assert response.status_code == 200
+    data = response.json()
+    for gap in data["dataset_gaps"]:
+        assert gap["source_state"] == "finding"
+    for gap in data["model_gaps"]:
+        assert gap["source_state"] == "finding"
+
+
+def test_api_dataset_readiness_source_states(tmp_path: Path) -> None:
+    repo = _build_repo_with_endpoint(tmp_path)
+    dataset = tmp_path / "customers.csv"
+    _write_csv(dataset, ["CUSTOMER_GROUP", "UNKNOWN"], [["A", "1"]])
+
+    response = client.post(
+        "/dataset-readiness", params={"repo": str(repo), "dataset": str(dataset)}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["dataset_profile"]["source_state"] == "evidence"
+    for gap in data["dataset_gaps"]:
+        assert gap["source_state"] == "finding"

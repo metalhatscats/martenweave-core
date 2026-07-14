@@ -17,6 +17,8 @@ from modelops_core.patching.apply_service import apply_patch_proposal, dry_run_p
 from modelops_core.patching.patch_validator import validate_patch_proposal
 from modelops_core.repository import parse_file, scan_repository
 from modelops_core.run import generate_dataset_readiness_report
+from modelops_core.schemas.common import SourceState
+from modelops_core.source_state import classify_dataset_gap, classify_object_type
 from modelops_core.trace import trace_object
 from modelops_core.validation import validate_objects
 
@@ -70,6 +72,7 @@ def list_objects(
         if obj_type and str(fm.get("type", "")) != obj_type:
             continue
         fm["source_file"] = Path(parsed.source_path).name
+        fm["source_state"] = classify_object_type(str(fm.get("type", "")))
         results.append(fm)
 
     return results
@@ -93,6 +96,7 @@ def get_object(
             result = dict(parsed.frontmatter)
             result["source_file"] = Path(parsed.source_path).name
             result["body"] = parsed.body
+            result["source_state"] = classify_object_type(str(result.get("type", "")))
             return result
 
     raise HTTPException(status_code=404, detail=f"Object {obj_id} not found")
@@ -121,6 +125,7 @@ def validate(
                 "message": r.message,
                 "object_id": r.object_id,
                 "suggested_fix": r.suggested_fix,
+                "source_state": SourceState.FINDING.value,
             }
             for r in summary.results
         ],
@@ -233,6 +238,7 @@ def list_proposals(
                 "status": fm.get("status", "pending_review"),
                 "validation_status": fm.get("validation_status", "pending"),
                 "applied_at": fm.get("applied_at"),
+                "source_state": SourceState.PROPOSAL.value,
             }
         )
     return results
@@ -251,7 +257,9 @@ def get_proposal(
 
     parsed = parse_file(proposal_path)
     fm = parsed.frontmatter or {}
-    return dict(fm)
+    result = dict(fm)
+    result["source_state"] = SourceState.PROPOSAL.value
+    return result
 
 
 @app.post("/proposals/{proposal_id}/validate")
@@ -421,8 +429,14 @@ def gaps(
         "verdict": report.verdict,
         "coverage": report.coverage,
         "matches": report.matches,
-        "dataset_gaps": report.dataset_gaps,
-        "model_gaps": report.model_gaps,
+        "dataset_gaps": [
+            {**gap, "source_state": classify_dataset_gap(gap.get("gap_code", ""))}
+            for gap in report.dataset_gaps
+        ],
+        "model_gaps": [
+            {**gap, "source_state": classify_dataset_gap(gap.get("gap_code", ""))}
+            for gap in report.model_gaps
+        ],
     }
 
 
@@ -458,4 +472,13 @@ def dataset_readiness(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    report.dataset_profile["source_state"] = SourceState.EVIDENCE.value
+    report.dataset_gaps = [
+        {**gap, "source_state": classify_dataset_gap(gap.get("gap_code", ""))}
+        for gap in report.dataset_gaps
+    ]
+    report.model_gaps = [
+        {**gap, "source_state": classify_dataset_gap(gap.get("gap_code", ""))}
+        for gap in report.model_gaps
+    ]
     return report.__dict__
