@@ -146,7 +146,11 @@ from modelops_core.reports.source_registry_service import (
 )
 from modelops_core.reports.usage_report_service import generate_usage_report
 from modelops_core.repository import parse_file, scan_repository
-from modelops_core.run import generate_dataset_readiness_report, write_readiness_report
+from modelops_core.run import (
+    generate_dataset_readiness_report,
+    generate_migration_assessment,
+    write_readiness_report,
+)
 from modelops_core.schemas.migration import migrate_object, needs_migration
 from modelops_core.schemas.versioning import (
     CURRENT_SCHEMA_VERSION,
@@ -2792,6 +2796,88 @@ def dataset_readiness(
     else:
         console.print(f"[green]Report written to {json_path}[/green]")
         console.print(f"[green]Report written to {md_path}[/green]")
+
+
+@run_app.command("migration-assessment")
+@with_telemetry("run_migration_assessment")
+def migration_assessment(
+    mapping: Path = typer.Option(  # noqa: B008
+        ..., "--mapping", help="Path to the XLSX mapping workbook."
+    ),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    dataset: Path | None = typer.Option(  # noqa: B008
+        None, "--dataset", help="Optional path to a CSV or XLSX sample dataset."
+    ),
+    evidence: list[Path] = typer.Option(  # noqa: B008
+        [], "--evidence", help="Optional evidence file (repeatable)."
+    ),
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Output directory for the assessment package."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw manifest JSON."),
+) -> None:
+    """Run a full SAP migration assessment from workbook to review pack."""
+    repo_root = _resolve_repo(repo)
+
+    if not mapping.exists():
+        console.print(f"[red]Mapping workbook not found: {mapping}[/red]")
+        raise typer.Exit(code=1)
+
+    if dataset is not None and not dataset.exists():
+        console.print(f"[red]Dataset not found: {dataset}[/red]")
+        raise typer.Exit(code=1)
+
+    for ev_path in evidence:
+        if not ev_path.exists():
+            console.print(f"[red]Evidence file not found: {ev_path}[/red]")
+            raise typer.Exit(code=1)
+
+    model_path = resolve_model_path(repo_root)
+    if not model_path.exists():
+        console.print(f"[red]Model path does not exist: {model_path}[/red]")
+        raise typer.Exit(code=1)
+
+    try:
+        manifest = generate_migration_assessment(
+            repo_root=repo_root,
+            mapping_path=mapping,
+            dataset_path=dataset,
+            evidence_paths=evidence,
+            out_dir=out,
+        )
+    except (ValueError, RuntimeError, ResourceLimitExceeded) as exc:
+        if json_output:
+            print(json.dumps({"error": str(exc)}, indent=2))
+            raise typer.Exit(code=1) from exc
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        data = {
+            "martenweave_version": manifest.martenweave_version,
+            "repo_name": manifest.repo_name,
+            "repo_path": manifest.repo_path,
+            "generated_at": manifest.generated_at,
+            "inputs": manifest.inputs,
+            "stage_statuses": [
+                {"name": s.name, "status": s.status, "message": s.message}
+                for s in manifest.stage_statuses
+            ],
+            "generated_artifacts": manifest.generated_artifacts,
+        }
+        print(json.dumps(data, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print(f"[bold]Migration assessment complete: {manifest.repo_name}[/bold]")
+    console.print(f"  Output: {out}")
+    console.print("\n[bold]Stage statuses[/bold]")
+    for stage in manifest.stage_statuses:
+        color = {"success": "green", "skipped": "yellow", "failed": "red"}.get(
+            stage.status, "white"
+        )
+        console.print(f"  [{color}]{stage.status}[/{color}] {stage.name}: {stage.message}")
+    console.print(f"\n[bold]Artifacts[/bold]: {len(manifest.generated_artifacts)} files")
+    console.print(f"[green]Manifest: {out / 'manifest.json'}[/green]")
 
 
 # ---------------------------------------------------------------------------
