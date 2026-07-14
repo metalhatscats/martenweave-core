@@ -176,26 +176,43 @@ successfully.
    - Assign each finding to the relevant owner.
 
 2. **Record dispositions**
-   - Use `martenweave assessment-review` when available, or a local
-     `finding-reviews.json` file with this shape:
+   - Run `martenweave assessment-review` against the assessment manifest:
 
-     ```json
-     {
-       "finding_id": "gap:missing_owner:ATTR-CUST-SALES-CUSTOMER-GROUP",
-       "disposition": "confirmed",
-       "reviewer": "Jane Consultant",
-       "note": "Confirmed against mapping workbook v3.",
-       "reviewed_at": "2026-07-14T10:00:00Z"
-     }
+     ```bash
+     .venv/bin/martenweave assessment-review set \
+       --assessment ./outputs/assessment/manifest.json \
+       --finding-id "mapping:missing_owner:customer_mappings:16" \
+       --disposition confirmed \
+       --reviewer "Jane Consultant" \
+       --note "Confirmed against mapping workbook v3."
      ```
 
    - Allowed dispositions: `confirmed`, `false_positive`, `accepted_risk`,
      `deferred`, `resolved`.
 
-3. **Promote confirmed findings**
-   - Convert confirmed gaps into issue drafts or PatchProposals through the
-     existing `issue-draft` and `proposal` commands.
-   - Do not edit canonical model files directly.
+   - Dispositions are stored in `finding-reviews.json` next to the manifest,
+     with a short history appended for auditability.
+
+3. **Summarize and promote confirmed findings**
+   - View current review state:
+
+     ```bash
+     .venv/bin/martenweave assessment-review summary \
+       --assessment ./outputs/assessment/manifest.json
+     ```
+
+   - Promote a confirmed finding to a PatchProposal for approval:
+
+     ```bash
+     .venv/bin/martenweave assessment-review promote \
+       --assessment ./outputs/assessment/manifest.json \
+       --finding-id "mapping:missing_owner:customer_mappings:16" \
+       --repo ./pilot-repo
+     ```
+
+   - This writes a new file under `model/patch-proposals/` and never edits
+     canonical model files directly. Review and accept the PatchProposal
+     through the normal `proposal` commands before applying it.
 
 4. **Sanitize before sharing**
    - Use `martenweave assessment sanitize` when available, or manually remove

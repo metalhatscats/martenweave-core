@@ -55,6 +55,125 @@ def _is_decisions_sheet(name: str) -> bool:
     return "decision" in name.lower()
 
 
+_SEVERITY_BY_CATEGORY: dict[str, str] = {
+    "missing_owner": "medium",
+    "missing_mapping": "high",
+    "obsolete_field": "low",
+    "validation_coverage_gap": "medium",
+    "unresolved_decision": "medium",
+    "conflicting_decision": "high",
+    "duplicate_target": "medium",
+}
+
+
+def _stable_id(*parts: str) -> str:
+    """Build a deterministic, URL-safe finding ID from parts."""
+    cleaned = []
+    for part in parts:
+        text = str(part).lower().strip().replace(" ", "_")
+        text = "".join(c for c in text if c.isalnum() or c in "_-").strip("_-")
+        if text:
+            cleaned.append(text)
+    return ":".join(cleaned)
+
+
+def _build_findings(profile: MappingWorkbookProfile) -> list[dict[str, Any]]:
+    """Convert mapping-workbook profile findings into stable, reviewable IDs."""
+    findings: list[dict[str, Any]] = []
+
+    for row in profile.missing_owner_rows:
+        findings.append(
+            {
+                "id": _stable_id("mapping", "missing_owner", row["sheet"], row["row"]),
+                "category": "missing_owner",
+                "severity": _SEVERITY_BY_CATEGORY["missing_owner"],
+                "source": "mapping_profile",
+                "location": row,
+                "message": f"Missing owner in '{row['sheet']}' row {row['row']}.",
+            }
+        )
+
+    for row in profile.missing_mapping_rows:
+        findings.append(
+            {
+                "id": _stable_id("mapping", "missing_mapping", row["sheet"], row["row"]),
+                "category": "missing_mapping",
+                "severity": _SEVERITY_BY_CATEGORY["missing_mapping"],
+                "source": "mapping_profile",
+                "location": row,
+                "message": (f"Missing target mapping in '{row['sheet']}' row {row['row']}."),
+            }
+        )
+
+    for row in profile.obsolete_rows:
+        findings.append(
+            {
+                "id": _stable_id("mapping", "obsolete_field", row["sheet"], row["row"]),
+                "category": "obsolete_field",
+                "severity": _SEVERITY_BY_CATEGORY["obsolete_field"],
+                "source": "mapping_profile",
+                "location": row,
+                "message": f"Obsolete field in '{row['sheet']}' row {row['row']}.",
+            }
+        )
+
+    for row in profile.validation_coverage_gaps:
+        findings.append(
+            {
+                "id": _stable_id("mapping", "validation_coverage_gap", row["sheet"], row["row"]),
+                "category": "validation_coverage_gap",
+                "severity": _SEVERITY_BY_CATEGORY["validation_coverage_gap"],
+                "source": "mapping_profile",
+                "location": row,
+                "message": (
+                    f"Conditional rule without validation coverage in "
+                    f"'{row['sheet']}' row {row['row']}."
+                ),
+            }
+        )
+
+    for row in profile.unresolved_decisions:
+        findings.append(
+            {
+                "id": _stable_id("decision", "unresolved", row["sheet"], row["row"]),
+                "category": "unresolved_decision",
+                "severity": _SEVERITY_BY_CATEGORY["unresolved_decision"],
+                "source": "mapping_profile",
+                "location": row,
+                "message": (f"Unresolved decision in '{row['sheet']}' row {row['row']}."),
+            }
+        )
+
+    for conflict in profile.conflicting_decisions:
+        topic = conflict.get("topic", "unknown")
+        findings.append(
+            {
+                "id": _stable_id("decision", "conflict", topic),
+                "category": "conflicting_decision",
+                "severity": _SEVERITY_BY_CATEGORY["conflicting_decision"],
+                "source": "mapping_profile",
+                "location": conflict,
+                "message": f"Conflicting decisions on topic '{topic}'.",
+            }
+        )
+
+    for row in profile.duplicate_target_rows:
+        findings.append(
+            {
+                "id": _stable_id("mapping", "duplicate_target", row["sheet"], row["row"]),
+                "category": "duplicate_target",
+                "severity": _SEVERITY_BY_CATEGORY["duplicate_target"],
+                "source": "mapping_profile",
+                "location": row,
+                "message": (
+                    f"Duplicate target representation in '{row['sheet']}' row {row['row']}."
+                ),
+            }
+        )
+
+    return findings
+
+
 @dataclass
 class MappingWorkbookProfile:
     """Metadata profile for a mapping workbook input."""
@@ -103,9 +222,7 @@ def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
     try:
         from openpyxl import load_workbook
     except ImportError as exc:
-        raise RuntimeError(
-            "openpyxl is required for mapping workbook profiling."
-        ) from exc
+        raise RuntimeError("openpyxl is required for mapping workbook profiling.") from exc
 
     file_hash = _file_hash(mapping_path)
 
@@ -171,14 +288,9 @@ def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
 
         for idx, row in enumerate(data_rows, start=2):
             row_dict = {
-                h: (str(v) if v is not None else "")
-                for h, v in zip(headers, row, strict=False)
+                h: (str(v) if v is not None else "") for h, v in zip(headers, row, strict=False)
             }
-            status = (
-                row_dict.get(status_col, "").strip().lower()
-                if status_col
-                else ""
-            )
+            status = row_dict.get(status_col, "").strip().lower() if status_col else ""
 
             # Missing owner detection
             if owner_col and not row_dict.get(owner_col, "").strip():
@@ -189,8 +301,7 @@ def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
                         "key_columns": {
                             h: row_dict[h]
                             for h in headers
-                            if h.lower()
-                            in {"source_field", "target_table", "target_field"}
+                            if h.lower() in {"source_field", "target_table", "target_field"}
                             and row_dict.get(h)
                         },
                     }
@@ -199,19 +310,13 @@ def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
             # Field-mapping-specific checks
             if is_mapping:
                 source_field = (
-                    row_dict.get(source_field_col, "").strip()
-                    if source_field_col
-                    else ""
+                    row_dict.get(source_field_col, "").strip() if source_field_col else ""
                 )
                 target_table = (
-                    row_dict.get(target_table_col, "").strip()
-                    if target_table_col
-                    else ""
+                    row_dict.get(target_table_col, "").strip() if target_table_col else ""
                 )
                 target_field = (
-                    row_dict.get(target_field_col, "").strip()
-                    if target_field_col
-                    else ""
+                    row_dict.get(target_field_col, "").strip() if target_field_col else ""
                 )
 
                 if status != "obsolete" and (not target_table or not target_field):
@@ -221,14 +326,10 @@ def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
                             "row": idx,
                             "source_field": source_field,
                             "source_system": (
-                                row_dict.get(source_system_col, "")
-                                if source_system_col
-                                else ""
+                                row_dict.get(source_system_col, "") if source_system_col else ""
                             ),
                             "source_table": (
-                                row_dict.get(source_table_col, "")
-                                if source_table_col
-                                else ""
+                                row_dict.get(source_table_col, "") if source_table_col else ""
                             ),
                             "target_table": target_table,
                             "target_field": target_field,
@@ -243,21 +344,13 @@ def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
                             "source_field": source_field,
                             "target_table": target_table,
                             "target_field": target_field,
-                            "reviewer_comment": row_dict.get(
-                                _find_col("reviewer_comment"), ""
-                            ),
+                            "reviewer_comment": row_dict.get(_find_col("reviewer_comment"), ""),
                         }
                     )
 
-                condition = (
-                    row_dict.get(condition_col, "").strip()
-                    if condition_col
-                    else ""
-                )
+                condition = row_dict.get(condition_col, "").strip() if condition_col else ""
                 validation_rule = (
-                    row_dict.get(validation_rule_col, "").strip()
-                    if validation_rule_col
-                    else ""
+                    row_dict.get(validation_rule_col, "").strip() if validation_rule_col else ""
                 )
                 if status != "obsolete" and condition and not validation_rule:
                     validation_coverage_gaps.append(
@@ -274,8 +367,7 @@ def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
                     row_dict.get(h, "").strip()
                     for h in headers
                     if any(
-                        term in h.lower()
-                        for term in ("source", "target", "legacy", "sap", "field")
+                        term in h.lower() for term in ("source", "target", "legacy", "sap", "field")
                     )
                 ]
                 key = tuple(p for p in key_parts if p)
@@ -326,9 +418,7 @@ def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
                             "row": idx,
                             "topic": row_dict.get(topic_col, ""),
                             "decision_id": (
-                                row_dict.get(decision_id_col, "")
-                                if decision_id_col
-                                else ""
+                                row_dict.get(decision_id_col, "") if decision_id_col else ""
                             ),
                             "status": row_dict.get(status_col, "") if status_col else "",
                         }
@@ -550,6 +640,22 @@ def generate_migration_assessment(
                     "unresolved_decisions": mapping_profile.unresolved_decisions,
                     "conflicting_decisions": mapping_profile.conflicting_decisions,
                     "duplicate_target_rows": mapping_profile.duplicate_target_rows,
+                },
+                indent=2,
+                default=str,
+            ),
+            encoding="utf-8",
+        )
+
+        # Stable findings derived from the mapping workbook profile.
+        findings = _build_findings(mapping_profile)
+        findings_path = out_dir / "findings.json"
+        findings_path.write_text(
+            json.dumps(
+                {
+                    "generated_at": generated_at,
+                    "finding_count": len(findings),
+                    "findings": findings,
                 },
                 indent=2,
                 default=str,
