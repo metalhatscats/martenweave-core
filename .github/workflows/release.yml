@@ -61,7 +61,7 @@ jobs:
           python-version: "3.11"
 
       - name: Release preflight version guard
-        run: python scripts/release_preflight.py
+        run: PYTHONPATH=src python scripts/release_preflight.py
 
       - name: Install build tools
         run: |

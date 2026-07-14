@@ -533,8 +533,8 @@ export function ReportsScreen({ onExport }) {
 export function ChangelogScreen() {
   const releases = [
     {
-      date: "July 3, 2026",
-      label: "Unreleased",
+      date: "July 14, 2026",
+      label: "0.5.0",
       title: "Model Ledger workbench",
       summary:
         "A backend-first model registry now has a focused local workbench for investigating canonical knowledge and governing changes.",
@@ -545,6 +545,7 @@ export function ChangelogScreen() {
           "Expanded lineage, gap triage, and proposal review with source and decision context.",
         ]],
         ["Changed", [
+          "Licensed current source and future releases under Apache License 2.0.",
           "Workspace home now prioritizes active model work over a chat-first surface.",
           "Deterministic validation and human approval are explicit throughout proposal workflows.",
         ]],

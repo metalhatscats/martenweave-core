@@ -17,9 +17,7 @@ def _build_minimal_repo(tmp_path: Path, with_decision: bool = False) -> Path:
     repo_root.mkdir()
 
     config_path = repo_root / "modelops.config.yaml"
-    config_path.write_text(
-        'schema_version: "1.0"\nname: Test Repository\n', encoding="utf-8"
-    )
+    config_path.write_text('schema_version: "1.0"\nname: Test Repository\n', encoding="utf-8")
 
     model_dir = repo_root / "model"
     model_dir.mkdir()

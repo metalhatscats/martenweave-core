@@ -359,9 +359,7 @@ class ProductOwnerAgent:
                     recipient_id=entry.recipient_id,
                     recipient_role=entry.recipient_role,
                     reason=reason,
-                    affected_objects=[entry.source_object_id]
-                    if entry.source_object_id
-                    else [],
+                    affected_objects=[entry.source_object_id] if entry.source_object_id else [],
                     message_summary=f"Proposal {proposal_id} requires review.",
                 )
                 event_ids.append(event.event_id)
@@ -384,9 +382,7 @@ class ProductOwnerAgent:
                         recipient_id=entry.recipient_id,
                         recipient_role=entry.recipient_role,
                         reason=reason,
-                        affected_objects=[entry.source_object_id]
-                        if entry.source_object_id
-                        else [],
+                        affected_objects=[entry.source_object_id] if entry.source_object_id else [],
                         message_summary=f"ChangeRequest {cr_id} linked to {proposal_id}.",
                     )
                     event_ids.append(event.event_id)

@@ -369,9 +369,7 @@ def _build_report(
 
     promoted_proposal_path: str | None = None
     if promote_to_proposal and not dry_run and promotion_report.gaps:
-        proposal_path = promote_gaps_to_proposal(
-            promotion_report, resolve_model_path(repo_root)
-        )
+        proposal_path = promote_gaps_to_proposal(promotion_report, resolve_model_path(repo_root))
         promoted_proposal_path = str(proposal_path)
 
     coverage_dict: dict[str, Any] = {}

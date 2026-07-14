@@ -69,7 +69,7 @@
 | [docs/product/ROADMAP_V0_1.md](product/ROADMAP_V0_1.md) | v0.1 roadmap |
 | [docs/commercial-positioning.md](commercial-positioning.md) | ICP, buyer personas, positioning |
 | [docs/commercial-packaging.md](commercial-packaging.md) | Packaging options and pricing hypotheses |
-| [docs/licensing-and-commercial-use.md](licensing-and-commercial-use.md) | MIT reality, commercial-use clarification, and future licensing options |
+| [docs/licensing-and-commercial-use.md](licensing-and-commercial-use.md) | Apache 2.0 rights, contribution terms, and optional commercial services |
 | [docs/pilot-package.md](pilot-package.md) | Pilot workflow and success metrics |
 | [docs/product-discovery-interviews.md](product-discovery-interviews.md) | Interview guide for target teams |
 | [docs/team-collaboration-model.md](team-collaboration-model.md) | Roles, workflows, and collaboration patterns |

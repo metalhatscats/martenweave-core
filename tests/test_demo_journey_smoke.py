@@ -107,9 +107,7 @@ def test_demo_journey_search_and_query_customer_group(customer_repo: Path) -> No
     _assert_json_key(search_data, "total_count", int)
     assert search_data["total_count"] >= 1, search_data
 
-    result = runner.invoke(
-        app, ["query", "--type", "Attribute", "--repo", repo, "--json"]
-    )
+    result = runner.invoke(app, ["query", "--type", "Attribute", "--repo", repo, "--json"])
     assert result.exit_code == 0, result.output
     query_data = json.loads(result.output)
     _assert_json_key(query_data, "results", list)
@@ -144,9 +142,7 @@ def test_demo_journey_trace_and_impact(customer_repo: Path) -> None:
     assert len(trace_data["nodes"]) >= 1, trace_data
     _assert_json_key(trace_data, "edges", list)
 
-    result = runner.invoke(
-        app, ["impact", "FEP-S4-KNVV-KDGRP", "--repo", repo, "--json"]
-    )
+    result = runner.invoke(app, ["impact", "FEP-S4-KNVV-KDGRP", "--repo", repo, "--json"])
     assert result.exit_code == 0, result.output
     impact_data = json.loads(result.output)
     _assert_json_key(impact_data, "root_object_id", str)
@@ -160,9 +156,7 @@ def test_demo_journey_gaps_and_gap_report(customer_repo: Path) -> None:
     runner.invoke(app, ["build-index", "--repo", repo, "--jsonl"])
 
     csv_path = customer_repo / "data" / "samples" / "customer_sales_area_sample.csv"
-    result = runner.invoke(
-        app, ["gaps", str(csv_path), "--repo", repo, "--check-model", "--json"]
-    )
+    result = runner.invoke(app, ["gaps", str(csv_path), "--repo", repo, "--check-model", "--json"])
     assert result.exit_code == 0, result.output
     gaps_data = json.loads(result.output)
     _assert_json_key(gaps_data, "coverage.total_columns", int)
@@ -183,9 +177,7 @@ def test_demo_journey_docs_build_viewer(customer_repo: Path) -> None:
     runner.invoke(app, ["build-index", "--repo", repo, "--jsonl"])
 
     viewer_dir = customer_repo / "generated" / "docs_site"
-    result = runner.invoke(
-        app, ["docs-build", "--repo", repo, "--site", str(viewer_dir), "--json"]
-    )
+    result = runner.invoke(app, ["docs-build", "--repo", repo, "--site", str(viewer_dir), "--json"])
     assert result.exit_code == 0, result.output
     build_data = json.loads(result.output)
     _assert_json_key(build_data, "files", list)

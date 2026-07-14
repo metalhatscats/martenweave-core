@@ -88,20 +88,14 @@ def _load_relationships(
         target = {"object_id": to_id, **names.get(to_id, {})}
         source = {"object_id": from_id, **names.get(from_id, {})}
         if from_id == object_id:
-            outgoing.setdefault(rel_type, []).append(
-                {**target, "relationship_class": rel_class}
-            )
+            outgoing.setdefault(rel_type, []).append({**target, "relationship_class": rel_class})
         if to_id == object_id:
-            incoming.setdefault(rel_type, []).append(
-                {**source, "relationship_class": rel_class}
-            )
+            incoming.setdefault(rel_type, []).append({**source, "relationship_class": rel_class})
 
     return incoming, outgoing
 
 
-def _load_validation_results(
-    conn: sqlite3.Connection, object_id: str
-) -> list[dict[str, Any]]:
+def _load_validation_results(conn: sqlite3.Connection, object_id: str) -> list[dict[str, Any]]:
     rows = conn.execute(
         "SELECT severity, code, message, field_path, details_json "
         "FROM validation_results WHERE object_id = ? AND severity IN ('ERROR', 'WARNING')",
@@ -128,8 +122,7 @@ def _load_open_issues_and_decisions(
 
     # Direct references via object_relationships (affected_object, etc.)
     rows = conn.execute(
-        "SELECT from_object_id, relationship_type FROM object_relationships "
-        "WHERE to_object_id = ?",
+        "SELECT from_object_id, relationship_type FROM object_relationships WHERE to_object_id = ?",
         (object_id,),
     ).fetchall()
     related_ids = {from_id for from_id, _ in rows}
@@ -223,9 +216,7 @@ def generate_object_card(
         "downstream_count": len(
             [a for a in impact.affected_objects if a.direction == "downstream"]
         ),
-        "upstream_count": len(
-            [a for a in impact.affected_objects if a.direction == "upstream"]
-        ),
+        "upstream_count": len([a for a in impact.affected_objects if a.direction == "upstream"]),
     }
 
     trace = trace_object(db_path, object_id, max_depth=3, direction="both")

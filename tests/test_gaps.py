@@ -1075,9 +1075,7 @@ class TestGapsCheckModelCli:
         data = json.loads(result.output)
         assert len(data["gaps"]) >= 1
 
-    def test_gaps_check_model_no_false_positive_for_has_attribute(
-        self, tmp_path: Path
-    ) -> None:
+    def test_gaps_check_model_no_false_positive_for_has_attribute(self, tmp_path: Path) -> None:
         """Attributes linked via 'has_attribute' relationship must not be flagged."""
         repo = tmp_path / "repo"
         model_dir = repo / "model"
@@ -1439,7 +1437,6 @@ class TestGapsMultiSheetXlsx:
         assert "Sheet" in result.output
 
 
-
 class TestStableGapIds:
     """Stable gap IDs make gap results traceable across repeated runs."""
 
@@ -1725,13 +1722,9 @@ class TestStableGapIds:
 class TestCustomerBpExampleDatasets:
     """Realistic messy/clean CSVs in examples/customer_bp_model produce credible gaps."""
 
-    def test_messy_csv_reports_duplicate_renamed_and_extra_columns(
-        self, sample_repo: Path
-    ) -> None:
+    def test_messy_csv_reports_duplicate_renamed_and_extra_columns(self, sample_repo: Path) -> None:
         csv_path = sample_repo / "data" / "samples" / "customer_messy.csv"
-        result = runner.invoke(
-            app, ["gaps", str(csv_path), "--repo", str(sample_repo), "--json"]
-        )
+        result = runner.invoke(app, ["gaps", str(csv_path), "--repo", str(sample_repo), "--json"])
         assert result.exit_code == 0, result.output
         data = json.loads(result.output)
 
@@ -1745,9 +1738,7 @@ class TestCustomerBpExampleDatasets:
         assert "NO_MATCHING_ENDPOINTS" in gap_codes
 
         unmodeled = [
-            g["column_name"]
-            for g in data["gaps"]
-            if g["gap_code"] == "UNMODELED_DATASET_COLUMN"
+            g["column_name"] for g in data["gaps"] if g["gap_code"] == "UNMODELED_DATASET_COLUMN"
         ]
         assert set(unmodeled) >= {
             "CUSTOMER_ID",
@@ -1767,9 +1758,7 @@ class TestCustomerBpExampleDatasets:
         self, sample_repo: Path
     ) -> None:
         csv_path = sample_repo / "data" / "samples" / "customer_clean.csv"
-        result = runner.invoke(
-            app, ["gaps", str(csv_path), "--repo", str(sample_repo), "--json"]
-        )
+        result = runner.invoke(app, ["gaps", str(csv_path), "--repo", str(sample_repo), "--json"])
         assert result.exit_code == 0, result.output
         data = json.loads(result.output)
 
@@ -1782,9 +1771,7 @@ class TestCustomerBpExampleDatasets:
         assert "DUPLICATE_COLUMN_NAME" not in gap_codes
         assert "NO_MATCHING_ENDPOINTS" not in gap_codes
 
-        match = next(
-            (m for m in data["matches"] if m["column_name"] == "CUSTOMER_GROUP"), None
-        )
+        match = next((m for m in data["matches"] if m["column_name"] == "CUSTOMER_GROUP"), None)
         assert match is not None
         assert match["matched_endpoint_id"] == "FEP-MIGFILE-CUSTOMER-GROUP"
         assert match["match_type"] == "exact"

@@ -4,7 +4,7 @@ This document records the minimum public-readiness expectations for Martenweave 
 
 ## Current State
 
-- License: MIT, in `LICENSE`.
+- License: Apache License 2.0, in `LICENSE`, with project attribution in `NOTICE`.
 - Package metadata: `pyproject.toml` declares README, license, keywords, and classifiers.
 - Contribution path: `CONTRIBUTING.md` and GitHub issue templates.
 - Security reporting: `SECURITY.md`.

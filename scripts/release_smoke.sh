@@ -182,6 +182,9 @@ assert_jq "${SMOKE_DIR}/config-guard-release.json" 'type == "object"'
 
 run_step "frontend tests"
 cd "${REPO_ROOT}/frontend"
+if [[ ! -x node_modules/.bin/vitest ]]; then
+    npm ci
+fi
 npm test
 
 echo "Release smoke checks passed"

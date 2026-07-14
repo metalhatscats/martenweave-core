@@ -2,7 +2,9 @@
 
 All notable changes to Martenweave Core.
 
-## [Unreleased] — 2026-07-03
+## [Unreleased]
+
+## [0.5.0] — 2026-07-14
 
 ### Added
 
@@ -24,6 +26,8 @@ All notable changes to Martenweave Core.
 
 ### Changed
 
+- **Apache License 2.0**: relicensed all current source and future releases under Apache-2.0,
+  including its explicit patent grant and permission for commercial use and redistribution.
 - **Workspace home**: reframed the initial experience around the canonical model ledger and active
   migration work instead of a chat-first surface.
 - **Proposal safety**: made deterministic validation, human approval, and local audit behavior
