@@ -44,6 +44,17 @@ class StageStatus:
     message: str = ""
 
 
+def _is_field_mapping_sheet(name: str) -> bool:
+    """Return True for source-to-target field mapping sheets."""
+    lower = name.lower()
+    return lower.endswith("_mappings") and "value" not in lower
+
+
+def _is_decisions_sheet(name: str) -> bool:
+    """Return True for decision registers."""
+    return "decision" in name.lower()
+
+
 @dataclass
 class MappingWorkbookProfile:
     """Metadata profile for a mapping workbook input."""
@@ -57,6 +68,12 @@ class MappingWorkbookProfile:
     formula_warnings: list[str] = field(default_factory=list)
     missing_owner_rows: list[dict[str, Any]] = field(default_factory=list)
     duplicate_rows: list[dict[str, Any]] = field(default_factory=list)
+    missing_mapping_rows: list[dict[str, Any]] = field(default_factory=list)
+    obsolete_rows: list[dict[str, Any]] = field(default_factory=list)
+    validation_coverage_gaps: list[dict[str, Any]] = field(default_factory=list)
+    unresolved_decisions: list[dict[str, Any]] = field(default_factory=list)
+    conflicting_decisions: list[dict[str, Any]] = field(default_factory=list)
+    duplicate_target_rows: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -101,9 +118,23 @@ def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
     total_rows = 0
     missing_owner_rows: list[dict[str, Any]] = []
     duplicate_rows: list[dict[str, Any]] = []
+    missing_mapping_rows: list[dict[str, Any]] = []
+    obsolete_rows: list[dict[str, Any]] = []
+    validation_coverage_gaps: list[dict[str, Any]] = []
+    unresolved_decisions: list[dict[str, Any]] = []
+    conflicting_decisions: list[dict[str, Any]] = []
+    duplicate_target_rows: list[dict[str, Any]] = []
 
     owner_col: str | None = None
     row_tuples: list[tuple] = []
+    target_seen: dict[str, dict[tuple[str, str], tuple[str, int]]] = {}
+    decision_topics: dict[str, list[dict[str, Any]]] = {}
+
+    def _find_col(*candidates: str) -> str | None:
+        for header in headers:
+            if header.lower() in candidates:
+                return header
+        return None
 
     for sheet_name in sheet_names:
         ws = wb[sheet_name]
@@ -113,11 +144,27 @@ def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
         headers = [str(cell).strip() if cell is not None else "" for cell in rows[0]]
         if not column_names:
             column_names = headers
-            # Find owner-ish column on first sheet
             for h in headers:
                 if "owner" in h.lower():
                     owner_col = h
                     break
+
+        is_mapping = _is_field_mapping_sheet(sheet_name)
+        is_decisions = _is_decisions_sheet(sheet_name)
+
+        source_field_col = _find_col("source_field")
+        source_system_col = _find_col("source_system")
+        source_table_col = _find_col("source_table")
+        target_table_col = _find_col("target_table")
+        target_field_col = _find_col("target_field")
+        status_col = _find_col("status")
+        condition_col = _find_col("condition")
+        validation_rule_col = _find_col("validation_rule")
+        topic_col = _find_col("topic")
+        decision_id_col = _find_col("decision_id")
+
+        if is_mapping:
+            target_seen.setdefault(sheet_name, {})
 
         data_rows = rows[1:]
         total_rows += len(data_rows)
@@ -127,6 +174,12 @@ def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
                 h: (str(v) if v is not None else "")
                 for h, v in zip(headers, row, strict=False)
             }
+            status = (
+                row_dict.get(status_col, "").strip().lower()
+                if status_col
+                else ""
+            )
+
             # Missing owner detection
             if owner_col and not row_dict.get(owner_col, "").strip():
                 missing_owner_rows.append(
@@ -136,24 +189,150 @@ def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
                         "key_columns": {
                             h: row_dict[h]
                             for h in headers
-                            if h.lower() in {"source_field", "target_table", "target_field"}
+                            if h.lower()
+                            in {"source_field", "target_table", "target_field"}
                             and row_dict.get(h)
                         },
                     }
                 )
 
-            # Duplicate detection: use source/target-ish columns as key
-            key_parts = [
-                row_dict.get(h, "").strip()
-                for h in headers
-                if any(
-                    term in h.lower()
-                    for term in ("source", "target", "legacy", "sap", "field")
+            # Field-mapping-specific checks
+            if is_mapping:
+                source_field = (
+                    row_dict.get(source_field_col, "").strip()
+                    if source_field_col
+                    else ""
                 )
-            ]
-            key = tuple(p for p in key_parts if p)
-            if key:
-                row_tuples.append((sheet_name, idx, key, row_dict))
+                target_table = (
+                    row_dict.get(target_table_col, "").strip()
+                    if target_table_col
+                    else ""
+                )
+                target_field = (
+                    row_dict.get(target_field_col, "").strip()
+                    if target_field_col
+                    else ""
+                )
+
+                if status != "obsolete" and (not target_table or not target_field):
+                    missing_mapping_rows.append(
+                        {
+                            "sheet": sheet_name,
+                            "row": idx,
+                            "source_field": source_field,
+                            "source_system": (
+                                row_dict.get(source_system_col, "")
+                                if source_system_col
+                                else ""
+                            ),
+                            "source_table": (
+                                row_dict.get(source_table_col, "")
+                                if source_table_col
+                                else ""
+                            ),
+                            "target_table": target_table,
+                            "target_field": target_field,
+                        }
+                    )
+
+                if status == "obsolete":
+                    obsolete_rows.append(
+                        {
+                            "sheet": sheet_name,
+                            "row": idx,
+                            "source_field": source_field,
+                            "target_table": target_table,
+                            "target_field": target_field,
+                            "reviewer_comment": row_dict.get(
+                                _find_col("reviewer_comment"), ""
+                            ),
+                        }
+                    )
+
+                condition = (
+                    row_dict.get(condition_col, "").strip()
+                    if condition_col
+                    else ""
+                )
+                validation_rule = (
+                    row_dict.get(validation_rule_col, "").strip()
+                    if validation_rule_col
+                    else ""
+                )
+                if status != "obsolete" and condition and not validation_rule:
+                    validation_coverage_gaps.append(
+                        {
+                            "sheet": sheet_name,
+                            "row": idx,
+                            "source_field": source_field,
+                            "condition": condition,
+                        }
+                    )
+
+                # Exact duplicate detection: source + target identity
+                key_parts = [
+                    row_dict.get(h, "").strip()
+                    for h in headers
+                    if any(
+                        term in h.lower()
+                        for term in ("source", "target", "legacy", "sap", "field")
+                    )
+                ]
+                key = tuple(p for p in key_parts if p)
+                if key:
+                    row_tuples.append((sheet_name, idx, key, row_dict))
+
+                # Duplicate target representation: same target, different source
+                tkey = (target_table, target_field)
+                if tkey[0] or tkey[1]:
+                    sheet_target_seen = target_seen[sheet_name]
+                    if tkey in sheet_target_seen:
+                        prev_sheet, prev_idx = sheet_target_seen[tkey]
+                        duplicate_target_rows.append(
+                            {
+                                "sheet": sheet_name,
+                                "row": idx,
+                                "duplicate_of": {
+                                    "sheet": prev_sheet,
+                                    "row": prev_idx,
+                                },
+                                "target_table": target_table,
+                                "target_field": target_field,
+                            }
+                        )
+                    else:
+                        sheet_target_seen[tkey] = (sheet_name, idx)
+
+            # Pending status is treated as an unresolved decision anywhere it appears.
+            if status == "pending":
+                unresolved_decisions.append(
+                    {
+                        "sheet": sheet_name,
+                        "row": idx,
+                        "decision_id": (
+                            row_dict.get(decision_id_col, "") if decision_id_col else ""
+                        ),
+                        "topic": row_dict.get(topic_col, "") if topic_col else "",
+                    }
+                )
+
+            # Collect decision topics for conflict detection.
+            if is_decisions and topic_col:
+                topic = row_dict.get(topic_col, "").strip().lower()
+                if topic:
+                    decision_topics.setdefault(topic, []).append(
+                        {
+                            "sheet": sheet_name,
+                            "row": idx,
+                            "topic": row_dict.get(topic_col, ""),
+                            "decision_id": (
+                                row_dict.get(decision_id_col, "")
+                                if decision_id_col
+                                else ""
+                            ),
+                            "status": row_dict.get(status_col, "") if status_col else "",
+                        }
+                    )
 
     wb.close()
 
@@ -177,7 +356,7 @@ def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
     except Exception:  # pragma: no cover - best effort
         pass
 
-    # Duplicate reporting (limit to first 50 for sanity)
+    # Exact-duplicate reporting (limit to first 50 for sanity)
     seen: dict[tuple, tuple[str, int]] = {}
     for sheet_name, idx, key, _row_dict in row_tuples:
         if key in seen:
@@ -195,6 +374,13 @@ def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
         if len(duplicate_rows) >= 50:
             break
 
+    # Conflicting decisions: the same topic appears more than once in the Decisions sheet.
+    for topic, topic_rows in decision_topics.items():
+        if len(topic_rows) > 1:
+            conflicting_decisions.append(
+                {"topic": topic, "rows": topic_rows, "count": len(topic_rows)}
+            )
+
     return MappingWorkbookProfile(
         file_path=str(mapping_path),
         file_hash=file_hash,
@@ -205,6 +391,12 @@ def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
         formula_warnings=formula_warnings,
         missing_owner_rows=missing_owner_rows,
         duplicate_rows=duplicate_rows,
+        missing_mapping_rows=missing_mapping_rows,
+        obsolete_rows=obsolete_rows,
+        validation_coverage_gaps=validation_coverage_gaps,
+        unresolved_decisions=unresolved_decisions,
+        conflicting_decisions=conflicting_decisions,
+        duplicate_target_rows=duplicate_target_rows,
     )
 
 
@@ -352,6 +544,12 @@ def generate_migration_assessment(
                     "formula_warnings": mapping_profile.formula_warnings,
                     "missing_owner_rows": mapping_profile.missing_owner_rows,
                     "duplicate_rows": mapping_profile.duplicate_rows,
+                    "missing_mapping_rows": mapping_profile.missing_mapping_rows,
+                    "obsolete_rows": mapping_profile.obsolete_rows,
+                    "validation_coverage_gaps": mapping_profile.validation_coverage_gaps,
+                    "unresolved_decisions": mapping_profile.unresolved_decisions,
+                    "conflicting_decisions": mapping_profile.conflicting_decisions,
+                    "duplicate_target_rows": mapping_profile.duplicate_target_rows,
                 },
                 indent=2,
                 default=str,
