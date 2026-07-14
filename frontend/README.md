@@ -1,23 +1,27 @@
-# Martenweave Frontend Prototype
+# Martenweave Workbench
 
-> Local, interactive workspace for exploring the Martenweave model-governance concepts.
+> Official local browser UI for Martenweave Core.
 
-This directory contains a **local prototype** of a Martenweave interactive workspace. It is intended for **demo, review, and local development only**. It is **not a hosted production app** and does not replace the CLI-first, canonical-file-driven core workflow.
+This directory contains **Martenweave Workbench**, the local interactive workspace for assessment,
+investigation, review, reports, and controlled changes. It runs on `localhost` and connects to
+Martenweave Core through the local API. It is **not a hosted production app** and does not replace
+the CLI-first, canonical-file-driven core workflow.
 
-## What this prototype is
+## What the Workbench is
 
+- The official local browser UI for Martenweave Core.
 - A browser-based **interactive workspace** that demonstrates seven model-governance screens: Home, Models (global search), Object detail, Lineage, Gaps, Proposals, and Proposal review.
-- A way to review responsive navigation, model search, lineage canvas, gap workflows, and proposal approval flows without installing the full backend.
-- A local-first React + Vite application that runs entirely in the browser with **demo data**.
+- A way to review responsive navigation, model search, lineage canvas, gap workflows, and proposal approval flows connected to the local API.
+- A local-first React + Vite application packaged as static assets.
 
-## What this prototype is not
+## What the Workbench is not
 
-- **Not a hosted production app.** It is built to run on `localhost` from a cloned repository.
+- **Not a hosted production app.** It is built to run on `localhost` from an installed package or cloned repository.
 - **Not a SaaS dashboard or generic chatbot.** The copy and interactions are specific to model governance and SAP migration workflows.
 - **Not a replacement for the Martenweave CLI.** Validation, indexing, lineage, and impact analysis remain backend/core services.
-- **It does not write to SAP.** All SAP context is read-only demo data.
-- **It does not mutate canonical model files without review.** Approval flows in the UI are interactive mock-ups; real changes still require human-reviewed `PatchProposal` → `ChangeRequest` workflows in core.
-- **AI proposals are review artifacts, not automatic changes.** Any AI-assisted suggestions shown are for demonstration and must be approved before they touch canonical files.
+- **It does not write to SAP.** All SAP context is read-only.
+- **It does not mutate canonical model files without review.** Real changes still require human-reviewed `PatchProposal` → `ChangeRequest` workflows in Core.
+- **AI proposals are review artifacts, not automatic changes.** Any AI-assisted suggestions must be approved before they touch canonical files.
 
 ## Prerequisites
 
@@ -75,24 +79,28 @@ All data lives in [`src/data.js`](src/data.js). It is hand-crafted demo data tha
 
 Navigation is route-based via URL hash so the prototype works from a simple static file server.
 
-## Relationship to Martenweave core
+## Relationship to Martenweave Core
 
-The core product remains the Python backend in [`src/modelops_core/`](../src/modelops_core/) and the canonical-file registry. This frontend is a **companion prototype** that visualizes the concepts produced by core services:
+Martenweave Core is the Python backend in [`src/modelops_core/`](../src/modelops_core/) and the
+owner of the canonical-file registry. The Workbench is an official product surface that visualizes
+and interacts with Core services:
 
 - Search results mirror what `martenweave search` and `martenweave query` return.
 - Lineage reflects the edges exported by `martenweave build-index --jsonl`.
 - Gaps are modeled after `martenweave gaps` and `martenweave gap-report`.
 - Proposals mirror `martenweave propose-patch` and `martenweave proposal`.
 
-In a production integration, this workspace would read from the generated SQLite index or local API (`martenweave serve`), not from `src/data.js`.
+The current build uses static demo data in `src/data.js` for standalone development. In a packaged
+integration, the Workbench reads from the local API (`martenweave serve`) and never stores canonical
+truth independently of the `model/` files.
 
 ## Known limitations
 
-- Uses static demo data; no live backend connection.
-- No persistence: refreshes reset the UI state.
+- This build uses static demo data in `src/data.js`; the live API connection is implemented in later issues.
+- No client-side persistence: refreshes reset the UI state.
 - No authentication or multi-tenant support.
 - No direct SAP connectivity or write-back.
-- AI suggestions are mocked; real proposals must be generated and reviewed through core.
+- AI suggestions are mocked; real proposals must be generated and reviewed through Core.
 - Mobile layout is supported but not all complex lineage interactions are optimized for small viewports.
 
 ## Screenshots

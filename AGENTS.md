@@ -8,7 +8,23 @@
 
 **martenweave-core** (Python package `modelops_core`) is a backend-first **agentic data model registry**. It turns data models into a structured, traceable, validated, AI-ready model knowledge layer. SAP migration and Master Data Management are the first domain pack and proof case, not the product boundary.
 
-**No user-facing UI is included.** This is a CLI-driven, backend/core library designed to be embedded in pipelines, IDEs, local API processes, MCP servers, and agent workflows.
+**Martenweave Core** is the authoritative backend and canonical model layer. **Martenweave Workbench**
+is the official local browser UI for assessment, investigation, review, reports, and controlled
+changes. The Workbench connects to Core through the local API and never stores canonical model truth
+independently of the `model/` files. It is not a hosted SaaS platform, a generic chatbot, or a
+replacement for the CLI-first workflow.
+
+### Product Surfaces
+
+| Surface | Responsibility |
+|---|---|
+| **Martenweave Core** | Canonical parsing, validation, indexing, gap/lineage/impact analysis, patch proposals, change requests, audit, CLI. |
+| **Local API** | Bound FastAPI integration surface for the Workbench and agents (`martenweave serve`). |
+| **Martenweave Workbench** | Local browser UI for assessment, object inspection, lineage, gaps, proposals, reports, and controlled changes. |
+
+Agents should place canonical logic, validators, and model mutations in Core; visualization,
+navigation, and user guidance in the Workbench; and HTTP adapters, path safety, and capability
+reporting in the Local API.
 
 ### Core Principles
 
@@ -17,6 +33,7 @@
 - **Deterministic validation first.** Every object is validated for IDs, types, references, and SAP context rules before indexing.
 - **AI must not silently mutate.** AI creates `PatchProposal` objects for human review. Approved changes become `ChangeRequest`s.
 - **Local-first.** No cloud dependencies, no SaaS lock-in.
+- **Workbench does not bypass Core.** The Workbench reads and mutates canonical files only through Core services and approval gates.
 
 ---
 
@@ -367,6 +384,7 @@ For deeper context, refer to the `docs/` directory:
 | Document | Purpose |
 |---|---|
 | `docs/architecture/SYSTEM_ARCHITECTURE.md` | Full system architecture, data flows, component diagrams |
+| `docs/architecture/WORKBENCH_BOUNDARY.md` | Workbench as an official local UI surface and Core/API responsibilities |
 | `docs/architecture/DOMAIN_MODEL.md` | Conceptual domain model, object relationships, hierarchy |
 | `docs/architecture/AI_PATCH_WORKFLOW.md` | AI patch proposal workflow |
 | `docs/architecture/DATA_LINEAGE_AND_IMPACT_MODEL.md` | Lineage and impact analysis design |

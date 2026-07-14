@@ -181,6 +181,7 @@ Primary MVP mode.
 User machine
   ├─ model repository folder
   ├─ FastAPI backend
+  ├─ Martenweave Workbench (local browser UI)
   ├─ generated static docs / IDE integration
   ├─ SQLite generated index
   ├─ optional DuckDB profiling files
@@ -305,7 +306,8 @@ report outputs
 ┌───────────────────────────────────────────────────────────────┐
 │                         User Interfaces                       │
 │                                                               │
-│  IDE / static docs    Typer CLI       Obsidian/VS Code/GitHub   │
+│  IDE / static docs    Typer CLI    Martenweave Workbench      │
+│  Obsidian/VS Code/GitHub                                      │
 └───────────────┬────────────────────┬──────────────────────────┘
                 │                    │
                 ▼                    ▼
