@@ -263,6 +263,19 @@ and there is no hosted UI, login, editing workflow, SAP write-back, or AI auto-m
 `serve` and `mcp` are local integration surfaces for APIs, tools, and agents. They do not provide a
 hosted product UI or browser application.
 
+### Local API contract
+
+`modelops serve` exposes an unversioned set of read/mutation endpoints and a stable `/api/v1`
+namespace. The workbench (and any other local client) should discover capabilities via
+`GET /api/v1/capabilities` before rendering actions. Core v1 resources include:
+
+- `GET /api/v1/capabilities` — version, workspace health, and read/mutation capability list.
+- `GET /api/v1/search?q=...` — paginated keyword search over the generated index.
+- `GET /api/v1/objects/{id}` — canonical object detail plus relationships.
+
+The v1 contract is additive: existing endpoints remain available, and mutations still require
+explicit human approval through the proposal/change-request flow.
+
 Use `--help` on any command for full options:
 
 ```bash
