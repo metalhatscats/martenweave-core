@@ -173,7 +173,7 @@ def capabilities(
 @router.get("/search", response_model=PaginatedSearchResponse)
 def search(
     repo: str | None = Query(None, description="Path to model repository"),
-    q: str = Query(..., min_length=1, description="Search query"),
+    q: str | None = Query(None, description="Search query"),
     type: str | None = Query(None, description="Filter by object type"),
     status: str | None = Query(None, description="Filter by object status"),
     domain: str | None = Query(None, description="Filter by domain"),
@@ -189,7 +189,7 @@ def search(
 
     result = search_objects(
         db_path,
-        query=q,
+        query=q or "",
         object_type=type,
         status=status,
         domain=domain,

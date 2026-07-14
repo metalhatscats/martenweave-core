@@ -411,3 +411,13 @@ kbd {
   .settings-layout dl { grid-template-columns: 1fr; }.settings-layout dd { justify-content: flex-start; text-align: left; }
   .changelog-release { grid-template-columns: 1fr; }.changelog-release > aside { padding: 0 0 12px; border-right: 0; border-bottom: 1px solid var(--border); }
 }
+
+.connection-banner {
+  position: sticky; top: 0; z-index: 40;
+  padding: 9px 18px; background: #fff7e8; border-bottom: 1px solid #f5d9a8;
+  display: flex; align-items: center; gap: 10px; font-size: 12px; color: #7c4d0f;
+}
+.connection-dot { width: 8px; height: 8px; border-radius: 99px; background: #f59e0b; }
+.connection-connected { background: #21ba58; }
+.connection-demo { margin-left: auto; font-weight: 600; color: #b45309; }
+.connection-banner .spin { margin-right: 8px; }

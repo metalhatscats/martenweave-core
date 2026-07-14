@@ -61,6 +61,7 @@ import {
   useNodesState,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { API_STATE, ApiProvider, useApi, useObjectDetail, useObjectSearch } from "./api.jsx";
 import {
   fields,
   gaps,
@@ -79,6 +80,26 @@ import {
   WorkbenchOverlay,
   WorkspaceScreen,
 } from "./workbench.jsx";
+
+function ConnectionBanner() {
+  const { state, demo, error } = useApi();
+  if (state === API_STATE.CONNECTED) return null;
+
+  const messages = {
+    [API_STATE.UNKNOWN]: "Connecting to local Martenweave API…",
+    [API_STATE.UNAVAILABLE]: `Local API unavailable. Showing demo data. ${error || ""}`,
+    [API_STATE.STALE_INDEX]: "Local API index is stale. Run build-index, or continue in demo mode.",
+    [API_STATE.INCOMPATIBLE]: `Local API contract is incompatible. ${error || ""}`,
+  };
+
+  return (
+    <div className="connection-banner" role="status">
+      <span className={`connection-dot connection-${state}`} />
+      <span>{messages[state] || "Waiting for local API…"}</span>
+      {demo && <span className="connection-demo">Demo mode</span>}
+    </div>
+  );
+}
 
 const NAV_ITEMS = [
   { id: "home", label: "Workspace", icon: House },
@@ -568,43 +589,13 @@ function ModelsScreen({ navigate, params }) {
   const typeFilters = ["Domain", "Attribute", "Entity", "Mapping", "Proposal"];
   const statusFilters = ["Validated", "In review", "Draft"];
 
-  const sortedResults = useMemo(() => {
-    const filtered = modelObjects.filter((item) => {
-      const matchesQuery =
-        !query ||
-        `${item.name} ${item.description} ${item.type}`.toLowerCase().includes(query.toLowerCase());
-      const matchesTab =
-        activeTab === "All" ||
-        (activeTab === "Objects" && ["Domain", "Entity"].includes(item.label)) ||
-        (activeTab === "Fields" && item.label === "Attribute") ||
-        (activeTab === "Mappings" && item.label === "Mapping") ||
-        (activeTab === "Proposals" && item.label === "Proposal");
-      const matchesType = selectedTypes.length === 0 || selectedTypes.includes(item.label);
-      const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(item.status);
-      return matchesQuery && matchesTab && matchesType && matchesStatus;
-    });
-    const list = [...filtered];
-    const q = query.trim().toLowerCase();
-    if (sort === "Relevance") {
-      if (!q) {
-        list.sort((a, b) => updatedMinutes(b.updated) - updatedMinutes(a.updated));
-      } else {
-        list.sort((a, b) => {
-          const aName = a.name.toLowerCase().includes(q);
-          const bName = b.name.toLowerCase().includes(q);
-          if (aName !== bName) return bName - aName;
-          const aDesc = a.description.toLowerCase().includes(q);
-          const bDesc = b.description.toLowerCase().includes(q);
-          return bDesc - aDesc;
-        });
-      }
-    } else if (sort === "Name") {
-      list.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sort === "Recently updated") {
-      list.sort((a, b) => updatedMinutes(b.updated) - updatedMinutes(a.updated));
-    }
-    return list;
-  }, [query, activeTab, selectedTypes, selectedStatuses, sort]);
+  const { results: sortedResults, loading, error } = useObjectSearch(
+    query,
+    activeTab,
+    selectedTypes,
+    selectedStatuses,
+    sort
+  );
 
   return (
     <div className="page-pad search-page">
@@ -678,7 +669,9 @@ function ModelsScreen({ navigate, params }) {
       </div>
       <div className={`search-results-layout ${filtersOpen ? "with-filters" : ""}`}>
         <section className="result-list">
-          {sortedResults.length ? sortedResults.map((item) => (
+          {loading && <div className="empty-state"><CircleNotch className="spin" size={24} /> Loading results…</div>}
+          {error && <div className="empty-state"><WarningCircle size={24} /> {error}</div>}
+          {!loading && sortedResults.length ? sortedResults.map((item) => (
             <button
               className="result-row"
               key={item.id}
@@ -772,7 +765,8 @@ function ObjectScreen({ navigate, params, onExport, onDraft }) {
   const [copied, setCopied] = useState(false);
   const tabs = ["Overview", "Fields", "Evidence", "Relationships", "Impact", "Governance"];
   const objectId = params.get("id");
-  const object = modelObjects.find((item) => item.id === objectId) || modelObjects[0];
+  const { object: liveObject, loading, error } = useObjectDetail(objectId);
+  const object = liveObject || modelObjects[0];
   const copyId = async () => {
     await navigator.clipboard?.writeText(object.id);
     setCopied(true);
@@ -784,6 +778,8 @@ function ObjectScreen({ navigate, params, onExport, onDraft }) {
       <button className="back-link" onClick={() => navigate("models")}>
         <CaretLeft size={15} /> Back to search
       </button>
+      {loading && <div className="empty-state"><CircleNotch className="spin" size={24} /> Loading object…</div>}
+      {error && <div className="empty-state"><WarningCircle size={24} /> {error}</div>}
       <div className="object-hero">
         <div className="object-identity">
           <IconTile type={object.label} size={58} />
@@ -1667,7 +1663,7 @@ function DecisionDialog({ type, proposalId, onClose, onConfirm }) {
   );
 }
 
-export function App() {
+export function App({ apiBaseUrl }) {
   const [route, params, navigate] = useRoute();
   const [overlay, setOverlay] = useState(null);
   const [toast, setToast] = useState("");
@@ -1773,10 +1769,11 @@ export function App() {
   }[route] || <WorkspaceScreen navigate={navigate} onImport={actions.import} onExport={actions.export} onCommands={actions.commands} onShortcuts={actions.shortcuts} />;
 
   return (
-    <>
+    <ApiProvider baseUrl={apiBaseUrl}>
+      <ConnectionBanner />
       <AppShell route={route} navigate={navigate} title={routeTitle} actions={actions}>{screen}</AppShell>
       <WorkbenchOverlay overlay={overlay} onClose={close} navigate={navigate} onOpen={open} onToast={setToast} />
       <Toast message={toast} onClose={dismissToast} />
-    </>
+    </ApiProvider>
   );
 }

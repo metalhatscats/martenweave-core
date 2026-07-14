@@ -52,3 +52,16 @@ index is missing.
 `GET /api/v1/objects/{id}` returns the canonical object's frontmatter under `object` and its
 outgoing relationships under `relationships`. It returns `404` for unknown IDs and structured errors
 for a missing index.
+
+### Frontend integration
+
+The local API enables the workbench to read live data without importing backend internals.
+
+- The frontend defaults to `http://127.0.0.1:8000`. Set `VITE_API_BASE_URL` to point to a different
+  local server.
+- `modelops serve` configures CORS for local development origins (`http://localhost`,
+  `http://127.0.0.1`, and common Vite ports).
+- When the API is unreachable, the index is stale, or the contract version is incompatible, the
+  workbench shows the connection state and falls back to explicitly labeled demo data.
+- All write operations continue to require explicit human approval through the proposal/change-
+  request flow; the frontend does not edit canonical files directly.

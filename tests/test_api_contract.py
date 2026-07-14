@@ -87,7 +87,9 @@ def test_api_v1_search_filters_by_type(sample_repo: Path) -> None:
 
 def test_api_v1_search_missing_query(sample_repo: Path) -> None:
     response = client.get("/api/v1/search", params={"repo": str(sample_repo)})
-    assert response.status_code == 422
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_count"] > 0
 
 
 def test_api_v1_search_missing_index(temp_model_dir: Path) -> None:
