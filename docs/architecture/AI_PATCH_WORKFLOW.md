@@ -2154,3 +2154,34 @@ autonomous SAP model maintenance
 ```
 
 The product value is not that AI writes everything. The product value is that scattered knowledge becomes structured, validated, traceable, and safely reviewable.
+
+---
+
+## Source-of-truth states
+
+Martenweave classifies every artifact into one of four explicit source states:
+
+- **evidence** — raw imported inputs such as dataset profiles, import sessions,
+  and external source registry entries.
+- **finding** — generated analysis such as gap reports, readiness reports,
+  validation results, assessment artifacts, and impact reports.
+- **proposal** — reviewable `PatchProposal` and `ChangeRequest` objects created
+  by AI, imports, or gap promotion.
+- **canonical** — approved objects stored as files under `model/`.
+
+Allowed transitions:
+
+```text
+evidence → finding        (analysis reads imported evidence)
+evidence → proposal       (import or gap promotion creates a proposal)
+finding → proposal        (reviewing a finding may produce a proposal)
+proposal → canonical      (only after human review and apply)
+```
+
+Canonical is terminal. The only supported transition into canonical truth is
+applying an approved `PatchProposal`. Evidence and findings never mutate
+canonical files directly.
+
+Every API response and generated artifact should expose its `source_state` so
+that pilots, reports, and the workbench can clearly distinguish imported data,
+generated analysis, proposed changes, and approved model truth.
