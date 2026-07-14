@@ -273,6 +273,48 @@ sections of the closeout template.
 
 ---
 
+## Build the Public Demo Bundle
+
+After the pilot is reviewed, produce a deterministic, sanitized bundle suitable
+for design-partner demos and public case-study sharing:
+
+```bash
+.venv/bin/martenweave demo-bundle build \
+  --repo ./pilot-repo \
+  --mapping ./inputs/mapping.xlsx \
+  --out ./outputs/demo-bundle
+```
+
+The command:
+
+1. Runs the migration assessment against the repository and mapping workbook.
+2. Records a small, deterministic mix of demo dispositions so the bundle
+   contains a realistic `finding-reviews.json`.
+3. Generates `executive-summary.md/json`, `finding-review-summary.json`, and
+   `pilot-outcome.md/json`.
+4. Sanitizes all artifacts, drops raw datasets, redacts machine-specific paths
+   and emails, and excludes non-deterministic binary workbooks.
+5. Writes `bundle-manifest.json` with version, fixture hash, artifact
+   checksums, the generation command, and boundary notes.
+6. Validates the bundle: required files present, checksums match, no raw
+   datasets, no detected secrets.
+
+For a byte-reproducible bundle, pin the timestamp:
+
+```bash
+.venv/bin/martenweave demo-bundle build \
+  --repo ./pilot-repo \
+  --mapping ./inputs/mapping.xlsx \
+  --out ./outputs/demo-bundle \
+  --generated-at 2024-01-15T09:00:00Z
+```
+
+The bundle is self-contained and safe to share as long as the inputs were
+synthetic or already approved for external use. Never include real customer
+data, internal paths, or project identifiers.
+
+---
+
 ## Closeout Template
 
 Complete this template at the end of the pilot.

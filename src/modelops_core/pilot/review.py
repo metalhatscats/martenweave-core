@@ -79,6 +79,7 @@ def set_review(
     disposition: str,
     reviewer: str,
     note: str | None = None,
+    reviewed_at: str | None = None,
 ) -> dict[str, Any]:
     """Record a human disposition for a single finding.
 
@@ -89,6 +90,7 @@ def set_review(
             ``deferred``, ``resolved``.
         reviewer: Identity of the reviewer.
         note: Optional free-form note.
+        reviewed_at: Optional ISO timestamp for the review. Defaults to now.
 
     Returns:
         The updated review record for the finding.
@@ -110,7 +112,7 @@ def set_review(
         "finding_id": finding_id,
         "disposition": disposition,
         "reviewer": reviewer,
-        "reviewed_at": _now_iso(),
+        "reviewed_at": reviewed_at or _now_iso(),
         "note": note or "",
         "severity": finding.get("severity", "medium"),
         "category": finding.get("category", "unknown"),

@@ -110,6 +110,7 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
     "pilot-preflight",
     "assessment-review",
     "pilot-outcome",
+    "demo-bundle",
 }
 
 EXPECTED_GROUPS = {
@@ -134,6 +135,7 @@ EXPECTED_GROUPS = {
     "assessment": {"run", "sanitize"},
     "diagnostics": {"export"},
     "review-pack": {"create"},
+    "demo-bundle": {"build"},
 }
 
 

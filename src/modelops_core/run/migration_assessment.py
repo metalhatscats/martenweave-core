@@ -559,6 +559,7 @@ def generate_migration_assessment(
     dataset_path: Path | None,
     evidence_paths: list[Path],
     out_dir: Path,
+    generated_at: str | None = None,
 ) -> MigrationAssessmentManifest:
     """Generate a complete migration assessment output package and manifest.
 
@@ -568,6 +569,7 @@ def generate_migration_assessment(
         dataset_path: Optional path to a CSV/XLSX sample dataset.
         evidence_paths: Optional list of evidence file paths.
         out_dir: Directory where all outputs will be written.
+        generated_at: Optional ISO timestamp. Defaults to the current UTC time.
 
     Returns:
         MigrationAssessmentManifest describing inputs, stage statuses, and artifacts.
@@ -584,7 +586,7 @@ def generate_migration_assessment(
     repo_name = config.name if config else repo_root.name
 
     statuses: list[StageStatus] = []
-    generated_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    generated_at = generated_at or datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     inputs: dict[str, Any] = {
         "mapping": str(mapping_path),
@@ -685,7 +687,7 @@ def generate_migration_assessment(
 
     # Stage: assessment package
     try:
-        generate_assessment_package(repo_root, out_dir)
+        generate_assessment_package(repo_root, out_dir, generated_at=generated_at)
         _stage("assessment_package", statuses, "success")
     except Exception as exc:
         _stage("assessment_package", statuses, "failed", message=str(exc))
@@ -694,7 +696,7 @@ def generate_migration_assessment(
     try:
         review_pack_dir = out_dir / "review_pack"
         review_pack_dir.mkdir(parents=True, exist_ok=True)
-        generate_review_pack(repo_root, review_pack_dir)
+        generate_review_pack(repo_root, review_pack_dir, generated_at=generated_at)
         _stage("review_pack", statuses, "success")
     except Exception as exc:
         _stage("review_pack", statuses, "failed", message=str(exc))

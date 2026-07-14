@@ -346,12 +346,14 @@ def _render_recommendations_md(
 def generate_assessment_package(
     repo_root: Path,
     out_dir: Path,
+    generated_at: str | None = None,
 ) -> AssessmentPackage:
     """Generate a full Migration Model Readiness Assessment package.
 
     Args:
         repo_root: Path to the model repository.
         out_dir: Directory where the assessment folder will be written.
+        generated_at: Optional ISO timestamp. Defaults to the current UTC time.
 
     Returns:
         AssessmentPackage metadata with artifact list.
@@ -379,7 +381,7 @@ def generate_assessment_package(
     # High-risk items
     risk_items = _build_high_risk_items(analysis, validation_errors)
 
-    generated_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    generated_at = generated_at or datetime.now(UTC).isoformat().replace("+00:00", "Z")
     artifacts: list[AssessmentArtifact] = []
 
     # 01_readiness_scorecard.md
@@ -425,6 +427,7 @@ def generate_assessment_package(
             repo_model_path=model_path,
             output_path=xlsx_path,
             business_review=True,
+            generated_at=datetime.fromisoformat(generated_at.replace("Z", "+00:00")),
         )
         artifacts.append(AssessmentArtifact(xlsx_path, "Business review workbook"))
 
@@ -639,12 +642,14 @@ def _render_signoff_checklist_md(
 def generate_review_pack(
     repo_root: Path,
     out_dir: Path,
+    generated_at: str | None = None,
 ) -> list[AssessmentArtifact]:
     """Generate a business-reviewable pack for non-technical stakeholders.
 
     Args:
         repo_root: Path to the model repository.
         out_dir: Directory where the review pack will be written.
+        generated_at: Optional ISO timestamp. Defaults to the current UTC time.
 
     Returns:
         List of artifacts generated.
@@ -662,7 +667,7 @@ def generate_review_pack(
     validation_errors = _collect_validation_errors(db_path)
     risk_items = _build_high_risk_items(analysis, validation_errors)
 
-    generated_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    generated_at = generated_at or datetime.now(UTC).isoformat().replace("+00:00", "Z")
     artifacts: list[AssessmentArtifact] = []
 
     # summary.md
@@ -718,6 +723,7 @@ def generate_review_pack(
             repo_model_path=model_path,
             output_path=xlsx_path,
             business_review=True,
+            generated_at=datetime.fromisoformat(generated_at.replace("Z", "+00:00")),
         )
         artifacts.append(AssessmentArtifact(xlsx_path, "Business review workbook"))
 

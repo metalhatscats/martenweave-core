@@ -51,6 +51,7 @@ def _compute_outcome(
     findings_data: dict[str, Any],
     reviews_data: dict[str, Any],
     baselines: dict[str, Any] | None,
+    generated_at: str | None = None,
 ) -> PilotOutcome:
     """Count dispositions and derive a deterministic recommendation."""
     findings = findings_data.get("findings", [])
@@ -104,7 +105,7 @@ def _compute_outcome(
 
     return PilotOutcome(
         repo_name=manifest.get("repo_name", "Unknown"),
-        generated_at=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        generated_at=generated_at or datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         total_findings=total,
         confirmed_findings=confirmed,
         false_positives=false_positives,
@@ -123,6 +124,7 @@ def _compute_outcome(
 def generate_pilot_outcome(
     manifest_path: Path,
     baselines: dict[str, Any] | None = None,
+    generated_at: str | None = None,
 ) -> PilotOutcome:
     """Generate a pilot outcome from an assessment manifest.
 
@@ -130,6 +132,7 @@ def generate_pilot_outcome(
         manifest_path: Path to ``manifest.json`` from an assessment run.
         baselines: Optional manual baseline metrics. Supported keys:
             ``prior_trace_hours``, ``review_hours``, ``onboarding_days``.
+        generated_at: Optional ISO timestamp. Defaults to the current UTC time.
 
     Returns:
         ``PilotOutcome`` with counts, rates, and recommendation.
@@ -141,7 +144,7 @@ def generate_pilot_outcome(
     findings_data = _load_json(assessment_dir / "findings.json")
     reviews_data = _load_json(assessment_dir / "finding-reviews.json")
 
-    return _compute_outcome(manifest, findings_data, reviews_data, baselines)
+    return _compute_outcome(manifest, findings_data, reviews_data, baselines, generated_at)
 
 
 def pilot_outcome_to_dict(outcome: PilotOutcome) -> dict[str, Any]:

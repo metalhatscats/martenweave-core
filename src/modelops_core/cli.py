@@ -117,6 +117,7 @@ from modelops_core.patching.proposal_reviewer_summary import (
     generate_reviewer_summary,
     reviewer_summary_to_dict,
 )
+from modelops_core.pilot import demo_bundle as demo_bundle_service
 from modelops_core.pilot import executive_summary as executive_summary_service
 from modelops_core.pilot import outcome as pilot_outcome_service
 from modelops_core.pilot import review as assessment_review_service
@@ -6517,6 +6518,68 @@ def pilot_outcome(
     console.print(f"  False positives: {outcome.false_positives}")
     if written_json_path:
         console.print(f"  JSON: {written_json_path}")
+
+
+# ---------------------------------------------------------------------------
+# Demo bundle subcommands
+# ---------------------------------------------------------------------------
+demo_bundle_app = typer.Typer(
+    name="demo-bundle",
+    help="Build deterministic, sanitized demo bundles for public sharing.",
+)
+app.add_typer(demo_bundle_app, name="demo-bundle")
+
+
+@demo_bundle_app.command("build")
+@with_telemetry("demo_bundle_build")
+def demo_bundle_build(
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Output directory for the demo bundle."
+    ),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    mapping: Path | None = typer.Option(  # noqa: B008
+        None, "--mapping", help="Path to the synthetic mapping workbook."
+    ),
+    generated_at: str | None = typer.Option(
+        None,
+        "--generated-at",
+        help="Optional ISO timestamp for deterministic output.",
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw manifest JSON."),
+) -> None:
+    """Build a deterministic, sanitized demo bundle from the golden assessment."""
+    repo_root = _resolve_repo(repo) if repo else None
+    mapping_path = mapping
+
+    try:
+        bundle = demo_bundle_service.build_demo_bundle(
+            out_dir=out,
+            repo_root=repo_root,
+            mapping_path=mapping_path,
+            generated_at=generated_at,
+        )
+    except (FileNotFoundError, ValueError, RuntimeError) as exc:
+        if json_output:
+            print(json.dumps({"error": str(exc)}, indent=2))
+            raise typer.Exit(code=1) from exc
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    validation_errors = demo_bundle_service.validate_demo_bundle(bundle.bundle_dir)
+
+    if json_output:
+        print(json.dumps(bundle.manifest, indent=2, sort_keys=True))
+        raise typer.Exit()
+
+    console.print("[bold]Demo bundle complete[/bold]")
+    console.print(f"  Output: {bundle.bundle_dir}")
+    console.print(f"  Artifacts: {bundle.manifest['artifact_count']}")
+    if validation_errors:
+        console.print("[yellow]Validation warnings:[/yellow]")
+        for error in validation_errors:
+            console.print(f"  - {error}")
+    else:
+        console.print("[green]Bundle validation passed[/green]")
 
 
 # ---------------------------------------------------------------------------

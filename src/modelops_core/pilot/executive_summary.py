@@ -88,11 +88,15 @@ def _classify_verdict(
     return "review"
 
 
-def generate_executive_summary(manifest_path: Path) -> ExecutiveSummary:
+def generate_executive_summary(
+    manifest_path: Path,
+    generated_at: str | None = None,
+) -> ExecutiveSummary:
     """Generate a one-page executive summary from an assessment manifest.
 
     Args:
         manifest_path: Path to ``manifest.json`` from a migration assessment run.
+        generated_at: Optional ISO timestamp. Defaults to the current UTC time.
 
     Returns:
         ``ExecutiveSummary`` with deterministic verdict, blockers, and next action.
@@ -363,7 +367,7 @@ def generate_executive_summary(manifest_path: Path) -> ExecutiveSummary:
 
     return ExecutiveSummary(
         repo_name=repo_name,
-        generated_at=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        generated_at=generated_at or datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         readiness_verdict=verdict,
         scope=manifest.get("repo_path", str(repo_root)),
         key_metrics=key_metrics,
