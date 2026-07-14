@@ -97,6 +97,78 @@ def test_init_with_generic_template() -> None:
         assert (model_dir / "ENTITY-GENERIC-OBJECT.md").exists()
 
 
+def test_sap_bp_customer_migration_template_validates() -> None:
+    model_path = TEMPLATES_DIR / "sap_bp_customer_migration" / "model"
+    files = scan_repository(model_path)
+    parsed = [parse_file(f) for f in files]
+    summary = validate_objects(parsed)
+    assert summary.is_valid, summary.results
+
+
+def test_ams_field_dictionary_template_validates() -> None:
+    model_path = TEMPLATES_DIR / "ams_field_dictionary" / "model"
+    files = scan_repository(model_path)
+    parsed = [parse_file(f) for f in files]
+    summary = validate_objects(parsed)
+    assert summary.is_valid, summary.results
+
+
+def test_sap_bp_customer_migration_has_expected_structure() -> None:
+    model_path = TEMPLATES_DIR / "sap_bp_customer_migration" / "model"
+    files = scan_repository(model_path)
+    parsed = [parse_file(f) for f in files]
+
+    ids = {p.frontmatter.get("id") for p in parsed}
+    assert "DOMAIN-CUSTOMER-MIGRATION" in ids
+    assert "MIGOBJ-CUSTOMER" in ids
+    assert "ENTITY-CUSTOMER" in ids
+    assert "CTX-CUSTOMER-CENTRAL" in ids
+    assert "CTX-CUSTOMER-SALES-AREA" in ids
+    assert "CTX-CUSTOMER-COMPANY-CODE" in ids
+    assert "ATTR-CUSTOMER-GROUP" in ids
+    assert "FEP-S4-KNVV-KDGRP" in ids
+
+
+def test_ams_field_dictionary_has_expected_structure() -> None:
+    model_path = TEMPLATES_DIR / "ams_field_dictionary" / "model"
+    files = scan_repository(model_path)
+    parsed = [parse_file(f) for f in files]
+
+    ids = {p.frontmatter.get("id") for p in parsed}
+    assert "DOMAIN-AMS-FIELD-DICTIONARY" in ids
+    assert "ENTITY-AMS-FIELD" in ids
+    assert "SYSTEM-AMS-CRM" in ids
+    assert "FEP-AMS-CUSTOMER-ID" in ids
+
+    # No SAP-specific references
+    for p in parsed:
+        fm = p.frontmatter or {}
+        assert not fm.get("sap_table")
+        assert not fm.get("sap_field")
+
+
+def test_init_with_sap_bp_customer_migration_template() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        result = runner.invoke(
+            app, ["init", td, "--template", "sap_bp_customer_migration"]
+        )
+        assert result.exit_code == 0
+        model_dir = Path(td) / "model"
+        assert (model_dir / "DOMAIN-CUSTOMER-MIGRATION.md").exists()
+        assert (model_dir / "ENTITY-CUSTOMER.md").exists()
+        assert (Path(td) / "README.md").exists()
+
+
+def test_init_with_ams_field_dictionary_template() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        result = runner.invoke(app, ["init", td, "--template", "ams_field_dictionary"])
+        assert result.exit_code == 0
+        model_dir = Path(td) / "model"
+        assert (model_dir / "DOMAIN-AMS-FIELD-DICTIONARY.md").exists()
+        assert (model_dir / "ENTITY-AMS-FIELD.md").exists()
+        assert (Path(td) / "README.md").exists()
+
+
 def test_init_with_unknown_template_fails() -> None:
     with tempfile.TemporaryDirectory() as td:
         result = runner.invoke(app, ["init", td, "--template", "nonexistent"])
