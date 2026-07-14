@@ -133,6 +133,21 @@ input is still safe to process.
      duplicate target representations, validation coverage gaps, unresolved
      decisions, and conflicting decisions.
 
+6. **Generate the executive summary**
+
+   Produce a one-page stakeholder-facing readiness verdict:
+
+   ```bash
+   .venv/bin/martenweave executive-summary \
+     --assessment ./outputs/assessment/manifest.json \
+     --out ./outputs/executive-summary.md
+   ```
+
+   This writes both `executive-summary.md` and `executive-summary.json`. It
+   cites source finding IDs and artifacts for every reported fact, separates
+   measured metrics from unavailable inputs, and recommends the next safe
+   action based on deterministic readiness gates.
+
 ---
 
 ## Synthetic Pilot Fixture
@@ -257,10 +272,11 @@ Complete this template at the end of the pilot.
 | Metric | Value | Source artifact |
 |---|---|---|
 | Assessment runs | | `manifest.json` |
-| Total findings | | `02_gap_report.md` |
+| Total findings | | `executive-summary.json` |
 | Confirmed findings | | `finding-reviews.json` |
 | False positives | | `finding-reviews.json` |
 | Accepted risks | | `finding-reviews.json` |
+| Readiness verdict | | `executive-summary.json` |
 | Time to first usable report | | Pilot notes |
 | Repeat assessment runs | | `manifest.json` |
 

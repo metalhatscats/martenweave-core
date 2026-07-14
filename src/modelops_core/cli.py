@@ -117,6 +117,7 @@ from modelops_core.patching.proposal_reviewer_summary import (
     generate_reviewer_summary,
     reviewer_summary_to_dict,
 )
+from modelops_core.pilot import executive_summary as executive_summary_service
 from modelops_core.pilot import review as assessment_review_service
 from modelops_core.pilot.preflight import run_preflight
 from modelops_core.reports.analysis_service import generate_analysis_report
@@ -6417,6 +6418,42 @@ def assessment_review_promote(
         raise typer.Exit(code=1) from exc
     console.print(f"[green]Promoted {finding_id} to PatchProposal[/green]")
     console.print(f"  {proposal_path}")
+
+
+@app.command("executive-summary")
+def executive_summary(
+    assessment: Path = typer.Option(  # noqa: B008
+        ..., "--assessment", help="Path to assessment manifest.json."
+    ),
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Output path or directory for executive summary."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON only to stdout."),
+) -> None:
+    """Generate a one-page executive migration readiness summary."""
+    try:
+        summary = executive_summary_service.generate_executive_summary(assessment)
+    except (FileNotFoundError, ValueError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        print(
+            json.dumps(
+                executive_summary_service.executive_summary_to_dict(summary),
+                indent=2,
+                default=str,
+                sort_keys=True,
+            )
+        )
+        raise typer.Exit()
+
+    executive_summary_service.write_executive_summary(summary, out)
+    md_path = out / "executive-summary.md" if out.is_dir() else out.with_suffix(".md")
+    console.print(f"[green]Executive summary written to {md_path}[/green]")
+    console.print(f"  Verdict: {summary.readiness_verdict}")
+    console.print(f"  Confirmed findings: {len(summary.blocking_findings)}")
+    console.print(f"  Recommended next action: {summary.recommended_next_action}")
 
 
 # ---------------------------------------------------------------------------
