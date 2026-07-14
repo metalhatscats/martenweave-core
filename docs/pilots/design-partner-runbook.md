@@ -52,17 +52,27 @@ Before running the assessment, complete this checklist:
 - [ ] A plan exists for producing a sanitized external pack before any artifact
       is shared.
 
-Run the built-in preflight when available:
+Run the built-in preflight before processing any raw inputs:
 
 ```bash
 martenweave pilot-preflight \
   --mapping ./inputs/mapping.xlsx \
   --dataset ./inputs/sample.csv \
+  --evidence ./inputs/decisions.md \
+  --validation-report ./inputs/validation.xlsx \
   --out ./outputs/preflight
 ```
 
-If the preflight is not yet implemented, perform the same checks manually and
-record the result in the pilot notes.
+The preflight produces `outputs/preflight/preflight_report.json` and
+`outputs/preflight/preflight_report.md`. It inspects file metadata, sheet and
+column names, formulas, hidden sheets, external workbook links, secret-like
+patterns, and sensitive column-name indicators. Raw row values are excluded by
+default; add `--include-raw-samples` only when you explicitly need sample data
+in the report.
+
+If the preflight reports a `blocked` status, resolve the issue before running the
+assessment. If it reports `warning`, review each warning and document why the
+input is still safe to process.
 
 ---
 
