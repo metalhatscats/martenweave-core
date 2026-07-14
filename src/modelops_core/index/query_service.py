@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from modelops_core.config import load_repo_config
+from modelops_core.index.semantic_search import SemanticSearcher, SemanticSearchResult
 from modelops_core.schemas.registry import get_search_fields
 
 
@@ -305,3 +307,46 @@ def list_related_objects(
         }
         for row in rows
     ]
+
+
+def semantic_search_objects(
+    db_path: Path,
+    query: str,
+    candidate_ids: set[str] | None = None,
+    expand: bool = False,
+    limit: int = 50,
+    min_score: float = 0.0,
+    expand_candidate_ids: set[str] | None = None,
+    repo_root: Path | None = None,
+    max_relationships: int | None = None,
+) -> list[SemanticSearchResult]:
+    """Semantic reranking over a candidate set.
+
+    If ``candidate_ids`` is ``None`` all indexed objects are scored.
+    ``expand_candidate_ids`` controls query expansion independently; it
+    defaults to ``candidate_ids`` when omitted.
+
+    When ``repo_root`` is provided, ``RepoConfig.resource_limits.max_export_objects``
+    is enforced by passing it as ``max_objects``, and
+    ``RepoConfig.resource_limits.max_context_relationships`` is used as
+    ``max_relationships`` unless ``max_relationships`` is explicitly set.
+    """
+    max_objects: int | None = None
+    if repo_root is not None:
+        config = load_repo_config(repo_root)
+        if config is not None:
+            max_objects = config.resource_limits.max_export_objects
+            if max_relationships is None:
+                max_relationships = config.resource_limits.max_context_relationships
+
+    return SemanticSearcher().search(
+        db_path=db_path,
+        query=query,
+        candidate_ids=candidate_ids,
+        expand=expand,
+        limit=limit,
+        min_score=min_score,
+        expand_candidate_ids=expand_candidate_ids,
+        max_objects=max_objects,
+        max_relationships=max_relationships,
+    )

@@ -113,9 +113,63 @@ def _fetch_validation_summary(conn: sqlite3.Connection, object_ids: list[str]) -
     }
 
 
+def _fetch_redacted_sources(
+    db_path: Path,
+    object_ids: list[str],
+) -> list[dict[str, Any]]:
+    """Return redacted source metadata for dataset sources linked to included objects.
+
+    Uses the source_registry.jsonl next to the database as a lightweight heuristic.
+    Only metadata fields are returned; raw sample values are never included.
+    """
+    registry_path = db_path.parent / "source_registry.jsonl"
+    if not registry_path.exists():
+        return []
+
+    try:
+        raw = registry_path.read_text(encoding="utf-8")
+    except OSError:
+        return []
+
+    object_id_set = set(object_ids)
+    sources: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    for line in raw.strip().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+
+        source_id = entry.get("source_id")
+        if not source_id or source_id in seen:
+            continue
+
+        # Only link sources whose source_id is in the included object set.
+        if source_id not in object_id_set:
+            continue
+
+        metadata = entry.get("metadata", {}) or {}
+        redacted = {
+            "source_id": source_id,
+            "dataset_id": source_id,
+            "column_count": metadata.get("column_count"),
+            "row_count": metadata.get("row_count"),
+            "inferred_types": metadata.get("inferred_types", []),
+        }
+        sources.append(redacted)
+        seen.add(source_id)
+
+    return sources
+
+
 def _compact_objects(
     objects: list[dict[str, Any]],
     max_objects: int,
+    validation_summary: dict[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], list[str]]:
     """Sort and truncate objects to fit budget. Return (kept, warnings)."""
     warnings: list[str] = []
@@ -133,8 +187,16 @@ def _compact_objects(
         "MasterDataDomain": 8,
     }
 
-    def sort_key(obj: dict[str, Any]) -> tuple[int, int]:
-        return (type_priority.get(obj.get("object_type", ""), 99), 0)
+    error_counts: dict[str, int] = {}
+    if validation_summary:
+        for detail in validation_summary.get("details", []):
+            if detail.get("severity") == "ERROR" and detail.get("object_id"):
+                error_counts[detail["object_id"]] = error_counts.get(detail["object_id"], 0) + 1
+
+    def sort_key(obj: dict[str, Any]) -> tuple[int, int, int]:
+        error_count = error_counts.get(obj.get("object_id", ""), 0)
+        # Negative error count so objects with more errors sort first.
+        return (-error_count, type_priority.get(obj.get("object_type", ""), 99), 0)
 
     sorted_objs = sorted(objects, key=sort_key)
     kept = sorted_objs[:max_objects]
@@ -244,28 +306,14 @@ def build_context_bundle(
                 if obj["object_id"] not in {o["object_id"] for o in all_objects}:
                     all_objects.append(obj)
 
-    # Layer 3: Relationship expansion via trace
+    # Layer 3: Relationship expansion via trace (one call per seed)
     related_ids: set[str] = set()
+    relationship_refs: list[dict[str, Any]] = []
     for obj_id in seed_ids:
         trace_result = trace_object(db_path, obj_id, max_depth=max_depth, direction="both")
         for node in trace_result.nodes:
             if node.object_id not in seed_ids:
                 related_ids.add(node.object_id)
-        for edge in trace_result.edges:
-            if edge.from_object_id in seed_ids or edge.to_object_id in seed_ids:
-                related_ids.add(edge.from_object_id)
-                related_ids.add(edge.to_object_id)
-
-    for rel_id in related_ids:
-        if rel_id not in {o["object_id"] for o in all_objects}:
-            obj = _fetch_object(conn, rel_id)
-            if obj:
-                all_objects.append(obj)
-
-    # Build relationship refs from trace edges for seed objects
-    relationship_refs: list[dict[str, Any]] = []
-    for obj_id in seed_ids:
-        trace_result = trace_object(db_path, obj_id, max_depth=max_depth, direction="both")
         for edge in trace_result.edges:
             relationship_refs.append(
                 {
@@ -275,13 +323,21 @@ def build_context_bundle(
                     "direction": edge.direction,
                 }
             )
+            related_ids.add(edge.from_object_id)
+            related_ids.add(edge.to_object_id)
+
+    for rel_id in related_ids:
+        if rel_id not in {o["object_id"] for o in all_objects}:
+            obj = _fetch_object(conn, rel_id)
+            if obj:
+                all_objects.append(obj)
 
     evidence_refs = [o["object_id"] for o in all_objects]
     validation_summary = _fetch_validation_summary(conn, evidence_refs)
     conn.close()
 
     # Compaction: truncate to max_objects
-    kept_objects, warnings = _compact_objects(all_objects, max_objects)
+    kept_objects, warnings = _compact_objects(all_objects, max_objects, validation_summary)
 
     # If still over a rough size budget, strip descriptions
     excluded_sections: list[str] = []
@@ -303,6 +359,8 @@ def build_context_bundle(
 
     # Redaction: never include raw dataset samples
     included_sources: list[dict[str, Any]] = []
+    if redaction_policy != "summary_only":
+        included_sources = _fetch_redacted_sources(db_path, evidence_refs)
 
     bundle = ContextBundle(
         bundle_id=str(uuid.uuid4()),

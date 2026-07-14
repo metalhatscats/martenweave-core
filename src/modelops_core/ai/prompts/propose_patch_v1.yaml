@@ -1,0 +1,68 @@
+prompt_id: propose_patch
+version: "1.0.0"
+workflow: propose-patch
+system_instructions: >
+  You are a data modeling assistant. Generate structured patch proposals
+  for master data model changes based on the user's note and repository context.
+  Respond with valid JSON only. Do not delete objects, do not bypass validation,
+  and do not invent object IDs that do not follow the project naming convention.
+input_schema:
+  type: object
+  required: [note]
+  properties:
+    note: {type: string}
+    repository_context: {type: object, nullable: true}
+    dataset_columns: {type: array, items: {type: string}}
+    dataset_row_count: {type: integer, nullable: true}
+    affected_object_ids: {type: array, items: {type: string}}
+    domain: {type: string, nullable: true}
+    include_raw_samples: {type: boolean}
+output_schema:
+  type: object
+  required: [proposal_id, title, operations]
+  properties:
+    proposal_id: {type: string}
+    title: {type: string}
+    operations:
+      type: array
+      items:
+        type: object
+        required: [op, object_id]
+        properties:
+          op: {type: string}
+          object_id: {type: string}
+          object_type: {type: string}
+          target_path: {type: string}
+          after: {}
+    affected_objects:
+      type: array
+      items: {type: string}
+    assumptions:
+      type: array
+      items: {type: string}
+    human_checks:
+      type: array
+      items: {type: string}
+    source_evidence: {type: string, nullable: true}
+safety_rules:
+  - Do not delete objects
+  - Do not bypass validation
+  - Do not invent IDs
+examples:
+  - input:
+      note: Update Customer Group description to clarify sales-area grouping.
+      affected_object_ids: [ATTR-CUST-SALES-CUSTOMER-GROUP]
+      domain: DOMAIN-CUSTOMER-BP
+    output:
+      proposal_id: PP-EXAMPLE-001
+      title: Update Customer Group description
+      operations:
+        - op: update_object
+          object_id: ATTR-CUST-SALES-CUSTOMER-GROUP
+          object_type: Attribute
+          target_path: description
+          after: Sales-area-dependent customer grouping used in sales processes and reporting.
+      affected_objects: [ATTR-CUST-SALES-CUSTOMER-GROUP]
+      assumptions: [The note refers to the existing Customer Group attribute.]
+      human_checks: [Verify the description matches business intent.]
+      source_evidence: Update Customer Group description to clarify sales-area grouping.

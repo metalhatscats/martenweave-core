@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from modelops_core.ai.provider_adapter import AIProviderError
 from modelops_core.config import (
     load_repo_config,
     resolve_generated_path,
@@ -586,6 +587,36 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
             }
         ]
 
+    @mcp.prompt()
+    def run_agent_loop(goal: str) -> list[dict[str, str]]:
+        """Guide an agent through a closed propose-validate-refine cycle."""
+        return [
+            {
+                "role": "user",
+                "content": (
+                    f"Run the agent loop for this modeling goal: {goal}\n\n"
+                    "Follow this sequence exactly:\n"
+                    "1. Use validate_model to check the current repository state.\n"
+                    "2. Use propose_model_change with the goal as the note to create a "
+                    "PatchProposal.\n"
+                    "3. If the proposal is invalid, refine the note by appending the "
+                    "validation errors and call propose_model_change again. Stop if errors "
+                    "do not change between iterations.\n"
+                    "4. Once the proposal is valid, use proposal_impact to assess "
+                    "downstream risk.\n"
+                    "5. Use proposal_dry_run to preview what applying the proposal would do.\n"
+                    "6. If the impact is high-risk, create a ChangeRequest before applying.\n\n"
+                    "Rules:\n"
+                    "- Never apply proposals automatically.\n"
+                    "- Stop after at most 5 iterations if the proposal remains invalid.\n"
+                    "- Only write canonical PatchProposal files; do not mutate other "
+                    "canonical objects.\n"
+                    "- Return the final proposal ID, validation status, impact summary, "
+                    "and next steps."
+                ),
+            }
+        ]
+
     # ------------------------------------------------------------------
     # Write-intent tools (safe — all go through PatchProposal / CR)
     # ------------------------------------------------------------------
@@ -605,7 +636,21 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
         from modelops_core.patching.patch_proposal_service import write_patch_proposal
 
         model_path = resolve_model_path(repo_root)
-        result = build_patch_proposal_from_note(note)
+        try:
+            result = build_patch_proposal_from_note(
+                note, repo_root=repo_root, command="mcp-propose-model-change"
+            )
+        except (AIProviderError, ValueError) as exc:
+            return json.dumps(
+                {
+                    "error": str(exc),
+                    "is_safe": False,
+                    "assumptions": [],
+                    "human_checks": [f"Patch proposal failed: {exc}"],
+                },
+                indent=2,
+                default=str,
+            )
         proposal = result.get("proposal")
         if proposal is None:
             return json.dumps(
@@ -634,6 +679,8 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
     @mcp.tool()
     def infer_model(
         profile_path: str,
+        dataset_id: str | None = None,
+        domain: str | None = None,
     ) -> str:
         """Infer draft model objects from a dataset profile JSON and create a PatchProposal.
 
@@ -646,11 +693,34 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
 
         profile_file = Path(profile_path)
         if not profile_file.exists():
-            return json.dumps({"error": f"Profile not found: {profile_path}"})
+            return json.dumps(
+                {
+                    "error": f"Profile not found: {profile_path}",
+                    "assumptions": [],
+                    "human_checks": [],
+                },
+                indent=2,
+                default=str,
+            )
 
-        profile_dict = json.loads(profile_file.read_text(encoding="utf-8"))
-        dataset_id = profile_file.stem
-        proposal = infer_model_from_profile(profile_dict, dataset_id=dataset_id)
+        try:
+            profile_dict = json.loads(profile_file.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            return json.dumps(
+                {
+                    "error": f"Invalid JSON profile: {exc}",
+                    "assumptions": [],
+                    "human_checks": [
+                        "Ensure the profile file is valid JSON produced by profile_dataset."
+                    ],
+                },
+                indent=2,
+                default=str,
+            )
+        inferred_dataset_id = dataset_id if dataset_id is not None else profile_file.stem
+        proposal = infer_model_from_profile(
+            profile_dict, dataset_id=inferred_dataset_id, domain=domain
+        )
 
         validation_results = validate_patch_proposal(proposal)
         proposal["validation_status"] = (
@@ -687,6 +757,13 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
                 "would_change": result.would_change,
                 "operations_preview": result.operations_preview,
                 "error": result.error,
+                "assumptions": [
+                    "This dry-run is a simulation; no canonical files were changed."
+                ],
+                "human_checks": [
+                    "Review the operations preview before applying the proposal.",
+                    "Ensure the proposal is accepted through governance before applying.",
+                ],
             },
             indent=2,
             default=str,
@@ -707,7 +784,17 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
         model_path = resolve_model_path(repo_root)
         proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
         if not proposal_path.exists():
-            return json.dumps({"error": f"PatchProposal not found: {proposal_id}"})
+            return json.dumps(
+                {
+                    "error": f"PatchProposal not found: {proposal_id}",
+                    "assumptions": [],
+                    "human_checks": [
+                        "Verify the proposal ID and that the proposal has been written."
+                    ],
+                },
+                indent=2,
+                default=str,
+            )
 
         parsed = parse_file(proposal_path)
         fm = parsed.frontmatter or {}
@@ -733,6 +820,13 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
                         "depth": obj.depth,
                     }
                     for obj in report.all_affected_objects
+                ],
+                "assumptions": [
+                    "Impact analysis is limited to indexed objects and known references."
+                ],
+                "human_checks": [
+                    "Confirm the affected objects and risk level with stakeholders.",
+                    "Verify that downstream consumers are included in the approval process.",
                 ],
             },
             indent=2,
@@ -775,13 +869,29 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
                 priority=priority,
             )
         except ValueError as exc:
-            return json.dumps({"error": str(exc)})
+            return json.dumps(
+                {
+                    "error": str(exc),
+                    "assumptions": [],
+                    "human_checks": [],
+                },
+                indent=2,
+                default=str,
+            )
 
         return json.dumps(
             {
                 "id": cr_id,
                 "title": title,
                 "path": str(path),
+                "assumptions": [
+                    "This tool creates a governance artifact only; "
+                    "canonical objects are not modified."
+                ],
+                "human_checks": [
+                    "Route the ChangeRequest to the appropriate approvers before implementation.",
+                    "Link related PatchProposals or issues to provide full context.",
+                ],
             },
             indent=2,
             default=str,
@@ -806,6 +916,12 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
                 {
                     "format": "csv",
                     "files": [str(p) for p in paths],
+                    "assumptions": [
+                        "Export is read-only and reflects the current canonical files."
+                    ],
+                    "human_checks": [
+                        "Verify the exported files are suitable for the intended audience.",
+                    ],
                 },
                 indent=2,
                 default=str,
@@ -817,10 +933,24 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
                     "format": "xlsx",
                     "file": str(path),
                     "business_review": business_review,
+                    "assumptions": [
+                        "Export is read-only and reflects the current canonical files."
+                    ],
+                    "human_checks": [
+                        "Verify the exported workbook is suitable for the intended audience.",
+                    ],
                 },
                 indent=2,
                 default=str,
             )
-        return json.dumps({"error": f"Unknown format: {fmt}. Use 'csv' or 'xlsx'."})
+        return json.dumps(
+            {
+                "error": f"Unknown format: {fmt}. Use 'csv' or 'xlsx'.",
+                "assumptions": [],
+                "human_checks": ["Specify a supported export format: 'csv' or 'xlsx'."],
+            },
+            indent=2,
+            default=str,
+        )
 
     return mcp

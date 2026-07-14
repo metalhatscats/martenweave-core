@@ -13,6 +13,7 @@ from typing import Any
 
 from modelops_core.config import load_repo_config, resolve_generated_path, resolve_model_path
 from modelops_core.errors import ResourceLimitExceeded
+from modelops_core.index.semantic_search import SemanticIndexBuilder
 from modelops_core.repository import parse_file, scan_repository
 from modelops_core.schemas.registry import get_relationship_classes, get_relationship_fields
 from modelops_core.validation import ValidationSummary, validate_objects
@@ -302,6 +303,7 @@ def build_index(
         _insert_objects(conn, parsed_objects)
         _insert_validation_results(conn, summary.results)
         _insert_relationships(conn, parsed_objects)
+        SemanticIndexBuilder().build(conn)
         _write_manifest(conn, repo_root, len(parsed_objects), summary, source_hash)
         conn.commit()
     except Exception:

@@ -98,6 +98,8 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
     "search",
     "query",
     "migrate",
+    "ai-provider",
+    "agent-loop",
     "issue-draft",
     "change-request",
     "notifications",

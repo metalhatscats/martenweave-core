@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import sqlite3
+import urllib.error
+import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -22,6 +25,7 @@ from modelops_core.agents import (
     ReadinessAgent,
     ReadinessInput,
 )
+from modelops_core.ai.agent_loop import run_agent_loop
 from modelops_core.approval import compute_proposal_risk
 from modelops_core.assessment.assessment_service import (
     generate_assessment_package,
@@ -90,8 +94,11 @@ from modelops_core.imports.privacy import (
 from modelops_core.index import build_index as _build_index
 from modelops_core.index.dataset_profile_sync import link_dataset_profile_to_index
 from modelops_core.index.query_service import (
+    PaginatedResult,
+    SearchResult,
     query_objects,
     search_objects,
+    semantic_search_objects,
 )
 from modelops_core.issue_draft import (
     create_draft_from_change_request,
@@ -329,6 +336,194 @@ def callback(
 
     if quiet:
         console = _QuietConsole(console)
+
+
+# ---------------------------------------------------------------------------
+# AI provider health
+# ---------------------------------------------------------------------------
+
+
+ai_provider_app = typer.Typer(
+    help="Inspect and verify configured AI providers.",
+    no_args_is_help=True,
+)
+
+_PROVIDER_SLOTS: dict[str, dict[str, Any]] = {
+    "no_provider": {
+        "api_key_env": None,
+        "base_url_env": None,
+        "model_env": None,
+        "default_base_url": None,
+        "default_model": None,
+        "health_path": None,
+    },
+    "kimi": {
+        "api_key_env": "MOONSHOT_API_KEY",
+        "base_url_env": "MOONSHOT_BASE_URL",
+        "model_env": "MOONSHOT_MODEL",
+        "default_base_url": "https://api.moonshot.cn/v1",
+        "default_model": "kimi-latest",
+        "health_path": "/models",
+    },
+    "openai": {
+        "api_key_env": "OPENAI_API_KEY",
+        "base_url_env": "OPENAI_BASE_URL",
+        "model_env": "OPENAI_MODEL",
+        "default_base_url": "https://api.openai.com/v1",
+        "default_model": "gpt-4o-mini",
+        "health_path": "/models",
+    },
+    "ollama": {
+        "api_key_env": None,
+        "base_url_env": "OLLAMA_BASE_URL",
+        "model_env": "OLLAMA_MODEL",
+        "default_base_url": "http://localhost:11434",
+        "default_model": "llama3.1",
+        "health_path": "/api/tags",
+    },
+}
+
+
+def _env_set(env_name: str | None) -> bool:
+    return env_name is not None and os.getenv(env_name) not in {None, ""}
+
+
+def _provider_health(provider: str) -> dict[str, Any]:
+    """Return a health status dict for the named provider slot."""
+    if not provider:
+        provider = "no_provider"
+    config = _PROVIDER_SLOTS.get(provider)
+    if config is None:
+        return {
+            "provider": provider,
+            "configured": False,
+            "reachable": False,
+            "model": None,
+            "error": f"Unknown provider: {provider}",
+        }
+
+    api_key_env = config["api_key_env"]
+    if api_key_env is not None and not _env_set(api_key_env):
+        return {
+            "provider": provider,
+            "configured": False,
+            "reachable": False,
+            "model": None,
+            "error": f"{api_key_env} not set",
+        }
+
+    if provider == "no_provider":
+        return {
+            "provider": provider,
+            "configured": True,
+            "reachable": True,
+            "model": None,
+            "error": None,
+        }
+
+    base_url = os.getenv(config["base_url_env"], config["default_base_url"])
+    model = os.getenv(config["model_env"], config["default_model"])
+    health_url = f"{base_url}{config['health_path']}"
+
+    api_key = os.getenv(api_key_env, "") if api_key_env is not None else ""
+    req = urllib.request.Request(health_url, method="GET")
+    if api_key:
+        req.add_header("Authorization", f"Bearer {api_key}")
+
+    error_msg: str | None = None
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            if resp.status == 200:
+                return {
+                    "provider": provider,
+                    "configured": True,
+                    "reachable": True,
+                    "model": model,
+                    "error": None,
+                }
+            error_msg = f"Provider returned HTTP {resp.status}"
+    except urllib.error.HTTPError as exc:
+        error_msg = f"Provider returned HTTP {exc.code}"
+    except urllib.error.URLError as exc:
+        error_msg = f"Provider request failed: {exc.reason}"
+    except TimeoutError:
+        error_msg = "Provider health check timed out"
+    except Exception as exc:
+        # Redact API key from any unexpected error text before returning it.
+        raw_msg = f"{type(exc).__name__}: {exc}"
+        error_msg = raw_msg.replace(api_key, "[REDACTED]") if api_key else raw_msg
+
+    return {
+        "provider": provider,
+        "configured": True,
+        "reachable": False,
+        "model": model,
+        "error": error_msg,
+    }
+
+
+@ai_provider_app.command("list")
+def ai_provider_list(
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """List available AI provider slots and their required environment variables."""
+    rows: list[dict[str, Any]] = []
+    for provider, config in _PROVIDER_SLOTS.items():
+        required: list[str] = []
+        if config["api_key_env"]:
+            required.append(config["api_key_env"])
+        # Base URL and model are optional for all providers because defaults exist.
+        configured = (
+            True
+            if provider == "no_provider"
+            else all(_env_set(v) for v in required)
+        )
+        rows.append(
+            {
+                "provider": provider,
+                "required_env_vars": required,
+                "configured": configured,
+            }
+        )
+
+    if json_output:
+        print(json.dumps(rows, indent=2, default=str))
+        raise typer.Exit()
+
+    table = Table("Provider", "Required Env Vars", "Configured")
+    for row in rows:
+        vars_text = ", ".join(row["required_env_vars"]) if row["required_env_vars"] else "—"
+        table.add_row(row["provider"], vars_text, "Yes" if row["configured"] else "No")
+    console.print(table)
+
+
+@ai_provider_app.command("health")
+def ai_provider_health(
+    provider: str | None = typer.Option(
+        None,
+        "--provider",
+        help="Provider slot to check (defaults to MARTENWEAVE_AI_PROVIDER env var).",
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output stable JSON."),
+) -> None:
+    """Check the health of a configured AI provider."""
+    provider_name = provider or os.getenv("MARTENWEAVE_AI_PROVIDER", "no_provider")
+    status = _provider_health(provider_name)
+
+    if json_output:
+        print(json.dumps(status, indent=2, default=str))
+        raise typer.Exit()
+
+    table = Table("Field", "Value")
+    table.add_row("Provider", status["provider"])
+    table.add_row("Configured", "Yes" if status["configured"] else "No")
+    table.add_row("Reachable", "Yes" if status["reachable"] else "No")
+    table.add_row("Model", status["model"] or "—")
+    table.add_row("Error", status["error"] or "—")
+    console.print(table)
+
+
+app.add_typer(ai_provider_app, name="ai-provider")
 
 
 _TEMPLATES_DIR = Path(__file__).parent.parent.parent / "templates" / "model_spines"
@@ -2618,18 +2813,31 @@ def propose_patch(
         )
 
     from modelops_core.ai.patch_proposal_service import build_patch_proposal_from_note
-    from modelops_core.ai.provider_adapter import AIOutputValidationError
+    from modelops_core.ai.provider_adapter import AIProviderError
 
     try:
         result = build_patch_proposal_from_note(
             note, repo_root=repo_root, include_raw_samples=include_raw_samples
         )
-    except AIOutputValidationError as exc:
+    except (AIProviderError, ValueError) as exc:
         msg = str(exc)
         if json_output:
-            print(json.dumps({"error": msg}, indent=2))
+            print(
+                json.dumps(
+                    {
+                        "is_safe": False,
+                        "proposal": None,
+                        "validation": [],
+                        "assumptions": [],
+                        "human_checks": [f"Patch proposal failed: {msg}"],
+                        "error": msg,
+                    },
+                    indent=2,
+                    default=str,
+                )
+            )
             raise typer.Exit(code=1) from exc
-        console.print(f"[red]{msg}[/red]")
+        console.print(f"[red]Patch proposal failed: {msg}[/red]")
         raise typer.Exit(code=1) from exc
 
     proposal = result.get("proposal")
@@ -2702,6 +2910,102 @@ def propose_patch(
                 },
             )
         )
+
+
+@app.command("agent-loop")
+@with_telemetry("agent-loop")
+def agent_loop(
+    goal: str = typer.Option(..., "--goal", help="Free-text modeling goal."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    max_iterations: int = typer.Option(
+        5, "--max-iterations", help="Maximum refinement iterations."
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Preview the loop without writing any proposals."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output stable JSON."),
+) -> None:
+    """Run a closed-loop propose-validate-refine cycle for a modeling goal."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+
+    if not model_path.exists():
+        console.print(f"[red]Model path does not exist: {model_path}[/red]")
+        raise typer.Exit(code=1)
+
+    result = run_agent_loop(
+        repo_root=repo_root,
+        goal=goal,
+        max_iterations=max_iterations,
+        dry_run=dry_run,
+    )
+
+    if json_output:
+        print(json.dumps(result.to_dict(), indent=2, default=str))
+        if result.final_status in {"invalid_proposal", "no_progress", "failed"}:
+            raise typer.Exit(code=1)
+        return
+
+    status_label = result.final_status
+    status_color = {
+        "valid_proposal": "[green]",
+        "high_risk": "[yellow]",
+        "invalid_proposal": "[red]",
+        "no_progress": "[red]",
+        "failed": "[red]",
+    }.get(result.final_status, "")
+
+    if dry_run:
+        console.print("[bold]Dry-run: agent-loop preview[/bold]")
+    console.print(f"{status_color}Status: {status_label}[/]")
+    console.print(f"Iterations: {result.iterations}")
+    if result.proposal_id:
+        console.print(f"Proposal:   {result.proposal_id}")
+    if result.proposal_path:
+        console.print(f"Path:       {result.proposal_path}")
+    if result.validation_status:
+        console.print(f"Validation: {result.validation_status}")
+    if result.impact:
+        console.print(
+            f"Impact:     {result.impact.get('affected_objects_count', 0)} affected objects, "
+            f"risk={result.impact.get('risk_level', 'unknown')}"
+        )
+
+    if result.assumptions:
+        console.print("\n[bold]Assumptions:[/bold]")
+        for a in result.assumptions:
+            console.print(f"  • {a}")
+
+    if result.human_checks:
+        console.print("\n[bold]Human checks:[/bold]")
+        for h in result.human_checks:
+            console.print(f"  • {h}")
+
+    if result.operations_preview:
+        console.print("\n[bold]Operations preview:[/bold]")
+        preview_table = Table("Operation", "Object", "Status")
+        for op in result.operations_preview:
+            preview_table.add_row(
+                op.get("op", "—"),
+                op.get("object_id", "—"),
+                op.get("status", "—"),
+            )
+        console.print(preview_table)
+
+    if result.log:
+        console.print("\n[bold]Iteration log:[/bold]")
+        table = Table("Iteration", "Action", "Proposal", "Validation")
+        for entry in result.log:
+            table.add_row(
+                str(entry.iteration),
+                entry.action,
+                entry.proposal_id or "—",
+                entry.validation_status or "—",
+            )
+        console.print(table)
+
+    if result.final_status in {"invalid_proposal", "no_progress", "failed"}:
+        raise typer.Exit(code=1)
 
 
 # ---------------------------------------------------------------------------
@@ -6105,6 +6409,73 @@ def diff(
             console.print(table)
 
 
+def _filter_semantic_ids(
+    db_path: Path,
+    semantic_results: list[Any],
+    object_type: str | None,
+    status: str | None,
+    domain: str | None,
+    tags: list[str] | None,
+) -> set[str]:
+    """Return semantic result IDs that pass the same filters as keyword search."""
+    if not semantic_results:
+        return set()
+    object_ids = [r.object_id for r in semantic_results]
+    conditions: list[str] = [f"id IN ({', '.join('?' for _ in object_ids)})"]
+    params: list[Any] = list(object_ids)
+    if object_type:
+        conditions.append("type = ?")
+        params.append(object_type)
+    if status:
+        conditions.append("status = ?")
+        params.append(status)
+    if domain:
+        conditions.append("domain = ?")
+        params.append(domain)
+    if tags:
+        placeholders = ", ".join("?" for _ in tags)
+        conditions.append(
+            f"id IN (SELECT object_id FROM tags WHERE tag IN ({placeholders}))"
+        )
+        params.extend(tags)
+    sql = "SELECT id FROM objects WHERE " + " AND ".join(conditions)
+    conn = sqlite3.connect(str(db_path))
+    try:
+        rows = conn.execute(sql, params).fetchall()
+    finally:
+        conn.close()
+    return {row[0] for row in rows}
+
+
+def _load_search_results_for_ids(
+    db_path: Path, object_ids: set[str]
+) -> dict[str, SearchResult]:
+    """Load SearchResult metadata for a set of object IDs."""
+    if not object_ids:
+        return {}
+    placeholders = ", ".join("?" for _ in object_ids)
+    sql = f"SELECT * FROM objects WHERE id IN ({placeholders})"
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(sql, list(object_ids)).fetchall()
+    finally:
+        conn.close()
+    return {
+        row["id"]: SearchResult(
+            object_id=row["id"],
+            object_type=row["type"],
+            status=row["status"],
+            name=row["name"],
+            title=row["title"],
+            domain=row["domain"],
+            description=row["description"],
+            source_file=row["source_file"],
+        )
+        for row in rows
+    }
+
+
 @app.command("search")
 def search(
     query: str = typer.Argument(..., help="Search query (keywords)."),
@@ -6118,6 +6489,17 @@ def search(
     limit: int = typer.Option(50, "--limit", help="Maximum results."),
     offset: int = typer.Option(0, "--offset", help="Skip first N results."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+    semantic: bool = typer.Option(
+        False,
+        "--semantic",
+        help=(
+            "Rerank keyword results by local semantic similarity and surface "
+            "additional semantically related objects."
+        ),
+    ),
+    semantic_expand: bool = typer.Option(
+        False, "--semantic-expand", help="Expand query with one-hop related object terms."
+    ),
 ) -> None:
     """Search indexed objects by keyword."""
     repo_root = _resolve_repo(repo)
@@ -6140,26 +6522,102 @@ def search(
         offset=offset,
     )
     results = paginated.results
+    total_count = paginated.total_count
+    semantic_error: str | None = None
+
+    if semantic:
+        keyword_by_id = {r.object_id: r for r in results}
+        keyword_ids = set(keyword_by_id)
+        # Search the full semantic index so related objects are surfaced even when
+        # they do not contain the literal query terms.
+        try:
+            semantic_results = semantic_search_objects(
+                db_path=db_path,
+                query=query,
+                candidate_ids=None,
+                expand=semantic_expand,
+                limit=limit + offset,
+                expand_candidate_ids=keyword_ids,
+                repo_root=repo_root,
+            )
+            allowed_ids = _filter_semantic_ids(
+                db_path,
+                semantic_results,
+                object_type=object_type,
+                status=status,
+                domain=domain,
+                tags=tags,
+            )
+            semantic_by_id = {
+                r.object_id: r for r in semantic_results if r.object_id in allowed_ids
+            }
+
+            # Fetch metadata for semantic results that keyword search missed.
+            semantic_only_ids = set(semantic_by_id) - keyword_ids
+            metadata = _load_search_results_for_ids(db_path, semantic_only_ids)
+
+            merged: dict[str, SearchResult] = {}
+            for obj_id, sr in semantic_by_id.items():
+                result = keyword_by_id.get(obj_id) or metadata.get(obj_id)
+                if result is None:
+                    continue
+                result.score = sr.semantic_score
+                result.matched_fields = result.matched_fields + [
+                    "semantic:" + t for t in sr.matched_terms
+                ]
+                merged[obj_id] = result
+
+            # Include keyword-only results with a zero semantic score so the ranking
+            # stays on a single float scale and keyword-only matches do not outrank
+            # real semantic matches.
+            for r in results:
+                if r.object_id not in merged:
+                    r.score = 0.0
+                    merged[r.object_id] = r
+
+            results = sorted(merged.values(), key=lambda r: r.score, reverse=True)
+            results = results[offset : offset + limit]
+            total_count = len(merged)
+            paginated = PaginatedResult(results=results, total_count=total_count)
+        except ResourceLimitExceeded as exc:
+            semantic_error = str(exc)
+            if not json_output:
+                console.print(
+                    f"[yellow]Semantic search disabled: {semantic_error}[/yellow]"
+                )
+        except Exception as exc:  # noqa: BLE001
+            semantic_error = f"Semantic search failed: {exc}"
+            if not json_output:
+                console.print(f"[yellow]{semantic_error}[/yellow]")
 
     if json_output:
-        output = {
+        output: dict[str, Any] = {
             "stale_index_warning": stale,
-            "results": [
-                {
-                    "object_id": r.object_id,
-                    "object_type": r.object_type,
-                    "status": r.status,
-                    "name": r.name,
-                    "title": r.title,
-                    "domain": r.domain,
-                    "source_file": r.source_file,
-                    "score": r.score,
-                    "matched_fields": r.matched_fields,
-                }
-                for r in results
-            ],
-            "total_count": paginated.total_count,
+            "results": [],
+            "total_count": total_count,
         }
+        if semantic and semantic_error is not None:
+            output["semantic_error"] = semantic_error
+        for r in results:
+            result_obj = {
+                "object_id": r.object_id,
+                "object_type": r.object_type,
+                "status": r.status,
+                "name": r.name,
+                "title": r.title,
+                "domain": r.domain,
+                "source_file": r.source_file,
+                "score": r.score,
+                "matched_fields": r.matched_fields,
+            }
+            if semantic:
+                result_obj["semantic_score"] = r.score
+                result_obj["semantic_matched_terms"] = [
+                    f.removeprefix("semantic:")
+                    for f in r.matched_fields
+                    if f.startswith("semantic:")
+                ]
+            output["results"].append(result_obj)
         print(json.dumps(output, indent=2, default=str))
         raise typer.Exit()
 

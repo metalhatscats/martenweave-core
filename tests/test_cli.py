@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import json
+import urllib.request
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
+import pytest
 from typer.testing import CliRunner
 
 from modelops_core.cli import app
@@ -434,3 +437,413 @@ def test_cli_doctor_json_missing_model_path(tmp_path: Path) -> None:
     data = json.loads(result.output)
     assert data["model_path_exists"] is False
     assert data["validation"]["ran"] is False
+
+
+# ---------------------------------------------------------------------------
+# ai-provider
+# ---------------------------------------------------------------------------
+
+
+def test_ai_provider_list() -> None:
+    result = runner.invoke(app, ["ai-provider", "list"])
+    assert result.exit_code == 0
+    assert "no_provider" in result.output
+    assert "kimi" in result.output
+    assert "openai" in result.output
+    assert "ollama" in result.output
+
+
+def test_ai_provider_list_json() -> None:
+    result = runner.invoke(app, ["ai-provider", "list", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    providers = {row["provider"] for row in data}
+    assert providers == {"no_provider", "kimi", "openai", "ollama"}
+
+    by_provider = {row["provider"]: row for row in data}
+    assert by_provider["kimi"]["required_env_vars"] == ["MOONSHOT_API_KEY"]
+    assert by_provider["openai"]["required_env_vars"] == ["OPENAI_API_KEY"]
+    assert by_provider["ollama"]["required_env_vars"] == []
+    assert by_provider["no_provider"]["required_env_vars"] == []
+
+
+def test_ai_provider_health_no_provider() -> None:
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "no_provider", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["provider"] == "no_provider"
+    assert data["configured"] is True
+    assert data["reachable"] is True
+    assert data["model"] is None
+    assert data["error"] is None
+
+
+def test_ai_provider_health_default_env(monkeypatch) -> None:
+    monkeypatch.setenv("MARTENWEAVE_AI_PROVIDER", "no_provider")
+    result = runner.invoke(app, ["ai-provider", "health", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["provider"] == "no_provider"
+    assert data["configured"] is True
+    assert data["reachable"] is True
+
+
+def test_ai_provider_health_empty_env(monkeypatch) -> None:
+    monkeypatch.setenv("MARTENWEAVE_AI_PROVIDER", "")
+    result = runner.invoke(app, ["ai-provider", "health", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["provider"] == "no_provider"
+    assert data["configured"] is True
+    assert data["reachable"] is True
+
+
+def test_ai_provider_health_missing_key(monkeypatch) -> None:
+    monkeypatch.delenv("MOONSHOT_API_KEY", raising=False)
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["provider"] == "kimi"
+    assert data["configured"] is False
+    assert data["reachable"] is False
+    assert data["error"] == "MOONSHOT_API_KEY not set"
+
+
+def test_ai_provider_health_reachable(monkeypatch) -> None:
+    monkeypatch.setenv("MOONSHOT_API_KEY", "test-key")
+
+    mock_resp = MagicMock()
+    mock_resp.status = 200
+    mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+    mock_resp.__exit__ = MagicMock(return_value=False)
+
+    def mock_urlopen(req, **_kwargs):
+        return mock_resp
+
+    monkeypatch.setattr(urllib.request, "urlopen", mock_urlopen)
+
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["provider"] == "kimi"
+    assert data["configured"] is True
+    assert data["reachable"] is True
+    assert data["model"] == "kimi-latest"
+    assert data["error"] is None
+
+
+def test_ai_provider_health_unreachable(monkeypatch) -> None:
+    monkeypatch.setenv("MOONSHOT_API_KEY", "test-key")
+
+    def mock_urlopen(_req, **_kwargs):
+        raise urllib.error.URLError("Connection refused")
+
+    monkeypatch.setattr(urllib.request, "urlopen", mock_urlopen)
+
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["provider"] == "kimi"
+    assert data["configured"] is True
+    assert data["reachable"] is False
+    assert "test-key" not in json.dumps(data)
+
+
+def test_ai_provider_health_ollama_no_key(monkeypatch) -> None:
+    monkeypatch.delenv("OLLAMA_API_KEY", raising=False)
+
+    mock_resp = MagicMock()
+    mock_resp.status = 200
+    mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+    mock_resp.__exit__ = MagicMock(return_value=False)
+
+    captured_requests: list[urllib.request.Request] = []
+
+    def mock_urlopen(req, **_kwargs):
+        captured_requests.append(req)
+        return mock_resp
+
+    monkeypatch.setattr(urllib.request, "urlopen", mock_urlopen)
+
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "ollama", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["provider"] == "ollama"
+    assert data["configured"] is True
+    assert data["reachable"] is True
+    assert captured_requests
+    assert "Authorization" not in str(captured_requests[0].headers)
+
+
+def test_ai_provider_list_configured_with_key_only(monkeypatch) -> None:
+    monkeypatch.delenv("MOONSHOT_BASE_URL", raising=False)
+    monkeypatch.delenv("MOONSHOT_MODEL", raising=False)
+    monkeypatch.setenv("MOONSHOT_API_KEY", "test-key")
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+    monkeypatch.delenv("OPENAI_MODEL", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    result = runner.invoke(app, ["ai-provider", "list", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    by_provider = {row["provider"]: row for row in data}
+    assert by_provider["kimi"]["configured"] is True
+    assert by_provider["openai"]["configured"] is False
+    assert by_provider["ollama"]["configured"] is True
+    assert by_provider["no_provider"]["configured"] is True
+
+
+def test_ai_provider_health_non_200_status(monkeypatch) -> None:
+    monkeypatch.setenv("MOONSHOT_API_KEY", "test-key")
+
+    mock_resp = MagicMock()
+    mock_resp.status = 503
+    mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+    mock_resp.__exit__ = MagicMock(return_value=False)
+
+    def mock_urlopen(req, **_kwargs):
+        return mock_resp
+
+    monkeypatch.setattr(urllib.request, "urlopen", mock_urlopen)
+
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["provider"] == "kimi"
+    assert data["configured"] is True
+    assert data["reachable"] is False
+    assert data["error"] == "Provider returned HTTP 503"
+
+
+def test_ai_provider_health_http_error(monkeypatch) -> None:
+    monkeypatch.setenv("MOONSHOT_API_KEY", "test-key")
+
+    http_error = urllib.error.HTTPError(
+        url="https://api.moonshot.cn/v1/models",
+        code=401,
+        msg="Unauthorized",
+        hdrs={},
+        fp=None,
+    )
+
+    def mock_urlopen(req, **_kwargs):
+        raise http_error
+
+    monkeypatch.setattr(urllib.request, "urlopen", mock_urlopen)
+
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["reachable"] is False
+    assert data["error"] == "Provider returned HTTP 401"
+
+
+def test_ai_provider_health_url_error(monkeypatch) -> None:
+    monkeypatch.setenv("MOONSHOT_API_KEY", "test-key")
+
+    def mock_urlopen(req, **_kwargs):
+        raise urllib.error.URLError("Connection refused")
+
+    monkeypatch.setattr(urllib.request, "urlopen", mock_urlopen)
+
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["reachable"] is False
+    assert "Connection refused" in data["error"]
+
+
+def test_ai_provider_health_timeout(monkeypatch) -> None:
+    monkeypatch.setenv("MOONSHOT_API_KEY", "test-key")
+
+    def mock_urlopen(req, **_kwargs):
+        raise TimeoutError("Request timed out")
+
+    monkeypatch.setattr(urllib.request, "urlopen", mock_urlopen)
+
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["reachable"] is False
+    assert data["error"] == "Provider health check timed out"
+
+
+def test_ai_provider_health_unexpected_error_redacts_secret(monkeypatch) -> None:
+    monkeypatch.setenv("MOONSHOT_API_KEY", "super-secret-key")
+
+    def mock_urlopen(req, **_kwargs):
+        raise RuntimeError("leaked header: Bearer super-secret-key")
+
+    monkeypatch.setattr(urllib.request, "urlopen", mock_urlopen)
+
+    result = runner.invoke(app, ["ai-provider", "health", "--provider", "kimi", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["reachable"] is False
+    assert "super-secret-key" not in json.dumps(data)
+    assert "[REDACTED]" in data["error"]
+
+
+def test_cli_agent_loop_json_output(sample_repo: Path, monkeypatch) -> None:
+    from modelops_core.ai.agent_loop import AgentLoopResult
+
+    expected = AgentLoopResult(
+        goal="Add a new attribute.",
+        iterations=1,
+        final_status="valid_proposal",
+        proposal_id="PP-AGENT-TEST-001",
+        proposal_path=str(sample_repo / "model" / "patch-proposals" / "PP-AGENT-TEST-001.md"),
+        validation_status="valid",
+        impact={"high_risk": False, "requires_approval": False, "affected_objects_count": 0},
+        assumptions=["Assumption 1"],
+        human_checks=["Check 1"],
+        log=[],
+    )
+    monkeypatch.setattr(
+        "modelops_core.cli.run_agent_loop",
+        lambda **_: expected,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "agent-loop",
+            "--goal",
+            "Add a new attribute.",
+            "--repo",
+            str(sample_repo),
+            "--json",
+        ],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["goal"] == "Add a new attribute."
+    assert data["iterations"] == 1
+    assert data["final_status"] == "valid_proposal"
+    assert data["proposal_id"] == "PP-AGENT-TEST-001"
+    assert data["validation_status"] == "valid"
+    assert "impact" in data
+    assert "log" in data
+
+
+def test_cli_agent_loop_human_output(sample_repo: Path, monkeypatch) -> None:
+    from modelops_core.ai.agent_loop import AgentLoopResult
+
+    expected = AgentLoopResult(
+        goal="Add a new attribute.",
+        iterations=2,
+        final_status="valid_proposal",
+        proposal_id="PP-AGENT-TEST-002",
+        proposal_path=str(sample_repo / "model" / "patch-proposals" / "PP-AGENT-TEST-002.md"),
+        validation_status="valid",
+        impact={"high_risk": False, "requires_approval": False, "affected_objects_count": 1},
+        assumptions=["Assumption 1"],
+        human_checks=["Check 1"],
+        log=[],
+    )
+    monkeypatch.setattr(
+        "modelops_core.cli.run_agent_loop",
+        lambda **_: expected,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "agent-loop",
+            "--goal",
+            "Add a new attribute.",
+            "--repo",
+            str(sample_repo),
+        ],
+    )
+    assert result.exit_code == 0
+    assert "Status: valid_proposal" in result.output
+    assert "Iterations: 2" in result.output
+    assert "Proposal:   PP-AGENT-TEST-002" in result.output
+
+
+@pytest.mark.parametrize("final_status", ["invalid_proposal", "no_progress", "failed"])
+def test_cli_agent_loop_json_exit_code_on_failure(
+    sample_repo: Path, monkeypatch, final_status: str
+) -> None:
+    from modelops_core.ai.agent_loop import AgentLoopResult
+
+    expected = AgentLoopResult(
+        goal="Add a new attribute.",
+        iterations=1,
+        final_status=final_status,
+        proposal_id=None,
+        proposal_path=None,
+        validation_status="invalid",
+        impact={},
+        assumptions=[],
+        human_checks=["Check 1"],
+        log=[],
+    )
+    monkeypatch.setattr(
+        "modelops_core.cli.run_agent_loop",
+        lambda **_: expected,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "agent-loop",
+            "--goal",
+            "Add a new attribute.",
+            "--repo",
+            str(sample_repo),
+            "--json",
+        ],
+    )
+    assert result.exit_code == 1
+    data = json.loads(result.output)
+    assert data["final_status"] == final_status
+
+
+@patch("modelops_core.ai.patch_proposal_service.build_patch_proposal_from_note")
+def test_cli_propose_patch_provider_error_json(
+    mock_build: MagicMock,
+    tmp_path: Path,
+) -> None:
+    """propose-patch --json should return stable JSON when the provider fails."""
+    from modelops_core.ai.provider_adapter import AIProviderError
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    note = repo / "note.md"
+    note.write_text("Update Customer Group.", encoding="utf-8")
+    mock_build.side_effect = AIProviderError("provider is unavailable")
+
+    result = runner.invoke(
+        app,
+        ["propose-patch", "--from", str(note), "--repo", str(repo), "--json"],
+    )
+    assert result.exit_code == 1
+    data = json.loads(result.output)
+    assert data["is_safe"] is False
+    assert data["proposal"] is None
+    assert data["validation"] == []
+    assert "error" in data
+    assert "provider is unavailable" in data["error"]
+
+
+@patch("modelops_core.ai.patch_proposal_service.build_patch_proposal_from_note")
+def test_cli_propose_patch_value_error_human(
+    mock_build: MagicMock,
+    tmp_path: Path,
+) -> None:
+    """propose-patch without --json should print a clear error and exit non-zero."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    note = repo / "note.md"
+    note.write_text("Update Customer Group.", encoding="utf-8")
+    mock_build.side_effect = ValueError("Unknown AI provider 'unknown_provider'.")
+
+    result = runner.invoke(
+        app,
+        ["propose-patch", "--from", str(note), "--repo", str(repo)],
+    )
+    assert result.exit_code == 1
+    assert "Patch proposal failed" in result.output
+    assert "unknown_provider" in result.output

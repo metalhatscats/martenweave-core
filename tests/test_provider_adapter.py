@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from modelops_core.ai.patch_proposal_service import _get_default_adapter
 from modelops_core.ai.provider_adapter import (
     AICandidateOutput,
     AIContextBundle,
@@ -91,7 +92,9 @@ class TestProviderOutputValidator:
     def test_validate_passes_with_allowed_operation(self) -> None:
         validator = ProviderOutputValidator()
         candidate = AICandidateOutput(
-            proposal_id="P", title="T", operations=[{"op": "update_object"}]
+            proposal_id="P",
+            title="T",
+            operations=[{"op": "update_object", "object_id": "DOMAIN-TEST"}],
         )
         result = validator.validate(candidate)
         assert result["valid"] is True
@@ -103,3 +106,104 @@ class TestAIContextBundle:
         scrubbed = ctx.scrub()
         assert scrubbed.include_raw_samples is False
         assert scrubbed.note == "n"
+
+
+class TestProviderOutputValidatorHardened:
+    def test_validates_object_id_format(self) -> None:
+        validator = ProviderOutputValidator()
+        candidate = AICandidateOutput(
+            proposal_id="P",
+            title="T",
+            operations=[
+                {
+                    "op": "update_object",
+                    "object_id": "ATTR-TEST-001",
+                    "object_type": "Attribute",
+                }
+            ],
+        )
+        result = validator.validate(candidate)
+        assert result["valid"] is True
+
+    def test_rejects_invalid_object_id_format(self) -> None:
+        validator = ProviderOutputValidator()
+        candidate = AICandidateOutput(
+            proposal_id="P",
+            title="T",
+            operations=[
+                {"op": "update_object", "object_id": "attr-test-001", "object_type": "Attribute"}
+            ],
+        )
+        with pytest.raises(AIOutputValidationError, match="object_id"):
+            validator.validate(candidate)
+
+    def test_rejects_missing_object_id(self) -> None:
+        validator = ProviderOutputValidator()
+        candidate = AICandidateOutput(
+            proposal_id="P", title="T", operations=[{"op": "update_object"}]
+        )
+        with pytest.raises(AIOutputValidationError, match="object_id"):
+            validator.validate(candidate)
+
+    def test_validates_object_type_registered(self) -> None:
+        validator = ProviderOutputValidator()
+        candidate = AICandidateOutput(
+            proposal_id="P",
+            title="T",
+            operations=[
+                {"op": "update_object", "object_id": "DOMAIN-TEST", "object_type": "Attribute"}
+            ],
+        )
+        result = validator.validate(candidate)
+        assert result["valid"] is True
+
+    def test_rejects_unregistered_object_type(self) -> None:
+        validator = ProviderOutputValidator()
+        candidate = AICandidateOutput(
+            proposal_id="P",
+            title="T",
+            operations=[
+                {
+                    "op": "update_object",
+                    "object_id": "DOMAIN-TEST",
+                    "object_type": "UnknownType",
+                }
+            ],
+        )
+        with pytest.raises(AIOutputValidationError, match="object_type"):
+            validator.validate(candidate)
+
+    def test_rejects_invalid_object_id_in_affected_objects(self) -> None:
+        validator = ProviderOutputValidator()
+        candidate = AICandidateOutput(
+            proposal_id="P",
+            title="T",
+            operations=[{"op": "update_object", "object_id": "DOMAIN-TEST"}],
+            affected_objects=["invalid-id"],
+        )
+        with pytest.raises(AIOutputValidationError, match="affected_objects"):
+            validator.validate(candidate)
+
+
+class TestGetDefaultAdapter:
+    def test_no_provider_returns_no_provider_adapter(self, monkeypatch) -> None:
+        monkeypatch.delenv("MARTENWEAVE_AI_PROVIDER", raising=False)
+        adapter = _get_default_adapter()
+        assert type(adapter).__name__ == "NoProviderAdapter"
+
+    def test_kimi_returns_kimi_adapter(self, monkeypatch) -> None:
+        monkeypatch.setenv("MARTENWEAVE_AI_PROVIDER", "kimi")
+        monkeypatch.setenv("MOONSHOT_API_KEY", "fake-key")
+        adapter = _get_default_adapter()
+        assert type(adapter).__name__ == "KimiAdapter"
+
+    def test_openai_returns_openai_compatible_adapter(self, monkeypatch) -> None:
+        monkeypatch.setenv("MARTENWEAVE_AI_PROVIDER", "openai")
+        monkeypatch.setenv("OPENAI_API_KEY", "fake-key")
+        adapter = _get_default_adapter()
+        assert type(adapter).__name__ == "OpenAICompatibleAdapter"
+
+    def test_ollama_returns_ollama_adapter(self, monkeypatch) -> None:
+        monkeypatch.setenv("MARTENWEAVE_AI_PROVIDER", "ollama")
+        adapter = _get_default_adapter()
+        assert type(adapter).__name__ == "OllamaAdapter"
