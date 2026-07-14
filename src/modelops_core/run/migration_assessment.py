@@ -19,6 +19,16 @@ from modelops_core.assessment.assessment_service import (
     generate_assessment_package,
     generate_review_pack,
 )
+from modelops_core.assessment.finding_contract import (
+    AffectedObject,
+    FindingDetectionMode,
+    FindingEvidence,
+    FindingProvenance,
+    FindingSeverity,
+    FindingStatus,
+    ReadinessFinding,
+    ReadinessImpact,
+)
 from modelops_core.config import (
     RepoConfig,
     load_repo_config,
@@ -31,6 +41,7 @@ from modelops_core.run.dataset_readiness import (
     generate_dataset_readiness_report,
     write_readiness_report,
 )
+from modelops_core.schemas.versioning import CURRENT_SCHEMA_VERSION
 from modelops_core.validation import validate_objects
 from modelops_core.validation.result import ValidationSummary
 
@@ -55,14 +66,30 @@ def _is_decisions_sheet(name: str) -> bool:
     return "decision" in name.lower()
 
 
-_SEVERITY_BY_CATEGORY: dict[str, str] = {
-    "missing_owner": "medium",
-    "missing_mapping": "high",
-    "obsolete_field": "low",
-    "validation_coverage_gap": "medium",
-    "unresolved_decision": "medium",
-    "conflicting_decision": "high",
-    "duplicate_target": "medium",
+_SEVERITY_BY_CATEGORY: dict[str, FindingSeverity] = {
+    "missing_owner": FindingSeverity.MEDIUM,
+    "missing_mapping": FindingSeverity.HIGH,
+    "obsolete_field": FindingSeverity.LOW,
+    "validation_coverage_gap": FindingSeverity.MEDIUM,
+    "unresolved_decision": FindingSeverity.MEDIUM,
+    "conflicting_decision": FindingSeverity.HIGH,
+    "duplicate_target": FindingSeverity.MEDIUM,
+}
+
+_READINESS_IMPACT_BY_SEVERITY: dict[FindingSeverity, ReadinessImpact] = {
+    FindingSeverity.HIGH: ReadinessImpact.BLOCKING,
+    FindingSeverity.MEDIUM: ReadinessImpact.AT_RISK,
+    FindingSeverity.LOW: ReadinessImpact.INFORMATIONAL,
+}
+
+_RECOMMENDED_ACTION_BY_CATEGORY: dict[str, str] = {
+    "missing_owner": "Assign an owner to the mapping row.",
+    "missing_mapping": "Define the target table and field for the source field.",
+    "obsolete_field": "Confirm retirement plan and remove or archive the mapping.",
+    "validation_coverage_gap": "Add a validation rule or test for the conditional mapping.",
+    "unresolved_decision": "Record an accepted decision in the mapping workbook.",
+    "conflicting_decision": "Reconcile the conflicting decision topics.",
+    "duplicate_target": "Consolidate source mappings that target the same field.",
 }
 
 
@@ -77,98 +104,140 @@ def _stable_id(*parts: str) -> str:
     return ":".join(cleaned)
 
 
-def _build_findings(profile: MappingWorkbookProfile) -> list[dict[str, Any]]:
-    """Convert mapping-workbook profile findings into stable, reviewable IDs."""
+def _build_findings(
+    profile: MappingWorkbookProfile,
+    workbook_fingerprint: str = "",
+) -> list[dict[str, Any]]:
+    """Convert mapping-workbook profile findings into the readiness contract."""
     findings: list[dict[str, Any]] = []
+    source_id = workbook_fingerprint or profile.file_hash
+
+    def _make_finding(
+        finding_id: str,
+        category: str,
+        location: dict[str, Any],
+        message: str,
+    ) -> ReadinessFinding:
+        severity = _SEVERITY_BY_CATEGORY.get(category, FindingSeverity.MEDIUM)
+        return ReadinessFinding(
+            id=finding_id,
+            type="readiness_finding",
+            category=category,
+            severity=severity,
+            status=FindingStatus.OPEN,
+            source="mapping_profile",
+            message=message,
+            recommended_action=_RECOMMENDED_ACTION_BY_CATEGORY.get(category, ""),
+            readiness_impact=_READINESS_IMPACT_BY_SEVERITY.get(
+                severity, ReadinessImpact.INFORMATIONAL
+            ),
+            location=location,
+            affected_objects=[
+                AffectedObject(
+                    object_id=location.get("source_field", ""),
+                    object_type="FieldEndpoint",
+                    role="source",
+                ),
+                AffectedObject(
+                    object_id=(
+                        f"{location.get('target_table', '')}."
+                        f"{location.get('target_field', '')}"
+                    ).strip("."),
+                    object_type="FieldEndpoint",
+                    role="target",
+                ),
+            ],
+            evidence_refs=[
+                FindingEvidence(
+                    source_type="mapping_workbook",
+                    source_id=source_id,
+                    location={
+                        "sheet": location.get("sheet", ""),
+                        "row": location.get("row", ""),
+                    },
+                    fingerprint=source_id,
+                )
+            ],
+            provenance=FindingProvenance(
+                detection_mode=FindingDetectionMode.DETERMINISTIC,
+                rule_id=f"mapping_workbook_{category}",
+                rule_version=__version__,
+                source_module="modelops_core.run.migration_assessment",
+            ),
+        )
 
     for row in profile.missing_owner_rows:
         findings.append(
-            {
-                "id": _stable_id("mapping", "missing_owner", row["sheet"], row["row"]),
-                "category": "missing_owner",
-                "severity": _SEVERITY_BY_CATEGORY["missing_owner"],
-                "source": "mapping_profile",
-                "location": row,
-                "message": f"Missing owner in '{row['sheet']}' row {row['row']}.",
-            }
+            _make_finding(
+                _stable_id("mapping", "missing_owner", row["sheet"], row["row"]),
+                "missing_owner",
+                row,
+                f"Missing owner in '{row['sheet']}' row {row['row']}.",
+            ).to_dict()
         )
 
     for row in profile.missing_mapping_rows:
         findings.append(
-            {
-                "id": _stable_id("mapping", "missing_mapping", row["sheet"], row["row"]),
-                "category": "missing_mapping",
-                "severity": _SEVERITY_BY_CATEGORY["missing_mapping"],
-                "source": "mapping_profile",
-                "location": row,
-                "message": (f"Missing target mapping in '{row['sheet']}' row {row['row']}."),
-            }
+            _make_finding(
+                _stable_id("mapping", "missing_mapping", row["sheet"], row["row"]),
+                "missing_mapping",
+                row,
+                f"Missing target mapping in '{row['sheet']}' row {row['row']}.",
+            ).to_dict()
         )
 
     for row in profile.obsolete_rows:
         findings.append(
-            {
-                "id": _stable_id("mapping", "obsolete_field", row["sheet"], row["row"]),
-                "category": "obsolete_field",
-                "severity": _SEVERITY_BY_CATEGORY["obsolete_field"],
-                "source": "mapping_profile",
-                "location": row,
-                "message": f"Obsolete field in '{row['sheet']}' row {row['row']}.",
-            }
+            _make_finding(
+                _stable_id("mapping", "obsolete_field", row["sheet"], row["row"]),
+                "obsolete_field",
+                row,
+                f"Obsolete field in '{row['sheet']}' row {row['row']}.",
+            ).to_dict()
         )
 
     for row in profile.validation_coverage_gaps:
         findings.append(
-            {
-                "id": _stable_id("mapping", "validation_coverage_gap", row["sheet"], row["row"]),
-                "category": "validation_coverage_gap",
-                "severity": _SEVERITY_BY_CATEGORY["validation_coverage_gap"],
-                "source": "mapping_profile",
-                "location": row,
-                "message": (
+            _make_finding(
+                _stable_id("mapping", "validation_coverage_gap", row["sheet"], row["row"]),
+                "validation_coverage_gap",
+                row,
+                (
                     f"Conditional rule without validation coverage in "
                     f"'{row['sheet']}' row {row['row']}."
                 ),
-            }
+            ).to_dict()
         )
 
     for row in profile.unresolved_decisions:
         findings.append(
-            {
-                "id": _stable_id("decision", "unresolved", row["sheet"], row["row"]),
-                "category": "unresolved_decision",
-                "severity": _SEVERITY_BY_CATEGORY["unresolved_decision"],
-                "source": "mapping_profile",
-                "location": row,
-                "message": (f"Unresolved decision in '{row['sheet']}' row {row['row']}."),
-            }
+            _make_finding(
+                _stable_id("decision", "unresolved", row["sheet"], row["row"]),
+                "unresolved_decision",
+                row,
+                f"Unresolved decision in '{row['sheet']}' row {row['row']}.",
+            ).to_dict()
         )
 
     for conflict in profile.conflicting_decisions:
         topic = conflict.get("topic", "unknown")
         findings.append(
-            {
-                "id": _stable_id("decision", "conflict", topic),
-                "category": "conflicting_decision",
-                "severity": _SEVERITY_BY_CATEGORY["conflicting_decision"],
-                "source": "mapping_profile",
-                "location": conflict,
-                "message": f"Conflicting decisions on topic '{topic}'.",
-            }
+            _make_finding(
+                _stable_id("decision", "conflict", topic),
+                "conflicting_decision",
+                conflict,
+                f"Conflicting decisions on topic '{topic}'.",
+            ).to_dict()
         )
 
     for row in profile.duplicate_target_rows:
         findings.append(
-            {
-                "id": _stable_id("mapping", "duplicate_target", row["sheet"], row["row"]),
-                "category": "duplicate_target",
-                "severity": _SEVERITY_BY_CATEGORY["duplicate_target"],
-                "source": "mapping_profile",
-                "location": row,
-                "message": (
-                    f"Duplicate target representation in '{row['sheet']}' row {row['row']}."
-                ),
-            }
+            _make_finding(
+                _stable_id("mapping", "duplicate_target", row["sheet"], row["row"]),
+                "duplicate_target",
+                row,
+                f"Duplicate target representation in '{row['sheet']}' row {row['row']}.",
+            ).to_dict()
         )
 
     return findings
@@ -196,13 +265,40 @@ class MappingWorkbookProfile:
 
 
 @dataclass
+class AssessmentRunIdentity:
+    """Reproducible identity for a single assessment run."""
+
+    run_id: str
+    core_version: str
+    schema_version: str
+    domain_packs: list[str]
+    repo_commit: str | None
+    command: str
+
+
+@dataclass
+class InputFingerprints:
+    """Content fingerprints for all assessment inputs."""
+
+    mapping: dict[str, Any]
+    dataset: dict[str, Any] | None
+    evidence: list[dict[str, Any]]
+    repo_state: dict[str, Any]
+    config: dict[str, Any]
+
+
+@dataclass
 class MigrationAssessmentManifest:
     """Machine-readable manifest for a migration assessment run."""
 
+    run_id: str
     martenweave_version: str
+    schema_version: str
     repo_name: str
     repo_path: str
     inputs: dict[str, Any]
+    fingerprints: InputFingerprints
+    run_identity: AssessmentRunIdentity
     stage_statuses: list[StageStatus]
     generated_artifacts: list[dict[str, Any]]
     generated_at: str
@@ -215,6 +311,138 @@ def _file_hash(path: Path) -> str:
         for chunk in iter(lambda: f.read(8192), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def _repo_commit(repo_root: Path) -> str | None:
+    """Return the current Git commit hash if available."""
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:  # pragma: no cover - best effort
+        pass
+    return None
+
+
+def _canonical_repo_state_fingerprint(repo_root: Path) -> dict[str, Any]:
+    """Return a stable fingerprint of canonical object content.
+
+    Hashes every canonical Markdown/YAML file and sorts by relative path so the
+    fingerprint is stable regardless of filesystem traversal order.
+    """
+    model_path = resolve_model_path(repo_root)
+    entries: list[dict[str, Any]] = []
+    if model_path.exists():
+        for path in sorted(model_path.rglob("*")):
+            if path.is_file() and path.suffix in {".md", ".yaml", ".yml"}:
+                rel = path.relative_to(model_path).as_posix()
+                entries.append({"path": rel, "sha256": _file_hash(path)})
+    return {
+        "model_path": str(model_path.relative_to(repo_root).as_posix()),
+        "object_count": len(entries),
+        "objects": entries,
+        "fingerprint": _hash_json_object(entries),
+    }
+
+
+def _hash_json_object(obj: Any) -> str:
+    """Return a deterministic SHA-256 hash of a JSON-serializable object."""
+    payload = json.dumps(obj, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _normalized_workbook_fingerprint(
+    mapping_path: Path,
+    profile: MappingWorkbookProfile,
+) -> dict[str, Any]:
+    """Return a content fingerprint that ignores irrelevant file metadata.
+
+    Uses the raw file hash plus a normalized logical hash built from sheet
+    names, headers, and data rows so that irrelevant timestamp changes do not
+    alter the logical identity of the workbook.
+    """
+    logical_rows: list[dict[str, Any]] = []
+    try:
+        from openpyxl import load_workbook
+
+        wb = load_workbook(mapping_path, data_only=True, read_only=True)
+        for sheet_name in sorted(wb.sheetnames):
+            ws = wb[sheet_name]
+            rows = list(ws.iter_rows(values_only=True))
+            if not rows:
+                continue
+            headers = [str(cell).strip() if cell is not None else "" for cell in rows[0]]
+            data_rows = rows[1:]
+            logical_rows.append(
+                {
+                    "sheet": sheet_name,
+                    "headers": headers,
+                    "rows": [
+                        [str(cell) if cell is not None else "" for cell in row]
+                        for row in data_rows
+                    ],
+                }
+            )
+        wb.close()
+    except Exception:  # pragma: no cover - best effort
+        pass
+
+    logical_fingerprint = _hash_json_object(logical_rows)
+    return {
+        "file_path": str(mapping_path),
+        "file_name": mapping_path.name,
+        "file_hash": profile.file_hash,
+        "logical_fingerprint": logical_fingerprint,
+        "sheet_count": len(profile.sheet_names),
+        "total_rows": profile.total_rows,
+    }
+
+
+def _dataset_fingerprint(dataset_path: Path | None) -> dict[str, Any] | None:
+    """Return a fingerprint for an optional dataset file."""
+    if dataset_path is None:
+        return None
+    return {
+        "file_path": str(dataset_path),
+        "file_name": dataset_path.name,
+        "file_hash": _file_hash(dataset_path),
+    }
+
+
+def _evidence_fingerprints(evidence_paths: list[Path]) -> list[dict[str, Any]]:
+    """Return fingerprints for evidence files."""
+    return [
+        {
+            "file_path": str(path),
+            "file_name": path.name,
+            "file_hash": _file_hash(path),
+        }
+        for path in evidence_paths
+        if path.exists()
+    ]
+
+
+def _config_fingerprint(config: RepoConfig | None) -> dict[str, Any]:
+    """Return a fingerprint for repository configuration."""
+    if config is None:
+        return {"schema_version": CURRENT_SCHEMA_VERSION, "fingerprint": ""}
+    payload = {
+        "schema_version": config.schema_version,
+        "enabled_domain_packs": sorted(config.enabled_domain_packs),
+        "version": config.version,
+    }
+    return {
+        **payload,
+        "fingerprint": _hash_json_object(payload),
+    }
 
 
 def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
@@ -514,12 +742,29 @@ def _write_manifest(
 ) -> Path:
     """Write the manifest as JSON."""
     manifest_path = out_dir / "manifest.json"
-    data = {
+    data: dict[str, Any] = {
+        "run_id": manifest.run_id,
         "martenweave_version": manifest.martenweave_version,
+        "schema_version": manifest.schema_version,
         "repo_name": manifest.repo_name,
         "repo_path": manifest.repo_path,
         "generated_at": manifest.generated_at,
         "inputs": manifest.inputs,
+        "fingerprints": {
+            "mapping": manifest.fingerprints.mapping,
+            "dataset": manifest.fingerprints.dataset,
+            "evidence": manifest.fingerprints.evidence,
+            "repo_state": manifest.fingerprints.repo_state,
+            "config": manifest.fingerprints.config,
+        },
+        "run_identity": {
+            "run_id": manifest.run_identity.run_id,
+            "core_version": manifest.run_identity.core_version,
+            "schema_version": manifest.run_identity.schema_version,
+            "domain_packs": manifest.run_identity.domain_packs,
+            "repo_commit": manifest.run_identity.repo_commit,
+            "command": manifest.run_identity.command,
+        },
         "stage_statuses": [
             {"name": s.name, "status": s.status, "message": s.message}
             for s in manifest.stage_statuses
@@ -559,6 +804,8 @@ def generate_migration_assessment(
     dataset_path: Path | None,
     evidence_paths: list[Path],
     out_dir: Path,
+    run_id: str | None = None,
+    command: str = "modelops run migration-assessment",
 ) -> MigrationAssessmentManifest:
     """Generate a complete migration assessment output package and manifest.
 
@@ -568,6 +815,9 @@ def generate_migration_assessment(
         dataset_path: Optional path to a CSV/XLSX sample dataset.
         evidence_paths: Optional list of evidence file paths.
         out_dir: Directory where all outputs will be written.
+        run_id: Optional stable run identifier. Generated deterministically when
+            omitted based on input fingerprints.
+        command: The command that produced this run.
 
     Returns:
         MigrationAssessmentManifest describing inputs, stage statuses, and artifacts.
@@ -582,6 +832,8 @@ def generate_migration_assessment(
 
     config = load_repo_config(repo_root)
     repo_name = config.name if config else repo_root.name
+    domain_packs = config.enabled_domain_packs if config else []
+    schema_version = config.schema_version if config else CURRENT_SCHEMA_VERSION
 
     statuses: list[StageStatus] = []
     generated_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
@@ -614,6 +866,7 @@ def generate_migration_assessment(
 
     # Stage: mapping workbook profile
     mapping_profile: MappingWorkbookProfile | None = None
+    mapping_fingerprint: dict[str, Any] = {}
     try:
         mapping_profile = _profile_mapping_workbook(mapping_path)
         _stage("mapping_profile", statuses, "success")
@@ -621,6 +874,7 @@ def generate_migration_assessment(
         _stage("mapping_profile", statuses, "failed", message=str(exc))
 
     if mapping_profile is not None:
+        mapping_fingerprint = _normalized_workbook_fingerprint(mapping_path, mapping_profile)
         profile_path = out_dir / "mapping_profile.json"
         profile_path.write_text(
             json.dumps(
@@ -648,7 +902,10 @@ def generate_migration_assessment(
         )
 
         # Stable findings derived from the mapping workbook profile.
-        findings = _build_findings(mapping_profile)
+        findings = _build_findings(
+            mapping_profile,
+            workbook_fingerprint=mapping_fingerprint["logical_fingerprint"],
+        )
         findings_path = out_dir / "findings.json"
         findings_path.write_text(
             json.dumps(
@@ -699,6 +956,44 @@ def generate_migration_assessment(
     except Exception as exc:
         _stage("review_pack", statuses, "failed", message=str(exc))
 
+    # Build stable input fingerprints and run identity
+    fingerprints = InputFingerprints(
+        mapping=mapping_fingerprint if mapping_profile is not None else {},
+        dataset=_dataset_fingerprint(dataset_path),
+        evidence=_evidence_fingerprints(evidence_paths),
+        repo_state=_canonical_repo_state_fingerprint(repo_root),
+        config=_config_fingerprint(config),
+    )
+    run_identity = AssessmentRunIdentity(
+        run_id=run_id or "",
+        core_version=__version__,
+        schema_version=schema_version,
+        domain_packs=domain_packs,
+        repo_commit=_repo_commit(repo_root),
+        command=command,
+    )
+
+    # Generate a deterministic run ID from input fingerprints when not supplied.
+    if not run_identity.run_id:
+        run_identity.run_id = _hash_json_object(
+            {
+                "core_version": run_identity.core_version,
+                "schema_version": run_identity.schema_version,
+                "domain_packs": sorted(run_identity.domain_packs),
+                "fingerprints": {
+                    "mapping": fingerprints.mapping.get("logical_fingerprint", ""),
+                    "dataset": (
+                        fingerprints.dataset.get("file_hash", "")
+                        if fingerprints.dataset
+                        else ""
+                    ),
+                    "evidence": [e.get("file_hash", "") for e in fingerprints.evidence],
+                    "repo_state": fingerprints.repo_state.get("fingerprint", ""),
+                    "config": fingerprints.config.get("fingerprint", ""),
+                },
+            }
+        )
+
     # Collect artifacts and write manifest (including the manifest itself)
     artifacts = _collect_artifacts(out_dir)
     manifest_path_placeholder = {
@@ -708,10 +1003,14 @@ def generate_migration_assessment(
     }
     artifacts.append(manifest_path_placeholder)
     manifest = MigrationAssessmentManifest(
+        run_id=run_identity.run_id,
         martenweave_version=__version__,
+        schema_version=schema_version,
         repo_name=repo_name,
         repo_path=str(repo_root),
         inputs=inputs,
+        fingerprints=fingerprints,
+        run_identity=run_identity,
         stage_statuses=statuses,
         generated_artifacts=artifacts,
         generated_at=generated_at,
