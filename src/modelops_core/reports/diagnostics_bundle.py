@@ -50,9 +50,7 @@ class DiagnosticsBundle:
     command_outputs: dict[str, Any] = field(default_factory=dict)
 
 
-def _load_validation_summary(
-    model_path: Path, enabled_packs: list[str] | None
-) -> dict[str, Any]:
+def _load_validation_summary(model_path: Path, enabled_packs: list[str] | None) -> dict[str, Any]:
     if not model_path.exists():
         return {"ran": False, "reason": "model path not found"}
 
@@ -243,9 +241,7 @@ def _build_command_outputs(
             "reason": freshness.reason,
             "db_mtime": _to_iso(freshness.db_mtime.timestamp() if freshness.db_mtime else None),
             "newest_source_mtime": _to_iso(
-                freshness.newest_source_mtime.timestamp()
-                if freshness.newest_source_mtime
-                else None
+                freshness.newest_source_mtime.timestamp() if freshness.newest_source_mtime else None
             ),
             "stale_sources": freshness.stale_sources,
             "hash_mismatch": freshness.hash_mismatch,
@@ -374,9 +370,7 @@ def write_diagnostics_bundle(
     }
 
     for name, data in files_to_write.items():
-        (out_dir / name).write_text(
-            json.dumps(data, indent=2, default=str), encoding="utf-8"
-        )
+        (out_dir / name).write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
 
     if bundle.command_outputs:
         commands_dir = out_dir / "commands"

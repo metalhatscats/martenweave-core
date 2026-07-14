@@ -60,3 +60,10 @@ Useful issues include:
 - Reproduction steps when reporting a bug
 
 The repository issue templates are structured around that format.
+
+## Contribution Licensing
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in
+Martenweave Core is provided under Apache License 2.0, consistent with Section 5 of the license.
+You must have the right to submit the work. Third-party code or content must retain all required
+license and attribution notices. No contributor license agreement is currently required.

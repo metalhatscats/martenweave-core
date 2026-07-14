@@ -83,7 +83,7 @@ Do not release if:
 
 ## Tagging Decision
 
-`v0.4.1` is the published public release. For future releases, push a tag only after local
+`v0.5.0` is the planned Apache-licensed release. Push the tag only after local
 validation passes and the PyPI trusted-publisher setup is confirmed:
 
 ```bash

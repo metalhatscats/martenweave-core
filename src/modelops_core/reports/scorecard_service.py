@@ -586,9 +586,7 @@ def generate_scorecard(
                 f"target SAP FieldEndpoints have attribute linkage."
             )
             sap_suggested_action = (
-                "Link attributes to SAP FieldEndpoints."
-                if sap_with_attribute < sap_total
-                else None
+                "Link attributes to SAP FieldEndpoints." if sap_with_attribute < sap_total else None
             )
         else:
             sap_value = 0.0

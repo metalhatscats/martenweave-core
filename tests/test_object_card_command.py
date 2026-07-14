@@ -68,9 +68,7 @@ class TestObjectCardService:
         assert any(r["object_id"] == "FEP-TEST" for r in card.incoming["has_attribute"])
         # ATTR-TEST references DOMAIN-TEST via "belongs_to_domain".
         assert "belongs_to_domain" in card.outgoing
-        assert any(
-            r["object_id"] == "DOMAIN-TEST" for r in card.outgoing["belongs_to_domain"]
-        )
+        assert any(r["object_id"] == "DOMAIN-TEST" for r in card.outgoing["belongs_to_domain"])
 
     def test_unknown_object_returns_unknown_card(self, tmp_path: Path) -> None:
         repo_root = _build_minimal_repo(tmp_path)

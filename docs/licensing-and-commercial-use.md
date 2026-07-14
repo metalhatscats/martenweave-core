@@ -1,40 +1,41 @@
 # Licensing and Commercial Use
 
-This page records the current licensing reality and the recommended commercial path after the
-`0.4.1` public release.
+Martenweave Core is open-source software licensed under
+[Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 
-## Current License
+## Permitted Use
 
-Martenweave Core is currently licensed under the MIT License:
+Apache License 2.0 permits use, modification, embedding, and distribution, including for internal,
+production, consulting, client-project, and commercial purposes, subject to its terms. The license
+also includes an explicit patent grant from contributors.
 
-- `LICENSE` contains the MIT License text.
-- `pyproject.toml` declares `license = "MIT"`.
-- MIT permits commercial use, copying, modification, distribution, sublicensing, and sale, as long
-  as the copyright and license notice are included.
+The authoritative terms are in the repository `LICENSE` file. The `NOTICE` file contains the
+project attribution that must be preserved when the license requires it.
 
-This means the current core package cannot honestly be described as non-commercial-only or
-source-available. Any public website, release note, package metadata, or pilot document should state
-the MIT reality instead of implying that a paid license is required to use the current core.
+## Optional Commercial Services
 
-## Commercial Use and Future Offerings
+The Core does not require a paid license. Organizations may deploy and extend it themselves.
 
-Martenweave Core remains MIT-licensed open source. Commercial offerings may include implementation
-support, private SAP/MDM domain packs, enterprise validation packs, a hosted workbench, custom
-integrations, and support SLAs.
+Organizations may separately engage the Martenweave team for:
 
-Future extensions, templates, packs, or hosted services may be distributed under separate
-commercial terms. Those commercial terms must be scoped to the separate offering and must not imply
-that the current MIT core requires a paid license.
+- implementation and migration assessments;
+- SAP/MDM domain modelling and private domain packs;
+- enterprise validation packs and custom integrations;
+- support, training, and design-partner engagements;
+- future hosted services and managed Workbench offerings.
 
-## Contribution Licensing
+These optional services add expertise, delivery capacity, or managed functionality without
+reducing the rights granted for Martenweave Core.
 
-By contributing to Martenweave Core, contributors agree their contribution is licensed under the
-same MIT License as the project. No separate contributor license agreement is required at this
-stage.
+## Contributions
 
-## Public Wording Guardrails
+Unless explicitly stated otherwise, contributions intentionally submitted for inclusion are
+licensed under Apache License 2.0, consistent with Section 5. Contributors must have the right to
+submit their work and must preserve required third-party licensing and attribution information. No
+contributor license agreement is currently required.
 
-- Keep `martenweave-core` under MIT.
-- Do not claim that company pilots, consulting use, internal production use, or redistribution
-  require a paid license under the current MIT core.
-- Mark any future commercial extensions, private packs, or hosted services as separate offerings.
+## Historical Release
+
+Version 0.4.1 was originally distributed under MIT. The current supported release and all active
+development are licensed under Apache License 2.0. Existing copies of 0.4.1 retain the terms under
+which they were received.

@@ -87,8 +87,7 @@ class TestDiagnosticsExport:
         assert result.exit_code == 0, result.output
 
         bundle_text = "\n".join(
-            p.read_text(encoding="utf-8", errors="ignore")
-            for p in _text_files(out_dir)
+            p.read_text(encoding="utf-8", errors="ignore") for p in _text_files(out_dir)
         )
         assert "cust001@example.com" not in bundle_text
         assert "1000001" not in bundle_text

@@ -43,22 +43,12 @@ def _build_minimal_repo(tmp_path: Path) -> Path:
     )
 
     (model_dir / "DOMAIN-TEST.md").write_text(
-        "---\n"
-        "id: DOMAIN-TEST\n"
-        "type: MasterDataDomain\n"
-        "status: draft\n"
-        "name: Test Domain\n"
-        "---\n",
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n",
         encoding="utf-8",
     )
 
     (model_dir / "PERSON-OWNER.md").write_text(
-        "---\n"
-        "id: PERSON-OWNER\n"
-        "type: Person\n"
-        "status: active\n"
-        "name: Test Owner\n"
-        "---\n",
+        "---\nid: PERSON-OWNER\ntype: Person\nstatus: active\nname: Test Owner\n---\n",
         encoding="utf-8",
     )
 
@@ -104,9 +94,7 @@ class TestDatasetReadinessWorkflow:
         dataset = tmp_path / "customers.csv"
         _write_csv(dataset, ["CUSTOMER_GROUP"], [["A"], ["B"]])
 
-        result = runner.invoke(
-            app, ["profile-dataset", str(dataset), "--repo", str(repo)]
-        )
+        result = runner.invoke(app, ["profile-dataset", str(dataset), "--repo", str(repo)])
         assert result.exit_code == 0, result.output
 
         profile_path = repo / "generated" / "dataset_profiles" / "customers.json"
@@ -168,9 +156,7 @@ class TestDatasetReadinessWorkflow:
             encoding="utf-8",
         )
 
-        result = runner.invoke(
-            app, ["gaps", str(dataset), "--repo", str(repo), "--json"]
-        )
+        result = runner.invoke(app, ["gaps", str(dataset), "--repo", str(repo), "--json"])
         assert result.exit_code == 0, result.output
         data = json.loads(result.output)
         assert data["stale_index_warning"] is True

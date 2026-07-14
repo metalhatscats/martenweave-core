@@ -129,4 +129,4 @@ npm run lint
 
 ## License
 
-Same as Martenweave Core: MIT.
+Same as Martenweave Core: Apache License 2.0.

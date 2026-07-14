@@ -18,7 +18,7 @@ def _build_minimal_repo(tmp_path: Path) -> Path:
     repo_root.mkdir()
 
     config_path = repo_root / "modelops.config.yaml"
-    config_path.write_text("schema_version: \"1.0\"\nworkspace_name: Test\n", encoding="utf-8")
+    config_path.write_text('schema_version: "1.0"\nworkspace_name: Test\n', encoding="utf-8")
 
     model_dir = repo_root / "model"
     model_dir.mkdir()
@@ -94,9 +94,7 @@ class _InvalidAdapter:
 class TestProductOwnerAgent:
     def test_empty_input_returns_error(self) -> None:
         agent = ProductOwnerAgent(dry_run=True)
-        result = agent.run(
-            ProductOwnerInput(source_type="note", raw_text="   ", repo_root=None)
-        )
+        result = agent.run(ProductOwnerInput(source_type="note", raw_text="   ", repo_root=None))
         assert result.success is False
         assert result.iterations == 0
         assert result.error_message is not None

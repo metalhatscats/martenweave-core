@@ -51,8 +51,7 @@ class TestExtractCommandPath:
     def test_unknown_first_token(self) -> None:
         valid = {"validate"}
         assert (
-            _extract_command_path("modelops stale-command --repo ./x", 0, valid)
-            == "stale-command"
+            _extract_command_path("modelops stale-command --repo ./x", 0, valid) == "stale-command"
         )
 
     def test_ignores_modelops_core_references(self) -> None:
@@ -64,9 +63,7 @@ class TestExtractCommandPath:
 
     def test_ignores_modelops_config_file_references(self) -> None:
         valid = {"validate"}
-        assert (
-            _extract_command_path("Edit `modelops.config.yaml` to configure", 0, valid) is None
-        )
+        assert _extract_command_path("Edit `modelops.config.yaml` to configure", 0, valid) is None
 
 
 class TestValidCommands:

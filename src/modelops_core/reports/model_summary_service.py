@@ -87,9 +87,7 @@ class ModelSummaryReport:
     evidence: list[str]
 
 
-def _objects_in_scope(
-    conn: sqlite3.Connection, domain_id: str | None
-) -> list[dict[str, Any]]:
+def _objects_in_scope(conn: sqlite3.Connection, domain_id: str | None) -> list[dict[str, Any]]:
     """Return objects in the given domain, or all objects if no domain."""
     if domain_id:
         rows = conn.execute(
@@ -250,9 +248,7 @@ def _load_issues_and_decisions(
     return issues, decisions
 
 
-def _validation_summary_for_scope(
-    conn: sqlite3.Connection, object_ids: set[str]
-) -> dict[str, Any]:
+def _validation_summary_for_scope(conn: sqlite3.Connection, object_ids: set[str]) -> dict[str, Any]:
     if not object_ids:
         return {"error_count": 0, "warning_count": 0, "info_count": 0, "by_code": {}}
 
@@ -305,9 +301,7 @@ def _collect_owners(objects: list[dict[str, Any]]) -> list[str]:
     return sorted(owners)
 
 
-def _coverage_gaps_for_scope(
-    db_path: Path, object_ids: set[str]
-) -> list[CoverageGap]:
+def _coverage_gaps_for_scope(db_path: Path, object_ids: set[str]) -> list[CoverageGap]:
     if not object_ids:
         return []
 
@@ -493,12 +487,8 @@ def model_summary_to_markdown(report: ModelSummaryReport) -> str:
         lines.append("| Attribute | Status | Source fields | Target fields | Open issues |")
         lines.append("|-----------|--------|---------------|---------------|-------------|")
         for attr in report.attributes:
-            src = ", ".join(
-                f"`{e['object_id']}`" for e in attr.source_endpoints
-            ) or "—"
-            tgt = ", ".join(
-                f"`{e['object_id']}`" for e in attr.target_endpoints
-            ) or "—"
+            src = ", ".join(f"`{e['object_id']}`" for e in attr.source_endpoints) or "—"
+            tgt = ", ".join(f"`{e['object_id']}`" for e in attr.target_endpoints) or "—"
             issues = str(len(attr.open_issues)) if attr.open_issues else "—"
             name = attr.name or attr.object_id
             lines.append(
@@ -542,9 +532,7 @@ def model_summary_to_markdown(report: ModelSummaryReport) -> str:
             vm = f"`{m.value_mapping}`" if m.value_mapping else "—"
             src = f"`{m.source_endpoint}`" if m.source_endpoint else "—"
             tgt = f"`{m.target_endpoint}`" if m.target_endpoint else "—"
-            lines.append(
-                f"| `{m.object_id}` {m.name or ''} | {src} | {tgt} | {vm} |"
-            )
+            lines.append(f"| `{m.object_id}` {m.name or ''} | {src} | {tgt} | {vm} |")
         lines.append("")
 
     vs = report.validation_summary

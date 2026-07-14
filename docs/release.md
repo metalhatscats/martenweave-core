@@ -87,22 +87,22 @@ The release guard strips a leading `v` from the tag and compares the remainder t
 
 | Tag | `pyproject.toml` version | Result |
 |---|---|---|
-| `v0.4.1` | `0.4.1` | ✅ passes |
-| `0.4.1` | `0.4.1` | ✅ passes |
-| `v0.4.1a1` | `0.4.1` | ❌ fails — cannot publish a pre-release tag from a stable package version |
-| `v0.4.2` | `0.4.1` | ❌ fails — tag and package versions differ |
+| `v0.5.0` | `0.5.0` | ✅ passes |
+| `0.5.0` | `0.5.0` | ✅ passes |
+| `v0.5.0a1` | `0.5.0` | ❌ fails — cannot publish a pre-release tag from a stable package version |
+| `v0.5.1` | `0.5.0` | ❌ fails — tag and package versions differ |
 
 To publish a pre-release (e.g. for a dry-run on a real tag), bump the package version
 to the same pre-release version first:
 
 ```bash
-# pyproject.toml: version = "0.4.2a1"
-git tag -a v0.4.2a1 -m "Pre-release v0.4.2a1"
-git push origin v0.4.2a1
+# pyproject.toml: version = "0.5.1a1"
+git tag -a v0.5.1a1 -m "Pre-release v0.5.1a1"
+git push origin v0.5.1a1
 ```
 
 This prevents a pre-release tag from accidentally publishing a stable version such as
-`0.4.1` to PyPI.
+`0.5.0` to PyPI.
 
 ### Dry-run release tests
 

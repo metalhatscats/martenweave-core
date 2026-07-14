@@ -164,9 +164,7 @@ _TYPE_SEARCH_EXTRAS: dict[str, tuple[str, ...]] = {
 }
 
 
-def _combine_search_fields(
-    base: tuple[str, ...], extras: tuple[str, ...]
-) -> tuple[str, ...]:
+def _combine_search_fields(base: tuple[str, ...], extras: tuple[str, ...]) -> tuple[str, ...]:
     """Return a deduplicated tuple preserving base order then extras."""
     seen: set[str] = set()
     combined: list[str] = []
@@ -596,11 +594,7 @@ def get_search_fields(type_id: str | None = None) -> tuple[str, ...]:
     if type_id is None:
         return _combine_search_fields(
             _COMMON_SEARCH_FIELDS,
-            tuple(
-                field
-                for extras in _TYPE_SEARCH_EXTRAS.values()
-                for field in extras
-            ),
+            tuple(field for extras in _TYPE_SEARCH_EXTRAS.values() for field in extras),
         )
     entry = _REGISTRY.get(type_id)
     if entry is None or not entry.search_fields:

@@ -47,6 +47,7 @@ from typing import Any
 import pytest
 from typer.testing import CliRunner
 
+from modelops_core import __version__
 from modelops_core.cli import app
 
 runner = CliRunner()
@@ -1063,13 +1064,13 @@ class TestVersionMetadata:
     def test_version_flag(self) -> None:
         result = runner.invoke(app, ["--version"])
         assert result.exit_code == 0
-        assert "0.4.1" in result.output
+        assert __version__ in result.output
 
     def _assert_report_has_version(self, args: list[str]) -> None:
         result = runner.invoke(app, args)
         assert result.exit_code == 0
         data = _parse_json(result)
-        assert data.get("martenweave_version") == "0.4.1"
+        assert data.get("martenweave_version") == __version__
 
     def test_scorecard_json_has_version(self, indexed_repo: Path) -> None:
         self._assert_report_has_version(["scorecard", "--repo", str(indexed_repo), "--json"])
