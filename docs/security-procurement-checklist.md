@@ -79,12 +79,12 @@
 
 | Concern | Current State | Planned |
 |---|---|---|
-| **Source code availability** | Open-source Python; inspect everything in `src/` | Stays open-core |
+| **Source code availability** | Source-available Python; inspect everything in `src/` | Remains inspectable |
 | **Vendor lock-in** | Canonical files are plain Markdown/YAML; migrate by copying files | No proprietary format planned |
 | **Exit cost** | Zero. Your data is in text files on your disk | Stays zero |
-| **Support model** | Community (GitHub issues) + optional paid facilitation | Team support tier planned |
-| **SLA** | None for open-core | SLA considered for future Team Workspace |
-| **Pricing transparency** | CLI is free; services priced per statement of work | Team Workspace pricing will be public |
+| **Support model** | GitHub issues + optional pilot or commercial support | Team support tier planned |
+| **SLA** | None under the evaluation license | SLA considered for commercial terms |
+| **Pricing transparency** | Evaluation is free; pilots may be no-cost by agreement | Commercial terms are scoped per use case |
 | **Security questionnaire** | This checklist is the current answer set | Will expand as enterprise features are built |
 
 ---
@@ -119,4 +119,3 @@ These are not yet implemented. Do not promise them:
 - SOC 2, ISO 27001, or FedRAMP certification
 - Real-time multi-user editing with conflict resolution
 - Data loss prevention (DLP) integration
-

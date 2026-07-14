@@ -1,40 +1,62 @@
 # Licensing and Commercial Use
 
-This page records the current licensing reality and the recommended commercial path after the
-`0.4.1` public release.
+Martenweave Core is source-available software offered under a trial-first licensing model.
 
-## Current License
+## Evaluation License
 
-Martenweave Core is currently licensed under the MIT License:
+The current source is licensed under the
+[PolyForm Free Trial License 1.0.0](https://polyformproject.org/licenses/free-trial/1.0.0),
+included in `LICENSE`. It permits you or your company to evaluate the software for less than 32
+consecutive calendar days.
 
-- `LICENSE` contains the MIT License text.
-- `pyproject.toml` declares `license = "MIT"`.
-- MIT permits commercial use, copying, modification, distribution, sublicensing, and sale, as long
-  as the copyright and license notice are included.
+The evaluation license does not grant permission for production use, ongoing internal business
+operations, client delivery, consulting engagements, redistribution, sublicensing, or use beyond
+the trial period.
 
-This means the current core package cannot honestly be described as non-commercial-only or
-source-available. Any public website, release note, package metadata, or pilot document should state
-the MIT reality instead of implying that a paid license is required to use the current core.
+## Free Pilot Agreements
 
-## Commercial Use and Future Offerings
+We are glad to support suitable pilot and design-partner projects at no license fee. A pilot may
+run longer than the standard evaluation period or use real project workflows, but it requires a
+written pilot agreement that defines its scope, duration, participants, data-handling boundaries,
+and permitted use.
 
-Martenweave Core remains MIT-licensed open source. Commercial offerings may include implementation
-support, private SAP/MDM domain packs, enterprise validation packs, a hosted workbench, custom
-integrations, and support SLAs.
+Free pilots are considered case by case. We may ask for structured feedback, outcome evidence, or
+permission to publish a mutually approved and sanitized case study. No customer name, confidential
+information, or project data will be published without explicit written approval.
 
-Future extensions, templates, packs, or hosted services may be distributed under separate
-commercial terms. Those commercial terms must be scoped to the separate offering and must not imply
-that the current MIT core requires a paid license.
+## Commercial Licenses
 
-## Contribution Licensing
+A commercial license is required for:
 
-By contributing to Martenweave Core, contributors agree their contribution is licensed under the
-same MIT License as the project. No separate contributor license agreement is required at this
-stage.
+- production use;
+- ongoing use in internal business operations;
+- use to provide paid services or deliver work to a client;
+- use after the evaluation or agreed pilot period;
+- redistribution, embedding, white-labeling, or offering Martenweave as part of another product or
+  service.
 
-## Public Wording Guardrails
+Commercial terms can cover a team, project, consultancy, enterprise deployment, domain pack,
+integration, or support arrangement. Contact the maintainer through
+[LinkedIn](https://www.linkedin.com/in/dkharlanau/) to discuss a free pilot or commercial license.
 
-- Keep `martenweave-core` under MIT.
-- Do not claim that company pilots, consulting use, internal production use, or redistribution
-  require a paid license under the current MIT core.
-- Mark any future commercial extensions, private packs, or hosted services as separate offerings.
+## Previously Released Versions
+
+Versions already released under MIT remain available under the MIT terms that accompanied those
+copies. In particular, the published `martenweave-core` 0.4.1 artifacts and the corresponding Git
+tag remain MIT-licensed. An open-source license already granted for an existing copy cannot be
+withdrawn retroactively.
+
+The current repository source and future releases use the license in the current `LICENSE` file.
+Do not describe them as open source: the commercial-use restriction means they are
+**source-available**, not OSI-approved open-source software.
+
+## Contributions
+
+The evaluation license does not by itself give Martenweave the rights needed to include an
+external contribution in commercial releases. Maintainers may require a separate contributor
+agreement before accepting a pull request. Opening an issue or submitting a proposal does not
+guarantee that a contribution can be merged.
+
+This page is a plain-language summary. If it conflicts with `LICENSE` or a signed agreement, the
+license or signed agreement controls. This is not legal advice; have counsel review the licensing
+model and pilot agreement before relying on them commercially.

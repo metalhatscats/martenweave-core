@@ -1,17 +1,17 @@
 # Commercial Packaging and Pricing Hypotheses
 
-> How Martenweave could be packaged and priced without weakening trust or over-monetizing too early.
+> How Martenweave can pair public source and low-friction pilots with sustainable commercial terms.
 
 ---
 
 ## Principle
 
-**Open core drives adoption.  Paid value accelerates outcomes.**
+**Public source builds trust. Pilots prove value. Commercial licenses sustain the product.**
 
-The CLI, validation engine, and canonical model format are currently MIT-licensed. MIT permits
-commercial use. Paid offerings should add convenience, collaboration, facilitation, templates,
-future proprietary products, or expert support -- not imply that the current MIT core requires a
-paid license.
+The CLI, validation engine, and canonical model format are source-available under the PolyForm Free
+Trial License 1.0.0. Evaluation for less than 32 consecutive days is permitted. Production,
+ongoing internal, client, redistribution, and other commercial use requires a written license.
+Suitable pilots may receive a no-cost license under a written pilot agreement.
 
 For the explicit licensing decision record, see
 [licensing-and-commercial-use.md](licensing-and-commercial-use.md).
@@ -20,7 +20,7 @@ For the explicit licensing decision record, see
 
 ## Packaging Options
 
-### 1. MIT Core CLI (Free, Commercial Use Allowed)
+### 1. Core CLI Evaluation (Free for Less Than 32 Days)
 
 | What | Included |
 |---|---|
@@ -31,11 +31,11 @@ For the explicit licensing decision record, see
 | AI scaffold | NoProviderAdapter (deterministic) |
 | Telemetry | Local usage and AI usage event logging |
 
-**Why free**: A data model registry is infrastructure. Locking basic documentation behind a paywall
-destroys trust with data architects. Under the current MIT license, commercial use of the core is
-allowed; paid work must be positioned as optional services, support, templates, or future products.
+**Why the evaluation is free**: A data model registry must be inspectable and testable before a
+team can trust it. The evaluation period supports technical due diligence without granting an
+indefinite production or commercial-use license.
 
-### 2. Team Pilot Package (Paid Facilitation, Optional)
+### 2. Team Pilot Package (No-Cost License Available by Agreement)
 
 | What | Included |
 |---|---|
@@ -44,7 +44,8 @@ allowed; paid work must be positioned as optional services, support, templates, 
 | Validation | Health report, scorecard, gap analysis |
 | Deliverables | Excel review workbook, Git bundle, gap report |
 
-**Pricing hypothesis**: $2,000–$5,000 one-time  
+**Pricing hypothesis**: License fee may be waived for selected design partners; facilitated
+delivery is $2,000–$5,000 one-time
 **Target**: Teams that want to prove value fast without internal expertise  
 **Risk**: Services revenue does not scale; use it to learn and earn trust, not as the long-term model
 
@@ -59,7 +60,7 @@ allowed; paid work must be positioned as optional services, support, templates, 
 | Support | Email support, 48-hour response |
 
 **Pricing hypothesis**: $500–$2,000/month per team (10–25 users), for future hosted/team
-functionality rather than the current MIT core
+functionality and a commercial license appropriate to the deployment
 **Target**: Teams that have completed a pilot and want to scale  
 **Risk**: Building a web UI is significant scope; defer until CLI adoption is proven
 
@@ -89,9 +90,9 @@ functionality rather than the current MIT core
 
 ---
 
-## What Stays Free
+## What Is Available During Evaluation or an Approved Pilot
 
-Removing these from the free tier would hurt adoption:
+These capabilities remain available for evaluation and within the scope of a written pilot:
 
 - Canonical file format and object type definitions
 - Deterministic validation (Layer 1–3)
@@ -100,9 +101,10 @@ Removing these from the free tier would hurt adoption:
 - Local usage and AI usage telemetry
 - Git-based collaboration (by nature of the format)
 
-## What Could Be Paid
+## What Requires Commercial Terms
 
-These add value without breaking the open-core promise:
+Commercial terms cover production, ongoing internal, client-delivery, redistribution, or embedded
+use. They may also include:
 
 - Facilitated pilots and onboarding
 - Web-based review and collaboration UI
@@ -118,18 +120,18 @@ These add value without breaking the open-core promise:
 
 | Risk | Mitigation |
 |---|---|
-| **Over-monetizing too early** | Keep CLI free; charge only for services and convenience |
+| **Over-monetizing too early** | Keep evaluation friction low and approve strong design-partner pilots at no license fee |
 | **Under-pricing services** | Track facilitator hours; raise prices if pilots consistently over-deliver |
 | **Competitors undercut on price** | Compete on trust, local-first, and Git-native workflow, not price |
 | **Enterprise buyers want procurement-friendly terms** | Offer annual billing and pilot-to-contract path after Team Workspace exists |
-| **Teams expect AI for free** | NoProviderAdapter is free; external provider calls require the user's own API key — no markup |
+| **Teams expect AI for free** | External provider calls use the user's own API key; software-use rights still follow the applicable license |
 
 ---
 
 ## Recommended Sequence
 
-1. **Now**: Open-core CLI + free self-service pilot
-2. **After 5–10 pilots**: Introduce paid pilot facilitation ($2K–$5K)
+1. **Now**: Free time-limited evaluation + no-cost design-partner pilots by written agreement
+2. **After 5–10 pilots**: Standardize commercial licenses and paid facilitation ($2K–$5K)
 3. **After 10+ team adoptions**: Design Team Workspace web UI; price at $500–$2K/month
 4. **After Team Workspace revenue**: Build Enterprise edition with SSO, RBAC, SOC-2
 

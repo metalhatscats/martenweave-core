@@ -1,10 +1,10 @@
-# Open-Source Readiness Notes
+# Public Source Readiness Notes
 
 This document records the minimum public-readiness expectations for Martenweave Core.
 
 ## Current State
 
-- License: MIT, in `LICENSE`.
+- License: PolyForm Free Trial License 1.0.0, in `LICENSE`.
 - Package metadata: `pyproject.toml` declares README, license, keywords, and classifiers.
 - Contribution path: `CONTRIBUTING.md` and GitHub issue templates.
 - Security reporting: `SECURITY.md`.
@@ -32,6 +32,11 @@ Do claim, when verified:
 - search/query/trace/impact workflows
 - proposal-first AI governance
 - local-first architecture
+- source availability for inspection and time-limited evaluation
+
+Do not describe current repository source or future releases as open source. Their commercial-use
+restrictions make them source-available. Previously published MIT-licensed versions remain open
+source under the terms shipped with those copies.
 
 ## Repository Hygiene
 

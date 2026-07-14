@@ -24,6 +24,11 @@ All notable changes to Martenweave Core.
 
 ### Changed
 
+- **Source licensing**: current repository source moved from MIT to the PolyForm Free Trial License
+  1.0.0. Evaluation for less than 32 consecutive days remains permitted; production, ongoing
+  internal, client, redistribution, and other commercial use requires written permission. Free
+  pilots may be approved under a written pilot agreement. Previously released MIT-licensed copies,
+  including 0.4.1, remain MIT-licensed.
 - **Workspace home**: reframed the initial experience around the canonical model ledger and active
   migration work instead of a chat-first surface.
 - **Proposal safety**: made deterministic validation, human approval, and local audit behavior

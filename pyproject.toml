@@ -1,10 +1,10 @@
 [project]
 name = "martenweave-core"
-version = "0.4.1"
-description = "Open-source model governance pipeline core for SAP migration, MDM, and data governance."
+version = "0.5.0.dev0"
+description = "Source-available model governance pipeline for SAP migration, MDM, and data governance."
 readme = "README.md"
 requires-python = ">=3.11"
-license = "MIT"
+license = "LicenseRef-PolyForm-Free-Trial-1.0.0"
 keywords = [
   "data-governance",
   "data-quality",
@@ -15,7 +15,7 @@ keywords = [
   "model-governance-pipeline",
   "model-registry",
   "data-model-registry",
-  "open-source-model-registry",
+  "source-available-model-registry",
   "lineage",
   "impact-analysis",
   "dataset-validation",

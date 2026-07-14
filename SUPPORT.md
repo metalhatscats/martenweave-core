@@ -1,6 +1,6 @@
 # Support
 
-Martenweave Core is early open-source infrastructure for model registry workflows.
+Martenweave Core is early source-available infrastructure for model registry workflows.
 
 ## Where to Ask
 
@@ -8,6 +8,8 @@ Martenweave Core is early open-source infrastructure for model registry workflow
 - Feature work: open a scoped issue with goal, scope, acceptance criteria, and validation command.
 - Scenario contributions: describe the migration, MDM, governance, data quality, or AMS workflow and include synthetic examples when possible.
 - Security concerns: follow `SECURITY.md` and do not post sensitive details publicly.
+- Pilot or commercial licensing: contact the maintainer through
+  [LinkedIn](https://www.linkedin.com/in/dkharlanau/).
 
 ## What to Include
 

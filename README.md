@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/metalhatscats/martenweave-core/actions/workflows/ci.yml/badge.svg)](https://github.com/metalhatscats/martenweave-core/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License: PolyForm Free Trial](https://img.shields.io/badge/license-PolyForm%20Free%20Trial-orange.svg)](LICENSE)
 
-Backend-first, open-source model governance pipeline for SAP migration and Master Data Management.
+Backend-first, source-available model governance pipeline for SAP migration and Master Data Management.
 
 Martenweave turns spreadsheets, datasets, tickets, validation reports, decisions, and SAP context
 into canonical model files, deterministic validation, dataset gap reports, lineage, impact
@@ -12,7 +12,7 @@ analysis, and human-approved AI patch proposals. The model registry is the sourc
 inside this pipeline, not the whole product category.
 
 SAP migration and Master Data Management are the **first domain pack** and proof case, not the
-product boundary. The open-source core also works with generic data models: domains, entities,
+product boundary. The source-available core also works with generic data models: domains, entities,
 attributes, relationships, datasets, mappings, rules, evidence, decisions, and change proposals.
 
 **No hosted or editable product UI is included.** This is a CLI-driven, backend/core library
@@ -26,20 +26,21 @@ replace the CLI-first core workflow.
 
 ## Status
 
-- Current source version: `0.4.1`
+- Current development version: `0.5.0.dev0` (PolyForm Free Trial)
+- Last published PyPI version: `0.4.1` (MIT; its existing license remains unchanged)
 - Package / PyPI name: `martenweave-core`
-- Install from PyPI: `pip install martenweave-core`
+- PyPI currently installs the historical MIT-licensed 0.4.1 release.
 - Source install remains available for contributors and local development.
 - Public site and docs: <https://martenweave.github.io/>
 
 ## Naming
 
 - Product: **Martenweave**
-- Open-source core / PyPI package: `martenweave-core`
+- Source-available core / PyPI package: `martenweave-core`
 - Python module: `modelops_core`
 - CLI commands: `modelops` and `martenweave`
 
-`martenweave-core` is the backend-first open-source core package for the Martenweave product. Use
+`martenweave-core` is the backend-first source-available core package for the Martenweave product. Use
 `martenweave` for new terminal examples and documentation. The existing `modelops` command remains
 supported for backward compatibility with scripts, CI jobs, and early adopters.
 
@@ -61,7 +62,7 @@ supported for backward compatibility with scripts, CI jobs, and early adopters.
 | A backend-first model governance pipeline | A generic workflow platform |
 | A canonical file registry with disposable generated indexes | A hosted MDM platform |
 | A validator-gated, proposal-first model change workflow | A workflow engine or n8n/Zapier/Dify competitor |
-| A local-first CLI and embeddable open-source core | Generic B2B SaaS or a chatbot |
+| A local-first CLI and embeddable source-available core | Generic B2B SaaS or a chatbot |
 | AI-assisted, with human approval required for changes | Autonomous mutation or direct SAP write-back |
 
 ## Why pipeline, not SaaS
@@ -98,6 +99,9 @@ martenweave run dataset-readiness --repo ./model --dataset customers.xlsx --out 
 Martenweave Core requires Python 3.11+.
 
 ### Install from PyPI
+
+PyPI currently serves the historical `0.4.1` release under MIT. These commands install that
+version, not the current source-available development line:
 
 ```bash
 python -m pip install martenweave-core
@@ -366,16 +370,19 @@ Release and public-readiness docs:
 
 ## Licensing and commercial use
 
-Martenweave Core is MIT-licensed open source. Commercial offerings may include implementation
-support, private SAP/MDM domain packs, enterprise validation packs, a hosted workbench, custom
-integrations, and support SLAs. Future extensions, templates, packs, or hosted services may be
-distributed under separate commercial terms.
+Current Martenweave Core source is available under the PolyForm Free Trial License 1.0.0 for
+evaluation of less than 32 consecutive days. Production use, ongoing internal use, client work,
+redistribution, and other commercial use require written permission.
 
-By contributing to Martenweave Core, contributors agree their contribution is licensed under the
-same MIT License as the project. No separate contributor license agreement is required at this
-stage.
+We are glad to offer suitable pilot and design-partner projects at no license fee under a written
+pilot agreement. Contact the maintainer through
+[LinkedIn](https://www.linkedin.com/in/dkharlanau/) to discuss a pilot or commercial license.
+
+Previously published MIT-licensed versions, including 0.4.1, remain MIT-licensed; those grants are
+not revoked retroactively.
 
 ## License
 
-MIT. See [docs/licensing-and-commercial-use.md](docs/licensing-and-commercial-use.md) for the
-current commercial-use clarification and future licensing options.
+PolyForm Free Trial License 1.0.0. See
+[docs/licensing-and-commercial-use.md](docs/licensing-and-commercial-use.md) for evaluation,
+no-cost pilot, commercial-use, and prior-version details.

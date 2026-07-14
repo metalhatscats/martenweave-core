@@ -31,7 +31,7 @@ Both must match before a release commit.
 - [ ] `CHANGELOG.md` is updated for this release
 - [ ] `docs/release.md` is still accurate
 - [ ] Known limitations are current: `docs/known-limitations.md`
-- [ ] Open-source docs exist: `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, `SUPPORT.md`
+- [ ] Public-source and licensing docs exist: `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, `SUPPORT.md`
 - [ ] Local config guard reviewed: `.venv/bin/martenweave config-guard --repo . --json`
 - [ ] Release config guard passes: `.venv/bin/martenweave config-guard --repo . --mode release --json`
 - [ ] No secrets or raw sensitive data in commits

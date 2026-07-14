@@ -129,4 +129,6 @@ npm run lint
 
 ## License
 
-Same as Martenweave Core: MIT.
+Same as Martenweave Core: PolyForm Free Trial License 1.0.0. Evaluation is permitted for less than
+32 consecutive days; production, ongoing internal, client, and other commercial use requires a
+written agreement. See [`../docs/licensing-and-commercial-use.md`](../docs/licensing-and-commercial-use.md).

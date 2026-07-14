@@ -44,14 +44,13 @@ findings remain release-blocking.
 - Built wheel and sdist filenames include `0.4.1`.
 - Wheel METADATA reports `Version: 0.4.1`.
 
-## License Status
+## License Status at the Time of Release
 
-- Current license: MIT in `LICENSE`.
-- Package metadata: `pyproject.toml` declares `license = "MIT"`.
-- MIT permits commercial use when the license notice is preserved.
-- Current release-candidate recommendation: keep the core MIT and monetize optional paid pilots,
-  facilitation, support, templates, and future products.
-- Future dual-license or source-available non-commercial strategy: requires owner decision.
+- The published 0.4.1 artifacts and tag were released under MIT and remain MIT-licensed.
+- At release time, `pyproject.toml` declared `license = "MIT"`.
+- This is historical release evidence, not a statement of the current repository license.
+- Current repository source uses the license in `LICENSE`; see
+  `docs/licensing-and-commercial-use.md` for current terms.
 
 ## Tag Safety
 

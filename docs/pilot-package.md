@@ -165,7 +165,9 @@ At the end of the pilot, the prospect receives:
 
 ## Pricing Hypothesis for Pilot
 
-- **Pilot week**: Free self-service; optional paid facilitation ($2K–$5K) if we run it together
+- **Evaluation**: Self-service for less than 32 consecutive days under the repository license
+- **Pilot**: May be offered at no license fee under a written pilot agreement; optional paid
+  facilitation ($2K–$5K) if we run it together
 - **Post-pilot team offering**: TBD based on team needs; likely support, templates, assessment
-  packs, or future workspace functionality rather than a paid license to the current MIT core
+  packs, workspace functionality, and an appropriate commercial license
 - **Enterprise**: TBD; only discussed after team-level success is proven

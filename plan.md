@@ -44,7 +44,8 @@ Deploy 5 agents simultaneously with audit findings as context:
 - Output: `AGENT_3_COMPETITIVE.md`
 
 ### Agent 4 — GTM/Pricing Analyst
-- Commercial paths: open-source+services, team license, audit packages, domain packs, enterprise deployment
+- Commercial paths: time-limited evaluation, no-cost pilots by agreement, team/project licenses,
+  audit packages, domain packs, and enterprise deployment
 - Price hypotheses, sales motions, time to first revenue
 - Output: `AGENT_4_GTM_PRICING.md`
 

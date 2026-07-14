@@ -60,3 +60,10 @@ Useful issues include:
 - Reproduction steps when reporting a bug
 
 The repository issue templates are structured around that format.
+
+## Contribution Licensing
+
+Martenweave Core is source-available and may also be offered under separate pilot or commercial
+agreements. The project may therefore require a contributor agreement before accepting external
+code or documentation. A maintainer will confirm the required terms during pull-request review;
+submitting a pull request does not by itself guarantee that it can be merged.

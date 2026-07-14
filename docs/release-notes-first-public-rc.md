@@ -64,14 +64,13 @@ For a fuller walkthrough, use `docs/first-15-minutes.md` and
 - Some integration docs describe design direction or optional surfaces; verify current command
   availability with `martenweave --help`.
 
-## License And Commercial Use
+## License at the Time of the 0.4.1 Release
 
-Martenweave Core is currently MIT-licensed. MIT permits commercial use, copying, modification,
-distribution, sublicensing, and sale when the license notice is preserved.
+Martenweave Core 0.4.1 was released under MIT. Those artifacts and tagged source remain
+MIT-licensed, including permission for commercial use under the terms shipped with that release.
 
-The current commercial path is to keep the core MIT and monetize optional implementation support,
-private SAP/MDM domain packs, enterprise validation packs, hosted workbench work, custom
-integrations, support SLAs, and future separately distributed extensions.
+Current repository source and future releases use the license in the current `LICENSE` file. See
+`docs/licensing-and-commercial-use.md` for the current evaluation, pilot, and commercial path.
 
 See `docs/licensing-and-commercial-use.md`.
 
