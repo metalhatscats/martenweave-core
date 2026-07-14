@@ -106,11 +106,15 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
     "run",
     "diagnostics",
     "review-pack",
+    "executive-summary",
+    "pilot-preflight",
+    "assessment-review",
+    "bootstrap-assessment",
 }
 
 EXPECTED_GROUPS = {
     "agent": {"product-owner", "readiness"},
-    "run": {"dataset-readiness"},
+    "run": {"dataset-readiness", "migration-assessment"},
     "issue-draft": {"create"},
     "change-request": {"create", "list", "show", "update-status", "approve", "reject"},
     "notifications": {"preview", "list"},

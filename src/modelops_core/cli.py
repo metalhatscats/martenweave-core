@@ -119,6 +119,7 @@ from modelops_core.patching.proposal_reviewer_summary import (
 )
 from modelops_core.pilot import executive_summary as executive_summary_service
 from modelops_core.pilot import review as assessment_review_service
+from modelops_core.pilot.bootstrap import bootstrap_assessment
 from modelops_core.pilot.preflight import run_preflight
 from modelops_core.reports.analysis_service import generate_analysis_report
 from modelops_core.reports.audit_service import (
@@ -6454,6 +6455,60 @@ def executive_summary(
     console.print(f"  Verdict: {summary.readiness_verdict}")
     console.print(f"  Confirmed findings: {len(summary.blocking_findings)}")
     console.print(f"  Recommended next action: {summary.recommended_next_action}")
+
+
+@app.command("bootstrap-assessment")
+@with_telemetry("bootstrap_assessment")
+def bootstrap_assessment_cmd(
+    mapping: Path = typer.Option(  # noqa: B008
+        ..., "--mapping", help="Path to the XLSX mapping workbook."
+    ),
+    out_repo: Path = typer.Option(  # noqa: B008
+        ..., "--out-repo", help="Directory to create for the new model repository."
+    ),
+    name: str = typer.Option(
+        "Pilot Repository", "--name", help="Repository name."
+    ),
+    dataset: Path | None = typer.Option(  # noqa: B008
+        None, "--dataset", help="Optional sample dataset (CSV or XLSX)."
+    ),
+    evidence: list[Path] = typer.Option(  # noqa: B008
+        [], "--evidence", help="Optional evidence file (repeatable)."
+    ),
+) -> None:
+    """Bootstrap a new repository and PatchProposal from a mapping workbook."""
+    if not mapping.exists():
+        console.print(f"[red]Mapping workbook not found: {mapping}[/red]")
+        raise typer.Exit(code=1)
+
+    if dataset is not None and not dataset.exists():
+        console.print(f"[red]Dataset not found: {dataset}[/red]")
+        raise typer.Exit(code=1)
+
+    for ev_path in evidence:
+        if not ev_path.exists():
+            console.print(f"[red]Evidence file not found: {ev_path}[/red]")
+            raise typer.Exit(code=1)
+
+    try:
+        result = bootstrap_assessment(
+            mapping_path=mapping,
+            out_repo=out_repo,
+            name=name,
+            dataset_path=dataset,
+            evidence_paths=evidence or None,
+        )
+    except (ValueError, RuntimeError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    console.print(f"[green]Bootstrapped repository at {result.repo_root}[/green]")
+    console.print(f"  Repository name: {result.repo_name}")
+    console.print(f"  Inferred objects: {result.inferred_objects_count}")
+    console.print(f"  Proposal: {result.proposal_path}")
+    console.print(f"  Report:   {result.report_md_path}")
+    if result.warnings:
+        console.print(f"  Warnings: {len(result.warnings)}")
 
 
 # ---------------------------------------------------------------------------

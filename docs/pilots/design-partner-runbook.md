@@ -100,6 +100,25 @@ input is still safe to process.
    .venv/bin/martenweave init ./pilot-repo
    ```
 
+   Alternatively, bootstrap a new repository directly from the mapping workbook:
+
+   ```bash
+   .venv/bin/martenweave bootstrap-assessment \
+     --mapping ./inputs/mapping.xlsx \
+     --name "SAP Customer Pilot" \
+     --out-repo ./pilot-repo \
+     --dataset ./inputs/sample.csv \
+     --evidence ./inputs/decisions.md
+   ```
+
+   This creates a valid repository, scaffolds `model/` and `generated/`, and
+   writes a PatchProposal with inferred Domain, System, BusinessEntity,
+   EntityContext, Attribute, FieldEndpoint, and Mapping objects. It also writes
+   `bootstrap-report.md` and `bootstrap-report.json` listing inferred objects,
+   warnings, assumptions, and the next safe commands. Review and validate the
+   proposal before applying it; canonical model files are not mutated during
+   bootstrap.
+
 3. **Validate the repository**
 
    ```bash
