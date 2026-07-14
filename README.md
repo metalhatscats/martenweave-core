@@ -232,6 +232,7 @@ For a release-grade demo path that exercises validation, indexing, search, trace
 | `impact` | Generate impact report for an object or proposal |
 | `propose-patch` | Create a PatchProposal from a note |
 | `serve` | Start the optional local API server |
+| `workbench` | Launch the local Workbench (API + packaged UI) |
 | `mcp` | Start the optional MCP server for agent integration |
 | `import-model-sheet` | Import spreadsheet edits as a PatchProposal |
 | `export-model` | Export canonical objects to CSV or XLSX |
@@ -268,6 +269,23 @@ Use `--help` on any command for full options:
 ```bash
 .venv/bin/martenweave <command> --help
 ```
+
+## Martenweave Workbench
+
+The Workbench is the official local UI surface. It is packaged as a static React + Vite build and
+served from the installed Python package. One command starts the bound local API and the UI:
+
+```bash
+martenweave workbench --repo ./my-model
+```
+
+Add `--no-open` to prevent opening a browser tab, and `--host`/`--port` to change the bind address.
+
+```bash
+martenweave workbench --repo ./my-model --port 8080 --no-open
+```
+
+See [`frontend/README.md`](frontend/README.md) for development build instructions.
 
 ### Assessment Example
 

@@ -81,6 +81,7 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
     "propose-patch",
     "agent",
     "serve",
+    "workbench",
     "mcp",
     "import-model-sheet",
     "export-model",
