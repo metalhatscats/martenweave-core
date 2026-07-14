@@ -230,8 +230,46 @@ successfully.
      through the normal `proposal` commands before applying it.
 
 4. **Sanitize before sharing**
-   - Use `martenweave assessment sanitize` when available, or manually remove
-     raw datasets, absolute paths, and client identifiers.
+   - Produce a shareable, sanitized package:
+
+     ```bash
+     .venv/bin/martenweave assessment sanitize \
+       --input ./outputs/assessment \
+       --out ./outputs/assessment-sanitized
+     ```
+
+   - This copies only `.md`, `.json`, and `.xlsx` artifacts, excludes raw
+     datasets under `dataset_readiness/` by default, redacts absolute paths and
+     email addresses, and writes `sanitization-manifest.json` listing included,
+     excluded, and redacted items.
+   - To include raw datasets (not recommended for external sharing), pass
+     `--include-raw-datasets`.
+   - Unknown binary files block the sanitize step with a clear error so they
+     cannot leak into the shared package by accident.
+
+---
+
+## Generate the Pilot Outcome Report
+
+After findings have been reviewed, produce a deterministic recommendation:
+
+```bash
+.venv/bin/martenweave pilot-outcome \
+  --assessment ./outputs/assessment/manifest.json \
+  --out ./outputs/pilot-outcome.md \
+  --json-out ./outputs/pilot-outcome.json \
+  --baseline-prior-trace-hours 4.0 \
+  --baseline-review-hours 2.0 \
+  --baseline-onboarding-days 5.0
+```
+
+The report counts total, confirmed, false-positive, accepted-risk, deferred,
+resolved, and unreviewed findings; computes confirmation and false-positive
+rates; and recommends `continue`, `pivot`, or `insufficient_evidence`. Baselines
+are optional; any missing baseline is labeled `unavailable` rather than invented.
+
+Use the outcome report to fill in the **Measured Metrics** and **Recommendation**
+sections of the closeout template.
 
 ---
 

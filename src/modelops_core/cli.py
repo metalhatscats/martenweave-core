@@ -118,8 +118,10 @@ from modelops_core.patching.proposal_reviewer_summary import (
     reviewer_summary_to_dict,
 )
 from modelops_core.pilot import executive_summary as executive_summary_service
+from modelops_core.pilot import outcome as pilot_outcome_service
 from modelops_core.pilot import review as assessment_review_service
 from modelops_core.pilot.preflight import run_preflight
+from modelops_core.pilot.sanitize import sanitize_assessment
 from modelops_core.reports.analysis_service import generate_analysis_report
 from modelops_core.reports.audit_service import (
     AuditEventService,
@@ -6456,6 +6458,67 @@ def executive_summary(
     console.print(f"  Recommended next action: {summary.recommended_next_action}")
 
 
+@app.command("pilot-outcome")
+@with_telemetry("pilot_outcome")
+def pilot_outcome(
+    assessment: Path = typer.Option(  # noqa: B008
+        ..., "--assessment", help="Path to assessment manifest.json."
+    ),
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Output path or directory for the pilot outcome report."
+    ),
+    json_out: Path | None = typer.Option(  # noqa: B008
+        None, "--json-out", help="Optional explicit path for JSON output."
+    ),
+    baseline_prior_trace_hours: float | None = typer.Option(
+        None,
+        "--baseline-prior-trace-hours",
+        help="Manual baseline for prior trace effort in hours.",
+    ),
+    baseline_review_hours: float | None = typer.Option(
+        None,
+        "--baseline-review-hours",
+        help="Manual baseline for review effort in hours.",
+    ),
+    baseline_onboarding_days: float | None = typer.Option(
+        None,
+        "--baseline-onboarding-days",
+        help="Manual baseline for onboarding time in days.",
+    ),
+) -> None:
+    """Generate a pilot outcome report from reviewed assessment findings."""
+    if not assessment.exists():
+        console.print(f"[red]Assessment manifest not found: {assessment}[/red]")
+        raise typer.Exit(code=1)
+
+    baselines: dict[str, Any] = {}
+    if baseline_prior_trace_hours is not None:
+        baselines["prior_trace_hours"] = baseline_prior_trace_hours
+    if baseline_review_hours is not None:
+        baselines["review_hours"] = baseline_review_hours
+    if baseline_onboarding_days is not None:
+        baselines["onboarding_days"] = baseline_onboarding_days
+
+    try:
+        outcome = pilot_outcome_service.generate_pilot_outcome(
+            assessment,
+            baselines=baselines if baselines else None,
+        )
+        md_path, written_json_path = pilot_outcome_service.write_pilot_outcome(
+            outcome, out, json_out_path=json_out
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    console.print(f"[green]Pilot outcome written to {md_path}[/green]")
+    console.print(f"  Recommendation: {outcome.recommendation}")
+    console.print(f"  Confirmed: {outcome.confirmed_findings}")
+    console.print(f"  False positives: {outcome.false_positives}")
+    if written_json_path:
+        console.print(f"  JSON: {written_json_path}")
+
+
 # ---------------------------------------------------------------------------
 # Assessment subcommands
 # ---------------------------------------------------------------------------
@@ -6528,6 +6591,42 @@ def assessment_run(
     console.print("\n[bold]Artifacts generated[/bold]")
     for a in package.artifacts:
         console.print(f"  {a.path.name} — {a.description}")
+
+
+@assessment_app.command("sanitize")
+@with_telemetry("assessment_sanitize")
+def assessment_sanitize(
+    input_dir: Path = typer.Option(  # noqa: B008
+        ..., "--input", help="Input assessment directory to sanitize."
+    ),
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Output directory for the sanitized package."
+    ),
+    include_raw_datasets: bool = typer.Option(
+        False,
+        "--include-raw-datasets",
+        help="Include raw dataset files from dataset_readiness/ (default: excluded).",
+    ),
+) -> None:
+    """Create a sanitized, shareable copy of an assessment package."""
+    if not input_dir.exists():
+        console.print(f"[red]Input directory not found: {input_dir}[/red]")
+        raise typer.Exit(code=1)
+
+    try:
+        manifest = sanitize_assessment(
+            input_dir,
+            out,
+            exclude_raw_datasets=not include_raw_datasets,
+        )
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    console.print(f"[green]Sanitized package written to {out}[/green]")
+    console.print(f"  Included: {len(manifest['included_files'])}")
+    console.print(f"  Excluded: {len(manifest['excluded_files'])}")
+    console.print(f"  Redacted: {len(manifest['redactions'])}")
 
 
 # ---------------------------------------------------------------------------
