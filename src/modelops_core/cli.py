@@ -110,6 +110,7 @@ from modelops_core.patching.apply_service import (
     dry_run_patch_proposal,
 )
 from modelops_core.patching.patch_proposal_service import (
+    render_patch_proposal_markdown,
     transition_patch_proposal_status,
     write_patch_proposal,
 )
@@ -6261,6 +6262,58 @@ agent_app = typer.Typer(
     help="Agentic workflow orchestrators.",
 )
 app.add_typer(agent_app, name="agent")
+
+
+evidence_app = typer.Typer(
+    name="evidence",
+    help="Evidence ingestion commands.",
+)
+app.add_typer(evidence_app, name="evidence")
+
+
+@evidence_app.command("ingest")
+@with_telemetry("evidence-ingest")
+def evidence_ingest(
+    source_path: Path = typer.Option(  # noqa: B008
+        ..., "--from", help="Path to evidence file."
+    ),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    out: Path | None = typer.Option(  # noqa: B008
+        None, "--out", help="Output PatchProposal file path."
+    ),
+    fmt: str = typer.Option("proposal", "--format", help="Output format: proposal or summary."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Ingest Markdown notes or CSV/XLSX validation reports into a PatchProposal."""
+    from modelops_core.evidence.ingest_service import ingest_evidence
+
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+
+    if not source_path.exists():
+        console.print(f"[red]Source not found: {source_path}[/red]")
+        raise typer.Exit(code=1)
+
+    result = ingest_evidence(model_path, source_path, output_format=fmt)
+
+    if out:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        if result.get("type") == "PatchProposal":
+            out.write_text(render_patch_proposal_markdown(result), encoding="utf-8")
+        else:
+            out.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
+
+    if json_output:
+        print(json.dumps(result, indent=2, default=str))
+    else:
+        console.print(f"[bold]{result['type']}[/bold]")
+        console.print(f"  Operations: {len(result.get('operations', []))}")
+        console.print(f"  Affected objects: {len(result.get('affected_objects', []))}")
+        skipped = result.get("skipped_findings", [])
+        if skipped:
+            console.print(f"  Skipped findings: {len(skipped)}")
+            for s in skipped[:10]:
+                console.print(f"    [yellow]{s}[/yellow]")
 
 
 @agent_app.command("product-owner")
