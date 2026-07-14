@@ -6318,7 +6318,10 @@ def evidence_ingest(
         print(json.dumps(result, indent=2, default=str))
     else:
         console.print(f"[bold]{result['type']}[/bold]")
-        console.print(f"  Operations: {len(result.get('operations', []))}")
+        operations_count = result.get(
+            "operations_count", len(result.get("operations", []))
+        )
+        console.print(f"  Operations: {operations_count}")
         console.print(f"  Affected objects: {len(result.get('affected_objects', []))}")
         skipped = result.get("skipped_findings", [])
         if skipped:
