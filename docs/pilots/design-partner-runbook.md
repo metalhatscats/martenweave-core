@@ -118,7 +118,44 @@ record the result in the pilot notes.
    - `outputs/assessment/05_business_review.xlsx` — reviewable workbook.
    - `outputs/assessment/06_recommendations.md` — next steps.
    - `outputs/assessment/review_pack/` — stakeholder-facing pack.
-   - `outputs/assessment/mapping_profile.json` — workbook metadata and warnings.
+   - `outputs/assessment/mapping_profile.json` — workbook metadata and row-level
+     findings such as missing owners, missing mappings, obsolete fields,
+     duplicate target representations, validation coverage gaps, unresolved
+     decisions, and conflicting decisions.
+
+---
+
+## Synthetic Pilot Fixture
+
+A fully synthetic, byte-stable SAP Customer / Vendor mapping workbook is shipped
+as a repeatable pilot fixture:
+
+- `tests/fixtures/pilot/sap_customer_mapping.xlsx`
+- Regenerator: `tests/fixtures/pilot/generate_sap_customer_mapping.py`
+
+The workbook deliberately injects common migration-quality findings so the
+assessment output can be validated against known counts:
+
+- Missing owners
+- Missing target table/field mappings
+- Obsolete source fields
+- Duplicate target representations
+- Conditional mandatory rules without validation coverage
+- Unresolved decisions
+- Conflicting decisions on the same topic
+
+Run the fixture through the full assessment:
+
+```bash
+.venv/bin/martenweave run migration-assessment \
+  --repo examples/customer_bp_model \
+  --mapping tests/fixtures/pilot/sap_customer_mapping.xlsx \
+  --out /tmp/martenweave-golden-assessment
+```
+
+The golden test in `tests/test_pilot_mapping_workbook.py` asserts the expected
+count for each finding class and confirms that the assessment stages complete
+successfully.
 
 ---
 
