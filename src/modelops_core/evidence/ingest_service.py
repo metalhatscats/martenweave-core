@@ -63,13 +63,14 @@ def _findings_to_operations(
             )
             affected.append(obj_id)
         elif finding.kind == EvidenceFindingKind.MISSING_MAPPING:
+            map_id = f"MAP-EVIDENCE-{uuid.uuid4().hex[:8].upper()}"
             operations.append(
                 PatchOperation(
                     op="create_object",
-                    object_id=f"MAP-EVIDENCE-{uuid.uuid4().hex[:8].upper()}",
+                    object_id=map_id,
                     object_type="Mapping",
                     after={
-                        "id": f"MAP-EVIDENCE-{uuid.uuid4().hex[:8].upper()}",
+                        "id": map_id,
                         "type": "Mapping",
                         "status": "draft",
                         "name": f"Evidence mapping for {obj_id}",
@@ -80,13 +81,14 @@ def _findings_to_operations(
             )
             affected.append(obj_id)
         else:
+            issue_id = f"ISSUE-EVIDENCE-{uuid.uuid4().hex[:8].upper()}"
             operations.append(
                 PatchOperation(
                     op="create_object",
-                    object_id=f"ISSUE-EVIDENCE-{uuid.uuid4().hex[:8].upper()}",
+                    object_id=issue_id,
                     object_type="Issue",
                     after={
-                        "id": f"ISSUE-EVIDENCE-{uuid.uuid4().hex[:8].upper()}",
+                        "id": issue_id,
                         "type": "Issue",
                         "status": "draft",
                         "title": finding.message[:80],
