@@ -1,5 +1,8 @@
 # Roadmap v0.1
 
+> **Historical.** This document captures the original v0.1 feature list.
+> The active pilot-first roadmap is now in `ROADMAP_PILOT.md`.
+
 ## Objective
 
 Ship a useful backend-first core that can be validated locally and executed by AI coding agents through small GitHub issues.

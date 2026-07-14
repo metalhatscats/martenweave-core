@@ -16,14 +16,15 @@ SAP migration and Master Data Management are the **first domain pack** and proof
 product boundary. The open-source core also works with generic data models: domains, entities,
 attributes, relationships, datasets, mappings, rules, evidence, decisions, and change proposals.
 
-**No hosted or editable product UI is included.** This is a CLI-driven, backend/core library
-designed to be embedded in pipelines, IDEs, local API processes, MCP servers, and agent workflows.
-It can generate a local static read-only viewer from the disposable SQLite index for inspection and
-demo purposes.
+**Martenweave Core** is the CLI-driven, backend-first library that owns the canonical model layer.
+It is designed to be embedded in pipelines, IDEs, local API processes, MCP servers, and agent workflows.
 
-For an interactive **local frontend prototype**, see [`frontend/README.md`](frontend/README.md).
-It can be run locally for demo and review; it is **not a hosted production app** and does not
-replace the CLI-first core workflow.
+**Martenweave Workbench** is the official local browser UI for assessment, investigation, review,
+reports, and controlled changes. It reads from the local API and never stores canonical model truth
+independently of the `model/` files. It is **not a hosted production app** and does not replace the
+CLI-first core workflow.
+
+For Workbench setup and development notes, see [`frontend/README.md`](frontend/README.md).
 
 ## Status
 
@@ -63,6 +64,7 @@ supported for backward compatibility with scripts, CI jobs, and early adopters.
 | A canonical file registry with disposable generated indexes | A hosted MDM platform |
 | A validator-gated, proposal-first model change workflow | A workflow engine or n8n/Zapier/Dify competitor |
 | A local-first CLI and embeddable open-source core | Generic B2B SaaS or a chatbot |
+| A local browser workbench for assessment, review, and reports | A hosted multi-tenant UI |
 | AI-assisted, with human approval required for changes | Autonomous mutation or direct SAP write-back |
 
 ## Why pipeline, not SaaS
@@ -255,14 +257,30 @@ For a release-grade demo path that exercises validation, indexing, search, trace
 | `decisions` | Browse and inspect Decision objects |
 | `proposal` | Review and apply PatchProposals |
 | `assessment` | Run migration model readiness assessment workflows |
+| `executive-summary` | Generate a one-page executive readiness summary |
+| `pilot-preflight` | Metadata-only safety checks for pilot inputs |
+| `assessment-review` | Record dispositions and promote confirmed findings |
 
 `docs-build` produces disposable generated files such as `index.html`, `objects.html`,
 `gaps.html`, `decisions.html`, `owners.html`, object detail pages, `search-index.json`, and
 `viewer-manifest.json`. The viewer is static and read-only: canonical files remain authoritative,
 and there is no hosted UI, login, editing workflow, SAP write-back, or AI auto-mutation path.
 
-`serve` and `mcp` are local integration surfaces for APIs, tools, and agents. They do not provide a
-hosted product UI or browser application.
+`serve` starts the bound local API for the Workbench and agent integrations. `mcp` starts the local
+MCP server. Both are local integration surfaces; they do not provide a hosted product UI or browser
+application on their own.
+
+## Martenweave Workbench
+
+The Workbench is the official local UI surface. It is packaged as a static React + Vite build and
+served from the installed Python package. It connects to the local API started by `martenweave serve`.
+
+```bash
+martenweave serve --repo ./my-model
+# Open the workbench URL shown in the terminal
+```
+
+See [`frontend/README.md`](frontend/README.md) for development build instructions.
 
 Use `--help` on any command for full options:
 

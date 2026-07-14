@@ -74,6 +74,7 @@ The MVP includes:
 11. Human review before applying AI-generated changes.
 12. Generated SQLite or DuckDB index for search, joins, and reporting.
 13. Git-friendly file changes.
+14. **Martenweave Workbench** as a local browser UI surface for assessment, investigation, review, reports, and controlled changes, reading from the local API.
 
 ### 3.2 Out of scope
 
@@ -96,6 +97,25 @@ The MVP does not include:
 15. Full SAP customizing extraction.
 
 The MVP should stay narrow. The first proof point is Business Partner model traceability through the Customer Sales Area slice, not broad enterprise governance.
+
+### 3.3 Workbench scope
+
+The Workbench is an official local UI surface, not a separate product category. In scope:
+
+- Visualize repository status, validation results, index freshness, and scorecard.
+- Browse and search the object catalog.
+- Show object detail, lineage, impact, gaps, and ownership.
+- Display assessment executive summaries and reports.
+- Review patch proposals and change requests.
+- Guide the user through the proposal → approval → apply flow.
+
+Out of scope:
+
+- Hosted multi-tenant access.
+- Direct SAP write-back.
+- Silent canonical file mutation.
+- Authentication or role-based enterprise authorization.
+- Replacing the CLI as the primary automation interface.
 
 ---
 

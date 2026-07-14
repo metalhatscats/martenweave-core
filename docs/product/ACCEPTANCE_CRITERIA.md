@@ -56,6 +56,8 @@ The MVP is accepted only if:
 | UC-100 Search by SAP field, attribute, value, or issue | Searching `KNVV-KDGRP`, Customer Group, `CH01`, or `A17` returns the expected Attribute, FieldEndpoint, mapping/value mapping, issue, and decision objects. |
 | UC-120 Validate repository | Validation detects invalid frontmatter, duplicate IDs, broken references, invalid statuses, SAP context errors, and unsafe AI patch attempts. |
 | UC-121 Detect stale index | System warns when generated index artifacts are older than canonical model files and offers rebuild. |
+| UC-130 Open Martenweave Workbench | User can launch the local Workbench from the installed package, bind it to a repository, and view repository status without running Node.js setup. |
+| UC-131 Workbench respects Core boundaries | Workbench displays canonical objects, reports, and proposals; it does not store canonical truth independently or bypass approval gates. |
 
 ## Canonical Demo Acceptance
 
@@ -114,7 +116,8 @@ Product-owner definition of done:
 - canonical model files mutate only after approved ChangeRequest workflow;
 - rejected patches and rejected ChangeRequests do not mutate canonical model files;
 - generated SQLite remains disposable and rebuildable from canonical files;
-- no SaaS tenancy, SAP write-back, required graph database, enterprise workflow engine, or real AI provider is required for the MVP.
+- no SaaS tenancy, SAP write-back, required graph database, enterprise workflow engine, or real AI provider is required for the MVP;
+- the Workbench is local-only and does not mutate canonical files outside the approved proposal flow.
 
 ## Completion Evidence
 

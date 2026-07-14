@@ -106,11 +106,16 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
     "run",
     "diagnostics",
     "review-pack",
+    "executive-summary",
+    "pilot-preflight",
+    "assessment-review",
+    "pilot-outcome",
+    "demo-bundle",
 }
 
 EXPECTED_GROUPS = {
     "agent": {"product-owner", "readiness"},
-    "run": {"dataset-readiness"},
+    "run": {"dataset-readiness", "migration-assessment"},
     "issue-draft": {"create"},
     "change-request": {"create", "list", "show", "update-status", "approve", "reject"},
     "notifications": {"preview", "list"},
@@ -127,9 +132,10 @@ EXPECTED_GROUPS = {
         "report",
         "review-bundle",
     },
-    "assessment": {"run"},
+    "assessment": {"run", "sanitize"},
     "diagnostics": {"export"},
     "review-pack": {"create"},
+    "demo-bundle": {"build"},
 }
 
 

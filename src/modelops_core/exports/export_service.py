@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -188,6 +189,7 @@ def export_model_xlsx(
     output_path: Path | None = None,
     max_objects: int | None = None,
     business_review: bool = False,
+    generated_at: datetime | None = None,
 ) -> Path:
     """Export canonical objects to one XLSX workbook with a sheet per type.
 
@@ -200,6 +202,9 @@ def export_model_xlsx(
         business_review: When ``True``, produce a styled workbook with a
             cover sheet, data-validation dropdowns, alternating row colours,
             frozen panes, auto-filters, and a ``reviewer_notes`` column.
+        generated_at: Optional timestamp used for workbook metadata. When
+            provided, the created and modified properties are pinned so the
+            same input produces byte-identical output.
 
     Returns:
         Path to the written workbook.
@@ -234,6 +239,9 @@ def export_model_xlsx(
                 )
 
     wb = Workbook()
+    if generated_at is not None:
+        wb.properties.created = generated_at
+        wb.properties.modified = generated_at
     # Remove default sheet; we'll add one per type
     wb.remove(wb.active)
 

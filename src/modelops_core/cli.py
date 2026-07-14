@@ -117,6 +117,12 @@ from modelops_core.patching.proposal_reviewer_summary import (
     generate_reviewer_summary,
     reviewer_summary_to_dict,
 )
+from modelops_core.pilot import demo_bundle as demo_bundle_service
+from modelops_core.pilot import executive_summary as executive_summary_service
+from modelops_core.pilot import outcome as pilot_outcome_service
+from modelops_core.pilot import review as assessment_review_service
+from modelops_core.pilot.preflight import run_preflight
+from modelops_core.pilot.sanitize import sanitize_assessment
 from modelops_core.reports.analysis_service import generate_analysis_report
 from modelops_core.reports.audit_service import (
     AuditEventService,
@@ -146,7 +152,11 @@ from modelops_core.reports.source_registry_service import (
 )
 from modelops_core.reports.usage_report_service import generate_usage_report
 from modelops_core.repository import parse_file, scan_repository
-from modelops_core.run import generate_dataset_readiness_report, write_readiness_report
+from modelops_core.run import (
+    generate_dataset_readiness_report,
+    generate_migration_assessment,
+    write_readiness_report,
+)
 from modelops_core.schemas.migration import migrate_object, needs_migration
 from modelops_core.schemas.versioning import (
     CURRENT_SCHEMA_VERSION,
@@ -2791,6 +2801,146 @@ def dataset_readiness(
     else:
         console.print(f"[green]Report written to {json_path}[/green]")
         console.print(f"[green]Report written to {md_path}[/green]")
+
+
+@run_app.command("migration-assessment")
+@with_telemetry("run_migration_assessment")
+def migration_assessment(
+    mapping: Path = typer.Option(  # noqa: B008
+        ..., "--mapping", help="Path to the XLSX mapping workbook."
+    ),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    dataset: Path | None = typer.Option(  # noqa: B008
+        None, "--dataset", help="Optional path to a CSV or XLSX sample dataset."
+    ),
+    evidence: list[Path] = typer.Option(  # noqa: B008
+        [], "--evidence", help="Optional evidence file (repeatable)."
+    ),
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Output directory for the assessment package."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw manifest JSON."),
+) -> None:
+    """Run a full SAP migration assessment from workbook to review pack."""
+    repo_root = _resolve_repo(repo)
+
+    if not mapping.exists():
+        console.print(f"[red]Mapping workbook not found: {mapping}[/red]")
+        raise typer.Exit(code=1)
+
+    if dataset is not None and not dataset.exists():
+        console.print(f"[red]Dataset not found: {dataset}[/red]")
+        raise typer.Exit(code=1)
+
+    for ev_path in evidence:
+        if not ev_path.exists():
+            console.print(f"[red]Evidence file not found: {ev_path}[/red]")
+            raise typer.Exit(code=1)
+
+    model_path = resolve_model_path(repo_root)
+    if not model_path.exists():
+        console.print(f"[red]Model path does not exist: {model_path}[/red]")
+        raise typer.Exit(code=1)
+
+    try:
+        manifest = generate_migration_assessment(
+            repo_root=repo_root,
+            mapping_path=mapping,
+            dataset_path=dataset,
+            evidence_paths=evidence,
+            out_dir=out,
+        )
+    except (ValueError, RuntimeError, ResourceLimitExceeded) as exc:
+        if json_output:
+            print(json.dumps({"error": str(exc)}, indent=2))
+            raise typer.Exit(code=1) from exc
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        data = {
+            "martenweave_version": manifest.martenweave_version,
+            "repo_name": manifest.repo_name,
+            "repo_path": manifest.repo_path,
+            "generated_at": manifest.generated_at,
+            "inputs": manifest.inputs,
+            "stage_statuses": [
+                {"name": s.name, "status": s.status, "message": s.message}
+                for s in manifest.stage_statuses
+            ],
+            "generated_artifacts": manifest.generated_artifacts,
+        }
+        print(json.dumps(data, indent=2, default=str))
+        raise typer.Exit()
+
+    console.print(f"[bold]Migration assessment complete: {manifest.repo_name}[/bold]")
+    console.print(f"  Output: {out}")
+    console.print("\n[bold]Stage statuses[/bold]")
+    for stage in manifest.stage_statuses:
+        color = {"success": "green", "skipped": "yellow", "failed": "red"}.get(
+            stage.status, "white"
+        )
+        console.print(f"  [{color}]{stage.status}[/{color}] {stage.name}: {stage.message}")
+    console.print(f"\n[bold]Artifacts[/bold]: {len(manifest.generated_artifacts)} files")
+    console.print(f"[green]Manifest: {out / 'manifest.json'}[/green]")
+
+
+@app.command("pilot-preflight")
+@with_telemetry("pilot_preflight")
+def pilot_preflight(
+    mapping: Path = typer.Option(  # noqa: B008
+        ..., "--mapping", help="Path to the XLSX mapping workbook."
+    ),
+    dataset: list[Path] = typer.Option(  # noqa: B008
+        [], "--dataset", help="Path to a CSV or XLSX dataset (repeatable)."
+    ),
+    evidence: list[Path] = typer.Option(  # noqa: B008
+        [], "--evidence", help="Path to an evidence note (.md/.txt, repeatable)."
+    ),
+    validation_report: list[Path] = typer.Option(  # noqa: B008
+        [],
+        "--validation-report",
+        help="Path to a validation report (.csv/.xlsx, repeatable).",
+    ),
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Directory where preflight reports will be written."
+    ),
+    include_raw_samples: bool = typer.Option(
+        False,
+        "--include-raw-samples",
+        help="Include raw dataset sample values in the report (not recommended for sharing).",
+    ),
+) -> None:
+    """Inspect pilot input files for safety before running an assessment."""
+    if not mapping.exists():
+        console.print(f"[red]Mapping workbook not found: {mapping}[/red]")
+        raise typer.Exit(code=1)
+
+    all_inputs = [mapping, *dataset, *evidence, *validation_report]
+    for p in all_inputs:
+        if not p.exists():
+            console.print(f"[red]Input file not found: {p}[/red]")
+            raise typer.Exit(code=1)
+
+    report = run_preflight(
+        mapping_path=mapping,
+        dataset_paths=dataset,
+        evidence_paths=evidence,
+        validation_report_paths=validation_report,
+        out_dir=out,
+        include_raw_samples=include_raw_samples,
+    )
+
+    color = {"allowed": "green", "warning": "yellow", "blocked": "red"}.get(
+        report.overall_status, "white"
+    )
+    console.print(f"[bold]Preflight complete:[/bold] [{color}]{report.overall_status}[/{color}]")
+    console.print(f"  Output: {out}")
+    for f in report.files:
+        fcolor = {"allowed": "green", "warning": "yellow", "blocked": "red"}.get(
+            f["status"], "white"
+        )
+        console.print(f"  [{fcolor}]{f['status']}[/{fcolor}] {Path(f['path']).name}")
 
 
 # ---------------------------------------------------------------------------
@@ -6157,6 +6307,282 @@ def migrate(
 
 
 # ---------------------------------------------------------------------------
+# Assessment review subcommands
+# ---------------------------------------------------------------------------
+assessment_review_app = typer.Typer(
+    name="assessment-review",
+    help="Human disposition workflow for assessment findings.",
+)
+app.add_typer(assessment_review_app, name="assessment-review")
+
+
+@assessment_review_app.command("set")
+def assessment_review_set(
+    assessment: Path = typer.Option(  # noqa: B008
+        ..., "--assessment", help="Path to assessment manifest.json."
+    ),
+    finding_id: str = typer.Option(  # noqa: B008
+        ..., "--finding-id", help="Stable finding ID from findings.json."
+    ),
+    disposition: str = typer.Option(  # noqa: B008
+        ...,
+        "--disposition",
+        help=("Disposition: confirmed, false_positive, accepted_risk, deferred, resolved."),
+    ),
+    reviewer: str = typer.Option(  # noqa: B008
+        ..., "--reviewer", help="Name or identifier of the reviewer."
+    ),
+    note: str | None = typer.Option(  # noqa: B008
+        None, "--note", help="Optional review note."
+    ),
+) -> None:
+    """Record a human disposition for a single assessment finding."""
+    assessment_dir = assessment.resolve().parent
+    try:
+        record = assessment_review_service.set_review(
+            assessment_dir=assessment_dir,
+            finding_id=finding_id,
+            disposition=disposition,
+            reviewer=reviewer,
+            note=note,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+    console.print(f"[green]Review recorded for {finding_id}[/green]")
+    console.print(f"  Disposition: {record['disposition']}")
+    console.print(f"  Reviewer:    {record['reviewer']}")
+
+
+@assessment_review_app.command("summary")
+def assessment_review_summary(
+    assessment: Path = typer.Option(  # noqa: B008
+        ..., "--assessment", help="Path to assessment manifest.json."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Summarize current review state for an assessment."""
+    assessment_dir = assessment.resolve().parent
+    try:
+        summary = assessment_review_service.summarize_reviews(assessment_dir)
+    except (FileNotFoundError, ValueError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        print(json.dumps(summary, indent=2, default=str, sort_keys=True))
+        raise typer.Exit()
+
+    console.print("[bold]Assessment Review Summary[/bold]")
+    console.print(f"  Total findings:   {summary['total_findings']}")
+    console.print(f"  Reviewed:         {summary['reviewed_count']}")
+    console.print(f"  Unreviewed:       {summary['unreviewed_count']}")
+    if summary["by_disposition"]:
+        console.print("\n[bold]By disposition:[/bold]")
+        for disp, count in sorted(summary["by_disposition"].items()):
+            console.print(f"  {disp}: {count}")
+    if summary["by_severity"]:
+        console.print("\n[bold]By severity:[/bold]")
+        for sev, count in sorted(summary["by_severity"].items()):
+            console.print(f"  {sev}: {count}")
+    if summary["by_category"]:
+        console.print("\n[bold]By category:[/bold]")
+        for cat, count in sorted(summary["by_category"].items()):
+            console.print(f"  {cat}: {count}")
+    if summary["unreviewed"]:
+        console.print("\n[bold]Unreviewed findings:[/bold]")
+        for fid in summary["unreviewed"][:20]:
+            console.print(f"  - {fid}")
+        if len(summary["unreviewed"]) > 20:
+            console.print(f"  ... and {len(summary['unreviewed']) - 20} more")
+
+
+@assessment_review_app.command("promote")
+def assessment_review_promote(
+    assessment: Path = typer.Option(  # noqa: B008
+        ..., "--assessment", help="Path to assessment manifest.json."
+    ),
+    finding_id: str = typer.Option(  # noqa: B008
+        ..., "--finding-id", help="Stable finding ID to promote."
+    ),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+) -> None:
+    """Promote a confirmed finding to a PatchProposal for human approval."""
+    assessment_dir = assessment.resolve().parent
+    repo_root = _resolve_repo(repo)
+    try:
+        proposal_path = assessment_review_service.promote_finding(
+            assessment_dir=assessment_dir,
+            repo_root=repo_root,
+            finding_id=finding_id,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+    console.print(f"[green]Promoted {finding_id} to PatchProposal[/green]")
+    console.print(f"  {proposal_path}")
+
+
+@app.command("executive-summary")
+def executive_summary(
+    assessment: Path = typer.Option(  # noqa: B008
+        ..., "--assessment", help="Path to assessment manifest.json."
+    ),
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Output path or directory for executive summary."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON only to stdout."),
+) -> None:
+    """Generate a one-page executive migration readiness summary."""
+    try:
+        summary = executive_summary_service.generate_executive_summary(assessment)
+    except (FileNotFoundError, ValueError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    if json_output:
+        print(
+            json.dumps(
+                executive_summary_service.executive_summary_to_dict(summary),
+                indent=2,
+                default=str,
+                sort_keys=True,
+            )
+        )
+        raise typer.Exit()
+
+    executive_summary_service.write_executive_summary(summary, out)
+    md_path = out / "executive-summary.md" if out.is_dir() else out.with_suffix(".md")
+    console.print(f"[green]Executive summary written to {md_path}[/green]")
+    console.print(f"  Verdict: {summary.readiness_verdict}")
+    console.print(f"  Confirmed findings: {len(summary.blocking_findings)}")
+    console.print(f"  Recommended next action: {summary.recommended_next_action}")
+
+
+@app.command("pilot-outcome")
+@with_telemetry("pilot_outcome")
+def pilot_outcome(
+    assessment: Path = typer.Option(  # noqa: B008
+        ..., "--assessment", help="Path to assessment manifest.json."
+    ),
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Output path or directory for the pilot outcome report."
+    ),
+    json_out: Path | None = typer.Option(  # noqa: B008
+        None, "--json-out", help="Optional explicit path for JSON output."
+    ),
+    baseline_prior_trace_hours: float | None = typer.Option(
+        None,
+        "--baseline-prior-trace-hours",
+        help="Manual baseline for prior trace effort in hours.",
+    ),
+    baseline_review_hours: float | None = typer.Option(
+        None,
+        "--baseline-review-hours",
+        help="Manual baseline for review effort in hours.",
+    ),
+    baseline_onboarding_days: float | None = typer.Option(
+        None,
+        "--baseline-onboarding-days",
+        help="Manual baseline for onboarding time in days.",
+    ),
+) -> None:
+    """Generate a pilot outcome report from reviewed assessment findings."""
+    if not assessment.exists():
+        console.print(f"[red]Assessment manifest not found: {assessment}[/red]")
+        raise typer.Exit(code=1)
+
+    baselines: dict[str, Any] = {}
+    if baseline_prior_trace_hours is not None:
+        baselines["prior_trace_hours"] = baseline_prior_trace_hours
+    if baseline_review_hours is not None:
+        baselines["review_hours"] = baseline_review_hours
+    if baseline_onboarding_days is not None:
+        baselines["onboarding_days"] = baseline_onboarding_days
+
+    try:
+        outcome = pilot_outcome_service.generate_pilot_outcome(
+            assessment,
+            baselines=baselines if baselines else None,
+        )
+        md_path, written_json_path = pilot_outcome_service.write_pilot_outcome(
+            outcome, out, json_out_path=json_out
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    console.print(f"[green]Pilot outcome written to {md_path}[/green]")
+    console.print(f"  Recommendation: {outcome.recommendation}")
+    console.print(f"  Confirmed: {outcome.confirmed_findings}")
+    console.print(f"  False positives: {outcome.false_positives}")
+    if written_json_path:
+        console.print(f"  JSON: {written_json_path}")
+
+
+# ---------------------------------------------------------------------------
+# Demo bundle subcommands
+# ---------------------------------------------------------------------------
+demo_bundle_app = typer.Typer(
+    name="demo-bundle",
+    help="Build deterministic, sanitized demo bundles for public sharing.",
+)
+app.add_typer(demo_bundle_app, name="demo-bundle")
+
+
+@demo_bundle_app.command("build")
+@with_telemetry("demo_bundle_build")
+def demo_bundle_build(
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Output directory for the demo bundle."
+    ),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    mapping: Path | None = typer.Option(  # noqa: B008
+        None, "--mapping", help="Path to the synthetic mapping workbook."
+    ),
+    generated_at: str | None = typer.Option(
+        None,
+        "--generated-at",
+        help="Optional ISO timestamp for deterministic output.",
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw manifest JSON."),
+) -> None:
+    """Build a deterministic, sanitized demo bundle from the golden assessment."""
+    repo_root = _resolve_repo(repo) if repo else None
+    mapping_path = mapping
+
+    try:
+        bundle = demo_bundle_service.build_demo_bundle(
+            out_dir=out,
+            repo_root=repo_root,
+            mapping_path=mapping_path,
+            generated_at=generated_at,
+        )
+    except (FileNotFoundError, ValueError, RuntimeError) as exc:
+        if json_output:
+            print(json.dumps({"error": str(exc)}, indent=2))
+            raise typer.Exit(code=1) from exc
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    validation_errors = demo_bundle_service.validate_demo_bundle(bundle.bundle_dir)
+
+    if json_output:
+        print(json.dumps(bundle.manifest, indent=2, sort_keys=True))
+        raise typer.Exit()
+
+    console.print("[bold]Demo bundle complete[/bold]")
+    console.print(f"  Output: {bundle.bundle_dir}")
+    console.print(f"  Artifacts: {bundle.manifest['artifact_count']}")
+    if validation_errors:
+        console.print("[yellow]Validation warnings:[/yellow]")
+        for error in validation_errors:
+            console.print(f"  - {error}")
+    else:
+        console.print("[green]Bundle validation passed[/green]")
+
+
+# ---------------------------------------------------------------------------
 # Assessment subcommands
 # ---------------------------------------------------------------------------
 assessment_app = typer.Typer(
@@ -6228,6 +6654,42 @@ def assessment_run(
     console.print("\n[bold]Artifacts generated[/bold]")
     for a in package.artifacts:
         console.print(f"  {a.path.name} — {a.description}")
+
+
+@assessment_app.command("sanitize")
+@with_telemetry("assessment_sanitize")
+def assessment_sanitize(
+    input_dir: Path = typer.Option(  # noqa: B008
+        ..., "--input", help="Input assessment directory to sanitize."
+    ),
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Output directory for the sanitized package."
+    ),
+    include_raw_datasets: bool = typer.Option(
+        False,
+        "--include-raw-datasets",
+        help="Include raw dataset files from dataset_readiness/ (default: excluded).",
+    ),
+) -> None:
+    """Create a sanitized, shareable copy of an assessment package."""
+    if not input_dir.exists():
+        console.print(f"[red]Input directory not found: {input_dir}[/red]")
+        raise typer.Exit(code=1)
+
+    try:
+        manifest = sanitize_assessment(
+            input_dir,
+            out,
+            exclude_raw_datasets=not include_raw_datasets,
+        )
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    console.print(f"[green]Sanitized package written to {out}[/green]")
+    console.print(f"  Included: {len(manifest['included_files'])}")
+    console.print(f"  Excluded: {len(manifest['excluded_files'])}")
+    console.print(f"  Redacted: {len(manifest['redactions'])}")
 
 
 # ---------------------------------------------------------------------------
