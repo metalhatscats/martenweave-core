@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -47,3 +49,21 @@ def test_evidence_ingest_cli_from_markdown_fixture(sample_repo: Path):
     assert result.exit_code == 0, result.output
     assert out.exists()
     assert "PatchProposal" in result.output
+
+
+def test_evidence_ingest_cli_unsupported_format(sample_repo: Path):
+    bad = sample_repo.parent / "report.json"
+    bad.write_text('{"findings": []}')
+    result = runner.invoke(
+        app,
+        [
+            "evidence",
+            "ingest",
+            "--repo",
+            str(sample_repo),
+            "--from",
+            str(bad),
+        ],
+    )
+    assert result.exit_code == 1, result.output
+    assert "Unsupported evidence format" in result.output

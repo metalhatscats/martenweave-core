@@ -6294,7 +6294,11 @@ def evidence_ingest(
         console.print(f"[red]Source not found: {source_path}[/red]")
         raise typer.Exit(code=1)
 
-    result = ingest_evidence(model_path, source_path, output_format=fmt)
+    try:
+        result = ingest_evidence(model_path, source_path, output_format=fmt)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
 
     if out:
         out.parent.mkdir(parents=True, exist_ok=True)

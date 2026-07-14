@@ -12,7 +12,10 @@ _ID_RE = re.compile(r"^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$")
 def parse_markdown_note(path: Path) -> list[EvidenceFinding]:
     findings: list[EvidenceFinding] = []
     for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
-        stripped = line.strip().lstrip("-* ")
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        stripped = stripped.lstrip("-* ")
         if not stripped:
             continue
         obj_id = _extract_object_id(stripped)
