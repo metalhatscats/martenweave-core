@@ -75,7 +75,7 @@
 | [docs/team-collaboration-model.md](team-collaboration-model.md) | Roles, workflows, and collaboration patterns |
 | [docs/security-procurement-checklist.md](security-procurement-checklist.md) | Security and procurement readiness |
 | [docs/known-limitations.md](known-limitations.md) | Current limitations and honest release caveats |
-| [docs/open-source-readiness.md](open-source-readiness.md) | License, contribution, security, CI, and public-claim readiness |
+| [docs/open-source-readiness.md](open-source-readiness.md) | Source-availability, contribution, security, CI, and public-claim readiness |
 | [docs/release-checklist.md](release-checklist.md) | Release verification commands and go/no-go checklist |
 | [docs/release-notes-first-public-rc.md](release-notes-first-public-rc.md) | Draft notes for the first public release candidate |
 | [docs/release-validation-evidence.md](release-validation-evidence.md) | Local validation results, proof commands, and known blockers |

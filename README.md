@@ -13,7 +13,7 @@ analysis, and human-approved AI patch proposals. The model registry is the sourc
 inside this pipeline, not the whole product category.
 
 SAP migration and Master Data Management are the **first domain pack** and proof case, not the
-product boundary. The open-source core also works with generic data models: domains, entities,
+product boundary. The source-available core also works with generic data models: domains, entities,
 attributes, relationships, datasets, mappings, rules, evidence, decisions, and change proposals.
 
 **Martenweave Core** is the CLI-driven, backend-first library that owns the canonical model layer.
@@ -30,18 +30,18 @@ For Workbench setup and development notes, see [`frontend/README.md`](frontend/R
 
 - Current source version: `0.5.0`
 - Package / PyPI name: `martenweave-core`
-- Install from PyPI: `pip install martenweave-core`
+- PyPI currently installs the historical MIT-licensed 0.4.1 release.
 - Source install remains available for contributors and local development.
 - Public site and docs: <https://martenweave.github.io/>
 
 ## Naming
 
 - Product: **Martenweave**
-- Open-source core / PyPI package: `martenweave-core`
+- Source-available core / PyPI package: `martenweave-core`
 - Python module: `modelops_core`
 - CLI commands: `modelops` and `martenweave`
 
-`martenweave-core` is the backend-first open-source core package for the Martenweave product. Use
+`martenweave-core` is the backend-first source-available core package for the Martenweave product. Use
 `martenweave` for new terminal examples and documentation. The existing `modelops` command remains
 supported for backward compatibility with scripts, CI jobs, and early adopters.
 
@@ -101,6 +101,9 @@ martenweave run dataset-readiness --repo ./model --dataset customers.xlsx --out 
 Martenweave Core requires Python 3.11+.
 
 ### Install from PyPI
+
+PyPI currently serves the historical `0.4.1` release under MIT. These commands install that
+version, not the current source-available development line:
 
 ```bash
 python -m pip install martenweave-core
