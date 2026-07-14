@@ -8,6 +8,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Query
 
 from modelops_core import __version__
+from modelops_core.api import v1
 from modelops_core.approval.risk_service import compute_proposal_risk
 from modelops_core.change_request.service import find_approved_cr_for_proposal
 from modelops_core.config import load_repo_config, resolve_generated_path, resolve_model_path
@@ -29,6 +30,9 @@ app = FastAPI(
 
 def _resolve_repo(repo: str | None) -> Path:
     return Path(repo).resolve() if repo else Path.cwd().resolve()
+
+
+app.include_router(v1.router)
 
 
 @app.get("/health")
