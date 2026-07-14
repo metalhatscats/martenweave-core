@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
+from modelops_core.gaps.gap_detection import DatasetGapReport, promote_gaps_to_proposal
+from modelops_core.imports.model_sheet_import_service import import_model_sheet_xlsx
+from modelops_core.repository import scan_repository
 from modelops_core.schemas.common import SourceState
 from modelops_core.source_state import (
     classify_artifact,
@@ -53,3 +58,46 @@ def test_classify_artifact() -> None:
 def test_classify_dataset_gap() -> None:
     assert classify_dataset_gap("UNMODELED_DATASET_COLUMN") == "finding"
     assert classify_dataset_gap("MISSING_OWNER") == "finding"
+
+
+def test_import_sheet_returns_proposal_not_canonical(temp_model_dir: Path) -> None:
+    pytest.importorskip("openpyxl")
+    from openpyxl import Workbook
+
+    model_path = temp_model_dir
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Attribute"
+    ws.append(["id", "type", "name", "status"])
+    ws.append(["ATTR-TEST-NEW", "Attribute", "Test", "draft"])
+    xlsx = temp_model_dir.parent / "new_attrs.xlsx"
+    wb.save(xlsx)
+    wb.close()
+
+    before = set(scan_repository(model_path))
+    proposal = import_model_sheet_xlsx(xlsx, model_path)
+    after = set(scan_repository(model_path))
+
+    assert proposal["type"] == "PatchProposal"
+    assert proposal["source_state"] == "proposal"
+    assert before == after
+
+
+def test_gap_promotion_creates_proposal_not_canonical(temp_model_dir: Path) -> None:
+    model_path = temp_model_dir
+    before = set(scan_repository(model_path))
+
+    report = DatasetGapReport(dataset_id="TEST")
+    path = promote_gaps_to_proposal(report, model_path)
+
+    after = set(scan_repository(model_path))
+    assert path.name.startswith("PP-")
+    assert "patch-proposals" in str(path)
+    assert after - before == {str(path)}
+
+    # The written proposal file is classified as a proposal, not canonical.
+    assert path.name.endswith(".md")
+    from modelops_core.repository import parse_file
+
+    parsed = parse_file(path)
+    assert parsed.frontmatter.get("source_state") == "proposal"
