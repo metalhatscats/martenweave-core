@@ -18,6 +18,8 @@ _PROPOSAL_ID_SANITIZE_RE = re.compile(r"[^A-Z0-9]+")
 def _sanitize_proposal_id(stem: str) -> str:
     """Turn a file stem into a valid uppercase PatchProposal ID suffix."""
     sanitized = _PROPOSAL_ID_SANITIZE_RE.sub("-", stem.upper()).strip("-")
+    if not sanitized:
+        sanitized = "EVIDENCE"
     return sanitized[:30]
 
 
@@ -183,6 +185,14 @@ def ingest_evidence(
 
     existing = _load_existing_objects(repo_model_path)
     operations, affected, skipped = _findings_to_operations(findings, existing)
+
+    # Preserve order while deduplicating affected object IDs
+    seen_affected: set[str] = set()
+    affected = [
+        obj_id
+        for obj_id in affected
+        if not (obj_id in seen_affected or seen_affected.add(obj_id))  # type: ignore[func-returns-value]
+    ]
 
     if output_format == "proposal":
         proposal_id = f"PP-EVIDENCE-{_sanitize_proposal_id(source_path.stem)}"

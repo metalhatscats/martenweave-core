@@ -6294,9 +6294,13 @@ def evidence_ingest(
         console.print(f"[red]Source not found: {source_path}[/red]")
         raise typer.Exit(code=1)
 
+    if fmt not in {"proposal", "summary"}:
+        console.print(f"[red]Invalid format: '{fmt}'. Use 'proposal' or 'summary'.[/red]")
+        raise typer.Exit(code=1)
+
     try:
         result = ingest_evidence(model_path, source_path, output_format=fmt)
-    except ValueError as exc:
+    except (ValueError, RuntimeError) as exc:
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1) from exc
 
