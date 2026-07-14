@@ -11,6 +11,7 @@ from typing import Any
 import yaml
 
 from modelops_core.patching.patch_model import PatchOperation
+from modelops_core.schemas.common import SourceState
 
 _ID_PATTERN = re.compile(r"^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$")
 
@@ -33,6 +34,7 @@ def build_patch_proposal(
         "created_by": created_by,
         "created_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source_evidence": source_evidence,
+        "source_state": SourceState.PROPOSAL.value,
         "affected_objects": affected_objects or [],
         "operations": [op.model_dump() for op in operations],
         "validation_status": "pending",

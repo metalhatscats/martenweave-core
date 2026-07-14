@@ -87,6 +87,15 @@ class ChangeRequestStatus(StrEnum):
     IMPLEMENTED = "implemented"
 
 
+class SourceState(StrEnum):
+    """Product-wide source-of-truth classification."""
+
+    EVIDENCE = "evidence"
+    FINDING = "finding"
+    PROPOSAL = "proposal"
+    CANONICAL = "canonical"
+
+
 class BaseObject(BaseModel):
     """Minimal shared fields for all canonical objects."""
 

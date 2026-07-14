@@ -1,6 +1,6 @@
 """Canonical schemas for Martenweave Core."""
 
-from modelops_core.schemas.common import BaseObject, GeneralStatus, ObjectType
+from modelops_core.schemas.common import BaseObject, GeneralStatus, ObjectType, SourceState
 from modelops_core.schemas.registry import (
     ObjectTypeEntry,
     ReferenceField,
@@ -17,6 +17,7 @@ __all__ = [
     "BaseObject",
     "GeneralStatus",
     "ObjectType",
+    "SourceState",
     "ObjectTypeEntry",
     "ReferenceField",
     "get_entry",

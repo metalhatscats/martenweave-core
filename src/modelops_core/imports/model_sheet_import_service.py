@@ -8,7 +8,7 @@ from typing import Any
 
 from modelops_core.patching.patch_model import PatchOperation
 from modelops_core.repository import parse_file, scan_repository
-from modelops_core.schemas import ObjectType
+from modelops_core.schemas import ObjectType, SourceState
 
 # Columns that are metadata / not frontmatter fields
 _META_COLUMNS = {"source_file", "reviewer_notes"}
@@ -288,6 +288,7 @@ def _build_proposal(
         "operations": [op.model_dump() for op in operations],
         "affected_objects": affected_objects,
         "source_evidence": {"import_source": source},
+        "source_state": SourceState.PROPOSAL.value,
         "created_by": "system",
         "warnings": warnings,
         "assumptions": ["Spreadsheet columns map directly to canonical frontmatter fields."],
