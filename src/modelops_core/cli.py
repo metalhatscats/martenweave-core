@@ -117,6 +117,7 @@ from modelops_core.patching.proposal_reviewer_summary import (
     generate_reviewer_summary,
     reviewer_summary_to_dict,
 )
+from modelops_core.pilot.preflight import run_preflight
 from modelops_core.reports.analysis_service import generate_analysis_report
 from modelops_core.reports.audit_service import (
     AuditEventService,
@@ -2878,6 +2879,68 @@ def migration_assessment(
         console.print(f"  [{color}]{stage.status}[/{color}] {stage.name}: {stage.message}")
     console.print(f"\n[bold]Artifacts[/bold]: {len(manifest.generated_artifacts)} files")
     console.print(f"[green]Manifest: {out / 'manifest.json'}[/green]")
+
+
+@app.command("pilot-preflight")
+@with_telemetry("pilot_preflight")
+def pilot_preflight(
+    mapping: Path = typer.Option(  # noqa: B008
+        ..., "--mapping", help="Path to the XLSX mapping workbook."
+    ),
+    dataset: list[Path] = typer.Option(  # noqa: B008
+        [], "--dataset", help="Path to a CSV or XLSX dataset (repeatable)."
+    ),
+    evidence: list[Path] = typer.Option(  # noqa: B008
+        [], "--evidence", help="Path to an evidence note (.md/.txt, repeatable)."
+    ),
+    validation_report: list[Path] = typer.Option(  # noqa: B008
+        [],
+        "--validation-report",
+        help="Path to a validation report (.csv/.xlsx, repeatable).",
+    ),
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Directory where preflight reports will be written."
+    ),
+    include_raw_samples: bool = typer.Option(
+        False,
+        "--include-raw-samples",
+        help="Include raw dataset sample values in the report (not recommended for sharing).",
+    ),
+) -> None:
+    """Inspect pilot input files for safety before running an assessment."""
+    if not mapping.exists():
+        console.print(f"[red]Mapping workbook not found: {mapping}[/red]")
+        raise typer.Exit(code=1)
+
+    all_inputs = [mapping, *dataset, *evidence, *validation_report]
+    for p in all_inputs:
+        if not p.exists():
+            console.print(f"[red]Input file not found: {p}[/red]")
+            raise typer.Exit(code=1)
+
+    report = run_preflight(
+        mapping_path=mapping,
+        dataset_paths=dataset,
+        evidence_paths=evidence,
+        validation_report_paths=validation_report,
+        out_dir=out,
+        include_raw_samples=include_raw_samples,
+    )
+
+    color = {"allowed": "green", "warning": "yellow", "blocked": "red"}.get(
+        report.overall_status, "white"
+    )
+    console.print(
+        f"[bold]Preflight complete:[/bold] [{color}]{report.overall_status}[/{color}]"
+    )
+    console.print(f"  Output: {out}")
+    for f in report.files:
+        fcolor = {"allowed": "green", "warning": "yellow", "blocked": "red"}.get(
+            f["status"], "white"
+        )
+        console.print(
+            f"  [{fcolor}]{f['status']}[/{fcolor}] {Path(f['path']).name}"
+        )
 
 
 # ---------------------------------------------------------------------------
