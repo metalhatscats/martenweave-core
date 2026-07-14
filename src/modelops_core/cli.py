@@ -5276,6 +5276,67 @@ def serve(
     uvicorn.run(api_app, host=host, port=port)
 
 
+@app.command("workbench")
+def workbench(
+    host: str = typer.Option("127.0.0.1", "--host", help="Bind host."),
+    port: int = typer.Option(8000, "--port", help="Bind port."),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    no_open: bool = typer.Option(False, "--no-open", help="Do not open a browser tab."),
+) -> None:
+    """Launch the local Martenweave Workbench (API + packaged UI)."""
+    try:
+        import uvicorn
+    except ImportError as exc:
+        console.print(
+            "[red]uvicorn is required for the workbench. "
+            "Install it with: pip install uvicorn[/red]"
+        )
+        raise typer.Exit(code=1) from exc
+
+    import importlib.resources
+    import webbrowser
+    from threading import Timer
+
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    if not model_path.exists():
+        console.print(
+            f"[red]Repository not found or missing model/ directory: {repo_root}[/red]"
+        )
+        raise typer.Exit(code=1)
+
+    # Prefer the in-tree frontend/dist during development; fall back to the
+    # packaged workbench_static directory shipped inside the wheel.
+    static_dir = Path("frontend/dist").resolve()
+    if not static_dir.is_dir():
+        static_dir = Path(str(importlib.resources.files("modelops_core") / "workbench_static"))
+
+    if not static_dir.is_dir():
+        console.print(
+            "[red]Workbench static files not found. Build the frontend first:\n"
+            "  cd frontend && npm run build[/red]"
+        )
+        raise typer.Exit(code=1)
+
+    from modelops_core.api.workbench_app import create_workbench_app
+
+    workbench_app = create_workbench_app(repo_root, static_dir)
+    url = f"http://{host}:{port}"
+
+    console.print(f"[green]Starting Martenweave Workbench at {url}[/green]")
+    console.print(f"  Repository: {repo_root}")
+    console.print(f"  Static files: {static_dir}")
+
+    if not no_open:
+        Timer(1.0, lambda: webbrowser.open(url)).start()
+
+    try:
+        uvicorn.run(workbench_app, host=host, port=port)
+    except SystemExit as exc:
+        # uvicorn raises SystemExit on startup failure (e.g. port in use).
+        raise typer.Exit(code=exc.code) from exc
+
+
 @app.command("mcp")
 def mcp_server_cmd(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),

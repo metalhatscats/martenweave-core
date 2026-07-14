@@ -72,6 +72,16 @@ mcp = [
 martenweave = "modelops_core.cli:app"
 modelops = "modelops_core.cli:app"
 
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+modelops_core = ["workbench_static/*", "workbench_static/**/*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
