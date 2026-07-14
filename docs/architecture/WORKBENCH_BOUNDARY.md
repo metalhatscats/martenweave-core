@@ -84,6 +84,20 @@ proposal → validation → review → approval → ChangeRequest → apply → 
 
 ---
 
+## Local API security model
+
+The local API is created by binding a single workspace at startup via `init_app(workspace)`. Once bound, the API does not accept repository paths from HTTP requests.
+
+| Control | Implementation |
+|---|---|
+| Workspace binding | `modelops_core.api.workspace.create_workspace(repo_root)` validates the repository layout and returns a `WorkspaceContext`. |
+| Session token | A 32-byte hex token is generated at startup. Mutations require the `X-Martenweave-Session-Token` header. The CLI prints the token when it starts the server. |
+| Path safety | User-supplied file paths (e.g., dataset inputs) must resolve inside the workspace roots (`repo_root`, `model/`, `generated/`, `data/`). Traversal, blocked segments (`.git`, `.env`, `.ssh`, `.gnupg`), and symlinks outside the workspace are rejected. |
+| Path redaction | Absolute paths are redacted to workspace-relative paths in JSON responses. Paths outside the workspace are replaced with `<outside-workspace>`. |
+| Read-only mode | `martenweave serve --read-only` disables all mutation endpoints (POST `/export`, `/gaps`, `/dataset-readiness`, proposal dry-run/apply/validate). |
+| CORS | Allowed origins default to `http://localhost` and `http://127.0.0.1`. Use `--allowed-origin` to add others. |
+| Capabilities | `GET /capabilities` returns the workspace name, read-only status, mutation allowance, and version so the Workbench can adapt its UI. |
+
 ## Capability modes
 
 The Workbench must respect the API capability contract:

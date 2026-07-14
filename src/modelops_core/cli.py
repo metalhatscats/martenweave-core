@@ -5253,8 +5253,16 @@ def serve(
     host: str = typer.Option("127.0.0.1", "--host", help="Bind host."),
     port: int = typer.Option(8000, "--port", help="Bind port."),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    read_only: bool = typer.Option(
+        False, "--read-only", help="Run the API in read-only mode; mutations are disabled."
+    ),
+    allowed_origin: list[str] = typer.Option(  # noqa: B008
+        ["http://localhost", "http://127.0.0.1"],
+        "--allowed-origin",
+        help="Allowed CORS origin (repeatable). Defaults to localhost and 127.0.0.1.",
+    ),
 ) -> None:
-    """Start the local API server."""
+    """Start the local API server bound to a single workspace."""
     try:
         import uvicorn
     except ImportError as exc:
@@ -5264,11 +5272,30 @@ def serve(
         )
         raise typer.Exit(code=1) from exc
 
-    repo_root = _resolve_repo(repo)
-    console.print(f"[green]Starting API server at http://{host}:{port}[/green]")
-    console.print(f"  Repository: {repo_root}")
+    from fastapi.middleware.cors import CORSMiddleware
 
-    from modelops_core.api.app import app as api_app
+    from modelops_core.api.app import init_app
+    from modelops_core.api.workspace import create_workspace
+
+    repo_root = _resolve_repo(repo)
+    workspace = create_workspace(repo_root, read_only=read_only, allowed_origins=allowed_origin)
+
+    console.print(f"[green]Starting API server at http://{host}:{port}[/green]")
+    console.print(f"  Repository: {workspace.repo_root}")
+    console.print(f"  Read-only:  {workspace.read_only}")
+    console.print(
+        f"  Session token: [bold]{workspace.session_token}[/bold] "
+        "(pass as X-Martenweave-Session-Token for mutations)"
+    )
+
+    api_app = init_app(workspace)
+    api_app.add_middleware(
+        CORSMiddleware,
+        allow_origins=workspace.allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     uvicorn.run(api_app, host=host, port=port)
 

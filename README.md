@@ -275,8 +275,14 @@ The Workbench is the official local UI surface. It is packaged as a static React
 served from the installed Python package. It connects to the local API started by `martenweave serve`.
 
 ```bash
+# Full mode: mutations require the printed session token
 martenweave serve --repo ./my-model
-# Open the workbench URL shown in the terminal
+
+# Read-only mode: inspection, reports, and viewers only
+martenweave serve --repo ./my-model --read-only
+
+# Allow an additional CORS origin for local development
+martenweave serve --repo ./my-model --allowed-origin http://localhost:3000
 ```
 
 See [`frontend/README.md`](frontend/README.md) for development build instructions.

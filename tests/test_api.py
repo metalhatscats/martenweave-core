@@ -8,23 +8,67 @@ import pytest
 from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
-from modelops_core.api.app import app
+from modelops_core.api.app import init_app
+from modelops_core.api.workspace import WorkspaceContext, create_workspace
 from modelops_core.cli import app as cli_app
 
-client = TestClient(app)
 runner = CliRunner()
 
 
+def _make_client(repo_root: Path, read_only: bool = False) -> tuple[TestClient, WorkspaceContext]:
+    """Create a TestClient bound to a workspace."""
+    workspace = create_workspace(repo_root, read_only=read_only)
+    app = init_app(workspace)
+    return TestClient(app), workspace
+
+
+def _session_header(workspace: WorkspaceContext) -> dict[str, str]:
+    return {"X-Martenweave-Session-Token": workspace.session_token}
+
+
+# ---------------------------------------------------------------------------
+# health / capabilities
+# ---------------------------------------------------------------------------
+
+
 def test_api_health(sample_repo: Path) -> None:
-    response = client.get("/health", params={"repo": str(sample_repo)})
+    client, _ws = _make_client(sample_repo)
+    response = client.get("/health")
     assert response.status_code == 200
     data = response.json()
     assert data["status"] in ("healthy", "no_index")
     assert data["repository"] == str(sample_repo)
 
 
+def test_api_capabilities(sample_repo: Path) -> None:
+    client, ws = _make_client(sample_repo)
+    response = client.get("/capabilities")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["workspace_name"]
+    assert data["read_only"] is False
+    assert data["allow_mutations"] is True
+    assert data["session_required"] is True
+    assert "version" in data
+
+
+def test_api_capabilities_read_only(sample_repo: Path) -> None:
+    client, _ws = _make_client(sample_repo, read_only=True)
+    response = client.get("/capabilities")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["read_only"] is True
+    assert data["allow_mutations"] is False
+
+
+# ---------------------------------------------------------------------------
+# objects
+# ---------------------------------------------------------------------------
+
+
 def test_api_list_objects(sample_repo: Path) -> None:
-    response = client.get("/objects", params={"repo": str(sample_repo)})
+    client, _ws = _make_client(sample_repo)
+    response = client.get("/objects")
     assert response.status_code == 200
     data = response.json()
     assert len(data) > 0
@@ -33,7 +77,8 @@ def test_api_list_objects(sample_repo: Path) -> None:
 
 
 def test_api_list_objects_by_type(sample_repo: Path) -> None:
-    response = client.get("/objects", params={"repo": str(sample_repo), "type": "MasterDataDomain"})
+    client, _ws = _make_client(sample_repo)
+    response = client.get("/objects", params={"type": "MasterDataDomain"})
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
@@ -41,7 +86,8 @@ def test_api_list_objects_by_type(sample_repo: Path) -> None:
 
 
 def test_api_get_object(sample_repo: Path) -> None:
-    response = client.get("/objects/DOMAIN-CUSTOMER-BP", params={"repo": str(sample_repo)})
+    client, _ws = _make_client(sample_repo)
+    response = client.get("/objects/DOMAIN-CUSTOMER-BP")
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == "DOMAIN-CUSTOMER-BP"
@@ -49,12 +95,19 @@ def test_api_get_object(sample_repo: Path) -> None:
 
 
 def test_api_get_object_not_found(sample_repo: Path) -> None:
-    response = client.get("/objects/DOES-NOT-EXIST", params={"repo": str(sample_repo)})
+    client, _ws = _make_client(sample_repo)
+    response = client.get("/objects/DOES-NOT-EXIST")
     assert response.status_code == 404
 
 
+# ---------------------------------------------------------------------------
+# validation
+# ---------------------------------------------------------------------------
+
+
 def test_api_validate(sample_repo: Path) -> None:
-    response = client.get("/validate", params={"repo": str(sample_repo)})
+    client, _ws = _make_client(sample_repo)
+    response = client.get("/validate")
     assert response.status_code == 200
     data = response.json()
     assert "is_valid" in data
@@ -62,46 +115,80 @@ def test_api_validate(sample_repo: Path) -> None:
     assert "warning_count" in data
 
 
+# ---------------------------------------------------------------------------
+# proposals
+# ---------------------------------------------------------------------------
+
+
 def test_api_list_proposals_empty(temp_model_dir: Path) -> None:
-    repo = str(temp_model_dir.parent)
-    response = client.get("/proposals", params={"repo": repo})
+    client, _ws = _make_client(temp_model_dir.parent)
+    response = client.get("/proposals")
     assert response.status_code == 200
     assert response.json() == []
 
 
 def test_api_get_proposal_not_found(temp_model_dir: Path) -> None:
-    repo = str(temp_model_dir.parent)
-    response = client.get("/proposals/PP-NOPE", params={"repo": repo})
+    client, _ws = _make_client(temp_model_dir.parent)
+    response = client.get("/proposals/PP-NOPE")
     assert response.status_code == 404
 
 
+# ---------------------------------------------------------------------------
+# export
+# ---------------------------------------------------------------------------
+
+
 def test_api_export_csv(temp_model_dir: Path) -> None:
-    repo = str(temp_model_dir.parent)
-    response = client.post("/export", params={"repo": repo, "format": "csv"})
+    client, ws = _make_client(temp_model_dir.parent)
+    response = client.post("/export", params={"format": "csv"}, headers=_session_header(ws))
     assert response.status_code == 200
     data = response.json()
     assert data["format"] == "csv"
     assert len(data["files"]) > 0
+    # Exported paths must be redacted to workspace-relative paths.
+    for f in data["files"]:
+        assert not Path(f).is_absolute()
 
 
 def test_api_export_xlsx(temp_model_dir: Path) -> None:
     pytest.importorskip("openpyxl")
-    repo = str(temp_model_dir.parent)
-    response = client.post("/export", params={"repo": repo, "format": "xlsx"})
+    client, ws = _make_client(temp_model_dir.parent)
+    response = client.post("/export", params={"format": "xlsx"}, headers=_session_header(ws))
     assert response.status_code == 200
     data = response.json()
     assert data["format"] == "xlsx"
-    assert Path(data["file"]).exists()
+    assert Path(temp_model_dir.parent / data["file"]).exists()
+    assert not Path(data["file"]).is_absolute()
 
 
 def test_api_export_invalid_format(temp_model_dir: Path) -> None:
-    repo = str(temp_model_dir.parent)
-    response = client.post("/export", params={"repo": repo, "format": "pdf"})
+    client, ws = _make_client(temp_model_dir.parent)
+    response = client.post(
+        "/export", params={"format": "pdf"}, headers=_session_header(ws)
+    )
     assert response.status_code == 400
 
 
+def test_api_export_requires_session_token(temp_model_dir: Path) -> None:
+    client, _ws = _make_client(temp_model_dir.parent)
+    response = client.post("/export", params={"format": "csv"})
+    assert response.status_code == 403
+
+
+def test_api_export_read_only_blocks_mutation(temp_model_dir: Path) -> None:
+    client, ws = _make_client(temp_model_dir.parent, read_only=True)
+    response = client.post("/export", params={"format": "csv"}, headers=_session_header(ws))
+    assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# impact
+# ---------------------------------------------------------------------------
+
+
 def test_api_impact_success(sample_repo: Path) -> None:
-    response = client.get("/impact/DOMAIN-CUSTOMER-BP", params={"repo": str(sample_repo)})
+    client, _ws = _make_client(sample_repo)
+    response = client.get("/impact/DOMAIN-CUSTOMER-BP")
     assert response.status_code == 200
     data = response.json()
     assert data["object_id"] == "DOMAIN-CUSTOMER-BP"
@@ -115,14 +202,15 @@ def test_api_impact_success(sample_repo: Path) -> None:
 
 def test_api_impact_not_found(sample_repo: Path) -> None:
     """Unknown object IDs must yield a clear 404, not an empty 200 report."""
-    response = client.get("/impact/DOES-NOT-EXIST", params={"repo": str(sample_repo)})
+    client, _ws = _make_client(sample_repo)
+    response = client.get("/impact/DOES-NOT-EXIST")
     assert response.status_code == 404
     assert "not found" in response.json()["detail"].lower()
 
 
 def test_api_impact_missing_index(temp_model_dir: Path) -> None:
-    repo = str(temp_model_dir.parent)
-    response = client.get("/impact/DOMAIN-TEST", params={"repo": repo})
+    client, _ws = _make_client(temp_model_dir.parent)
+    response = client.get("/impact/DOMAIN-TEST")
     assert response.status_code == 400
     assert "Index not found" in response.json()["detail"]
 
@@ -133,7 +221,8 @@ def test_api_impact_missing_index(temp_model_dir: Path) -> None:
 
 
 def test_api_trace_success(sample_repo: Path) -> None:
-    response = client.get("/trace/FEP-S4-KNVV-KDGRP", params={"repo": str(sample_repo)})
+    client, _ws = _make_client(sample_repo)
+    response = client.get("/trace/FEP-S4-KNVV-KDGRP")
     assert response.status_code == 200
     data = response.json()
     assert data["root_object_id"] == "FEP-S4-KNVV-KDGRP"
@@ -145,15 +234,16 @@ def test_api_trace_success(sample_repo: Path) -> None:
 
 
 def test_api_trace_missing_index(temp_model_dir: Path) -> None:
-    repo = str(temp_model_dir.parent)
-    response = client.get("/trace/DOMAIN-TEST", params={"repo": repo})
+    client, _ws = _make_client(temp_model_dir.parent)
+    response = client.get("/trace/DOMAIN-TEST")
     assert response.status_code == 400
     assert "Index not found" in response.json()["detail"]
 
 
 def test_api_trace_not_found(sample_repo: Path) -> None:
     """Unknown object IDs on the trace endpoint must yield a clear 404."""
-    response = client.get("/trace/DOES-NOT-EXIST", params={"repo": str(sample_repo)})
+    client, _ws = _make_client(sample_repo)
+    response = client.get("/trace/DOES-NOT-EXIST")
     assert response.status_code == 404
     assert "not found" in response.json()["detail"].lower()
 
@@ -172,7 +262,8 @@ def test_api_impact_success_after_build(sample_repo: Path) -> None:
     assert result.exit_code == 0
     assert db_path.exists()
 
-    response = client.get("/impact/DOMAIN-CUSTOMER-BP", params={"repo": str(sample_repo)})
+    client, _ws = _make_client(sample_repo)
+    response = client.get("/impact/DOMAIN-CUSTOMER-BP")
     assert response.status_code == 200
     data = response.json()
     assert data["object_id"] == "DOMAIN-CUSTOMER-BP"
@@ -209,9 +300,11 @@ def _create_test_proposal(model_path: Path, proposal_id: str, status: str) -> Pa
 
 
 def test_api_validate_proposal_success(temp_model_dir: Path) -> None:
-    repo = str(temp_model_dir.parent)
+    client, ws = _make_client(temp_model_dir.parent)
     _create_test_proposal(temp_model_dir, "PP-TEST-001", "pending_review")
-    response = client.post("/proposals/PP-TEST-001/validate", params={"repo": repo})
+    response = client.post(
+        "/proposals/PP-TEST-001/validate", headers=_session_header(ws)
+    )
     assert response.status_code == 200
     data = response.json()
     assert data["proposal_id"] == "PP-TEST-001"
@@ -223,8 +316,10 @@ def test_api_validate_proposal_success(temp_model_dir: Path) -> None:
 
 
 def test_api_validate_proposal_not_found(temp_model_dir: Path) -> None:
-    repo = str(temp_model_dir.parent)
-    response = client.post("/proposals/PP-MISSING/validate", params={"repo": repo})
+    client, ws = _make_client(temp_model_dir.parent)
+    response = client.post(
+        "/proposals/PP-MISSING/validate", headers=_session_header(ws)
+    )
     assert response.status_code == 404
     assert "not found" in response.json()["detail"].lower()
 
@@ -235,8 +330,10 @@ def test_api_validate_proposal_not_found(temp_model_dir: Path) -> None:
 
 
 def test_api_dry_run_proposal_not_found(temp_model_dir: Path) -> None:
-    repo = str(temp_model_dir.parent)
-    response = client.post("/proposals/PP-MISSING/dry-run", params={"repo": repo})
+    client, ws = _make_client(temp_model_dir.parent)
+    response = client.post(
+        "/proposals/PP-MISSING/dry-run", headers=_session_header(ws)
+    )
     assert response.status_code == 200
     data = response.json()
     assert data["proposal_id"] == "PP-MISSING"
@@ -246,9 +343,11 @@ def test_api_dry_run_proposal_not_found(temp_model_dir: Path) -> None:
 
 
 def test_api_dry_run_proposal_not_accepted(temp_model_dir: Path) -> None:
-    repo = str(temp_model_dir.parent)
+    client, ws = _make_client(temp_model_dir.parent)
     _create_test_proposal(temp_model_dir, "PP-TEST-002", "pending_review")
-    response = client.post("/proposals/PP-TEST-002/dry-run", params={"repo": repo})
+    response = client.post(
+        "/proposals/PP-TEST-002/dry-run", headers=_session_header(ws)
+    )
     assert response.status_code == 200
     data = response.json()
     assert data["proposal_id"] == "PP-TEST-002"
@@ -257,28 +356,46 @@ def test_api_dry_run_proposal_not_accepted(temp_model_dir: Path) -> None:
     assert "accepted" in data["error"].lower()
 
 
+def test_api_dry_run_requires_session_token(temp_model_dir: Path) -> None:
+    client, _ws = _make_client(temp_model_dir.parent)
+    response = client.post("/proposals/PP-MISSING/dry-run")
+    assert response.status_code == 403
+
+
+def test_api_dry_run_read_only_blocks_mutation(temp_model_dir: Path) -> None:
+    client, ws = _make_client(temp_model_dir.parent, read_only=True)
+    response = client.post(
+        "/proposals/PP-MISSING/dry-run", headers=_session_header(ws)
+    )
+    assert response.status_code == 403
+
+
 # ---------------------------------------------------------------------------
 # proposal apply
 # ---------------------------------------------------------------------------
 
 
 def test_api_apply_proposal_not_found(temp_model_dir: Path) -> None:
-    repo = str(temp_model_dir.parent)
-    response = client.post("/proposals/PP-MISSING/apply", params={"repo": repo})
+    client, ws = _make_client(temp_model_dir.parent)
+    response = client.post(
+        "/proposals/PP-MISSING/apply", headers=_session_header(ws)
+    )
     assert response.status_code == 404
     assert "not found" in response.json()["detail"].lower()
 
 
 def test_api_apply_proposal_not_accepted(temp_model_dir: Path) -> None:
-    repo = str(temp_model_dir.parent)
+    client, ws = _make_client(temp_model_dir.parent)
     _create_test_proposal(temp_model_dir, "PP-TEST-003", "pending_review")
-    response = client.post("/proposals/PP-TEST-003/apply", params={"repo": repo})
+    response = client.post(
+        "/proposals/PP-TEST-003/apply", headers=_session_header(ws)
+    )
     assert response.status_code == 400
     assert "accepted" in response.json()["detail"].lower()
 
 
 def test_api_apply_proposal_already_applied(temp_model_dir: Path) -> None:
-    repo = str(temp_model_dir.parent)
+    client, ws = _make_client(temp_model_dir.parent)
     _create_test_proposal(temp_model_dir, "PP-TEST-004", "accepted")
     # Mark as already applied
     proposal_path = temp_model_dir / "patch-proposals" / "PP-TEST-004.md"
@@ -287,9 +404,17 @@ def test_api_apply_proposal_already_applied(temp_model_dir: Path) -> None:
         "status: accepted", "status: accepted\napplied_at: 2024-01-01T00:00:00Z"
     )
     proposal_path.write_text(content, encoding="utf-8")
-    response = client.post("/proposals/PP-TEST-004/apply", params={"repo": repo})
+    response = client.post(
+        "/proposals/PP-TEST-004/apply", headers=_session_header(ws)
+    )
     assert response.status_code == 400
     assert "already been applied" in response.json()["detail"].lower()
+
+
+def test_api_apply_requires_session_token(temp_model_dir: Path) -> None:
+    client, _ws = _make_client(temp_model_dir.parent)
+    response = client.post("/proposals/PP-MISSING/apply")
+    assert response.status_code == 403
 
 
 # ---------------------------------------------------------------------------
@@ -322,7 +447,10 @@ def test_api_apply_high_risk_blocked_without_cr(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    response = client.post("/proposals/PP-API-HIGH-001/apply", params={"repo": str(repo_root)})
+    client, ws = _make_client(repo_root)
+    response = client.post(
+        "/proposals/PP-API-HIGH-001/apply", headers=_session_header(ws)
+    )
     assert response.status_code == 400
     data = response.json()
     assert "requires an approved ChangeRequest" in data["detail"]
@@ -370,7 +498,10 @@ def test_api_apply_high_risk_allowed_with_cr(tmp_path: Path) -> None:
         approve_change_request(model_dir, "CR-API-002", "alice")
     approve_change_request(model_dir, "CR-API-002", "bob")
 
-    response = client.post("/proposals/PP-API-HIGH-002/apply", params={"repo": str(repo_root)})
+    client, ws = _make_client(repo_root)
+    response = client.post(
+        "/proposals/PP-API-HIGH-002/apply", headers=_session_header(ws)
+    )
     assert response.status_code == 200
     data = response.json()
     assert data["proposal_id"] == "PP-API-HIGH-002"
@@ -402,9 +533,11 @@ def test_api_apply_high_risk_skip_still_requires_cr(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
+    client, ws = _make_client(repo_root)
     response = client.post(
         "/proposals/PP-API-HIGH-003/apply",
-        params={"repo": str(repo_root), "skip_risk_check": "true"},
+        params={"skip_risk_check": "true"},
+        headers=_session_header(ws),
     )
     assert response.status_code == 400
     data = response.json()
@@ -436,7 +569,10 @@ def test_api_apply_medium_risk_blocked_without_cr(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    response = client.post("/proposals/PP-API-MED-001/apply", params={"repo": str(repo_root)})
+    client, ws = _make_client(repo_root)
+    response = client.post(
+        "/proposals/PP-API-MED-001/apply", headers=_session_header(ws)
+    )
     assert response.status_code == 400
     data = response.json()
     assert "approval required" in data["detail"].lower()
@@ -496,10 +632,13 @@ def _build_repo_with_endpoint(tmp_path: Path) -> Path:
 
 def test_api_gaps_success(tmp_path: Path) -> None:
     repo = _build_repo_with_endpoint(tmp_path)
-    dataset = tmp_path / "customers.csv"
+    dataset = repo / "data" / "customers.csv"
     _write_csv(dataset, ["CUSTOMER_GROUP", "UNKNOWN"], [["A", "1"]])
 
-    response = client.post("/gaps", params={"repo": str(repo), "dataset": str(dataset)})
+    client, ws = _make_client(repo)
+    response = client.post(
+        "/gaps", params={"dataset": str(dataset)}, headers=_session_header(ws)
+    )
     assert response.status_code == 200
     data = response.json()
     assert data["coverage"]["total_columns"] == 2
@@ -510,20 +649,50 @@ def test_api_gaps_success(tmp_path: Path) -> None:
 
 def test_api_gaps_missing_dataset(tmp_path: Path) -> None:
     repo = _build_repo_with_endpoint(tmp_path)
+    (repo / "data").mkdir(parents=True, exist_ok=True)
+    client, ws = _make_client(repo)
     response = client.post(
-        "/gaps", params={"repo": str(repo), "dataset": str(tmp_path / "missing.csv")}
+        "/gaps",
+        params={"dataset": str(repo / "data" / "missing.csv")},
+        headers=_session_header(ws),
     )
     assert response.status_code == 404
     assert "Dataset not found" in response.json()["detail"]
 
 
+def test_api_gaps_path_traversal_rejected(tmp_path: Path) -> None:
+    repo = _build_repo_with_endpoint(tmp_path)
+    outside = tmp_path / "secret.csv"
+    outside.write_text("x", encoding="utf-8")
+    client, ws = _make_client(repo)
+    response = client.post(
+        "/gaps",
+        params={"dataset": str(repo / "data" / ".." / ".." / "secret.csv")},
+        headers=_session_header(ws),
+    )
+    assert response.status_code == 400
+    assert "outside" in response.json()["detail"].lower()
+
+
+def test_api_gaps_requires_session_token(tmp_path: Path) -> None:
+    repo = _build_repo_with_endpoint(tmp_path)
+    dataset = repo / "data" / "customers.csv"
+    _write_csv(dataset, ["CUSTOMER_GROUP"], [["A"]])
+    client, _ws = _make_client(repo)
+    response = client.post("/gaps", params={"dataset": str(dataset)})
+    assert response.status_code == 403
+
+
 def test_api_dataset_readiness_success(tmp_path: Path) -> None:
     repo = _build_repo_with_endpoint(tmp_path)
-    dataset = tmp_path / "customers.csv"
+    dataset = repo / "data" / "customers.csv"
     _write_csv(dataset, ["CUSTOMER_GROUP", "UNKNOWN"], [["A", "1"]])
 
+    client, ws = _make_client(repo)
     response = client.post(
-        "/dataset-readiness", params={"repo": str(repo), "dataset": str(dataset)}
+        "/dataset-readiness",
+        params={"dataset": str(dataset)},
+        headers=_session_header(ws),
     )
     assert response.status_code == 200
     data = response.json()
@@ -534,11 +703,29 @@ def test_api_dataset_readiness_success(tmp_path: Path) -> None:
 
 def test_api_dataset_readiness_unsupported_format(tmp_path: Path) -> None:
     repo = _build_repo_with_endpoint(tmp_path)
-    dataset = tmp_path / "customers.txt"
+    (repo / "data").mkdir(parents=True, exist_ok=True)
+    dataset = repo / "data" / "customers.txt"
     dataset.write_text("CUSTOMER_GROUP\nA\n", encoding="utf-8")
 
+    client, ws = _make_client(repo)
     response = client.post(
-        "/dataset-readiness", params={"repo": str(repo), "dataset": str(dataset)}
+        "/dataset-readiness",
+        params={"dataset": str(dataset)},
+        headers=_session_header(ws),
     )
     assert response.status_code == 400
     assert "Unsupported" in response.json()["detail"]
+
+
+def test_api_dataset_readiness_path_traversal_rejected(tmp_path: Path) -> None:
+    repo = _build_repo_with_endpoint(tmp_path)
+    outside = tmp_path / "secret.txt"
+    outside.write_text("x", encoding="utf-8")
+    client, ws = _make_client(repo)
+    response = client.post(
+        "/dataset-readiness",
+        params={"dataset": str(repo / "data" / ".." / ".." / "secret.txt")},
+        headers=_session_header(ws),
+    )
+    assert response.status_code == 400
+    assert "outside" in response.json()["detail"].lower()
