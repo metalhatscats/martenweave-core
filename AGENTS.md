@@ -152,50 +152,85 @@ ruff format .
 
 ### CLI Usage
 
-After installation, the `modelops` command is available. Run `modelops --help`
-for the full command list; the major groups are:
+After installation, the primary command is `martenweave`. The `modelops` alias
+is also installed for backward compatibility. Run `martenweave --help` for the
+full command list; the major groups are:
 
 ```bash
 # Scaffold and maintain a repository
-modelops init ./my-model
-modelops clean --repo ./my-model
-modelops doctor --repo ./my-model
+martenweave init ./my-model
+martenweave clean --repo ./my-model
+martenweave doctor --repo ./my-model
+martenweave migrate --repo ./my-model
+
+# Datasets and external sources
+martenweave profile-dataset ./data/sample.csv --repo ./my-model
+martenweave import-drive <file-id> --repo ./my-model
+martenweave import-sheet <sheet-id> --repo ./my-model
+martenweave sources --repo ./my-model
+martenweave source-show <source-id> --repo ./my-model
+martenweave infer-model --from-profile ./my-model/generated/profiles/sample.csv.json
 
 # Validate, index, and query
-modelops validate --repo ./my-model
-modelops build-index --repo ./my-model --jsonl
-modelops index-fresh --repo ./my-model
-modelops search "customer group" --repo ./my-model
-modelops query --repo ./my-model
+martenweave validate --repo ./my-model
+martenweave build-index --repo ./my-model --jsonl
+martenweave index-fresh --repo ./my-model
+martenweave search "customer group" --repo ./my-model
+martenweave query --repo ./my-model
 
-# Datasets and gaps
-modelops profile-dataset ./data/sample.csv --repo ./my-model
-modelops gaps --repo ./my-model
-modelops gap-report --repo ./my-model
-modelops infer-model --from-profile ./my-model/generated/profiles/sample.csv.json
+# Analysis, reports, impact, and lineage
+martenweave health --repo ./my-model
+martenweave scorecard --repo ./my-model
+martenweave readiness --repo ./my-model
+martenweave object-card <object-id> --repo ./my-model
+martenweave model-summary --repo ./my-model --out summary.md
+martenweave owners --repo ./my-model
+martenweave analyze --repo ./my-model
+martenweave risk-report --repo ./my-model
+martenweave gap-report --repo ./my-model
+martenweave trace <object-id> --repo ./my-model
+martenweave impact <object-id> --repo ./my-model
+martenweave executive-summary --repo ./my-model
+martenweave pilot-outcome --repo ./my-model
+martenweave diagnostics --repo ./my-model
 
-# Analysis, impact, and lineage
-modelops health --repo ./my-model
-modelops scorecard --repo ./my-model
-modelops analyze --repo ./my-model
-modelops impact FEP-S4-KNVV-KDGRP --repo ./my-model
-modelops trace FEP-S4-KNVV-KDGRP --repo ./my-model
-
-# Proposals, change requests, and reviews
-modelops propose-patch --from ./note.md --repo ./my-model
-modelops proposal review --proposal PP-0001 --repo ./my-model
-modelops change-request create --proposal PP-0001 --repo ./my-model
-modelops git-bundle --proposal PP-0001 --repo ./my-model
+# Proposals, change requests, reviews, and decisions
+martenweave propose-patch --from ./note.md --repo ./my-model
+martenweave agent-loop --goal ./goal.md --repo ./my-model
+martenweave proposal review --proposal PP-0001 --repo ./my-model
+martenweave change-request create --proposal PP-0001 --repo ./my-model
+martenweave decisions --repo ./my-model
+martenweave git-bundle --proposal PP-0001 --repo ./my-model
 
 # Exports, assessment, and lifecycle
-modelops export-model --format xlsx --repo ./my-model
-modelops export-schema --repo ./my-model
-modelops assessment --repo ./my-model
-modelops run dataset-readiness --repo ./my-model
+martenweave export-model --format xlsx --repo ./my-model
+martenweave export-schema --repo ./my-model
+martenweave export-sheets --repo ./my-model
+martenweave import-model-sheet ./edits.xlsx --repo ./my-model
+martenweave assessment --repo ./my-model
+martenweave assessment-review --repo ./my-model
+martenweave run dataset-readiness --repo ./my-model
+martenweave issue-draft --repo ./my-model
+martenweave publish-issue --draft ID-123 --repo ./my-model
+martenweave publish-pr --bundle ./bundle --repo ./my-model
 
-# Optional local integration surfaces, not a product UI
-modelops serve --repo ./my-model --host 127.0.0.1 --port 8000
-modelops mcp --repo ./my-model
+# Local integration surfaces
+martenweave serve --repo ./my-model --host 127.0.0.1 --port 8000
+martenweave workbench --repo ./my-model
+martenweave mcp --repo ./my-model
+
+# Utilities
+martenweave audit-log --repo ./my-model
+martenweave usage-report --repo ./my-model
+martenweave docs-build --repo ./my-model
+martenweave config-guard --repo ./my-model
+martenweave diff ./repo-a ./repo-b
+martenweave pilot-preflight --repo ./my-model
+martenweave demo-bundle --repo ./my-model
+martenweave review-pack --repo ./my-model
+martenweave ai-provider --repo ./my-model
+martenweave agent --repo ./my-model
+martenweave notifications --repo ./my-model
 ```
 
 ---
@@ -402,4 +437,4 @@ For deeper context, refer to the `docs/` directory:
 - **Add a new validation rule?** Extend `src/modelops_core/validation/pipeline.py` and add tests in `tests/test_*.py`.
 - **Change the generated index schema?** Update `src/modelops_core/index/sqlite_builder.py`.
 - **Add a new SAP context rule?** Add to `_SAP_CONTEXT_RULES` in `src/modelops_core/domain_packs/sap.py`.
-- **Never** edit files in `generated/` directly — they are rebuilt by `modelops build-index`.
+- **Never** edit files in `generated/` directly — they are rebuilt by `martenweave build-index`.
