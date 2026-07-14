@@ -5230,6 +5230,18 @@ def import_model_sheet(
                 console.print(f"  ... and {len(proposal['operations']) - 20} more")
 
 
+@app.command("import-excel-review")
+def import_excel_review(
+    input_path: Path = typer.Argument(  # noqa: B008
+        ..., help="Path to reviewed XLSX workbook."
+    ),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Import a reviewed XLSX workbook and generate a PatchProposal."""
+    import_model_sheet(input_path=input_path, repo=repo, json_output=json_output)
+
+
 @app.command("export-model")
 @with_telemetry("export-model")
 def export_model(
@@ -5237,6 +5249,9 @@ def export_model(
     fmt: str = typer.Option("csv", "--format", help="Export format: csv, xlsx, or json."),
     business_review: bool = typer.Option(
         False, "--business-review", help="Styled XLSX for non-technical review."
+    ),
+    out: Path | None = typer.Option(  # noqa: B008
+        None, "--out", help="Output file path (defaults to generated/exports)."
     ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
@@ -5247,7 +5262,9 @@ def export_model(
     limits = load_resource_limits(repo_root)
     try:
         if fmt.lower() == "csv":
-            written = export_model_csv(model_path, max_objects=limits.max_export_objects)
+            written = export_model_csv(
+                model_path, output_dir=out, max_objects=limits.max_export_objects
+            )
             if json_output:
                 print(
                     json.dumps(
@@ -5266,7 +5283,9 @@ def export_model(
                 console.print(f"  {f}")
             path = written[0] if written else None
         elif fmt.lower() == "json":
-            written = export_model_jsonl(model_path, max_objects=limits.max_export_objects)
+            written = export_model_jsonl(
+                model_path, output_dir=out, max_objects=limits.max_export_objects
+            )
             if json_output:
                 print(
                     json.dumps(
@@ -5287,6 +5306,7 @@ def export_model(
         elif fmt.lower() == "xlsx":
             path = export_model_xlsx(
                 model_path,
+                output_path=out,
                 max_objects=limits.max_export_objects,
                 business_review=business_review,
             )

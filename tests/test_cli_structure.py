@@ -83,6 +83,7 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
     "serve",
     "mcp",
     "import-model-sheet",
+    "import-excel-review",
     "export-model",
     "export-schema",
     "export-sheets",
