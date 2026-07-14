@@ -5251,7 +5251,9 @@ def export_model(
         False, "--business-review", help="Styled XLSX for non-technical review."
     ),
     out: Path | None = typer.Option(  # noqa: B008
-        None, "--out", help="Output file path (defaults to generated/exports)."
+        None,
+        "--out",
+        help="Output path: file for xlsx, directory for csv/json; defaults to generated/exports.",
     ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
