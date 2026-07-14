@@ -6,12 +6,12 @@
 
 ## Principle
 
-**Open core drives adoption.  Paid value accelerates outcomes.**
+**Open source drives adoption. Paid services accelerate outcomes.**
 
-The CLI, validation engine, and canonical model format are currently MIT-licensed. MIT permits
-commercial use. Paid offerings should add convenience, collaboration, facilitation, templates,
-future proprietary products, or expert support -- not imply that the current MIT core requires a
-paid license.
+The CLI, validation engine, and canonical model format are licensed under Apache License 2.0.
+Users may deploy and extend the Core themselves, including for commercial work. Paid offerings add
+expertise, facilitation, integrations, packs, support, training, or managed functionality; they do
+not restrict the open-source Core.
 
 For the explicit licensing decision record, see
 [licensing-and-commercial-use.md](licensing-and-commercial-use.md).
@@ -20,7 +20,7 @@ For the explicit licensing decision record, see
 
 ## Packaging Options
 
-### 1. MIT Core CLI (Free, Commercial Use Allowed)
+### 1. Apache-Licensed Core CLI (Free, Commercial Use Allowed)
 
 | What | Included |
 |---|---|
@@ -31,9 +31,9 @@ For the explicit licensing decision record, see
 | AI scaffold | NoProviderAdapter (deterministic) |
 | Telemetry | Local usage and AI usage event logging |
 
-**Why free**: A data model registry is infrastructure. Locking basic documentation behind a paywall
-destroys trust with data architects. Under the current MIT license, commercial use of the core is
-allowed; paid work must be positioned as optional services, support, templates, or future products.
+**Why free**: A data model registry is infrastructure. Open-source code and documentation build
+trust with data architects. Paid work is positioned as optional services, support, templates,
+integrations, packs, or future hosted products.
 
 ### 2. Team Pilot Package (Paid Facilitation, Optional)
 
@@ -59,7 +59,7 @@ allowed; paid work must be positioned as optional services, support, templates, 
 | Support | Email support, 48-hour response |
 
 **Pricing hypothesis**: $500–$2,000/month per team (10–25 users), for future hosted/team
-functionality rather than the current MIT core
+functionality rather than access to the Apache-licensed Core
 **Target**: Teams that have completed a pilot and want to scale  
 **Risk**: Building a web UI is significant scope; defer until CLI adoption is proven
 

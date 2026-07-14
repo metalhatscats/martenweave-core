@@ -2,9 +2,10 @@
 
 [![CI](https://github.com/metalhatscats/martenweave-core/actions/workflows/ci.yml/badge.svg)](https://github.com/metalhatscats/martenweave-core/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-Backend-first, open-source model governance pipeline for SAP migration and Master Data Management.
+An open-source, backend-first model governance and evidence layer for SAP migration, MDM, data
+governance, and AMS.
 
 Martenweave turns spreadsheets, datasets, tickets, validation reports, decisions, and SAP context
 into canonical model files, deterministic validation, dataset gap reports, lineage, impact
@@ -26,7 +27,7 @@ replace the CLI-first core workflow.
 
 ## Status
 
-- Current source version: `0.4.1`
+- Current source version: `0.5.0`
 - Package / PyPI name: `martenweave-core`
 - Install from PyPI: `pip install martenweave-core`
 - Source install remains available for contributors and local development.
@@ -366,16 +367,16 @@ Release and public-readiness docs:
 
 ## Licensing and commercial use
 
-Martenweave Core is MIT-licensed open source. Commercial offerings may include implementation
-support, private SAP/MDM domain packs, enterprise validation packs, a hosted workbench, custom
-integrations, and support SLAs. Future extensions, templates, packs, or hosted services may be
-distributed under separate commercial terms.
+Martenweave Core is open-source software licensed under Apache License 2.0. It may be used,
+modified, embedded, and distributed, including for internal and commercial purposes, subject to
+the license terms.
 
-By contributing to Martenweave Core, contributors agree their contribution is licensed under the
-same MIT License as the project. No separate contributor license agreement is required at this
-stage.
+Organizations may also engage the Martenweave team for implementation, SAP/MDM domain modelling,
+validation packs, integrations, assessments, support, training, and design-partner engagements.
+These optional services do not limit the rights granted for the Core.
 
 ## License
 
-MIT. See [docs/licensing-and-commercial-use.md](docs/licensing-and-commercial-use.md) for the
-current commercial-use clarification and future licensing options.
+Apache License 2.0. See
+[docs/licensing-and-commercial-use.md](docs/licensing-and-commercial-use.md) for the current
+licensing and commercial-services model.

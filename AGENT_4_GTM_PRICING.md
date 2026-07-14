@@ -3,7 +3,7 @@
 
 **Date:** 2026-06-09
 **Product Version:** 0.4.0
-**Status:** MIT License, Zero Revenue, Zero Customers, No UI
+**Status:** Apache License 2.0, Zero Revenue, Zero Customers, No UI
 
 ---
 
@@ -19,7 +19,7 @@ Martenweave is a backend-first, CLI-driven agentic data model registry. It is te
 
 | Dimension | Reality |
 |-----------|---------|
-| License | MIT (open source, no restrictions) |
+| License | Apache License 2.0 (open source; license conditions apply) |
 | Distribution | `pip install martenweave-core` |
 | Interface | CLI only (`modelops` command) |
 | Examples | 4 working models (Customer BP, Supplier/Vendor, Simple Product, Generic Product) |
@@ -56,7 +56,7 @@ Martenweave is a backend-first, CLI-driven agentic data model registry. It is te
 | Dimension | Assessment |
 |-----------|------------|
 | **Buyer** | SAP consultancy (boutique or mid-tier) that wants to deliver migration/MDM projects faster and with better documentation handover. |
-| **Offer** | "Martenweave-enabled delivery": the consultancy uses Martenweave internally to model client data, generate gap reports, and produce AMS handover docs. Client pays for the migration project, not the tool. Tool is free (MIT). |
+| **Offer** | "Martenweave-enabled delivery": the consultancy uses Martenweave internally to model client data, generate gap reports, and produce AMS handover docs. Client pays for the migration project, not the Apache-licensed Core. |
 | **Price Hypothesis** | Project markup of 15–25% for "model-driven delivery." Example: $200K migration project → $30K–$50K premium for traceable model docs, gap analysis, and AI-assisted patch workflow. |
 | **Sales Motion** | Direct outreach to SAP consultancies. Pilot with 1–2 friendly firms. Case study from pilot. |
 | **Proof Needed** | 1. A consultancy actually using it on a live project. 2. A case study showing time saved or defects caught. 3. Training deck for consultants. 4. White-labelable output (client-ready reports). |
