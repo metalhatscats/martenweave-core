@@ -1,0 +1,4 @@
+object_id,severity,message
+ATTR-CUSTOMER-GROUP,error,Missing mapping to FEP-S4-KNVV-KDGRP
+DOMAIN-CUSTOMER-BP,warning,No business owner assigned
+FEP-S4-KNVV-KDGRP,info,Review enrichment for customer group

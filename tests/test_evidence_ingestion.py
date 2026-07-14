@@ -25,3 +25,11 @@ def test_ingest_csv_validation_report(sample_repo: Path):
     result = ingest_evidence(sample_repo, report, output_format="proposal")
     assert result["type"] == "PatchProposal"
     assert len(result["operations"]) >= 1
+
+
+def test_ingest_sample_csv_report(sample_repo: Path):
+    report = Path(__file__).parent / "fixtures" / "evidence" / "sample_validation_report.csv"
+    result = ingest_evidence(sample_repo, report, output_format="proposal")
+    assert result["type"] == "PatchProposal"
+    assert result["source_evidence"] == str(report)
+    assert len(result["operations"]) >= 2
