@@ -26,19 +26,12 @@ def _build_minimal_repo(
     repo_root.mkdir()
 
     config_path = repo_root / "modelops.config.yaml"
-    config_path.write_text(
-        'schema_version: "1.0"\nname: Test Repository\n', encoding="utf-8"
-    )
+    config_path.write_text('schema_version: "1.0"\nname: Test Repository\n', encoding="utf-8")
 
     model_dir = repo_root / "model"
     model_dir.mkdir()
     (model_dir / "PERSON-OWNER.md").write_text(
-        "---\n"
-        "id: PERSON-OWNER\n"
-        "type: Person\n"
-        "status: active\n"
-        "name: Test Owner\n"
-        "---\n",
+        "---\nid: PERSON-OWNER\ntype: Person\nstatus: active\nname: Test Owner\n---\n",
         encoding="utf-8",
     )
     (model_dir / "DOMAIN-TEST.md").write_text(

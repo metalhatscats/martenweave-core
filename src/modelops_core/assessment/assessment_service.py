@@ -602,9 +602,7 @@ def _render_high_risk_mappings_md(risk_items: list[_RiskItem], repo_name: str) -
         if len(item.reasons) > 3:
             reasons += f"; +{len(item.reasons) - 3} more"
         name = item.object_name or "—"
-        lines.append(
-            f"| `{item.object_id}` | {name} | {item.severity} | {reasons} |"
-        )
+        lines.append(f"| `{item.object_id}` | {name} | {item.severity} | {reasons} |")
     lines.append("")
     return "\n".join(lines)
 

@@ -178,9 +178,7 @@ class TestReviewerSummaryCli:
         write_patch_proposal(proposal, repo_root / "model")
 
         runner = CliRunner()
-        result = runner.invoke(
-            app, ["proposal", "show", "PP-TEST-002", "--repo", str(repo_root)]
-        )
+        result = runner.invoke(app, ["proposal", "show", "PP-TEST-002", "--repo", str(repo_root)])
         assert result.exit_code == 0
         assert "Reviewer summary" in result.output
         assert "Recommended action" in result.output

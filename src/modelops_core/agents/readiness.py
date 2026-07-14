@@ -159,7 +159,8 @@ class ReadinessAgent:
                 )
                 validation_results = validate_patch_proposal(proposal, repo_model_path=model_path)
                 proposal["validation_status"] = (
-                    "valid" if not any(v.severity == "ERROR" for v in validation_results)
+                    "valid"
+                    if not any(v.severity == "ERROR" for v in validation_results)
                     else "invalid"
                 )
                 proposal["validation_results"] = [v.model_dump() for v in validation_results]
@@ -262,11 +263,7 @@ class ReadinessAgent:
             "model_completeness",
         }
         for metric in report.metrics:
-            if (
-                metric.name in _COVERAGE_METRICS
-                and metric.value == 0.0
-                and metric.status == "pass"
-            ):
+            if metric.name in _COVERAGE_METRICS and metric.value == 0.0 and metric.status == "pass":
                 blockers.append(
                     ReadinessBlocker(
                         gate="scorecard_zero_coverage_pass",
@@ -310,9 +307,7 @@ class ReadinessAgent:
             for orphan in report.orphaned_objects
         ]
 
-    def _check_validation_coverage(
-        self, db_path: Path, profile: str
-    ) -> list[ReadinessBlocker]:
+    def _check_validation_coverage(self, db_path: Path, profile: str) -> list[ReadinessBlocker]:
         """Check that validation-rule coverage meets the profile threshold."""
         thresholds = self._PROFILE_THRESHOLDS.get(profile, self._PROFILE_THRESHOLDS["pilot"])
         min_coverage = thresholds.get("min_validation_rule_coverage", 40.0)
@@ -426,9 +421,7 @@ class ReadinessAgent:
         # This hook is for future gates like "missing description" with a generated value.
         return []
 
-    def _write_issues(
-        self, blockers: list[ReadinessBlocker], model_path: Path
-    ) -> list[str]:
+    def _write_issues(self, blockers: list[ReadinessBlocker], model_path: Path) -> list[str]:
         """Write Issue canonical files for readiness blockers."""
         issues_dir = model_path / "issues"
         if not self.dry_run:

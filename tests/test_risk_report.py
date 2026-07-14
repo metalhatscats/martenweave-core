@@ -15,9 +15,7 @@ runner = CliRunner()
 
 def test_risk_report_command_creates_markdown(sample_repo: Path, tmp_path: Path) -> None:
     out = tmp_path / "high_risk_fields.md"
-    result = runner.invoke(
-        app, ["risk-report", "--repo", str(sample_repo), "--out", str(out)]
-    )
+    result = runner.invoke(app, ["risk-report", "--repo", str(sample_repo), "--out", str(out)])
     assert result.exit_code == 0, result.output
     assert out.exists()
     content = out.read_text(encoding="utf-8")
