@@ -5232,6 +5232,7 @@ def import_model_sheet(
 
 
 @app.command("import-excel-review")
+@with_telemetry("import-excel-review")
 def import_excel_review(
     input_path: Path = typer.Argument(  # noqa: B008
         ..., help="Path to reviewed XLSX workbook."
@@ -6279,7 +6280,9 @@ def evidence_ingest(
     ),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     out: Path | None = typer.Option(  # noqa: B008
-        None, "--out", help="Output PatchProposal file path."
+        None,
+        "--out",
+        help="Output file path (Markdown PatchProposal for --format proposal, JSON for summary).",
     ),
     fmt: str = typer.Option("proposal", "--format", help="Output format: proposal or summary."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
@@ -6300,8 +6303,8 @@ def evidence_ingest(
 
     try:
         result = ingest_evidence(model_path, source_path, output_format=fmt)
-    except (ValueError, RuntimeError) as exc:
-        console.print(f"[red]{exc}[/red]")
+    except Exception as exc:
+        console.print(f"[red]Failed to ingest evidence: {exc}[/red]")
         raise typer.Exit(code=1) from exc
 
     if out:

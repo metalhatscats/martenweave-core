@@ -38,6 +38,8 @@ def parse_csv_report(path: Path) -> list[EvidenceFinding]:
         reader = csv.DictReader(f)
         for lineno, row in enumerate(reader, start=2):
             message = row.get("message") or row.get("issue") or row.get("description") or ""
+            if not message:
+                continue
             obj_id = row.get("object_id") or _extract_object_id(message)
             kind, field = _classify_text(message)
             findings.append(
