@@ -61,7 +61,15 @@ import {
   useNodesState,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { API_STATE, ApiProvider, useApi, useObjectDetail, useObjectSearch } from "./api.jsx";
+import {
+  API_STATE,
+  ApiProvider,
+  objectTypeToTone,
+  useApi,
+  useLineage,
+  useObjectDetail,
+  useObjectSearch,
+} from "./api.jsx";
 import {
   fields,
   gaps,
@@ -1036,11 +1044,12 @@ function ModelNode({ data, selected }) {
 
 const nodeTypes = { model: ModelNode };
 
-function LineageScreen({ navigate, onExport }) {
-  const [allNodes, , onNodesChange] = useNodesState(lineageNodes);
-  const [allEdges, , onEdgesChange] = useEdgesState(lineageEdges);
+export function LineageScreen({ navigate, params, onExport }) {
+  const objectId = params.get("id") || "DOMAIN-CUSTOMER-BP";
+  const [direction, setDirection] = useState("both");
   const [depth, setDepth] = useState("All levels");
-  const [selected, setSelected] = useState("canonical");
+  const [view, setView] = useState("graph");
+  const [selected, setSelected] = useState(objectId);
   const [panelOpen, setPanelOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [nodeQuery, setNodeQuery] = useState("");
@@ -1054,16 +1063,25 @@ function LineageScreen({ navigate, onExport }) {
     proposal: true,
   });
 
-  const selectedNode = useMemo(
-    () => allNodes.find((node) => node.id === selected),
-    [allNodes, selected],
+  const maxDepth = depth === "1 level" ? 1 : depth === "2 levels" ? 2 : 5;
+  const { nodes: allNodes, edges: allEdges, upstream, downstream, impact, loading, error } =
+    useLineage(objectId, direction, maxDepth);
+
+  useEffect(() => {
+    setSelected(objectId);
+  }, [objectId]);
+
+  const rootNode = useMemo(
+    () => allNodes.find((node) => node.id === objectId) || allNodes[0],
+    [allNodes, objectId]
   );
 
-  const selectedObjectId = useMemo(() => {
-    if (selectedNode?.id === "canonical") return "DOMAIN-CUSTOMER-BP";
-    const found = modelObjects.find((obj) => obj.name === selectedNode?.data?.label);
-    return found?.id || "DOMAIN-CUSTOMER-BP";
-  }, [selectedNode]);
+  const selectedNode = useMemo(
+    () => allNodes.find((node) => node.id === selected) || rootNode,
+    [allNodes, selected, rootNode]
+  );
+
+  const selectedObjectId = selectedNode?.id || objectId;
 
   const inspectorTone =
     selectedNode?.data?.tone === "canonical"
@@ -1074,20 +1092,13 @@ function LineageScreen({ navigate, onExport }) {
 
   const visibleNodeIds = useMemo(() => {
     const query = nodeQuery.trim().toLowerCase();
-    const depthIds =
-      depth === "1 level"
-        ? new Set(["staging", "canonical", "gap-tax", "proposal27"])
-        : depth === "2 levels"
-          ? new Set(["salesforce", "sap", "staging", "canonical", "mdm", "analytics", "gap-tax", "proposal27"])
-          : null;
     return new Set(
       allNodes
         .filter((node) => visibleLayers[node.data.tone] !== false)
-        .filter((node) => !depthIds || depthIds.has(node.id))
         .filter((node) => !query || `${node.data.label} ${node.data.meta}`.toLowerCase().includes(query))
-        .map((node) => node.id),
+        .map((node) => node.id)
     );
-  }, [allNodes, depth, nodeQuery, visibleLayers]);
+  }, [allNodes, nodeQuery, visibleLayers]);
 
   const nodes = useMemo(
     () =>
@@ -1096,7 +1107,7 @@ function LineageScreen({ navigate, onExport }) {
         hidden: !visibleNodeIds.has(node.id),
         selected: node.id === selected,
       })),
-    [allNodes, visibleNodeIds, selected],
+    [allNodes, visibleNodeIds, selected]
   );
 
   const edges = useMemo(
@@ -1105,14 +1116,18 @@ function LineageScreen({ navigate, onExport }) {
         ...edge,
         hidden: !(visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target)),
       })),
-    [allEdges, visibleNodeIds],
+    [allEdges, visibleNodeIds]
   );
+
+  const title = rootNode?.data?.label
+    ? `${rootNode.data.label} lineage`
+    : "Object lineage";
 
   return (
     <div className="lineage-page">
       <div className="lineage-header page-pad">
         <PageHeader
-          title="Business Partner lineage"
+          title={title}
           description="Trace systems, transformations, canonical objects, and downstream impact."
           actions={
             <>
@@ -1132,7 +1147,12 @@ function LineageScreen({ navigate, onExport }) {
               placeholder="Find a node or field…"
             />
           </label>
+          <label className="select-control"><span>Direction</span><select value={direction} onChange={(event) => setDirection(event.target.value)}><option value="both">Both</option><option value="upstream">Upstream</option><option value="downstream">Downstream</option></select></label>
           <label className="select-control"><span>Depth</span><select value={depth} onChange={(event) => setDepth(event.target.value)}><option>1 level</option><option>2 levels</option><option>All levels</option></select></label>
+          <div className="view-toggle">
+            <button className={view === "graph" ? "is-active" : ""} onClick={() => setView("graph")} aria-label="Graph view">Graph</button>
+            <button className={view === "path" ? "is-active" : ""} onClick={() => setView("path")} aria-label="Path list view">Path</button>
+          </div>
           <button className={`secondary-button ${filtersOpen ? "is-active" : ""}`} onClick={() => setFiltersOpen((value) => !value)}>
             <Funnel size={17} /> Filters
           </button>
@@ -1155,32 +1175,85 @@ function LineageScreen({ navigate, onExport }) {
         )}
       </div>
       <div className="lineage-workspace">
-        <div className="lineage-canvas">
-          <div className="canvas-legend">
-            <span><i className="legend-source" /> Source</span>
-            <span><i className="legend-mapping" /> Transformation</span>
-            <span><i className="legend-canonical" /> Canonical</span>
-            <span><i className="legend-target" /> Target</span>
-            <span><i className="legend-gap" /> Gap</span>
-            <span><i className="legend-decision" /> Decision</span>
-            <span><i className="legend-proposal" /> Proposal</span>
+        {loading && <div className="empty-state"><CircleNotch className="spin" size={24} /> Loading lineage…</div>}
+        {error && <div className="empty-state"><WarningCircle size={24} /> {error}</div>}
+        {!loading && view === "graph" && (
+          <div className="lineage-canvas">
+            <div className="canvas-legend">
+              <span><i className="legend-source" /> Source</span>
+              <span><i className="legend-mapping" /> Transformation</span>
+              <span><i className="legend-canonical" /> Canonical</span>
+              <span><i className="legend-target" /> Target</span>
+              <span><i className="legend-gap" /> Gap</span>
+              <span><i className="legend-decision" /> Decision</span>
+              <span><i className="legend-proposal" /> Proposal</span>
+            </div>
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              nodeTypes={nodeTypes}
+              onNodeClick={(_, node) => { setSelected(node.id); setPanelOpen(true); }}
+              fitView
+              minZoom={0.55}
+              maxZoom={1.5}
+            >
+              <Background color="#dce4ef" gap={24} size={1} />
+              <Controls showInteractive={false} />
+              <MiniMap pannable zoomable nodeColor={(node) => node.data.tone === "canonical" ? "#2563eb" : "#cbd5e1"} />
+            </ReactFlow>
           </div>
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            nodeTypes={nodeTypes}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onNodeClick={(_, node) => { setSelected(node.id); setPanelOpen(true); }}
-            fitView
-            minZoom={0.55}
-            maxZoom={1.5}
-          >
-            <Background color="#dce4ef" gap={24} size={1} />
-            <Controls showInteractive={false} />
-            <MiniMap pannable zoomable nodeColor={(node) => node.data.tone === "canonical" ? "#2563eb" : "#cbd5e1"} />
-          </ReactFlow>
-        </div>
+        )}
+        {!loading && view === "path" && (
+          <div className="lineage-path-view page-pad">
+            <section className="surface">
+              <div className="section-title"><div><h2>Root object</h2><p>Selected lineage starting point</p></div></div>
+              <button className="result-row" onClick={() => navigate("object", { id: objectId })}>
+                <IconTile type={objectTypeToTone(rootNode?.data?.tone || "canonical")} />
+                <span className="result-copy">
+                  <span className="result-name"><strong>{rootNode?.data?.label || objectId}</strong></span>
+                  <span className="result-description">{rootNode?.data?.meta || objectId}</span>
+                </span>
+                <CaretRight size={18} />
+              </button>
+            </section>
+            <section className="surface">
+              <div className="section-title"><div><h2>Upstream</h2><p>Objects that feed into the root</p></div></div>
+              {upstream.length ? upstream.map((node) => (
+                <button className="result-row" key={node.object_id} onClick={() => navigate("object", { id: node.object_id })}>
+                  <IconTile type={objectTypeToTone(node.object_type)} />
+                  <span className="result-copy">
+                    <span className="result-name"><strong>{node.object_name || node.object_id}</strong></span>
+                    <span className="result-description">{node.object_type} · {node.object_id}</span>
+                  </span>
+                  <CaretRight size={18} />
+                </button>
+              )) : <p className="empty-state">No upstream objects visible.</p>}
+            </section>
+            <section className="surface">
+              <div className="section-title"><div><h2>Downstream</h2><p>Objects affected by the root</p></div></div>
+              {downstream.length ? downstream.map((node) => (
+                <button className="result-row" key={node.object_id} onClick={() => navigate("object", { id: node.object_id })}>
+                  <IconTile type={objectTypeToTone(node.object_type)} />
+                  <span className="result-copy">
+                    <span className="result-name"><strong>{node.object_name || node.object_id}</strong></span>
+                    <span className="result-description">{node.object_type} · {node.object_id}</span>
+                  </span>
+                  <CaretRight size={18} />
+                </button>
+              )) : <p className="empty-state">No downstream objects visible.</p>}
+            </section>
+            {impact && (
+              <section className="surface">
+                <div className="section-title"><div><h2>Impact summary</h2><p>Deterministic downstream traversal</p></div></div>
+                <div className="impact-grid">
+                  <div className="surface"><strong>{impact.upstream.length}</strong><span>Upstream objects</span></div>
+                  <div className="surface"><strong>{impact.downstream.length}</strong><span>Downstream objects</span></div>
+                  <div className="surface"><strong>{impact.total_affected}</strong><span>Total affected</span></div>
+                </div>
+              </section>
+            )}
+          </div>
+        )}
         {panelOpen && (
           <aside className="lineage-inspector">
             <div className="inspector-heading">
@@ -1194,14 +1267,15 @@ function LineageScreen({ navigate, onExport }) {
             </div>
             <div className="inspector-block">
               <small>Visible impact</small>
-              <div className="metric-pair"><span><strong>2</strong> upstream</span><span><strong>2</strong> downstream</span></div>
+              <div className="metric-pair"><span><strong>{upstream.length}</strong> upstream</span><span><strong>{downstream.length}</strong> downstream</span></div>
             </div>
             <div className="inspector-block">
               <small>Path evidence</small>
               <ul className="path-list">
-                <li><CheckCircle size={16} /> Salesforce → BP staging</li>
-                <li><CheckCircle size={16} /> SAP S/4HANA → BP staging</li>
-                <li><CheckCircle size={16} /> BP staging → Canonical</li>
+                {edges.slice(0, 6).map((edge) => (
+                  <li key={edge.id}><CheckCircle size={16} /> {edge.source} → {edge.target} <small>({edge.label})</small></li>
+                ))}
+                {!edges.length && <li><CheckCircle size={16} /> No visible edges.</li>}
               </ul>
             </div>
             <button className="primary-button full-width" onClick={() => navigate("object", { id: selectedObjectId })}>Open object details</button>

@@ -9,7 +9,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-import { modelObjects } from "./data.js";
+import { lineageEdges, lineageNodes, modelObjects } from "./data.js";
 
 /**
  * @typedef {object} Capability
@@ -65,9 +65,56 @@ import { modelObjects } from "./data.js";
  */
 
 /**
+ * @typedef {object} TraceNode
+ * @property {string} object_id
+ * @property {string} object_type
+ * @property {string} object_name
+ * @property {string} source_file
+ * @property {number} depth
+ */
+
+/**
+ * @typedef {object} TraceEdge
+ * @property {string} from_object_id
+ * @property {string} to_object_id
+ * @property {string} relationship_type
+ * @property {string} direction
+ */
+
+/**
+ * @typedef {object} TraceResponse
+ * @property {string} root_object_id
+ * @property {string} root_object_type
+ * @property {string} root_object_name
+ * @property {TraceNode[]} nodes
+ * @property {TraceEdge[]} edges
+ */
+
+/**
+ * @typedef {object} ImpactObject
+ * @property {string} object_id
+ * @property {string} object_type
+ * @property {string} object_name
+ * @property {string} relationship_type
+ * @property {number} depth
+ */
+
+/**
+ * @typedef {object} ImpactResponse
+ * @property {string} object_id
+ * @property {string} root_object_type
+ * @property {string} root_object_name
+ * @property {ImpactObject[]} upstream
+ * @property {ImpactObject[]} downstream
+ * @property {number} total_affected
+ */
+
+/**
  * @typedef {object} ApiClient
  * @property {(params?: {q?: string, type?: string, status?: string, domain?: string, limit?: number, offset?: number}) => Promise<SearchResponse>} search
  * @property {(id: string) => Promise<ObjectDetailResponse>} object
+ * @property {(id: string, opts?: {direction?: string, max_depth?: number}) => Promise<TraceResponse>} trace
+ * @property {(id: string) => Promise<ImpactResponse>} impact
  * @property {() => Promise<CapabilitiesResponse>} capabilities
  */
 
@@ -192,6 +239,13 @@ export function createApiClient(baseUrl) {
       return fetchJson(`${root}/api/v1/search?${params.toString()}`);
     },
     object: (id) => fetchJson(`${root}/api/v1/objects/${encodeURIComponent(id)}`),
+    trace: (id, { direction = "both", max_depth = 5 } = {}) => {
+      const params = new URLSearchParams();
+      params.set("direction", direction);
+      params.set("max_depth", String(max_depth));
+      return fetchJson(`${root}/trace/${encodeURIComponent(id)}?${params.toString()}`);
+    },
+    impact: (id) => fetchJson(`${root}/impact/${encodeURIComponent(id)}`),
   };
 }
 
@@ -462,4 +516,184 @@ export function useObjectDetail(objectId) {
   }, [objectId, demo, client]);
 
   return { object, loading, error };
+}
+
+
+/**
+ * Map a canonical object type to a lineage layer tone.
+ *
+ * @param {string} type
+ * @returns {string}
+ */
+export function objectTypeToTone(type) {
+  switch (type) {
+    case "MasterDataDomain":
+    case "BusinessEntity":
+      return "canonical";
+    case "Mapping":
+      return "mapping";
+    case "Attribute":
+    case "ValueList":
+      return "target";
+    case "FieldEndpoint":
+      return "source";
+    case "PatchProposal":
+      return "proposal";
+    case "Decision":
+      return "decision";
+    case "Issue":
+      return "gap";
+    default:
+      return "target";
+  }
+}
+
+/**
+ * Build ReactFlow nodes from a trace response.
+ *
+ * @param {TraceResponse} trace
+ * @returns {Array<{id: string, position: {x: number, y: number}, data: {label: string, meta: string, tone: string}, type: string}>}
+ */
+export function traceResponseToFlowNodes(trace) {
+  const rootId = trace.root_object_id;
+  const upstreamIds = new Set(
+    trace.edges
+      .filter((e) => e.direction === "upstream")
+      .map((e) => e.from_object_id)
+  );
+
+  const upstreamNodes = trace.nodes.filter((n) => upstreamIds.has(n.object_id));
+  const downstreamNodes = trace.nodes.filter((n) => !upstreamIds.has(n.object_id));
+
+  const layoutGroup = (list, sign) =>
+    list.map((node, index) => {
+      const count = list.length;
+      const yOffset = (index - (count - 1) / 2) * 90;
+      return {
+        id: node.object_id,
+        position: { x: sign * node.depth * 260, y: yOffset },
+        data: {
+          label: node.object_name || node.object_id,
+          meta: `${node.object_type} · ${node.object_id}`,
+          tone: objectTypeToTone(node.object_type),
+        },
+        type: "model",
+      };
+    });
+
+  return [
+    {
+      id: rootId,
+      position: { x: 0, y: 0 },
+      data: {
+        label: trace.root_object_name || rootId,
+        meta: `${trace.root_object_type || "Object"} · ${rootId}`,
+        tone: "canonical",
+      },
+      type: "model",
+    },
+    ...layoutGroup(upstreamNodes, -1),
+    ...layoutGroup(downstreamNodes, 1),
+  ];
+}
+
+/**
+ * Build ReactFlow edges from a trace response.
+ *
+ * @param {TraceResponse} trace
+ * @returns {Array<{id: string, source: string, target: string, label?: string, animated?: boolean}>}
+ */
+export function traceResponseToFlowEdges(trace) {
+  return trace.edges.map((edge, index) => ({
+    id: `e-${index}`,
+    source: edge.from_object_id,
+    target: edge.to_object_id,
+    label: edge.relationship_type,
+    animated: edge.direction === "downstream",
+  }));
+}
+
+/**
+ * Fetch trace and impact data for an object, falling back to demo lineage fixtures.
+ *
+ * @param {string|null} objectId
+ * @param {string} direction
+ * @param {number} maxDepth
+ * @returns {{
+ *   nodes: ReturnType<typeof traceResponseToFlowNodes>,
+ *   edges: ReturnType<typeof traceResponseToFlowEdges>,
+ *   upstream: TraceNode[],
+ *   downstream: TraceNode[],
+ *   impact: ImpactResponse|null,
+ *   loading: boolean,
+ *   error: string|null
+ * }}
+ */
+export function useLineage(objectId, direction, maxDepth) {
+  const { client, demo } = useApi();
+  const [nodes, setNodes] = useState([]);
+  const [edges, setEdges] = useState([]);
+  const [upstream, setUpstream] = useState([]);
+  const [downstream, setDownstream] = useState([]);
+  const [impact, setImpact] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!objectId) {
+      setNodes([]);
+      setEdges([]);
+      return;
+    }
+
+    if (demo || !client) {
+      setNodes(lineageNodes);
+      setEdges(lineageEdges);
+      setUpstream([]);
+      setDownstream([]);
+      setImpact(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+
+    async function load() {
+      try {
+        const [trace, impactData] = await Promise.all([
+          client.trace(objectId, { direction, max_depth: maxDepth }),
+          client.impact(objectId),
+        ]);
+        if (cancelled) return;
+        setNodes(traceResponseToFlowNodes(trace));
+        setEdges(traceResponseToFlowEdges(trace));
+        const upstreamIds = new Set(
+          trace.edges.filter((e) => e.direction === "upstream").map((e) => e.from_object_id)
+        );
+        setUpstream(trace.nodes.filter((n) => upstreamIds.has(n.object_id)));
+        setDownstream(trace.nodes.filter((n) => !upstreamIds.has(n.object_id)));
+        setImpact(impactData);
+        setError(null);
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : String(err));
+        setNodes([]);
+        setEdges([]);
+        setUpstream([]);
+        setDownstream([]);
+        setImpact(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [objectId, direction, maxDepth, demo, client]);
+
+  return { nodes, edges, upstream, downstream, impact, loading, error };
 }

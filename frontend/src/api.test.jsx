@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useEffect, useState } from "react";
 
 import {
@@ -7,16 +7,28 @@ import {
   ApiProvider,
   apiObjectToViewModel,
   createApiClient,
+  objectTypeToTone,
+  traceResponseToFlowEdges,
+  traceResponseToFlowNodes,
   useApi,
+  useLineage,
   useObjectDetail,
   useObjectSearch,
 } from "./api.jsx";
+import { LineageScreen } from "./App.jsx";
 import { modelObjects } from "./data.js";
 
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
 });
+
+class ResizeObserverMock {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+globalThis.ResizeObserver = ResizeObserverMock;
 
 function mockFetch(response, status = 200) {
   globalThis.fetch = vi.fn().mockResolvedValue({
@@ -37,6 +49,42 @@ function mockFetchSequence(...responses) {
       status: 200,
       json: () => Promise.resolve(body),
       text: () => Promise.resolve(JSON.stringify(body)),
+    });
+  });
+}
+
+function mockFetchRoutes(routeMap) {
+  const capabilities = {
+    api_version: "v1",
+    version: "0.5.0",
+    indexed: true,
+    canonical_files: 3,
+  };
+  globalThis.fetch = vi.fn((url) => {
+    if (url.includes("/api/v1/capabilities")) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(capabilities),
+        text: () => Promise.resolve(JSON.stringify(capabilities)),
+      });
+    }
+    for (const [match, response] of Object.entries(routeMap)) {
+      if (url.includes(match)) {
+        const body = typeof response === "function" ? response(url) : response;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve(body),
+          text: () => Promise.resolve(JSON.stringify(body)),
+        });
+      }
+    }
+    return Promise.resolve({
+      ok: false,
+      status: 404,
+      json: () => Promise.resolve({ detail: "Not found" }),
+      text: () => Promise.resolve("Not found"),
     });
   });
 }
@@ -83,6 +131,90 @@ describe("createApiClient", () => {
     expect(globalThis.fetch).toHaveBeenCalledWith(
       "http://localhost:8000/api/v1/objects/DOMAIN-TEST"
     );
+  });
+
+  it("fetches trace with direction and depth", async () => {
+    mockFetch({
+      root_object_id: "DOMAIN-TEST",
+      root_object_type: "MasterDataDomain",
+      root_object_name: "Test",
+      nodes: [],
+      edges: [],
+    });
+    const client = createApiClient("http://localhost:8000");
+    const result = await client.trace("DOMAIN-TEST", { direction: "upstream", max_depth: 2 });
+    expect(result.root_object_id).toBe("DOMAIN-TEST");
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/trace/DOMAIN-TEST?direction=upstream&max_depth=2")
+    );
+  });
+
+  it("fetches impact for an object", async () => {
+    mockFetch({
+      object_id: "DOMAIN-TEST",
+      root_object_type: "MasterDataDomain",
+      root_object_name: "Test",
+      upstream: [],
+      downstream: [],
+      total_affected: 0,
+    });
+    const client = createApiClient("http://localhost:8000");
+    const result = await client.impact("DOMAIN-TEST");
+    expect(result.object_id).toBe("DOMAIN-TEST");
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "http://localhost:8000/impact/DOMAIN-TEST"
+    );
+  });
+});
+
+describe("lineage helpers", () => {
+  it("maps canonical types to lineage tones", () => {
+    expect(objectTypeToTone("MasterDataDomain")).toBe("canonical");
+    expect(objectTypeToTone("BusinessEntity")).toBe("canonical");
+    expect(objectTypeToTone("FieldEndpoint")).toBe("source");
+    expect(objectTypeToTone("Attribute")).toBe("target");
+    expect(objectTypeToTone("Mapping")).toBe("mapping");
+    expect(objectTypeToTone("PatchProposal")).toBe("proposal");
+    expect(objectTypeToTone("Decision")).toBe("decision");
+    expect(objectTypeToTone("Issue")).toBe("gap");
+    expect(objectTypeToTone("Unknown")).toBe("target");
+  });
+
+  it("builds ReactFlow nodes from a trace response", () => {
+    const trace = {
+      root_object_id: "DOMAIN-ROOT",
+      root_object_type: "MasterDataDomain",
+      root_object_name: "Root",
+      nodes: [
+        { object_id: "FEP-UP", object_type: "FieldEndpoint", object_name: "Upstream", source_file: "x.md", depth: 1 },
+        { object_id: "ATTR-DOWN", object_type: "Attribute", object_name: "Downstream", source_file: "y.md", depth: 1 },
+      ],
+      edges: [
+        { from_object_id: "FEP-UP", to_object_id: "DOMAIN-ROOT", relationship_type: "feeds", direction: "upstream" },
+        { from_object_id: "DOMAIN-ROOT", to_object_id: "ATTR-DOWN", relationship_type: "defines", direction: "downstream" },
+      ],
+    };
+    const nodes = traceResponseToFlowNodes(trace);
+    expect(nodes.find((n) => n.id === "DOMAIN-ROOT")).toBeTruthy();
+    expect(nodes.find((n) => n.id === "FEP-UP").position.x).toBeLessThan(0);
+    expect(nodes.find((n) => n.id === "ATTR-DOWN").position.x).toBeGreaterThan(0);
+  });
+
+  it("builds ReactFlow edges from a trace response", () => {
+    const trace = {
+      root_object_id: "DOMAIN-ROOT",
+      root_object_type: "MasterDataDomain",
+      root_object_name: "Root",
+      nodes: [],
+      edges: [
+        { from_object_id: "A", to_object_id: "B", relationship_type: "maps", direction: "downstream" },
+      ],
+    };
+    const edges = traceResponseToFlowEdges(trace);
+    expect(edges).toHaveLength(1);
+    expect(edges[0].source).toBe("A");
+    expect(edges[0].target).toBe("B");
+    expect(edges[0].animated).toBe(true);
   });
 });
 
@@ -198,5 +330,116 @@ describe("useObjectDetail", () => {
     render(<ObjectProbe id="DOMAIN-CUSTOMER-BP" />, { wrapper: TestWrapper });
     await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("ready"));
     expect(screen.getByTestId("name").textContent).toBe("Business Partner");
+  });
+});
+
+function LineageProbe({ objectId }) {
+  const { nodes, edges, upstream, downstream, impact, loading, error } = useLineage(
+    objectId,
+    "both",
+    5
+  );
+  return (
+    <div>
+      <span data-testid="loading">{loading ? "loading" : "ready"}</span>
+      <span data-testid="error">{error || "none"}</span>
+      <span data-testid="nodes">{nodes.length}</span>
+      <span data-testid="edges">{edges.length}</span>
+      <span data-testid="upstream">{upstream.length}</span>
+      <span data-testid="downstream">{downstream.length}</span>
+      <span data-testid="impact">{impact ? impact.total_affected : "none"}</span>
+    </div>
+  );
+}
+
+describe("useLineage", () => {
+  it("returns live trace and impact data when connected", async () => {
+    mockFetchRoutes({
+      "/trace/DOMAIN-LINEAGE": {
+        root_object_id: "DOMAIN-LINEAGE",
+        root_object_type: "MasterDataDomain",
+        root_object_name: "Lineage Root",
+        nodes: [
+          { object_id: "FEP-UP", object_type: "FieldEndpoint", object_name: "Upstream", source_file: "x.md", depth: 1 },
+          { object_id: "ATTR-DOWN", object_type: "Attribute", object_name: "Downstream", source_file: "y.md", depth: 1 },
+        ],
+        edges: [
+          { from_object_id: "FEP-UP", to_object_id: "DOMAIN-LINEAGE", relationship_type: "feeds", direction: "upstream" },
+          { from_object_id: "DOMAIN-LINEAGE", to_object_id: "ATTR-DOWN", relationship_type: "defines", direction: "downstream" },
+        ],
+      },
+      "/impact/DOMAIN-LINEAGE": {
+        object_id: "DOMAIN-LINEAGE",
+        root_object_type: "MasterDataDomain",
+        root_object_name: "Lineage Root",
+        upstream: [{ object_id: "FEP-UP", object_type: "FieldEndpoint", object_name: "Upstream", relationship_type: "feeds", depth: 1 }],
+        downstream: [{ object_id: "ATTR-DOWN", object_type: "Attribute", object_name: "Downstream", relationship_type: "defines", depth: 1 }],
+        total_affected: 2,
+      },
+    });
+    render(<LineageProbe objectId="DOMAIN-LINEAGE" />, { wrapper: TestWrapper });
+    await waitFor(() => expect(screen.getByTestId("nodes").textContent).toBe("3"));
+    expect(screen.getByTestId("loading").textContent).toBe("ready");
+    expect(screen.getByTestId("error").textContent).toBe("none");
+    expect(screen.getByTestId("edges").textContent).toBe("2");
+    expect(screen.getByTestId("upstream").textContent).toBe("1");
+    expect(screen.getByTestId("downstream").textContent).toBe("1");
+    expect(screen.getByTestId("impact").textContent).toBe("2");
+  });
+
+  it("falls back to static demo lineage when the API is unavailable", async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error("Connection refused"));
+    render(<LineageProbe objectId="DOMAIN-CUSTOMER-BP" />, { wrapper: TestWrapper });
+    await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("ready"));
+    expect(screen.getByTestId("error").textContent).toBe("none");
+    expect(screen.getByTestId("nodes").textContent).toBe("9");
+    expect(screen.getByTestId("edges").textContent).toBe("8");
+    expect(screen.getByTestId("impact").textContent).toBe("none");
+  });
+});
+
+describe("LineageScreen", () => {
+  it("renders the path view with live upstream, downstream, and impact summary", async () => {
+    mockFetchRoutes({
+      "/trace/DOMAIN-LINEAGE": {
+        root_object_id: "DOMAIN-LINEAGE",
+        root_object_type: "MasterDataDomain",
+        root_object_name: "Lineage Root",
+        nodes: [
+          { object_id: "FEP-UP", object_type: "FieldEndpoint", object_name: "Upstream Field", source_file: "x.md", depth: 1 },
+          { object_id: "ATTR-DOWN", object_type: "Attribute", object_name: "Downstream Attribute", source_file: "y.md", depth: 1 },
+        ],
+        edges: [
+          { from_object_id: "FEP-UP", to_object_id: "DOMAIN-LINEAGE", relationship_type: "feeds", direction: "upstream" },
+          { from_object_id: "DOMAIN-LINEAGE", to_object_id: "ATTR-DOWN", relationship_type: "defines", direction: "downstream" },
+        ],
+      },
+      "/impact/DOMAIN-LINEAGE": {
+        object_id: "DOMAIN-LINEAGE",
+        root_object_type: "MasterDataDomain",
+        root_object_name: "Lineage Root",
+        upstream: [{ object_id: "FEP-UP", object_type: "FieldEndpoint", object_name: "Upstream Field", relationship_type: "feeds", depth: 1 }],
+        downstream: [{ object_id: "ATTR-DOWN", object_type: "Attribute", object_name: "Downstream Attribute", relationship_type: "defines", depth: 1 }],
+        total_affected: 2,
+      },
+    });
+
+    const navigate = vi.fn();
+    const params = new URLSearchParams({ id: "DOMAIN-LINEAGE" });
+    render(
+      <TestWrapper>
+        <LineageScreen navigate={navigate} params={params} onExport={() => {}} />
+      </TestWrapper>
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "Lineage Root lineage" })).toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Path list view" }));
+
+    await waitFor(() => expect(screen.getByText("Upstream Field")).toBeInTheDocument());
+    expect(screen.getByText("Downstream Attribute")).toBeInTheDocument();
+    expect(screen.getByText("Total affected")).toBeInTheDocument();
   });
 });

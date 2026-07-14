@@ -65,3 +65,13 @@ The local API enables the workbench to read live data without importing backend 
   workbench shows the connection state and falls back to explicitly labeled demo data.
 - All write operations continue to require explicit human approval through the proposal/change-
   request flow; the frontend does not edit canonical files directly.
+
+The Lineage screen consumes two unversioned read endpoints:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/trace/{id}?direction=&max_depth=` | Upstream/downstream relationship traversal |
+| GET | `/impact/{id}` | Upstream/downstream impact summary and total affected count |
+
+Both endpoints require a generated index and return `404` for unknown object IDs. The workbench
+falls back to the static demo lineage graph when these endpoints are unavailable.
