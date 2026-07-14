@@ -36,7 +36,8 @@ class FieldEndpointSummary:
     sap_table: str | None
     sap_field: str | None
     column_name: str | None
-    business_attribute: str | None
+    field_name: str | None = None
+    business_attribute: str | None = None
 
 
 @dataclass
@@ -405,6 +406,7 @@ def generate_model_summary(
                 sap_table=fm.get("sap_table"),
                 sap_field=fm.get("sap_field"),
                 column_name=fm.get("column_name"),
+                field_name=fm.get("field_name") or fm.get("sap_field"),
                 business_attribute=fm.get("business_attribute"),
             )
             if ep.endpoint_type == "sap_table_field":
