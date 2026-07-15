@@ -113,6 +113,7 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
     "executive-summary",
     "pilot-preflight",
     "assessment-review",
+    "bootstrap-assessment",
     "pilot-outcome",
     "demo-bundle",
 }

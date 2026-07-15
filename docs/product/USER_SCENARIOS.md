@@ -45,11 +45,11 @@ This catalog defines the end-to-end user scenarios Martenweave supports across t
 | **Trigger** | A new SAP migration pilot starts with an existing source-to-target mapping workbook. |
 | **Required inputs** | XLSX mapping workbook, repository name, output directory, optional dataset sample. |
 | **UI entry point** | `import` overlay → "Excel mapping workbook" source. |
-| **Core / API operations** | `modelops assessment run --repo <path> --out <dir>`; workbook-first bootstrap is implemented in PR [#527](https://github.com/metalhatscats/martenweave-core/pull/527) (`bootstrap-assessment`). |
-| **Generated artifacts** | Initialized repository, draft canonical objects, at least one `PatchProposal`, bootstrap report with assumptions and warnings. |
+| **Core / API operations** | `martenweave bootstrap-assessment --mapping <workbook.xlsx> --name <pilot> --out-repo <path>`; `martenweave assessment run --repo <path> --out <dir>`. |
+| **Generated artifacts** | Initialized repository, a draft `PatchProposal`, and bootstrap report with assumptions and warnings. Inferred objects remain proposal operations until approved. |
 | **Safety boundary** | Inferred objects become proposals; canonical files are not mutated until a proposal is explicitly applied. |
 | **Success metric** | A valid repository is produced from a synthetic SAP workbook and at least one proposal is ready for review. |
-| **Status** | **partial** — `assessment run` exists; workbook-first bootstrap and live UI import are in progress. |
+| **Status** | **partial** — CLI workbook-first bootstrap is available; live UI import remains in progress. |
 
 ### S03 — Add a dataset extract and detect model/data gaps
 

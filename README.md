@@ -265,6 +265,7 @@ For a release-grade demo path that exercises validation, indexing, search, trace
 | `executive-summary` | Generate a one-page executive readiness summary |
 | `pilot-preflight` | Metadata-only safety checks for pilot inputs |
 | `assessment-review` | Record dispositions and promote confirmed findings |
+| `bootstrap-assessment` | Initialize a proposal-only pilot from an SAP mapping workbook |
 
 `docs-build` produces disposable generated files such as `index.html`, `objects.html`,
 `gaps.html`, `decisions.html`, `owners.html`, object detail pages, `search-index.json`, and
@@ -341,6 +342,20 @@ See [`frontend/README.md`](frontend/README.md) for development build instruction
 ```bash
 .venv/bin/martenweave assessment run --repo examples/customer_bp_model --out generated/assessment/customer-bp
 .venv/bin/martenweave assessment compare generated/assessment/run-a/manifest.json generated/assessment/run-b/manifest.json --out generated/assessment/comparison
+```
+
+### Workbook-first Pilot Bootstrap
+
+Start a new local pilot from an existing SAP mapping workbook without treating inferred content as
+canonical truth. The command creates a valid repository, profiles the workbook, and writes a
+deterministic `PatchProposal` plus a bootstrap report. Review and approve the proposal before any
+model object is created.
+
+```bash
+.venv/bin/martenweave bootstrap-assessment \
+  --mapping ./sap-customer-mapping.xlsx \
+  --name "SAP Customer Pilot" \
+  --out-repo ./sap-customer-pilot
 ```
 
 ## Example Models

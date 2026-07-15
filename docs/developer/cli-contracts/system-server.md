@@ -4,6 +4,7 @@
 
 ```bash
 modelops clean --repo <repo> --dry-run
+modelops bootstrap-assessment --mapping <workbook.xlsx> --name <pilot> --out-repo <repo> [--dataset <sample.csv|sample.xlsx>] [--json]
 modelops diff <base-repo> <head-repo> --json
 modelops migrate --repo <repo>
 modelops serve --repo <repo> --host <host> --port <port>
@@ -16,6 +17,13 @@ modelops sources --repo <repo>
 ### `clean --dry-run --json`
 
 Stable fields: `dry_run`, `generated_path`, `removed_count`, `skipped_count`, `removed` (list), `skipped` (list)
+
+### `bootstrap-assessment --json`
+
+Stable fields: `repo`, `proposal_id`, `proposal`, `report_json`, `report_markdown`. The command only
+initializes an empty local repository and creates a draft `PatchProposal`; inferred canonical objects
+remain operations for human review. Invalid or unsupported workbooks leave a diagnostics file and no
+proposal rather than applying any inferred object.
 
 ### `diff --json`
 
