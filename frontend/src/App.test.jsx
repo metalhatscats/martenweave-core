@@ -79,6 +79,22 @@ describe("Martenweave workbench", () => {
     expect(screen.queryByText("customer-migration-model-index-2026-07-03.csv")).not.toBeInTheDocument();
   });
 
+  it("separates live local model history from product release notes", async () => {
+    window.location.hash = "#/changelog";
+    vi.stubGlobal("fetch", vi.fn((url) => {
+      const payload = String(url).includes("/api/v1/activity")
+        ? { total_count: 1, events: [{ event_id: "EVT-001", event_type: "proposal_applied", timestamp: "2026-07-15T12:00:00Z", proposal_id: "PP-001", changed_object_ids: ["ATTR-CUSTOMER-GROUP"], source_state: "canonical", canonical_change: true }] }
+        : { api_version: "v1", version: "0.5.0", indexed: true, canonical_files: 24 };
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(payload), text: () => Promise.resolve("") });
+    }));
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByText("Local model history")).toBeInTheDocument());
+    expect(screen.getByText("proposal applied")).toBeInTheDocument();
+    expect(screen.getByText("ATTR-CUSTOMER-GROUP")).toBeInTheDocument();
+    expect(screen.getByText("Product updates")).toBeInTheDocument();
+  });
+
   it("renders typed local assessment findings without static gap claims", async () => {
     window.location.hash = "#/gaps";
     vi.stubGlobal("fetch", vi.fn((url) => {

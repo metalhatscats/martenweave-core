@@ -573,7 +573,12 @@ export function ReportsScreen({ onExport }) {
   );
 }
 
-export function ChangelogScreen() {
+export function ChangelogScreen({ navigate }) {
+  const { events, loading, error, demo } = useWorkspaceActivity();
+  const openEvent = (event) => {
+    if (event.proposal_id) navigate("proposals");
+    else if (event.changed_object_ids?.[0]) navigate("object", { id: event.changed_object_ids[0] });
+  };
   const releases = [
     {
       date: "July 14, 2026",
@@ -638,6 +643,21 @@ export function ChangelogScreen() {
           </article>
         ))}
       </div>
+      <section className="surface changelog-workspace-history">
+        <div className="section-title"><div><h2>Local model history</h2><p>{demo ? "Demo history — connect the local API to inspect this repository's audit trail." : "Events from the active local repository. Generated artifacts are not canonical changes."}</p></div></div>
+        <div className="activity-feed">
+          {loading && <p>Loading local history…</p>}
+          {error && <p>Local history could not be loaded: {error}</p>}
+          {!loading && !error && !demo && events.length === 0 && <p>No local audit events have been recorded yet.</p>}
+          {!demo && events.slice(0, 10).map((event) => (
+            <button key={event.event_id} onClick={() => openEvent(event)} disabled={!event.proposal_id && !event.changed_object_ids?.[0]}>
+              <span><CheckCircle size={17} /></span>
+              <span><strong>{activityLabel(event)}</strong><small>{event.changed_object_ids?.join(", ") || event.proposal_id || (event.source_state === "generated" ? "Generated local artifact" : "Canonical model change")}</small></span>
+              <time>{activityTime(event.timestamp)}</time><ArrowRight size={14} />
+            </button>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

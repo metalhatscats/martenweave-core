@@ -1735,7 +1735,7 @@ export function App({ apiBaseUrl }) {
     proposals: <ProposalsScreen navigate={navigate} onDraft={actions.draft} />,
     proposal: <ProposalScreen navigate={navigate} params={params} onToast={actions.toast} />,
     reports: <ReportsScreen onExport={actions.export} />,
-    changelog: <ChangelogScreen />,
+    changelog: <ChangelogScreen navigate={navigate} />,
     settings: <SettingsScreen onToast={actions.toast} onShortcuts={actions.shortcuts} />,
   }[route] || <WorkspaceScreen navigate={navigate} onImport={actions.import} onExport={actions.export} onCommands={actions.commands} onShortcuts={actions.shortcuts} />;
 
