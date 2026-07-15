@@ -354,7 +354,7 @@ function LedgerDetail({ row, tab, onTab, navigate }) {
   );
 }
 
-export function WorkspaceScreen({ navigate, onImport, onExport, onCommands, onShortcuts }) {
+export function WorkspaceScreen({ navigate, onImport, onExport, onCommands, onShortcuts, refreshKey = 0 }) {
   const [query, setQuery] = useState("");
   const [type, setType] = useState("All types");
   const [domain, setDomain] = useState("All domains");
@@ -577,8 +577,8 @@ export function ReportsScreen({ onExport }) {
   );
 }
 
-export function ChangelogScreen({ navigate }) {
-  const { events, loading, error, demo } = useWorkspaceActivity();
+export function ChangelogScreen({ navigate, refreshKey = 0 }) {
+  const { events, loading, error, demo } = useWorkspaceActivity(refreshKey);
   const openEvent = (event) => {
     if (event.proposal_id) navigate("proposals");
     else if (event.changed_object_ids?.[0]) navigate("object", { id: event.changed_object_ids[0] });
@@ -1044,8 +1044,8 @@ function activityTime(timestamp) {
   return Number.isNaN(time.valueOf()) ? timestamp : time.toLocaleString();
 }
 
-function ActivityDialog({ onClose, navigate }) {
-  const { events, loading, error, demo } = useWorkspaceActivity();
+function ActivityDialog({ onClose, navigate, refreshKey = 0 }) {
+  const { events, loading, error, demo } = useWorkspaceActivity(refreshKey);
   const activity = demo
     ? recentActivity.map(([action, subject, time], index) => ({
       event_id: `demo-${index}`,
@@ -1100,13 +1100,13 @@ function ProposalDraftDialog({ onClose, onComplete }) {
   );
 }
 
-export function WorkbenchOverlay({ overlay, onClose, navigate, onOpen, onToast }) {
+export function WorkbenchOverlay({ overlay, onClose, navigate, onOpen, onToast, refreshKey = 0 }) {
   if (!overlay) return null;
   if (overlay.type === "import") return <ImportDialog onClose={onClose} onComplete={(message) => { onClose(); onToast(message); }} />;
   if (overlay.type === "export") return <ExportDialog initialType={overlay.exportType} onClose={onClose} onComplete={(message) => { onClose(); onToast(message); }} />;
   if (overlay.type === "commands") return <CommandPalette navigate={navigate} onImport={() => onOpen({ type: "import" })} onExport={() => onOpen({ type: "export" })} onShortcuts={() => onOpen({ type: "shortcuts" })} onClose={onClose} />;
   if (overlay.type === "shortcuts") return <ShortcutDialog onClose={onClose} />;
-  if (overlay.type === "activity") return <ActivityDialog onClose={onClose} navigate={navigate} />;
+  if (overlay.type === "activity") return <ActivityDialog onClose={onClose} navigate={navigate} refreshKey={refreshKey} />;
   if (overlay.type === "workspace") return <WorkspaceDialog onClose={onClose} />;
   if (overlay.type === "proposal-draft") return <ProposalDraftDialog onClose={onClose} onComplete={(message) => { onClose(); onToast(message); }} />;
   return null;

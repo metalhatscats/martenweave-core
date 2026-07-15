@@ -720,7 +720,7 @@ export function useObjectDetail(objectId) {
  *
  * @returns {{ events: ActivityEvent[], loading: boolean, error: string|null, demo: boolean }}
  */
-export function useWorkspaceActivity() {
+export function useWorkspaceActivity(refreshKey = 0) {
   const { client, demo } = useApi();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -752,7 +752,7 @@ export function useWorkspaceActivity() {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [client, demo]);
+  }, [client, demo, refreshKey]);
 
   return { events, loading, error, demo };
 }
@@ -848,6 +848,7 @@ function mapProposalToViewModel(data) {
     source_evidence: data.source_evidence,
     validation_status: data.validation_status,
     validation_results: data.validation_results,
+    appliedAt: data.applied_at || null,
   };
 }
 
@@ -867,7 +868,7 @@ function findDemoProposal(id) {
  *
  * @returns {{ proposals: ProposalViewModel[], loading: boolean, error: string|null, demo: boolean }}
  */
-export function useProposals() {
+export function useProposals(refreshKey = 0) {
   const { client, demo } = useApi();
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -897,7 +898,7 @@ export function useProposals() {
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [client, demo]);
+  }, [client, demo, refreshKey]);
 
   return { proposals, loading, error, demo };
 }
@@ -908,7 +909,7 @@ export function useProposals() {
  * @param {string|number|null} proposalId
  * @returns {{ proposal: ProposalViewModel|null, loading: boolean, error: string|null, demo: boolean }}
  */
-export function useProposalDetail(proposalId) {
+export function useProposalDetail(proposalId, refreshKey = 0) {
   const { client, demo } = useApi();
   const [proposal, setProposal] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -946,7 +947,7 @@ export function useProposalDetail(proposalId) {
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [proposalId, demo, client]);
+  }, [proposalId, demo, client, refreshKey]);
 
   return { proposal, loading, error, demo };
 }

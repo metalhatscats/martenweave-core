@@ -190,6 +190,18 @@ describe("Martenweave workbench", () => {
     await waitFor(() => expect(screen.getByText(/Approved: Proposal #27/)).toBeInTheDocument());
   });
 
+  it("returns an approved proposal to draft", async () => {
+    window.location.hash = "#/proposal?id=27";
+    render(<App />);
+    fireEvent.click(screen.getByText(/Approve proposal/));
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+    await waitFor(() => expect(screen.getByText(/Approved: Proposal #27/)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "Return to draft" }));
+    await waitFor(() => expect(screen.getByText(/Proposal #27 returned to draft/)).toBeInTheDocument());
+  });
+
   it("filters proposals by status tab", async () => {
     window.location.hash = "#/proposals";
     render(<App />);

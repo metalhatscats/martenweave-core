@@ -1430,10 +1430,10 @@ function LiveFindingsScreen({ navigate, findings, assessmentId, loading, error }
   );
 }
 
-function ProposalsScreen({ navigate, onDraft }) {
+function ProposalsScreen({ navigate, onDraft, refreshKey = 0 }) {
   const [tab, setTab] = useState("All");
   const [query, setQuery] = useState("");
-  const { proposals, loading, error, demo } = useProposals();
+  const { proposals, loading, error, demo } = useProposals(refreshKey);
   const tabs = ["All", "In review", "Approved", "Rejected"];
   const shown = proposals.filter((proposal) => {
     const matchesTab = tab === "All" || proposal.status === tab || (tab === "Rejected" && proposal.status === "Changes requested");
@@ -1488,7 +1488,7 @@ function ProposalsScreen({ navigate, onDraft }) {
   );
 }
 
-function ProposalScreen({ navigate, params, onToast }) {
+function ProposalScreen({ navigate, params, onToast, onRefreshProposals, refreshKey = 0 }) {
   const [tab, setTab] = useState("Changes");
   const [decision, setDecision] = useState(null);
   const [comment, setComment] = useState("");
@@ -1501,7 +1501,7 @@ function ProposalScreen({ navigate, params, onToast }) {
     proposal: liveProposal,
     loading,
     error,
-  } = useProposalDetail(proposalId);
+  } = useProposalDetail(proposalId, refreshKey);
   const proposal = liveProposal || (proposalId ? proposals.find((item) => String(item.id) === String(proposalId)) : proposals[0]);
   const { reviewProposal, loading: reviewLoading } = useProposalReview();
   const { run: runValidate, loading: validateLoading, result: validateResult } = useProposalValidate();
@@ -1512,6 +1512,7 @@ function ProposalScreen({ navigate, params, onToast }) {
   const pid = proposal?.proposalId || proposal?.id;
   const effectiveStatus = reviewStatus || proposal?.status || "";
   const isApproved = effectiveStatus === "Approved";
+  const isApplied = applied || Boolean(proposal?.appliedAt);
 
   useEffect(() => {
     setReviewStatus("");
@@ -1567,17 +1568,43 @@ function ProposalScreen({ navigate, params, onToast }) {
     if (!proposal || !pid) return;
     if (demo) {
       setApplied(true);
+      setReviewStatus("");
+      onRefreshProposals();
       onToast(`Applied Proposal #${pid}: 1 file(s) changed.`);
       return;
     }
     try {
       const result = await runApply(pid);
       setApplied(true);
+      setReviewStatus("");
+      onRefreshProposals();
       const count = result?.changed_files?.length ?? 0;
       onToast(`Applied Proposal #${pid}: ${count} file(s) changed.`);
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : String(reason);
       onToast(`Apply failed: ${message}`);
+    }
+  };
+
+  const handleReturnToDraft = async () => {
+    if (!proposal || !pid) return;
+    if (demo) {
+      setReviewStatus("In review");
+      onRefreshProposals();
+      onToast(`Proposal #${pid} returned to draft.`);
+      return;
+    }
+    try {
+      await reviewProposal(pid, {
+        status: "pending_review",
+        reviewer: "workbench",
+        reviewer_notes: "Returned to draft by reviewer",
+      });
+      setReviewStatus("In review");
+      onRefreshProposals();
+      onToast(`Proposal #${pid} returned to draft.`);
+    } catch {
+      onToast(`Return to draft failed for Proposal #${pid}.`);
     }
   };
 
@@ -1621,9 +1648,14 @@ function ProposalScreen({ navigate, params, onToast }) {
           <div className="page-actions">
             <button className="danger-button" onClick={() => setDecision("reject")} disabled={Boolean(reviewStatus) || reviewLoading}><XCircle size={17} /> Request changes</button>
             <button className="approve-button" onClick={() => setDecision("approve")} disabled={Boolean(reviewStatus) || reviewLoading}><CheckCircle size={17} /> {reviewStatus || "Approve proposal"}</button>
-            {isApproved && !applied && (
+            {isApproved && !isApplied && (
               <button className="primary-button" onClick={handleApply} disabled={applyLoading}>
                 <CheckCircle size={17} /> {applyLoading ? "Applying…" : "Apply to canonical"}
+              </button>
+            )}
+            {effectiveStatus && effectiveStatus !== "In review" && !isApplied && (
+              <button className="secondary-button" onClick={handleReturnToDraft} disabled={reviewLoading}>
+                Return to draft
               </button>
             )}
             {applyError && <span className="inline-error">{applyError}</span>}
@@ -1645,7 +1677,7 @@ function ProposalScreen({ navigate, params, onToast }) {
           {tab === "Diff" && <ProposalDiff diffs={diffResult?.diffs} loading={diffLoading} error={diffError} demo={demo} />}
           {tab === "Impact" && <ProposalImpact navigate={navigate} proposal={proposal} dryRunResult={dryRunResult} dryRunLoading={dryRunLoading} />}
           {tab === "Validation" && <ProposalValidation proposal={proposal} validateResult={validateResult} validateLoading={validateLoading} />}
-          {tab === "Activity" && <ProposalActivity proposalId={pid} />}
+          {tab === "Activity" && <ProposalActivity proposalId={pid} refreshKey={refreshKey} />}
         </div>
         <aside className="review-sidebar">
           <section className="surface">
@@ -1861,8 +1893,8 @@ function ProposalValidation({ proposal, validateResult, validateLoading }) {
   );
 }
 
-function ProposalActivity({ proposalId }) {
-  const { events, loading, error, demo } = useWorkspaceActivity();
+function ProposalActivity({ proposalId, refreshKey = 0 }) {
+  const { events, loading, error, demo } = useWorkspaceActivity(refreshKey);
   const activity = demo
     ? [
       ["Proposal generated", "Martenweave AI created patch operations from gap evidence.", "18m ago", Sparkle],
@@ -1917,6 +1949,7 @@ export function App({ apiBaseUrl }) {
   const [route, params, navigate] = useRoute();
   const [overlay, setOverlay] = useState(null);
   const [toast, setToast] = useState("");
+  const [proposalRefreshKey, setProposalRefreshKey] = useState(0);
   const pendingGo = useRef(false);
   const goTimer = useRef(null);
   const open = useCallback((next) => setOverlay(next), []);
@@ -1985,6 +2018,10 @@ export function App({ apiBaseUrl }) {
     };
   }, [navigate, route]);
 
+  const refreshProposals = useCallback(() => {
+    setProposalRefreshKey((key) => key + 1);
+  }, []);
+
   const actions = {
     open,
     import: () => open({ type: "import" }),
@@ -1993,6 +2030,7 @@ export function App({ apiBaseUrl }) {
     shortcuts: () => open({ type: "shortcuts" }),
     draft: () => open({ type: "proposal-draft" }),
     toast: setToast,
+    refreshProposals,
   };
   const routeTitle = (() => {
     if (route === "object") {
@@ -2006,23 +2044,23 @@ export function App({ apiBaseUrl }) {
     return ROUTE_TITLES[route] || "Workspace";
   })();
   const screen = {
-    home: <WorkspaceScreen navigate={navigate} onImport={actions.import} onExport={actions.export} onCommands={actions.commands} onShortcuts={actions.shortcuts} />,
+    home: <WorkspaceScreen navigate={navigate} onImport={actions.import} onExport={actions.export} onCommands={actions.commands} onShortcuts={actions.shortcuts} refreshKey={proposalRefreshKey} />,
     models: <ModelsScreen navigate={navigate} params={params} />,
     object: <ObjectScreen navigate={navigate} params={params} onExport={actions.export} onDraft={actions.draft} />,
     lineage: <LineageScreen navigate={navigate} params={params} onExport={actions.export} />,
     gaps: <GapsScreen navigate={navigate} params={params} onDraft={actions.draft} />,
-    proposals: <ProposalsScreen navigate={navigate} onDraft={actions.draft} />,
-    proposal: <ProposalScreen navigate={navigate} params={params} onToast={actions.toast} />,
+    proposals: <ProposalsScreen navigate={navigate} onDraft={actions.draft} refreshKey={proposalRefreshKey} />,
+    proposal: <ProposalScreen navigate={navigate} params={params} onToast={actions.toast} onRefreshProposals={actions.refreshProposals} refreshKey={proposalRefreshKey} />,
     reports: <ReportsScreen onExport={actions.export} />,
-    changelog: <ChangelogScreen navigate={navigate} />,
+    changelog: <ChangelogScreen navigate={navigate} refreshKey={proposalRefreshKey} />,
     settings: <SettingsScreen onToast={actions.toast} onShortcuts={actions.shortcuts} />,
-  }[route] || <WorkspaceScreen navigate={navigate} onImport={actions.import} onExport={actions.export} onCommands={actions.commands} onShortcuts={actions.shortcuts} />;
+  }[route] || <WorkspaceScreen navigate={navigate} onImport={actions.import} onExport={actions.export} onCommands={actions.commands} onShortcuts={actions.shortcuts} refreshKey={proposalRefreshKey} />;
 
   return (
     <ApiProvider baseUrl={apiBaseUrl}>
       <ConnectionBanner />
       <AppShell route={route} navigate={navigate} title={routeTitle} actions={actions}>{screen}</AppShell>
-      <WorkbenchOverlay overlay={overlay} onClose={close} navigate={navigate} onOpen={open} onToast={setToast} />
+      <WorkbenchOverlay overlay={overlay} onClose={close} navigate={navigate} onOpen={open} onToast={setToast} refreshKey={proposalRefreshKey} />
       <Toast message={toast} onClose={dismissToast} />
     </ApiProvider>
   );
