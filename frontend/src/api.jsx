@@ -132,6 +132,7 @@ import { lineageEdges, lineageNodes, modelObjects, proposals as demoProposals } 
  * @property {(id: string) => Promise<any>} validateProposal
  * @property {(id: string) => Promise<any>} dryRunProposal
  * @property {(id: string) => Promise<any>} applyProposal
+ * @property {(id: string) => Promise<ProposalDiffResponse>} proposalDiff
  * @property {() => Promise<{total_count: number, change_requests: ChangeRequestResponse[]}>} changeRequests
  * @property {(data: ChangeRequestCreateData) => Promise<ChangeRequestResponse>} createChangeRequest
  * @property {(body: FindingReviewRequest) => Promise<any>} reviewFinding
@@ -163,6 +164,7 @@ import { lineageEdges, lineageNodes, modelObjects, proposals as demoProposals } 
  * @property {ActivityEvent[]} events
  */
 
+
 /**
  * @typedef {object} ProposalOperation
  * @property {string} op
@@ -171,6 +173,23 @@ import { lineageEdges, lineageNodes, modelObjects, proposals as demoProposals } 
  * @property {string[]} [target_path]
  * @property {any} [before]
  * @property {any} [after]
+ */
+
+/**
+ * @typedef {object} ProposalDiffItem
+ * @property {string} op
+ * @property {string} object_id
+ * @property {string|null} target_path
+ * @property {any} [before]
+ * @property {any} [after]
+ * @property {string|null} [status]
+ * @property {string|null} [reason]
+ */
+
+/**
+ * @typedef {object} ProposalDiffResponse
+ * @property {string} proposal_id
+ * @property {ProposalDiffItem[]} diffs
  */
 
 /**
@@ -444,6 +463,7 @@ export function createApiClient(baseUrl) {
     validateProposal: (id) => postJson(`${root}/proposals/${encodeURIComponent(id)}/validate`, {}),
     dryRunProposal: (id) => postJson(`${root}/proposals/${encodeURIComponent(id)}/dry-run`, {}),
     applyProposal: (id) => postJson(`${root}/proposals/${encodeURIComponent(id)}/apply`, {}),
+    proposalDiff: (id) => fetchJson(`${root}/proposals/${encodeURIComponent(id)}/diff`),
     changeRequests: () => fetchJson(`${root}/change-requests`),
     createChangeRequest: (data) => postJson(`${root}/change-requests`, data),
     reviewFinding: (body) => postJson(`${root}/api/v1/findings/review`, body),
@@ -1016,6 +1036,15 @@ export function useProposalDryRun() {
  */
 export function useProposalApply() {
   return useProposalMutation((client, id) => client.applyProposal(id));
+}
+
+/**
+ * Mutation hook for fetching a proposal diff preview.
+ *
+ * @returns {{ run: (id: string) => Promise<ProposalDiffResponse>, loading: boolean, error: string|null, result: ProposalDiffResponse|null }}
+ */
+export function useProposalDiff() {
+  return useProposalMutation((client, id) => client.proposalDiff(id));
 }
 
 /**

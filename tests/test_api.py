@@ -930,6 +930,8 @@ def test_api_list_proposals_includes_risk_and_counts(temp_model_dir: Path) -> No
     assert "created_by" in item
 
 
+
+
 def test_api_get_proposal_includes_risk_assessment(temp_model_dir: Path) -> None:
     repo = str(temp_model_dir.parent)
     _create_test_proposal(temp_model_dir, "PP-ENRICH-002", "pending_review")
@@ -941,6 +943,57 @@ def test_api_get_proposal_includes_risk_assessment(temp_model_dir: Path) -> None
     assert "risk_assessment" in data
     assert "requires_approval" in data["risk_assessment"]
     assert "risk_reasons" in data["risk_assessment"]
+
+
+# ---------------------------------------------------------------------------
+# proposal diff preview
+# ---------------------------------------------------------------------------
+
+
+def test_api_get_proposal_diff(temp_model_dir: Path) -> None:
+    repo = str(temp_model_dir.parent)
+
+    # Create a canonical Attribute
+    (temp_model_dir / "ATTR-DIFF-001.md").write_text(
+        "---\n"
+        "id: ATTR-DIFF-001\n"
+        "type: Attribute\n"
+        "status: draft\n"
+        "name: Original Name\n"
+        "domain: DOMAIN-TEST\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    # Create a PatchProposal that updates the Attribute name
+    proposals_dir = temp_model_dir / "patch-proposals"
+    proposals_dir.mkdir(parents=True, exist_ok=True)
+    (proposals_dir / "PP-TEST-001.md").write_text(
+        "---\n"
+        "id: PP-TEST-001\n"
+        "type: PatchProposal\n"
+        "status: pending_review\n"
+        "name: Test Proposal\n"
+        "operations:\n"
+        "  - op: update_object\n"
+        "    object_id: ATTR-DIFF-001\n"
+        "    target_path: name\n"
+        "    after: Updated Name\n"
+        "---\n\n# Test Proposal\n",
+        encoding="utf-8",
+    )
+
+    response = client.get("/proposals/PP-TEST-001/diff", params={"repo": repo})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["proposal_id"] == "PP-TEST-001"
+    assert len(data["diffs"]) == 1
+    diff = data["diffs"][0]
+    assert diff["op"] == "update_object"
+    assert diff["object_id"] == "ATTR-DIFF-001"
+    assert diff["target_path"] == "name"
+    assert diff["before"] == "Original Name"
+    assert diff["after"] == "Updated Name"
 
 
 # ---------------------------------------------------------------------------

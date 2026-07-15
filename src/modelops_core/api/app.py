@@ -15,6 +15,7 @@ from modelops_core.api import v1
 from modelops_core.api.models import (
     ChangeRequestCreateRequest,
     ChangeRequestResponse,
+    ProposalDiffResponse,
     ProposalReviewRequest,
     ProposalReviewResponse,
 )
@@ -289,6 +290,77 @@ def _proposal_risk_summary(fm: dict[str, Any], model_path: Path) -> dict[str, An
     }
 
 
+def compute_proposal_diff(model_path: Path, proposal_id: str) -> list[dict[str, Any]]:
+    """Compute before/after diff entries for each operation in a PatchProposal.
+
+    Mirrors the diff logic from the ``proposal diff`` CLI command.
+    """
+    proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
+    if not proposal_path.exists():
+        return []
+
+    parsed = parse_file(proposal_path)
+    fm = parsed.frontmatter or {}
+    operations = fm.get("operations", [])
+
+    diffs: list[dict[str, Any]] = []
+    for op in operations:
+        if not isinstance(op, dict):
+            continue
+        op_type = op.get("op", "")
+        object_id = op.get("object_id", "")
+        target_path = op.get("target_path", "")
+        after = op.get("after")
+
+        diff_entry: dict[str, Any] = {
+            "op": op_type,
+            "object_id": object_id,
+            "target_path": target_path,
+        }
+
+        if op_type in ("create_object", "add_object"):
+            diff_entry["before"] = None
+            diff_entry["after"] = after
+            diffs.append(diff_entry)
+        elif op_type == "update_object":
+            current_value: Any = None
+            for file_path in scan_repository(model_path):
+                file_parsed = parse_file(file_path)
+                if file_parsed.frontmatter and file_parsed.frontmatter.get("id") == object_id:
+                    frontmatter = dict(file_parsed.frontmatter)
+                    if target_path and "." in str(target_path):
+                        parts = str(target_path).split(".")
+                        current_value = frontmatter
+                        for part in parts:
+                            if isinstance(current_value, dict):
+                                current_value = current_value.get(part)
+                            else:
+                                current_value = None
+                                break
+                    else:
+                        current_value = frontmatter.get(target_path) if target_path else None
+                    break
+            diff_entry["before"] = current_value
+            diff_entry["after"] = after
+            diffs.append(diff_entry)
+        elif op_type == "delete_object":
+            current_obj: Any = None
+            for file_path in scan_repository(model_path):
+                file_parsed = parse_file(file_path)
+                if file_parsed.frontmatter and file_parsed.frontmatter.get("id") == object_id:
+                    current_obj = dict(file_parsed.frontmatter)
+                    break
+            diff_entry["before"] = current_obj
+            diff_entry["after"] = None
+            diffs.append(diff_entry)
+        else:
+            diff_entry["status"] = "skipped"
+            diff_entry["reason"] = f"Operation '{op_type}' diff not supported."
+            diffs.append(diff_entry)
+
+    return diffs
+
+
 @app.get("/proposals")
 def list_proposals(
     repo: str | None = Query(None, description="Path to model repository"),
@@ -343,6 +415,22 @@ def get_proposal(
     result.update(_proposal_risk_summary(fm, model_path))
     result["source_state"] = SourceState.PROPOSAL.value
     return result
+
+
+@app.get("/proposals/{proposal_id}/diff", response_model=ProposalDiffResponse)
+def get_proposal_diff(
+    proposal_id: str,
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Return a before/after diff preview for a PatchProposal."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
+    if not proposal_path.exists():
+        raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
+
+    diffs = compute_proposal_diff(model_path, proposal_id)
+    return {"proposal_id": proposal_id, "diffs": diffs}
 
 
 @app.post(

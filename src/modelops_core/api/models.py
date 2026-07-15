@@ -175,6 +175,25 @@ class ReportArtifactResponse(BaseModel):
     artifacts: list[ReportArtifactItem]
 
 
+class ProposalDiffItem(BaseModel):
+    """A single before/after diff entry for a PatchProposal operation."""
+
+    op: str
+    object_id: str
+    target_path: str | None = None
+    before: Any | None = None
+    after: Any | None = None
+    status: str | None = None
+    reason: str | None = None
+
+
+class ProposalDiffResponse(BaseModel):
+    """Before/after diff preview for a PatchProposal."""
+
+    proposal_id: str
+    diffs: list[ProposalDiffItem]
+
+
 class FindingItem(BaseModel):
     """Typed assessment finding plus separate human review state."""
 

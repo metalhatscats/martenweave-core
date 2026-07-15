@@ -74,6 +74,7 @@ import {
   useObjectSearch,
   useProposalApply,
   useProposalDetail,
+  useProposalDiff,
   useProposalDryRun,
   useProposalReview,
   useProposalValidate,
@@ -1506,6 +1507,7 @@ function ProposalScreen({ navigate, params, onToast }) {
   const { run: runValidate, loading: validateLoading, result: validateResult } = useProposalValidate();
   const { run: runDryRun, loading: dryRunLoading, result: dryRunResult } = useProposalDryRun();
   const { run: runApply, loading: applyLoading, error: applyError, result: applyResult } = useProposalApply();
+  const { run: runDiff, loading: diffLoading, error: diffError, result: diffResult } = useProposalDiff();
 
   const pid = proposal?.proposalId || proposal?.id;
   const effectiveStatus = reviewStatus || proposal?.status || "";
@@ -1533,6 +1535,12 @@ function ProposalScreen({ navigate, params, onToast }) {
       runDryRun(pid).catch(() => {});
     }
   }, [tab, proposal, demo, runDryRun, pid]);
+
+  useEffect(() => {
+    if (tab === "Diff" && proposal && pid && !demo) {
+      runDiff(pid).catch(() => {});
+    }
+  }, [tab, proposal, demo, runDiff, pid]);
 
   const handleConfirm = async (decisionType, reason) => {
     if (!proposal || !pid) return;
@@ -1631,9 +1639,10 @@ function ProposalScreen({ navigate, params, onToast }) {
             <div><small>Validation</small><strong><CheckCircle size={16} /> {capitalize(proposal.validation_status || proposal.validationStatus)}</strong></div>
           </section>
           <div className="review-tabs">
-            {["Changes", "Impact", "Validation", "Activity"].map((item) => <button className={tab === item ? "is-active" : ""} key={item} onClick={() => setTab(item)}>{item}</button>)}
+            {["Changes", "Diff", "Impact", "Validation", "Activity"].map((item) => <button className={tab === item ? "is-active" : ""} key={item} onClick={() => setTab(item)}>{item}</button>)}
           </div>
           {tab === "Changes" && <ProposalChanges proposal={proposal} />}
+          {tab === "Diff" && <ProposalDiff diffs={diffResult?.diffs} loading={diffLoading} error={diffError} demo={demo} />}
           {tab === "Impact" && <ProposalImpact navigate={navigate} proposal={proposal} dryRunResult={dryRunResult} dryRunLoading={dryRunLoading} />}
           {tab === "Validation" && <ProposalValidation proposal={proposal} validateResult={validateResult} validateLoading={validateLoading} />}
           {tab === "Activity" && <ProposalActivity proposalId={pid} />}
@@ -1715,6 +1724,81 @@ function ProposalChanges({ proposal }) {
           </article>
         ))
       )}
+    </section>
+  );
+}
+
+function ProposalDiff({ diffs, loading, error, demo }) {
+  if (demo) {
+    return (
+      <section className="change-section">
+        <div className="empty-state">
+          <Info size={24} />
+          <p>Diff preview requires a connected local API.</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (loading) {
+    return (
+      <section className="change-section">
+        <div className="empty-state"><CircleNotch className="spin" size={24} /> Loading diff preview…</div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="change-section">
+        <div className="empty-state"><WarningCircle size={24} /> {error}</div>
+      </section>
+    );
+  }
+
+  if (!diffs || diffs.length === 0) {
+    return (
+      <section className="change-section">
+        <div className="empty-state"><FileText size={24} /><p>No diff preview available.</p></div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="change-section">
+      <div className="change-section-heading">
+        <div><h2>Before / after diff</h2><p>Canonical values compared to the proposed changes.</p></div>
+      </div>
+      {diffs.map((diff, index) => (
+        <article className="diff-card" key={index}>
+          <header>
+            <span><GitDiff size={18} /> {diff.object_id}</span>
+            <Badge tone={diff.op === "create_object" || diff.op === "add_object" ? "green" : diff.op === "delete_object" ? "high" : "blue"}>{diff.op}</Badge>
+          </header>
+          <div className="field-diff">
+            <div><small>Object</small><strong>{diff.object_id}</strong></div>
+            {diff.target_path && (
+              <div><small>Path</small><code>{String(diff.target_path)}</code></div>
+            )}
+          </div>
+          {(diff.before !== undefined || diff.after !== undefined) && (
+            <div className="field-diff">
+              {diff.before !== undefined && (
+                <div className="removed-value"><small>Before</small><code>{typeof diff.before === "object" ? JSON.stringify(diff.before) : String(diff.before)}</code></div>
+              )}
+              {diff.after !== undefined && (
+                <div className="added-value"><small>After</small><code>{typeof diff.after === "object" ? JSON.stringify(diff.after) : String(diff.after)}</code></div>
+              )}
+            </div>
+          )}
+          {diff.status && (
+            <div className="field-diff">
+              <div><small>Status</small><strong>{diff.status}</strong></div>
+              {diff.reason && <div><small>Reason</small><span>{diff.reason}</span></div>}
+            </div>
+          )}
+        </article>
+      ))}
     </section>
   );
 }
