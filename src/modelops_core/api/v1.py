@@ -15,6 +15,8 @@ from modelops_core.api.models import (
     ActivityEventItem,
     ActivityResponse,
     ApiCapabilities,
+    AssessmentManifestItem,
+    AssessmentManifestResponse,
     CapabilityEntry,
     FindingItem,
     FindingResponse,
@@ -110,6 +112,12 @@ def capabilities(
                 "Read append-only local repository activity without treating generated events "
                 "as canonical changes."
             ),
+        ),
+        CapabilityEntry(
+            name="list_assessment_manifests",
+            method="GET",
+            href="/api/v1/assessment-manifests",
+            description="List typed generated assessment packages for safe local comparison.",
         ),
         CapabilityEntry(
             name="assessment_comparison",
@@ -338,6 +346,35 @@ def _finding_package(generated_root: Path, assessment: str | None) -> Path | Non
     return max(candidates, key=lambda path: path.stat().st_mtime).parent if candidates else None
 
 
+@router.get("/assessment-manifests", response_model=AssessmentManifestResponse)
+def assessment_manifests(
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> AssessmentManifestResponse:
+    """List valid typed assessment packages without exposing absolute workspace paths."""
+    generated_root = resolve_generated_path(_resolve_repo(repo)).resolve()
+    items = []
+    for manifest_path in generated_root.rglob("manifest.json"):
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            findings = json.loads(
+                (manifest_path.parent / "findings.json").read_text(encoding="utf-8")
+            )
+            if not manifest.get("run_id") or not isinstance(findings.get("findings"), list):
+                continue
+        except (OSError, json.JSONDecodeError):
+            continue
+        items.append(
+            AssessmentManifestItem(
+                manifest_id=str(manifest_path.relative_to(generated_root)),
+                run_id=str(manifest["run_id"]),
+                created_at=manifest.get("created_at"),
+                finding_count=len(findings["findings"]),
+            )
+        )
+    items.sort(key=lambda item: item.manifest_id, reverse=True)
+    return AssessmentManifestResponse(total_count=len(items), manifests=items)
+
+
 @router.get("/findings", response_model=FindingResponse)
 def findings(
     repo: str | None = Query(None, description="Path to model repository"),
@@ -352,9 +389,7 @@ def findings(
         payload = json.loads((package / "findings.json").read_text(encoding="utf-8"))
         reviews_path = package / "finding-reviews.json"
         reviews = (
-            json.loads(reviews_path.read_text(encoding="utf-8"))
-            if reviews_path.is_file()
-            else {}
+            json.loads(reviews_path.read_text(encoding="utf-8")) if reviews_path.is_file() else {}
         )
     except (OSError, json.JSONDecodeError) as exc:
         raise HTTPException(

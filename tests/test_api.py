@@ -237,6 +237,35 @@ def test_bound_api_rejects_external_assessment_manifest(sample_repo: Path, tmp_p
         clear_workspace()
 
 
+def test_api_lists_safe_typed_assessment_manifests(sample_repo: Path) -> None:
+    package = sample_repo / "generated" / "assessment-run"
+    package.mkdir(parents=True)
+    (package / "manifest.json").write_text(
+        json.dumps({"run_id": "ASSESSMENT-TEST", "created_at": "2026-07-15T12:00:00Z"}),
+        encoding="utf-8",
+    )
+    (package / "findings.json").write_text(
+        json.dumps({"findings": [{"id": "FINDING-1"}]}), encoding="utf-8"
+    )
+    (sample_repo / "generated" / "broken" / "manifest.json").parent.mkdir(parents=True)
+    (sample_repo / "generated" / "broken" / "manifest.json").write_text("{}", encoding="utf-8")
+
+    response = client.get("/api/v1/assessment-manifests", params={"repo": str(sample_repo)})
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "total_count": 1,
+        "manifests": [
+            {
+                "manifest_id": "assessment-run/manifest.json",
+                "run_id": "ASSESSMENT-TEST",
+                "created_at": "2026-07-15T12:00:00Z",
+                "finding_count": 1,
+            }
+        ],
+    }
+
+
 def test_api_list_objects_by_type(sample_repo: Path) -> None:
     response = client.get("/objects", params={"repo": str(sample_repo), "type": "MasterDataDomain"})
     assert response.status_code == 200

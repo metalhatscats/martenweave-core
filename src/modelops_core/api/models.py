@@ -99,6 +99,20 @@ class FindingResponse(BaseModel):
     findings: list[FindingItem]
 
 
+class AssessmentManifestItem(BaseModel):
+    """A safe generated-relative typed assessment package reference."""
+
+    manifest_id: str
+    run_id: str
+    created_at: str | None = None
+    finding_count: int = 0
+
+
+class AssessmentManifestResponse(BaseModel):
+    total_count: int
+    manifests: list[AssessmentManifestItem]
+
+
 class SearchResultItem(BaseModel):
     """A single search result returned by /api/v1/search."""
 
