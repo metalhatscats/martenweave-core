@@ -262,6 +262,8 @@ export function createApiClient(baseUrl) {
     reports: (limit = 100) => fetchJson(`${root}/api/v1/reports?limit=${encodeURIComponent(limit)}`),
     reportDownloadUrl: (artifactId) => `${root}/api/v1/reports/${artifactId.split("/").map(encodeURIComponent).join("/")}`,
     findings: () => fetchJson(`${root}/api/v1/findings`),
+    assessmentManifests: () => fetchJson(`${root}/api/v1/assessment-manifests`),
+    compareAssessments: (base, head) => fetchJson(`${root}/api/v1/assessment-comparisons?${new URLSearchParams({ base_manifest: base, head_manifest: head })}`),
     search: ({ q, type, status, domain, limit = 50, offset = 0 } = {}) => {
       const params = new URLSearchParams();
       if (q) params.set("q", q);

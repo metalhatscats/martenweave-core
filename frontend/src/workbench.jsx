@@ -504,6 +504,8 @@ export function ReportsScreen({ onExport }) {
   const [liveArtifacts, setLiveArtifacts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [manifests, setManifests] = useState([]);
+  const [comparison, setComparison] = useState(null);
   const demoReports = [
     ["Model index", "customer-migration-model-index-2026-07-03.csv", "2m ago", "24 objects"],
     ["Gap report", "customer-migration-gaps-2026-07-03.xlsx", "18m ago", "5 gaps"],
@@ -520,10 +522,11 @@ export function ReportsScreen({ onExport }) {
     }
     let cancelled = false;
     setLoading(true);
-    client.reports()
-      .then((response) => {
+    Promise.all([client.reports(), client.assessmentManifests()])
+      .then(([response, manifestResponse]) => {
         if (!cancelled) {
           setLiveArtifacts(response.artifacts);
+          setManifests(manifestResponse.manifests || []);
           setError("");
         }
       })
@@ -569,6 +572,7 @@ export function ReportsScreen({ onExport }) {
           </button>
         ))}
       </section>
+      {!demo && manifests.length >= 2 && <section className="surface recent-exports"><div className="section-title"><div><h2>Assessment lifecycle</h2><p>Compare the two most recent typed local assessment packages.</p></div><button className="secondary-button" onClick={() => client.compareAssessments(manifests[1].manifest_id, manifests[0].manifest_id).then(setComparison).catch((reason) => setError(String(reason)))}>Compare latest runs</button></div>{comparison && <p>{Object.entries(comparison.counts).map(([state, count]) => `${count} ${state.replaceAll("_", " ")}`).join(" · ") || "No finding changes."}</p>}</section>}
     </div>
   );
 }
