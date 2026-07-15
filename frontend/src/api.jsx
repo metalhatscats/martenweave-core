@@ -259,6 +259,8 @@ export function createApiClient(baseUrl) {
   return {
     capabilities: () => fetchJson(`${root}/api/v1/capabilities`),
     activity: (limit = 50) => fetchJson(`${root}/api/v1/activity?limit=${encodeURIComponent(limit)}`),
+    reports: (limit = 100) => fetchJson(`${root}/api/v1/reports?limit=${encodeURIComponent(limit)}`),
+    reportDownloadUrl: (artifactId) => `${root}/api/v1/reports/${artifactId.split("/").map(encodeURIComponent).join("/")}`,
     search: ({ q, type, status, domain, limit = 50, offset = 0 } = {}) => {
       const params = new URLSearchParams();
       if (q) params.set("q", q);

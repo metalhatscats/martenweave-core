@@ -62,6 +62,8 @@ Clients should discover capabilities before rendering actions.
 | GET | `/api/v1/search` | Paginated keyword search over the generated index |
 | GET | `/api/v1/objects/{id}` | Canonical object detail and relationships |
 | GET | `/api/v1/activity` | Recent append-only local audit events |
+| GET | `/api/v1/reports` | Generated artifact metadata, without absolute local paths |
+| GET | `/api/v1/reports/{artifact_id}` | Download one contained generated report artifact |
 | GET | `/api/v1/assessment-comparisons` | Stable-ID lifecycle comparison of two local assessment manifests |
 
 `GET /api/v1/capabilities` returns:
@@ -108,6 +110,12 @@ for a missing index.
 event type, status, known actor, proposal ID, affected object IDs, validation status, `source_state`,
 and `canonical_change`. `canonical_change` is only true when the event records affected canonical
 object IDs; index rebuilds and other generated artifacts remain visibly non-canonical.
+
+`GET /api/v1/reports?limit=100` lists only generated `.csv`, `.json`, `.md`, `.pdf`, and `.xlsx`
+artifacts. Items expose a repository-relative `artifact_id`, format, creation time, size, and a
+conservative safety classification: `local_only`, `sanitization_metadata`, or `sanitized_bundle`.
+Generation does not make an artifact safe to share. The artifact download route rejects paths outside
+`generated/` and formats not covered by this contract.
 
 ### Frontend integration
 

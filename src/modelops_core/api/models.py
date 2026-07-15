@@ -64,6 +64,25 @@ class ActivityResponse(BaseModel):
     events: list[ActivityEventItem]
 
 
+class ReportArtifactItem(BaseModel):
+    """A generated local artifact that is available for inspection or download."""
+
+    artifact_id: str
+    name: str
+    format: str
+    created_at: str
+    size_bytes: int
+    source_state: str = "generated"
+    safety_classification: str
+
+
+class ReportArtifactResponse(BaseModel):
+    """Generated artifact inventory; canonical files are intentionally excluded."""
+
+    total_count: int
+    artifacts: list[ReportArtifactItem]
+
+
 class SearchResultItem(BaseModel):
     """A single search result returned by /api/v1/search."""
 

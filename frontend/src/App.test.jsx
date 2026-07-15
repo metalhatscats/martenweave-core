@@ -52,6 +52,33 @@ describe("Martenweave workbench", () => {
     expect(screen.getByRole("button", { name: /Export — This local workspace is read-only/ })).toBeDisabled();
   });
 
+  it("loads generated report metadata from the local API", async () => {
+    window.location.hash = "#/reports";
+    vi.stubGlobal("fetch", vi.fn((url) => {
+      const payload = String(url).includes("/api/v1/reports")
+        ? {
+          total_count: 1,
+          artifacts: [{
+            artifact_id: "assessment/review.md",
+            name: "review.md",
+            format: "MD",
+            created_at: "2026-07-15T12:00:00+00:00",
+            size_bytes: 20,
+            source_state: "generated",
+            safety_classification: "local_only",
+          }],
+        }
+        : { api_version: "v1", version: "0.5.0", indexed: true, canonical_files: 24 };
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(payload), text: () => Promise.resolve("") });
+    }));
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByText("review.md")).toBeInTheDocument());
+    expect(screen.getByText("assessment/review.md")).toBeInTheDocument();
+    expect(screen.getByText("MD · local only")).toBeInTheDocument();
+    expect(screen.queryByText("customer-migration-model-index-2026-07-03.csv")).not.toBeInTheDocument();
+  });
+
   it("navigates to models and filters by query", async () => {
     window.location.hash = "#/models";
     render(<App />);

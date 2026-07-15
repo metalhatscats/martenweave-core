@@ -500,12 +500,51 @@ export function WorkspaceScreen({ navigate, onImport, onExport, onCommands, onSh
 }
 
 export function ReportsScreen({ onExport }) {
-  const reports = [
+  const { client, demo } = useApi();
+  const [liveArtifacts, setLiveArtifacts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const demoReports = [
     ["Model index", "customer-migration-model-index-2026-07-03.csv", "2m ago", "24 objects"],
     ["Gap report", "customer-migration-gaps-2026-07-03.xlsx", "18m ago", "5 gaps"],
     ["Lineage snapshot", "business-partner-lineage-2026-07-03.json", "1h ago", "12 edges"],
     ["Evidence summary", "tax-number-evidence-2026-07-02.pdf", "1d ago", "27 items"],
   ];
+
+  useEffect(() => {
+    if (demo || !client) {
+      setLiveArtifacts([]);
+      setLoading(false);
+      setError("");
+      return undefined;
+    }
+    let cancelled = false;
+    setLoading(true);
+    client.reports()
+      .then((response) => {
+        if (!cancelled) {
+          setLiveArtifacts(response.artifacts);
+          setError("");
+        }
+      })
+      .catch((reason) => {
+        if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [client, demo]);
+
+  const reports = demo
+    ? demoReports.map(([name, file, time, meta]) => ({ name, file, time, meta, downloadUrl: null }))
+    : liveArtifacts.map((artifact) => ({
+      name: artifact.name,
+      file: artifact.artifact_id,
+      time: new Date(artifact.created_at).toLocaleString(),
+      meta: `${artifact.format} · ${artifact.safety_classification.replaceAll("_", " ")}`,
+      downloadUrl: client.reportDownloadUrl(artifact.artifact_id),
+    }));
   return (
     <div className="page-pad reports-page">
       <div className="page-header">
@@ -520,9 +559,12 @@ export function ReportsScreen({ onExport }) {
         ))}
       </div>
       <section className="surface recent-exports">
-        <div className="section-title"><div><h2>Recent outputs</h2><p>Generated locally from rebuildable repository data</p></div></div>
-        {reports.map(([name, file, time, meta]) => (
-          <button key={file} onClick={() => onExport(name.toLowerCase().split(" ")[0])}>
+        <div className="section-title"><div><h2>Recent outputs</h2><p>{demo ? "Demo artifacts — local API is unavailable." : "Generated locally from rebuildable repository data."}</p></div></div>
+        {loading && <p>Loading generated artifacts…</p>}
+        {error && <p>Generated artifact inventory could not be loaded: {error}</p>}
+        {!loading && !error && reports.length === 0 && !demo && <p>No generated report artifacts are available in this workspace.</p>}
+        {reports.map(({ name, file, time, meta, downloadUrl }) => (
+          <button key={file} onClick={() => downloadUrl ? window.location.assign(downloadUrl) : onExport(name.toLowerCase().split(" ")[0])}>
             <FileArrowDown size={18} /><span><strong>{name}</strong><code>{file}</code></span><small>{meta}</small><time>{time}</time><ArrowRight size={15} />
           </button>
         ))}

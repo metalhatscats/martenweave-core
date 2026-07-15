@@ -111,6 +111,38 @@ def test_api_activity_is_empty_without_audit_log(temp_model_dir: Path) -> None:
     assert response.json() == {"total_count": 0, "events": []}
 
 
+def test_api_lists_and_downloads_generated_reports_without_exposing_paths(
+    sample_repo: Path,
+) -> None:
+    generated = sample_repo / "generated" / "assessment"
+    generated.mkdir(parents=True, exist_ok=True)
+    report = generated / "review.md"
+    report.write_text("# Review pack\n", encoding="utf-8")
+
+    response = client.get("/api/v1/reports", params={"repo": str(sample_repo)})
+
+    assert response.status_code == 200
+    artifact = next(
+        item
+        for item in response.json()["artifacts"]
+        if item["artifact_id"] == "assessment/review.md"
+    )
+    assert artifact["name"] == "review.md"
+    assert artifact["format"] == "MD"
+    assert artifact["source_state"] == "generated"
+    assert artifact["safety_classification"] == "local_only"
+    assert str(sample_repo) not in str(artifact)
+
+    download = client.get("/api/v1/reports/assessment/review.md", params={"repo": str(sample_repo)})
+    assert download.status_code == 200
+    assert download.text == "# Review pack\n"
+
+    traversal = client.get(
+        "/api/v1/reports/../../modelops.config.yaml", params={"repo": str(sample_repo)}
+    )
+    assert traversal.status_code in {400, 404}
+
+
 def test_api_compares_typed_assessments_inside_workspace(sample_repo: Path) -> None:
     from modelops_core.assessment.finding_contract import AssessmentFinding
 

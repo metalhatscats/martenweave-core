@@ -145,6 +145,9 @@ _SKIP_PATHS: set[str] = {
     "venv",
     "node_modules",
     "generated",
+    # The packaged Workbench bundle is generated from separately scanned frontend source.
+    # Its minified third-party runtime code is not a canonical repository input surface.
+    "workbench_static",
     ".DS_Store",
 }
 

@@ -301,6 +301,9 @@ namespace. The workbench (and any other local client) should discover capabiliti
 - `GET /api/v1/objects/{id}` — canonical object detail plus relationships.
 - `GET /api/v1/activity` — append-only local audit history, with generated events explicitly
   distinguished from canonical model changes.
+- `GET /api/v1/reports` — safe metadata for disposable generated artifacts; the companion
+  `GET /api/v1/reports/{artifact_id}` download route is contained to `generated/` and never lists
+  canonical files or absolute paths.
 - `GET /api/v1/assessment-comparisons` — deterministic lifecycle comparison for two typed
   assessment manifests inside the local workspace; stable finding IDs preserve prior/current
   provenance without inferring resolution.

@@ -219,6 +219,13 @@ class TestScanRepo:
         findings = scan_repo(tmp_path)
         assert not any(f.pattern_name == "api_key" for f in findings)
 
+    def test_skips_packaged_workbench_runtime(self, tmp_path: Path) -> None:
+        runtime = tmp_path / "src" / "modelops_core" / "workbench_static" / "assets"
+        runtime.mkdir(parents=True)
+        (runtime / "index.js").write_text("password=third-party-runtime-value", encoding="utf-8")
+
+        assert scan_repo(tmp_path) == []
+
 
 # ---------------------------------------------------------------------------
 # validate_env_file

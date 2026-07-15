@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import FileResponse
 
 from modelops_core import __version__
 from modelops_core.api.models import (
@@ -16,6 +18,8 @@ from modelops_core.api.models import (
     ObjectDetailResponse,
     PaginatedSearchResponse,
     RelatedObjectItem,
+    ReportArtifactItem,
+    ReportArtifactResponse,
     SearchResultItem,
 )
 from modelops_core.api.recovery import BUILD_INDEX, INSPECT_READ_ONLY
@@ -37,6 +41,8 @@ from modelops_core.reports.audit_service import AuditEventService
 from modelops_core.repository import scan_repository
 
 router = APIRouter(prefix="/api/v1")
+
+_REPORT_EXTENSIONS = frozenset({".csv", ".json", ".md", ".pdf", ".xlsx"})
 
 
 def _resolve_repo(repo: str | None) -> Path:
@@ -109,6 +115,12 @@ def capabilities(
                 "Compare two typed assessment manifests inside the local workspace without "
                 "inferring finding resolution."
             ),
+        ),
+        CapabilityEntry(
+            name="list_reports",
+            method="GET",
+            href="/api/v1/reports",
+            description="List disposable generated artifacts without exposing local paths.",
         ),
         CapabilityEntry(
             name="list_objects",
@@ -231,6 +243,72 @@ def activity(
         for event in events[:limit]
     ]
     return ActivityResponse(total_count=len(events), events=items)
+
+
+def _report_safety_classification(path: Path) -> str:
+    """Classify artifacts conservatively; generation alone does not make content shareable."""
+    if path.name == "sanitization-manifest.json":
+        return "sanitization_metadata"
+    if (path.parent / "sanitization-manifest.json").is_file():
+        return "sanitized_bundle"
+    return "local_only"
+
+
+@router.get("/reports", response_model=ReportArtifactResponse)
+def reports(
+    repo: str | None = Query(None, description="Path to model repository"),
+    limit: int = Query(100, ge=1, le=500, description="Maximum artifacts to return"),
+) -> ReportArtifactResponse:
+    """List safe metadata for generated reports; canonical source files are never listed."""
+    generated_root = resolve_generated_path(_resolve_repo(repo))
+    if not generated_root.exists():
+        return ReportArtifactResponse(total_count=0, artifacts=[])
+
+    paths = sorted(
+        (
+            path
+            for path in generated_root.rglob("*")
+            if path.is_file() and path.suffix.lower() in _REPORT_EXTENSIONS
+        ),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    artifacts = [
+        ReportArtifactItem(
+            artifact_id=path.relative_to(generated_root).as_posix(),
+            name=path.name,
+            format=path.suffix.removeprefix(".").upper(),
+            created_at=datetime.fromtimestamp(path.stat().st_mtime, UTC).isoformat(),
+            size_bytes=path.stat().st_size,
+            safety_classification=_report_safety_classification(path),
+        )
+        for path in paths[:limit]
+    ]
+    return ReportArtifactResponse(total_count=len(paths), artifacts=artifacts)
+
+
+@router.get("/reports/{artifact_id:path}")
+def download_report(
+    artifact_id: str,
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> FileResponse:
+    """Download one generated artifact after containment and format checks."""
+    generated_root = resolve_generated_path(_resolve_repo(repo)).resolve()
+    candidate = (generated_root / artifact_id).resolve()
+    try:
+        candidate.relative_to(generated_root)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400, detail="Artifact must remain inside generated/."
+        ) from exc
+    if candidate.suffix.lower() not in _REPORT_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="Artifact format is not downloadable through the local API.",
+        )
+    if not candidate.is_file():
+        raise HTTPException(status_code=404, detail="Generated artifact not found.")
+    return FileResponse(candidate, filename=candidate.name)
 
 
 @router.get("/assessment-comparisons")

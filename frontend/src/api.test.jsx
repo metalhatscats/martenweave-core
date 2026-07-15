@@ -122,6 +122,17 @@ describe("createApiClient", () => {
     expect(globalThis.fetch).toHaveBeenCalledWith("http://localhost:8000/api/v1/activity?limit=50");
   });
 
+  it("lists generated reports and builds an encoded local download URL", async () => {
+    mockFetch({ total_count: 1, artifacts: [{ artifact_id: "assessment/review pack.md" }] });
+    const client = createApiClient("http://localhost:8000");
+    const result = await client.reports();
+    expect(result.total_count).toBe(1);
+    expect(globalThis.fetch).toHaveBeenCalledWith("http://localhost:8000/api/v1/reports?limit=100");
+    expect(client.reportDownloadUrl("assessment/review pack.md")).toBe(
+      "http://localhost:8000/api/v1/reports/assessment/review%20pack.md",
+    );
+  });
+
   it("searches with query parameters", async () => {
     mockFetch({ total_count: 1, results: [{ object_id: "DOMAIN-TEST", object_type: "MasterDataDomain", status: "draft", name: "Test", title: null, domain: null, description: null, source_file: "DOMAIN-TEST.md", score: 1, matched_fields: ["name"] }] });
     const client = createApiClient("http://localhost:8000");
