@@ -206,6 +206,9 @@ class MigrationAssessmentManifest:
     stage_statuses: list[StageStatus]
     generated_artifacts: list[dict[str, Any]]
     generated_at: str
+    run_id: str
+    input_fingerprint: str
+    input_checksums: dict[str, str]
 
 
 def _file_hash(path: Path) -> str:
@@ -215,6 +218,32 @@ def _file_hash(path: Path) -> str:
         for chunk in iter(lambda: f.read(8192), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def _assessment_inputs_fingerprint(
+    repo_root: Path,
+    mapping_path: Path,
+    dataset_path: Path | None,
+    evidence_paths: list[Path],
+    enabled_packs: list[str] | None,
+) -> tuple[str, dict[str, str]]:
+    """Hash every deterministic input that can change an assessment result."""
+    checksums: dict[str, str] = {}
+    model_path = resolve_model_path(repo_root)
+    for path in sorted(scan_repository(model_path)):
+        relative_path = Path(path).relative_to(model_path).as_posix()
+        checksums[f"model/{relative_path}"] = _file_hash(Path(path))
+    config_path = repo_root / "modelops.config.yaml"
+    if config_path.exists():
+        checksums["modelops.config.yaml"] = _file_hash(config_path)
+    checksums["mapping"] = _file_hash(mapping_path)
+    if dataset_path is not None:
+        checksums["dataset"] = _file_hash(dataset_path)
+    for index, path in enumerate(sorted(evidence_paths)):
+        checksums[f"evidence/{index}:{path.name}"] = _file_hash(path)
+    payload = {"checksums": checksums, "enabled_domain_packs": enabled_packs or []}
+    fingerprint = hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
+    return fingerprint, checksums
 
 
 def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
@@ -519,6 +548,9 @@ def _write_manifest(
         "repo_name": manifest.repo_name,
         "repo_path": manifest.repo_path,
         "generated_at": manifest.generated_at,
+        "run_id": manifest.run_id,
+        "input_fingerprint": manifest.input_fingerprint,
+        "input_checksums": manifest.input_checksums,
         "inputs": manifest.inputs,
         "stage_statuses": [
             {"name": s.name, "status": s.status, "message": s.message}
@@ -593,6 +625,13 @@ def generate_migration_assessment(
         "dataset": str(dataset_path) if dataset_path else None,
         "evidence": [str(p) for p in evidence_paths],
     }
+    input_fingerprint, input_checksums = _assessment_inputs_fingerprint(
+        repo_root,
+        mapping_path,
+        dataset_path,
+        evidence_paths,
+        config.enabled_domain_packs if config else None,
+    )
 
     # Stage: validation
     try:
@@ -717,6 +756,9 @@ def generate_migration_assessment(
         stage_statuses=statuses,
         generated_artifacts=artifacts,
         generated_at=generated_at,
+        run_id=f"ASSESSMENT-{input_fingerprint[:16].upper()}",
+        input_fingerprint=input_fingerprint,
+        input_checksums=input_checksums,
     )
     manifest_path = _write_manifest(manifest, out_dir)
     manifest_path_placeholder["size"] = manifest_path.stat().st_size

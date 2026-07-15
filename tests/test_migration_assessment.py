@@ -101,6 +101,24 @@ def test_profile_mapping_workbook_metadata(tmp_path: Path) -> None:
     assert "target_field" in profile.column_names
 
 
+def test_assessment_manifest_has_reproducible_input_fingerprint(
+    sample_repo: Path, tmp_path: Path
+) -> None:
+    mapping = tmp_path / "mapping.xlsx"
+    _write_minimal_mapping_workbook(mapping)
+    first = generate_migration_assessment(sample_repo, mapping, None, [], tmp_path / "first")
+    second = generate_migration_assessment(sample_repo, mapping, None, [], tmp_path / "second")
+
+    assert first.input_fingerprint == second.input_fingerprint
+    assert first.run_id == second.run_id
+    assert first.run_id.startswith("ASSESSMENT-")
+    assert first.input_checksums["mapping"]
+
+    manifest = json.loads((tmp_path / "first" / "manifest.json").read_text())
+    assert manifest["input_fingerprint"] == first.input_fingerprint
+    assert manifest["input_checksums"] == first.input_checksums
+
+
 def test_profile_mapping_workbook_detects_missing_owner(tmp_path: Path) -> None:
     mapping = tmp_path / "mapping.xlsx"
     _write_minimal_mapping_workbook(mapping)

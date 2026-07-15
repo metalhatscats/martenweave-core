@@ -96,6 +96,9 @@ The remote `v0.4.0` tag already points to an older commit and must not be moved,
 - **Bound local API workspace** (#510): `serve` now binds API requests to one repository, rejects
   caller path switching, avoids exposing the bound absolute path, and makes mutations read-only
   unless an explicit local `--mutation-token` is configured.
+- **Reproducible migration assessments** (#512): assessment manifests now include a deterministic
+  run ID, input fingerprint, and checksums for canonical files, configuration, mapping workbook,
+  optional dataset, evidence, and enabled domain packs.
 - **Static docs build** (#59): Generate static Markdown documentation from the model index.
 - **Usage report** (#89): Aggregate audit events into command and status summaries via `usage-report` CLI.
 - **Config guard** (#43): Scan repositories for secrets and configuration guardrail issues.
