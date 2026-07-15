@@ -10,6 +10,7 @@ from typer.testing import CliRunner
 from modelops_core.cli import app
 from modelops_core.exports import export_model_csv, export_model_xlsx
 from modelops_core.imports.model_sheet_import_service import (
+    SpreadsheetImportError,
     import_model_sheet_csv,
     import_model_sheet_xlsx,
 )
@@ -115,6 +116,75 @@ def test_cli_import_model_sheet_xlsx(temp_model_dir: Path) -> None:
     result = runner.invoke(app, ["import-model-sheet", str(xlsx_path), "--repo", repo])
     assert result.exit_code == 0
     assert "PatchProposal" in result.output
+
+
+def test_cli_excel_review_roundtrip_writes_valid_proposal(temp_model_dir: Path) -> None:
+    pytest.importorskip("openpyxl")
+    from openpyxl import load_workbook
+
+    repo = temp_model_dir.parent
+    workbook = repo / "review.xlsx"
+    proposal_path = repo / "review-proposal.md"
+    export_result = runner.invoke(
+        app,
+        [
+            "export-model",
+            "--repo",
+            str(repo),
+            "--format",
+            "xlsx",
+            "--business-review",
+            "--out",
+            str(workbook),
+        ],
+    )
+    assert export_result.exit_code == 0, export_result.output
+
+    wb = load_workbook(workbook)
+    ws = wb["MasterDataDomain"]
+    headers = [cell.value for cell in ws[1]]
+    ws.cell(2, headers.index("name") + 1).value = "Reviewed Domain"
+    wb.save(workbook)
+    wb.close()
+
+    import_result = runner.invoke(
+        app,
+        [
+            "import-excel-review",
+            "--repo",
+            str(repo),
+            "--from",
+            str(workbook),
+            "--out",
+            str(proposal_path),
+        ],
+    )
+    assert import_result.exit_code == 0, import_result.output
+    assert proposal_path.exists()
+    assert "Canonical model files were not changed" in import_result.output
+
+    validate_result = runner.invoke(
+        app,
+        ["proposal", "validate", "--repo", str(repo), "--proposal", str(proposal_path)],
+    )
+    assert validate_result.exit_code == 0, validate_result.output
+    assert "Errors: 0" in validate_result.output
+
+
+def test_excel_review_rejects_missing_stable_id(temp_model_dir: Path) -> None:
+    pytest.importorskip("openpyxl")
+    from openpyxl import load_workbook
+
+    workbook = temp_model_dir.parent / "review.xlsx"
+    export_model_xlsx(temp_model_dir, output_path=workbook, business_review=True)
+    wb = load_workbook(workbook)
+    ws = wb["MasterDataDomain"]
+    ws.cell(2, 1).value = None
+    wb.save(workbook)
+    wb.close()
+
+    with pytest.raises(SpreadsheetImportError, match="stable 'id'"):
+        import_model_sheet_xlsx(workbook, temp_model_dir, require_stable_ids=True)
 
 
 def test_cli_import_model_sheet_invalid_input(temp_model_dir: Path) -> None:

@@ -87,6 +87,9 @@ The remote `v0.4.0` tag already points to an older commit and must not be moved,
 - **Source registry** (#54): Track imported files and external references with `SourceRegistryService`.
 - **Git bundles** (#52): Generate GitHub-ready change bundles from PatchProposals.
 - **Excel business-review roundtrip** (#48): Export formatted XLSX workbooks for business review and re-import changes.
+- **Reviewable Excel handoff** (#427): `export-model --out`, `import-excel-review`, and external
+  proposal validation now support a strict, proposal-only reviewer round trip. Review rows without
+  stable IDs are rejected rather than silently skipped.
 - **Static docs build** (#59): Generate static Markdown documentation from the model index.
 - **Usage report** (#89): Aggregate audit events into command and status summaries via `usage-report` CLI.
 - **Config guard** (#43): Scan repositories for secrets and configuration guardrail issues.

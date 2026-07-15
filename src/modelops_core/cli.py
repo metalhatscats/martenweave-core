@@ -82,6 +82,7 @@ from modelops_core.imports.google_sheets_import_service import (
     import_google_sheet_as_proposal,
 )
 from modelops_core.imports.model_sheet_import_service import (
+    SpreadsheetImportError,
     import_model_sheet_csv,
     import_model_sheet_xlsx,
 )
@@ -117,6 +118,7 @@ from modelops_core.patching.apply_service import (
     dry_run_patch_proposal,
 )
 from modelops_core.patching.patch_proposal_service import (
+    render_patch_proposal_markdown,
     transition_patch_proposal_status,
     write_patch_proposal,
 )
@@ -4518,17 +4520,27 @@ def proposal_reject(
 
 @proposal_app.command("validate")
 def proposal_validate(
-    proposal_id: str = typer.Argument(..., help="PatchProposal ID (e.g. PP-001)."),
+    proposal_id: str | None = typer.Argument(None, help="PatchProposal ID (e.g. PP-001)."),
+    proposal_file: Path | None = typer.Option(  # noqa: B008
+        None, "--proposal", help="Path to a PatchProposal Markdown file outside the repository."
+    ),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Run deterministic validation on a PatchProposal."""
     repo_root = _resolve_repo(repo)
     model_path = resolve_model_path(repo_root)
-    proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
+    if proposal_file is not None:
+        proposal_path = proposal_file
+        proposal_id = proposal_file.stem
+    elif proposal_id is not None:
+        proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
+    else:
+        console.print("[red]Provide a PatchProposal ID or --proposal PATH.[/red]")
+        raise typer.Exit(code=1)
 
     if not proposal_path.exists():
-        console.print(f"[red]PatchProposal not found: {proposal_id}[/red]")
+        console.print(f"[red]PatchProposal not found: {proposal_path}[/red]")
         raise typer.Exit(code=1)
 
     parsed = parse_file(proposal_path)
@@ -5687,13 +5699,19 @@ def import_model_sheet(
         raise typer.Exit(code=1)
 
     limits = load_resource_limits(repo_root)
-    if input_path.is_dir():
-        proposal = import_model_sheet_csv(input_path, model_path)
-    elif input_path.suffix.lower() == ".xlsx":
-        proposal = import_model_sheet_xlsx(input_path, model_path, max_rows=limits.max_import_rows)
-    else:
-        console.print("[red]Input must be a CSV directory or an .xlsx workbook.[/red]")
-        raise typer.Exit(code=1)
+    try:
+        if input_path.is_dir():
+            proposal = import_model_sheet_csv(input_path, model_path)
+        elif input_path.suffix.lower() == ".xlsx":
+            proposal = import_model_sheet_xlsx(
+                input_path, model_path, max_rows=limits.max_import_rows
+            )
+        else:
+            console.print("[red]Input must be a CSV directory or an .xlsx workbook.[/red]")
+            raise typer.Exit(code=1)
+    except SpreadsheetImportError as exc:
+        console.print(f"[red]Review import rejected: {exc}[/red]")
+        raise typer.Exit(code=1) from exc
 
     service = AuditEventService(repo_root)
     changed_object_ids = [op.get("object_id", "") for op in proposal.get("operations", [])]
@@ -5745,6 +5763,44 @@ def import_model_sheet(
                 console.print(f"  ... and {len(proposal['operations']) - 20} more")
 
 
+@app.command("import-excel-review")
+def import_excel_review(
+    input_path: Path = typer.Option(..., "--from", help="Reviewed XLSX workbook to import."),  # noqa: B008
+    output: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Path for the generated PatchProposal Markdown."
+    ),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+) -> None:
+    """Create a reviewable PatchProposal from a business-review XLSX workbook.
+
+    This command writes only the requested proposal artifact. It never edits the
+    canonical model; use the proposal review and approval workflow to apply an
+    accepted proposal later.
+    """
+    repo_root = _resolve_repo(repo)
+    if not input_path.is_file() or input_path.suffix.lower() != ".xlsx":
+        console.print("[red]--from must point to an existing .xlsx workbook.[/red]")
+        raise typer.Exit(code=1)
+
+    try:
+        proposal = import_model_sheet_xlsx(
+            input_path,
+            resolve_model_path(repo_root),
+            max_rows=load_resource_limits(repo_root).max_import_rows,
+            require_stable_ids=True,
+        )
+    except SpreadsheetImportError as exc:
+        console.print(f"[red]Review import rejected: {exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(render_patch_proposal_markdown(proposal), encoding="utf-8")
+    console.print(f"[green]PatchProposal written:[/green] {output}")
+    console.print(f"  ID: {proposal['id']}")
+    console.print(f"  Operations: {len(proposal['operations'])}")
+    console.print("  Canonical model files were not changed.")
+
+
 @app.command("export-model")
 @with_telemetry("export-model")
 def export_model(
@@ -5752,6 +5808,9 @@ def export_model(
     fmt: str = typer.Option("csv", "--format", help="Export format: csv, xlsx, or json."),
     business_review: bool = typer.Option(
         False, "--business-review", help="Styled XLSX for non-technical review."
+    ),
+    output: Path | None = typer.Option(  # noqa: B008
+        None, "--out", help="Output path for a single XLSX export."
     ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
@@ -5800,8 +5859,14 @@ def export_model(
                 console.print(f"  {f}")
             path = written[0] if written else None
         elif fmt.lower() == "xlsx":
+            if output is not None and output.suffix.lower() != ".xlsx":
+                console.print(
+                    "[red]--out must use an .xlsx filename when --format xlsx is selected.[/red]"
+                )
+                raise typer.Exit(code=1)
             path = export_model_xlsx(
                 model_path,
+                output_path=output,
                 max_objects=limits.max_export_objects,
                 business_review=business_review,
             )

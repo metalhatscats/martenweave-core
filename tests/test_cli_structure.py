@@ -84,6 +84,7 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
     "workbench",
     "mcp",
     "import-model-sheet",
+    "import-excel-review",
     "export-model",
     "export-schema",
     "export-sheets",

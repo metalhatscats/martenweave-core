@@ -272,6 +272,20 @@ martenweave export-model --repo ./my-model --format xlsx
 ### Edit in Excel
 Open the workbook, edit names, descriptions, or statuses, then save.
 
+### Business review round trip
+For a workshop-ready workbook, export the formatted review view and create a proposal artifact
+outside the canonical model. Every non-empty row must retain its stable `id`; the import rejects
+anonymous rows rather than guessing which object a reviewer meant.
+
+```bash
+martenweave export-model --repo ./my-model --format xlsx --business-review --out /tmp/review.xlsx
+martenweave import-excel-review --repo ./my-model --from /tmp/review.xlsx --out /tmp/review-proposal.md
+martenweave proposal validate --repo ./my-model --proposal /tmp/review-proposal.md
+```
+
+The generated Markdown is a `PatchProposal`, not a canonical model mutation. Review, approve, and
+apply it through the normal controlled-change workflow.
+
 ### Import
 ```bash
 martenweave import-model-sheet generated/exports/csv --repo ./my-model --json

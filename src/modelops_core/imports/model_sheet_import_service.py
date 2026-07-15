@@ -38,6 +38,10 @@ _REFERENCE_LIKE_FIELDS = {
 }
 
 
+class SpreadsheetImportError(ValueError):
+    """Raised when a review workbook cannot safely identify its rows."""
+
+
 def _read_csv_dir(csv_dir: Path) -> dict[str, list[dict[str, str]]]:
     """Read all CSV files in a directory, keyed by object type."""
     rows_by_type: dict[str, list[dict[str, str]]] = {}
@@ -45,7 +49,7 @@ def _read_csv_dir(csv_dir: Path) -> dict[str, list[dict[str, str]]]:
         obj_type = csv_file.stem.replace("_", " ")
         with csv_file.open("r", newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
-            rows_by_type[obj_type] = [row for row in reader if row.get("id")]
+            rows_by_type[obj_type] = list(reader)
     return rows_by_type
 
 
@@ -61,6 +65,9 @@ def _read_xlsx(xlsx_path: Path, max_rows: int | None = None) -> dict[str, list[d
     rows_by_type: dict[str, list[dict[str, str]]] = {}
     wb = load_workbook(xlsx_path, data_only=True, read_only=True)
     for sheet_name in wb.sheetnames:
+        # The business-review export includes instructions, not model rows.
+        if sheet_name == "Read Me":
+            continue
         ws = wb[sheet_name]
         obj_type = sheet_name.replace("_", " ")
         headers = [str(cell.value) for cell in next(ws.iter_rows(min_row=1, max_row=1))]
@@ -73,11 +80,28 @@ def _read_xlsx(xlsx_path: Path, max_rows: int | None = None) -> dict[str, list[d
             row_dict = {
                 h: str(v) if v is not None else "" for h, v in zip(headers, row, strict=False)
             }
-            if row_dict.get("id"):
+            if any(row_dict.values()):
                 rows.append(row_dict)
         rows_by_type[obj_type] = rows
     wb.close()
     return rows_by_type
+
+
+def _require_row_ids(rows_by_type: dict[str, list[dict[str, str]]]) -> None:
+    """Reject review input that cannot be traced to a stable canonical ID."""
+    problems: list[str] = []
+    for obj_type, rows in rows_by_type.items():
+        for row_number, row in enumerate(rows, start=2):
+            if not row.get("id", "").strip():
+                problems.append(f"sheet '{obj_type}' row {row_number}")
+    if problems:
+        locations = ", ".join(problems[:5])
+        remaining = len(problems) - 5
+        suffix = f" (and {remaining} more)" if remaining > 0 else ""
+        raise SpreadsheetImportError(
+            "Every non-empty review row must include a stable 'id'; missing ID at "
+            f"{locations}{suffix}."
+        )
 
 
 def _detect_formulas(xlsx_path: Path) -> list[str]:
@@ -232,8 +256,11 @@ def _build_proposal(
     existing: dict[str, dict[str, Any]],
     source: str,
     extra_warnings: list[str] | None = None,
+    require_stable_ids: bool = False,
 ) -> dict[str, Any]:
     """Build a PatchProposal from spreadsheet rows compared to existing objects."""
+    if require_stable_ids:
+        _require_row_ids(rows_by_type)
     operations: list[PatchOperation] = []
     warnings: list[str] = list(extra_warnings or [])
     affected_objects: list[str] = []
@@ -243,7 +270,7 @@ def _build_proposal(
 
     for obj_type, rows in rows_by_type.items():
         for row in rows:
-            obj_id = row["id"]
+            obj_id = row.get("id", "")
 
             if not obj_id:
                 warnings.append("Row skipped: missing id")
@@ -279,15 +306,18 @@ def _build_proposal(
                 )
                 affected_objects.append(obj_id)
 
-    proposal_id = f"PP-IMPORT-{Path(source).stem.upper()}"
+    proposal_stem = Path(source).stem.upper().replace("_", "-")
+    proposal_id = f"PP-IMPORT-{proposal_stem}"
     return {
         "id": proposal_id,
         "type": "PatchProposal",
         "status": "pending_review",
+        "name": proposal_id,
+        "title": f"Spreadsheet review: {Path(source).name}",
         "validation_status": "pending",
         "operations": [op.model_dump() for op in operations],
         "affected_objects": affected_objects,
-        "source_evidence": {"import_source": source},
+        "source_evidence": source,
         "source_state": SourceState.PROPOSAL.value,
         "created_by": "system",
         "warnings": warnings,
@@ -318,6 +348,7 @@ def import_model_sheet_xlsx(
     xlsx_path: Path,
     repo_model_path: Path,
     max_rows: int | None = None,
+    require_stable_ids: bool = False,
 ) -> dict[str, Any]:
     """Import an XLSX workbook and produce a PatchProposal.
 
@@ -325,6 +356,9 @@ def import_model_sheet_xlsx(
         xlsx_path: Path to the exported XLSX workbook.
         repo_model_path: Path to the model directory.
         max_rows: Maximum rows to read per sheet. If exceeded, rows are truncated.
+        require_stable_ids: Reject non-empty rows without an ID. Intended for
+            the controlled business-review workflow; the general importer
+            preserves its legacy warning-oriented behavior.
 
     Returns:
         A PatchProposal dict capturing detected changes.
@@ -339,4 +373,10 @@ def import_model_sheet_xlsx(
                 extra_warnings.append(
                     f"Sheet '{obj_type}' truncated at {max_rows} rows (max_import_rows limit)."
                 )
-    return _build_proposal(rows_by_type, existing, str(xlsx_path), extra_warnings=extra_warnings)
+    return _build_proposal(
+        rows_by_type,
+        existing,
+        str(xlsx_path),
+        extra_warnings=extra_warnings,
+        require_stable_ids=require_stable_ids,
+    )

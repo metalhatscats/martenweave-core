@@ -241,6 +241,7 @@ For a release-grade demo path that exercises validation, indexing, search, trace
 | `workbench` | Launch the local Workbench (API + packaged UI) |
 | `mcp` | Start the optional MCP server for agent integration |
 | `import-model-sheet` | Import spreadsheet edits as a PatchProposal |
+| `import-excel-review` | Turn a reviewed XLSX workbook into a portable PatchProposal artifact |
 | `export-model` | Export canonical objects to CSV or XLSX |
 | `export-schema` | Export JSON Schema for canonical object types |
 | `export-sheets` | Export canonical model objects to Google Sheets |
