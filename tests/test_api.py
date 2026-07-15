@@ -554,6 +554,9 @@ def test_api_gaps_success(tmp_path: Path) -> None:
     assert data["coverage"]["matched_columns"] == 1
     assert data["coverage"]["unmatched_columns"] == 1
     assert any(g["gap_code"] == "UNMODELED_DATASET_COLUMN" for g in data["dataset_gaps"])
+    finding = data["dataset_gaps"][0]["finding"]
+    assert finding["lifecycle_state"] == "open"
+    assert finding["provenance"]["source_kind"] == "dataset_readiness"
 
 
 def test_api_gaps_missing_dataset(tmp_path: Path) -> None:

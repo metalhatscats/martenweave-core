@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from modelops_core import __version__
+from modelops_core.assessment.finding_contract import AssessmentFinding, FindingProvenance
 from modelops_core.config import (
     load_repo_config,
     load_resource_limits,
@@ -192,8 +193,8 @@ def _compute_verdict(
     return "ready"
 
 
-def _gap_to_dict(gap: ColumnGap) -> dict[str, Any]:
-    return {
+def _gap_to_dict(gap: ColumnGap, readiness_run_id: str) -> dict[str, Any]:
+    data = {
         "column_name": gap.column_name,
         "gap_code": gap.gap_code,
         "severity": gap.severity,
@@ -202,6 +203,21 @@ def _gap_to_dict(gap: ColumnGap) -> dict[str, Any]:
         "evidence_ids": gap.evidence_ids,
         "recommended_proposal_op": gap.recommended_proposal_op,
     }
+    finding_id = gap.gap_id or f"GAP-{gap.gap_code}-{gap.column_name}"
+    source_kind = "model_validation" if finding_id.startswith("GAP-MODEL-") else "dataset_readiness"
+    severity = gap.severity if gap.severity in {"low", "medium", "high", "critical"} else "medium"
+    data["finding"] = AssessmentFinding(
+        id=finding_id,
+        category=gap.gap_code.lower(),
+        severity=severity,
+        message=gap.message,
+        provenance=FindingProvenance(
+            assessment_run_id=readiness_run_id,
+            source_kind=source_kind,
+            location={"sheet_name": gap.sheet_name, "column_name": gap.column_name},
+        ),
+    ).model_dump(mode="json")
+    return data
 
 
 def _match_to_dict(match: ColumnMatch) -> dict[str, Any]:
@@ -382,6 +398,7 @@ def _build_report(
             "match_rate": coverage.match_rate,
         }
 
+    readiness_run_id = f"READINESS-{dataset_path.stem.upper()}"
     report = DatasetReadinessReport(
         martenweave_version=__version__,
         repo=str(repo_root),
@@ -397,8 +414,8 @@ def _build_report(
         dataset_profile=_build_dataset_profile_dict(profile, dataset_path, privacy_warnings),
         coverage=coverage_dict,
         matches=[_match_to_dict(m) for m in matches],
-        dataset_gaps=[_gap_to_dict(g) for g in dataset_gaps],
-        model_gaps=[_gap_to_dict(g) for g in model_gaps],
+        dataset_gaps=[_gap_to_dict(g, readiness_run_id) for g in dataset_gaps],
+        model_gaps=[_gap_to_dict(g, readiness_run_id) for g in model_gaps],
         gap_summary={
             "total_gap_count": gap_summary_report.total_gap_count,
             "gap_score": gap_summary_report.gap_score,
