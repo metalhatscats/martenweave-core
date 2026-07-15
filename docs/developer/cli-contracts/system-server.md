@@ -44,6 +44,29 @@ Clients should discover capabilities before rendering actions.
 - `read_only` — whether mutation endpoints are disabled.
 - `read` — list of read operations with `name`, `method`, `href`, `description`.
 - `mutations` — list of mutation operations with the same shape.
+- `recovery` — safe next actions available in the current workspace state. Each action has a stable
+  `code`, human-readable `label`, optional CLI `command`, and `requires_confirmation` flag.
+
+HTTP failures retain the normal `detail` field and add an `error` envelope:
+
+```json
+{
+  "detail": "Index not found. Run build-index first.",
+  "error": {
+    "code": "INDEX_MISSING",
+    "message": "Index not found. Run build-index first.",
+    "recovery": {
+      "code": "BUILD_INDEX",
+      "label": "Build the disposable local index",
+      "command": "martenweave build-index --repo .",
+      "requires_confirmation": false
+    }
+  }
+}
+```
+
+Recovery actions only guide inspection or rebuilding disposable outputs. They never authorize a
+canonical-file mutation; proposal review, approval, and change-request gates remain mandatory.
 
 `GET /api/v1/search` accepts `q` (required), `type`, `status`, `domain`, `tags`, `limit`, and
 `offset`, and returns `total_count` and a `results` array. Search returns structured errors when the
@@ -62,7 +85,8 @@ The local API enables the workbench to read live data without importing backend 
 - `modelops serve` configures CORS for local development origins (`http://localhost`,
   `http://127.0.0.1`, and common Vite ports).
 - When the API is unreachable, the index is stale, or the contract version is incompatible, the
-  workbench shows the connection state and falls back to explicitly labeled demo data.
+  workbench shows the connection state and falls back to explicitly labeled demo data. A stale
+  index also shows the server-provided recovery command instead of requiring the UI to parse prose.
 - All write operations continue to require explicit human approval through the proposal/change-
   request flow; the frontend does not edit canonical files directly.
 

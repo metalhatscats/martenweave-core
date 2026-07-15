@@ -94,12 +94,13 @@ function TestWrapper({ children, baseUrl = "http://localhost:8000" }) {
 }
 
 function Probe() {
-  const { state, demo, capabilities } = useApi();
+  const { state, demo, capabilities, recovery } = useApi();
   return (
     <div>
       <span data-testid="state">{state}</span>
       <span data-testid="demo">{demo ? "demo" : "live"}</span>
       <span data-testid="version">{capabilities?.version || "none"}</span>
+      <span data-testid="recovery">{recovery?.code || "none"}</span>
     </div>
   );
 }
@@ -253,10 +254,11 @@ describe("ApiProvider", () => {
   });
 
   it("falls back to demo mode when the index is stale", async () => {
-    mockFetch({ api_version: "v1", version: "0.5.0", indexed: false, canonical_files: 0 });
+    mockFetch({ api_version: "v1", version: "0.5.0", indexed: false, canonical_files: 0, recovery: [{ code: "BUILD_INDEX", label: "Build the disposable local index", command: "martenweave build-index --repo .", requires_confirmation: false }] });
     render(<Probe />, { wrapper: TestWrapper });
     await waitFor(() => expect(screen.getByTestId("state").textContent).toBe(API_STATE.STALE_INDEX));
     expect(screen.getByTestId("demo").textContent).toBe("demo");
+    expect(screen.getByTestId("recovery").textContent).toBe("BUILD_INDEX");
   });
 
   it("falls back to demo mode for an incompatible contract version", async () => {

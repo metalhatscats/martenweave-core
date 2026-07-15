@@ -29,6 +29,15 @@ import { lineageEdges, lineageNodes, modelObjects } from "./data.js";
  * @property {boolean} read_only
  * @property {Capability[]} read
  * @property {Capability[]} mutations
+ * @property {RecoveryAction[]} recovery
+ */
+
+/**
+ * @typedef {object} RecoveryAction
+ * @property {string} code
+ * @property {string} label
+ * @property {string|null} command
+ * @property {boolean} requires_confirmation
  */
 
 /**
@@ -256,6 +265,7 @@ export function createApiClient(baseUrl) {
  * @property {ApiClient|null} client
  * @property {string|null} error
  * @property {CapabilitiesResponse|null} capabilities
+ * @property {RecoveryAction|null} recovery
  */
 
 /**
@@ -267,6 +277,7 @@ export const ApiContext = createContext({
   client: null,
   error: null,
   capabilities: null,
+  recovery: null,
 });
 
 /**
@@ -282,22 +293,23 @@ export function ApiProvider({ children, baseUrl = DEFAULT_API_BASE_URL }) {
     client,
     error: null,
     capabilities: null,
+    recovery: null,
   }));
 
   const probe = useCallback(async () => {
     try {
       const capabilities = await client.capabilities();
       if (capabilities.api_version !== EXPECTED_API_VERSION) {
-        setValue({ state: API_STATE.INCOMPATIBLE, demo: true, client, error: `API version ${capabilities.api_version} is not supported`, capabilities, retry: probe });
+        setValue({ state: API_STATE.INCOMPATIBLE, demo: true, client, error: `API version ${capabilities.api_version} is not supported`, capabilities, recovery: null, retry: probe });
         return;
       }
       if (!capabilities.indexed) {
-        setValue({ state: API_STATE.STALE_INDEX, demo: true, client, error: "Index is missing. Run build-index first.", capabilities, retry: probe });
+        setValue({ state: API_STATE.STALE_INDEX, demo: true, client, error: "Index is missing. Run build-index first.", capabilities, recovery: capabilities.recovery?.find((action) => action.code === "BUILD_INDEX") || null, retry: probe });
         return;
       }
-      setValue({ state: API_STATE.CONNECTED, demo: false, client, error: null, capabilities, retry: probe });
+      setValue({ state: API_STATE.CONNECTED, demo: false, client, error: null, capabilities, recovery: null, retry: probe });
     } catch (err) {
-      setValue({ state: API_STATE.UNAVAILABLE, demo: true, client, error: err instanceof Error ? err.message : String(err), capabilities: null, retry: probe });
+      setValue({ state: API_STATE.UNAVAILABLE, demo: true, client, error: err instanceof Error ? err.message : String(err), capabilities: null, recovery: null, retry: probe });
     }
   }, [client]);
 

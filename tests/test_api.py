@@ -173,6 +173,27 @@ def test_api_impact_missing_index(temp_model_dir: Path) -> None:
     response = client.get("/impact/DOMAIN-TEST", params={"repo": repo})
     assert response.status_code == 400
     assert "Index not found" in response.json()["detail"]
+    assert response.json()["error"] == {
+        "code": "INDEX_MISSING",
+        "message": "Index not found. Run build-index first.",
+        "recovery": {
+            "code": "BUILD_INDEX",
+            "label": "Build the disposable local index",
+            "command": "martenweave build-index --repo .",
+            "requires_confirmation": False,
+        },
+    }
+
+
+def test_api_recovery_errors_preserve_workspace_safety(sample_repo: Path, tmp_path: Path) -> None:
+    configure_workspace(sample_repo)
+    try:
+        response = client.get("/health", params={"repo": str(tmp_path)})
+        assert response.status_code == 403
+        assert response.json()["error"]["code"] == "WORKSPACE_CONFLICT"
+        assert response.json()["error"]["recovery"]["code"] == "INSPECT_READ_ONLY"
+    finally:
+        clear_workspace()
 
 
 # ---------------------------------------------------------------------------

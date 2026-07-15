@@ -16,6 +16,7 @@ from modelops_core.api.models import (
     RelatedObjectItem,
     SearchResultItem,
 )
+from modelops_core.api.recovery import BUILD_INDEX, INSPECT_READ_ONLY
 from modelops_core.api.workspace import (
     mutation_enabled,
     resolve_workspace,
@@ -55,6 +56,11 @@ def capabilities(
     """Discover API version, workspace health, and supported operations."""
     repo_root = _resolve_repo(repo)
     health = _workspace_health(repo_root)
+    recovery = []
+    if not health["indexed"]:
+        recovery.append(BUILD_INDEX)
+    if not mutation_enabled():
+        recovery.append(INSPECT_READ_ONLY)
 
     read = [
         CapabilityEntry(
@@ -173,6 +179,7 @@ def capabilities(
         read_only=not mutation_enabled(),
         read=read,
         mutations=mutations,
+        recovery=[action.as_dict() for action in recovery],
     )
 
 

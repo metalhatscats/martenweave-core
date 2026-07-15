@@ -9,6 +9,9 @@ All notable changes to Martenweave Core.
 - **Safe repository migrations (#515):** `martenweave migrate` now previews by default. Explicit
   `--apply` writes only reviewed legacy schema versions, makes atomic file replacements, stores a
   generated backup and receipt, validates canonical files, and rebuilds the disposable index.
+- **Actionable local API recovery (#516):** API errors now retain compatible `detail` text while
+  adding stable error codes and safe recovery actions. Capability discovery advertises missing-index
+  and read-only workspace guidance, and the Workbench shows the exact index recovery command.
 
 ## [0.5.0] — 2026-07-14
 

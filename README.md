@@ -293,12 +293,18 @@ See [`frontend/README.md`](frontend/README.md) for development build instruction
 namespace. The workbench (and any other local client) should discover capabilities via
 `GET /api/v1/capabilities` before rendering actions. Core v1 resources include:
 
-- `GET /api/v1/capabilities` — version, workspace health, and read/mutation capability list.
+- `GET /api/v1/capabilities` — version, workspace health, read/mutation capability list, and safe
+  recovery actions for the current workspace state.
 - `GET /api/v1/search?q=...` — paginated keyword search over the generated index.
 - `GET /api/v1/objects/{id}` — canonical object detail plus relationships.
 
 The v1 contract is additive: existing endpoints remain available, and mutations still require
 explicit human approval through the proposal/change-request flow.
+
+Errors preserve FastAPI's `detail` field for compatibility and also return an `error` object with a
+stable `code`, `message`, and, where applicable, a non-mutating `recovery` action. For example, a
+missing disposable index reports `INDEX_MISSING` and the exact `martenweave build-index --repo .`
+command; API clients must never infer a canonical-file write from recovery guidance.
 
 Use `--help` on any command for full options:
 

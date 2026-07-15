@@ -5,11 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from modelops_core import __version__
 from modelops_core.api import v1
+from modelops_core.api.recovery import recovery_for_error
 from modelops_core.api.workspace import (
     require_mutation_token,
     resolve_workspace,
@@ -36,6 +38,16 @@ app = FastAPI(
     description="Lightweight local API for the agentic data model registry.",
     version=__version__,
 )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_with_recovery(request: Request, exc: HTTPException) -> JSONResponse:
+    """Preserve FastAPI's ``detail`` while adding stable recovery metadata for clients."""
+    code, action = recovery_for_error(exc.status_code, exc.detail)
+    error: dict[str, object] = {"code": code, "message": str(exc.detail)}
+    if action is not None:
+        error["recovery"] = action.as_dict()
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail, "error": error})
 
 
 def _resolve_repo(repo: str | None) -> Path:

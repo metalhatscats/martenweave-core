@@ -16,6 +16,15 @@ class CapabilityEntry(BaseModel):
     description: str
 
 
+class RecoveryActionEntry(BaseModel):
+    """A deterministic, non-mutating recovery action advertised by the API."""
+
+    code: str
+    label: str
+    command: str | None = None
+    requires_confirmation: bool = False
+
+
 class ApiCapabilities(BaseModel):
     """Capability discovery response for the versioned API."""
 
@@ -27,6 +36,10 @@ class ApiCapabilities(BaseModel):
     read_only: bool = Field(..., description="Whether mutation endpoints are disabled.")
     read: list[CapabilityEntry] = Field(..., description="Available read operations.")
     mutations: list[CapabilityEntry] = Field(..., description="Available mutation operations.")
+    recovery: list[RecoveryActionEntry] = Field(
+        default_factory=list,
+        description="Safe recovery actions for the current workspace state.",
+    )
 
 
 class SearchResultItem(BaseModel):
