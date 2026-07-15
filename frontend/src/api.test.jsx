@@ -133,6 +133,13 @@ describe("createApiClient", () => {
     );
   });
 
+  it("fetches typed assessment findings", async () => {
+    mockFetch({ total_count: 0, findings: [] });
+    const client = createApiClient("http://localhost:8000");
+    await expect(client.findings()).resolves.toEqual({ total_count: 0, findings: [] });
+    expect(globalThis.fetch).toHaveBeenCalledWith("http://localhost:8000/api/v1/findings");
+  });
+
   it("searches with query parameters", async () => {
     mockFetch({ total_count: 1, results: [{ object_id: "DOMAIN-TEST", object_type: "MasterDataDomain", status: "draft", name: "Test", title: null, domain: null, description: null, source_file: "DOMAIN-TEST.md", score: 1, matched_fields: ["name"] }] });
     const client = createApiClient("http://localhost:8000");

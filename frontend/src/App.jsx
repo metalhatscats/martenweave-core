@@ -65,6 +65,7 @@ import {
   ApiProvider,
   objectTypeToTone,
   useApi,
+  useAssessmentFindings,
   useLineage,
   useObjectDetail,
   useObjectSearch,
@@ -1143,6 +1144,7 @@ export function LineageScreen({ navigate, params, onExport }) {
 }
 
 function GapsScreen({ navigate, params, onDraft }) {
+  const liveFindings = useAssessmentFindings();
   const [query, setQuery] = useState("");
   const [severity, setSeverity] = useState("All severities");
   const [status, setStatus] = useState("All statuses");
@@ -1182,6 +1184,10 @@ function GapsScreen({ navigate, params, onDraft }) {
   }, [query, severity, status, sort]);
 
   const selectedGap = gaps.find((gap) => gap.id === expandedId) || gaps[0];
+
+  if (!liveFindings.demo) {
+    return <LiveFindingsScreen navigate={navigate} {...liveFindings} />;
+  }
 
   return (
     <div className="page-pad gaps-page">
@@ -1312,6 +1318,42 @@ function GapsScreen({ navigate, params, onDraft }) {
               <button className="primary-button full-width" onClick={() => navigate("proposal", { id: recommendedProposal.id })}>Review proposal</button>
             </div>
           </section>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function LiveFindingsScreen({ navigate, findings, assessmentId, loading, error }) {
+  return (
+    <div className="page-pad gaps-page">
+      <PageHeader
+        title="Assessment findings"
+        description="Typed local assessment evidence and separate human review state."
+      />
+      <div className="gaps-layout">
+        <section className="gap-list">
+          {loading && <div className="empty-state"><CircleNotch className="spin" size={24} /> Loading assessment findings…</div>}
+          {error && <div className="empty-state"><WarningCircle size={24} /> {error}</div>}
+          {!loading && !error && findings.length === 0 && <div className="empty-state"><Warning size={30} /><h3>No assessment findings are available</h3><p>Run a local assessment to create reviewable evidence. Canonical model files remain unchanged.</p></div>}
+          {findings.map(({ finding, review, assessment_id: itemAssessmentId }) => (
+            <article className="gap-card is-expanded" key={finding.id}>
+              <div className="gap-card-main">
+                <span className="gap-index">{finding.id}</span>
+                <span className="gap-title"><span><strong>{finding.message}</strong><Badge tone={finding.severity}>{finding.severity}</Badge></span><small>{finding.category} · {finding.provenance.source_kind}</small></span>
+              </div>
+              <div className="gap-detail">
+                <div><small>Assessment</small><strong>{itemAssessmentId}</strong></div>
+                <div><small>Detection</small><strong>{finding.provenance.source_kind}</strong></div>
+                <div><small>Review state</small><strong>{review?.disposition || "Unreviewed"}</strong></div>
+                <div><small>Evidence location</small><strong>{Object.entries(finding.provenance.location).map(([key, value]) => `${key}: ${value}`).join(" · ") || "Not recorded"}</strong></div>
+              </div>
+              {review?.note && <footer><span>Reviewer note: {review.note}</span></footer>}
+            </article>
+          ))}
+        </section>
+        <aside className="gaps-rail">
+          <section className="surface gap-summary"><div className="section-title"><div><h2>Evidence boundary</h2><p>{assessmentId || "No local assessment package"}</p></div></div><p>Findings are derived local evidence. Human dispositions are shown separately and do not modify canonical model files.</p><button className="secondary-button full-width" onClick={() => navigate("reports")}>Open generated artifacts</button></section>
         </aside>
       </div>
     </div>

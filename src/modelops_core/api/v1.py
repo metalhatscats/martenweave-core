@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,8 @@ from modelops_core.api.models import (
     ActivityResponse,
     ApiCapabilities,
     CapabilityEntry,
+    FindingItem,
+    FindingResponse,
     ObjectDetailResponse,
     PaginatedSearchResponse,
     RelatedObjectItem,
@@ -31,6 +34,7 @@ from modelops_core.api.workspace import (
     workspace_label,
 )
 from modelops_core.assessment.comparison import AssessmentComparisonError, compare_assessments
+from modelops_core.assessment.finding_contract import AssessmentFinding
 from modelops_core.config import resolve_generated_path, resolve_model_path
 from modelops_core.index.query_service import (
     get_object_by_id,
@@ -121,6 +125,12 @@ def capabilities(
             method="GET",
             href="/api/v1/reports",
             description="List disposable generated artifacts without exposing local paths.",
+        ),
+        CapabilityEntry(
+            name="list_findings",
+            method="GET",
+            href="/api/v1/findings?assessment={generated-relative-path}",
+            description="Read typed assessment findings and separate human review state.",
         ),
         CapabilityEntry(
             name="list_objects",
@@ -309,6 +319,64 @@ def download_report(
     if not candidate.is_file():
         raise HTTPException(status_code=404, detail="Generated artifact not found.")
     return FileResponse(candidate, filename=candidate.name)
+
+
+def _finding_package(generated_root: Path, assessment: str | None) -> Path | None:
+    """Choose a contained assessment package without exposing arbitrary local files."""
+    if assessment:
+        candidate = (generated_root / assessment).resolve()
+        try:
+            candidate.relative_to(generated_root.resolve())
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=400, detail="Assessment must remain inside generated/."
+            ) from exc
+        if not (candidate / "findings.json").is_file():
+            raise HTTPException(status_code=404, detail="Assessment findings were not found.")
+        return candidate
+    candidates = list(generated_root.rglob("findings.json"))
+    return max(candidates, key=lambda path: path.stat().st_mtime).parent if candidates else None
+
+
+@router.get("/findings", response_model=FindingResponse)
+def findings(
+    repo: str | None = Query(None, description="Path to model repository"),
+    assessment: str | None = Query(None, description="Generated-relative assessment directory"),
+) -> FindingResponse:
+    """Return latest typed findings with review state, never merging reviews into provenance."""
+    generated_root = resolve_generated_path(_resolve_repo(repo)).resolve()
+    package = _finding_package(generated_root, assessment)
+    if package is None:
+        return FindingResponse(total_count=0, findings=[])
+    try:
+        payload = json.loads((package / "findings.json").read_text(encoding="utf-8"))
+        reviews_path = package / "finding-reviews.json"
+        reviews = (
+            json.loads(reviews_path.read_text(encoding="utf-8"))
+            if reviews_path.is_file()
+            else {}
+        )
+    except (OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(
+            status_code=400, detail="Assessment finding artifacts are unreadable."
+        ) from exc
+    assessment_id = package.relative_to(generated_root).as_posix()
+    items: list[FindingItem] = []
+    for raw in payload.get("findings", []):
+        try:
+            finding = AssessmentFinding.model_validate(raw)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=400, detail="Assessment findings violate the typed contract."
+            ) from exc
+        items.append(
+            FindingItem(
+                finding=finding.model_dump(mode="json"),
+                review=(reviews.get("reviews", {}) or {}).get(finding.id),
+                assessment_id=assessment_id,
+            )
+        )
+    return FindingResponse(assessment_id=assessment_id, total_count=len(items), findings=items)
 
 
 @router.get("/assessment-comparisons")

@@ -304,6 +304,8 @@ namespace. The workbench (and any other local client) should discover capabiliti
 - `GET /api/v1/reports` — safe metadata for disposable generated artifacts; the companion
   `GET /api/v1/reports/{artifact_id}` download route is contained to `generated/` and never lists
   canonical files or absolute paths.
+- `GET /api/v1/findings` — typed findings from the latest local assessment package, with human
+  review state kept separate from deterministic provenance and canonical model truth.
 - `GET /api/v1/assessment-comparisons` — deterministic lifecycle comparison for two typed
   assessment manifests inside the local workspace; stable finding IDs preserve prior/current
   provenance without inferring resolution.

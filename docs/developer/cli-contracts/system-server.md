@@ -64,6 +64,7 @@ Clients should discover capabilities before rendering actions.
 | GET | `/api/v1/activity` | Recent append-only local audit events |
 | GET | `/api/v1/reports` | Generated artifact metadata, without absolute local paths |
 | GET | `/api/v1/reports/{artifact_id}` | Download one contained generated report artifact |
+| GET | `/api/v1/findings` | Typed local assessment findings and separate human review state |
 | GET | `/api/v1/assessment-comparisons` | Stable-ID lifecycle comparison of two local assessment manifests |
 
 `GET /api/v1/capabilities` returns:
@@ -116,6 +117,11 @@ artifacts. Items expose a repository-relative `artifact_id`, format, creation ti
 conservative safety classification: `local_only`, `sanitization_metadata`, or `sanitized_bundle`.
 Generation does not make an artifact safe to share. The artifact download route rejects paths outside
 `generated/` and formats not covered by this contract.
+
+`GET /api/v1/findings` selects the newest contained assessment package with `findings.json`, or a
+specific generated-relative package through `assessment`. Each response item has the strict typed
+finding contract and an optional human review record. Review disposition is intentionally not merged
+into provenance or canonical model state.
 
 ### Frontend integration
 

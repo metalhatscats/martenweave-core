@@ -143,6 +143,40 @@ def test_api_lists_and_downloads_generated_reports_without_exposing_paths(
     assert traversal.status_code in {400, 404}
 
 
+def test_api_lists_typed_assessment_findings_with_separate_review_state(sample_repo: Path) -> None:
+    from modelops_core.assessment.finding_contract import AssessmentFinding
+
+    assessment = sample_repo / "generated" / "assessment-run"
+    assessment.mkdir(parents=True)
+    finding = AssessmentFinding(
+        id="FINDING-TEST",
+        category="missing_mapping",
+        severity="high",
+        message="Customer Group is missing a target mapping.",
+        provenance={
+            "assessment_run_id": "ASSESSMENT-TEST",
+            "source_kind": "mapping_profile",
+            "location": {"sheet": "Mapping", "row": 2},
+        },
+    )
+    (assessment / "findings.json").write_text(
+        json.dumps({"findings": [finding.model_dump(mode="json")]}), encoding="utf-8"
+    )
+    (assessment / "finding-reviews.json").write_text(
+        json.dumps({"reviews": {"FINDING-TEST": {"disposition": "confirmed"}}}),
+        encoding="utf-8",
+    )
+
+    response = client.get("/api/v1/findings", params={"repo": str(sample_repo)})
+
+    assert response.status_code == 200
+    item = response.json()["findings"][0]
+    assert item["assessment_id"] == "assessment-run"
+    assert item["finding"]["id"] == "FINDING-TEST"
+    assert item["finding"]["provenance"]["source_kind"] == "mapping_profile"
+    assert item["review"] == {"disposition": "confirmed"}
+
+
 def test_api_compares_typed_assessments_inside_workspace(sample_repo: Path) -> None:
     from modelops_core.assessment.finding_contract import AssessmentFinding
 

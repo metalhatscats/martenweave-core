@@ -261,6 +261,7 @@ export function createApiClient(baseUrl) {
     activity: (limit = 50) => fetchJson(`${root}/api/v1/activity?limit=${encodeURIComponent(limit)}`),
     reports: (limit = 100) => fetchJson(`${root}/api/v1/reports?limit=${encodeURIComponent(limit)}`),
     reportDownloadUrl: (artifactId) => `${root}/api/v1/reports/${artifactId.split("/").map(encodeURIComponent).join("/")}`,
+    findings: () => fetchJson(`${root}/api/v1/findings`),
     search: ({ q, type, status, domain, limit = 50, offset = 0 } = {}) => {
       const params = new URLSearchParams();
       if (q) params.set("q", q);
@@ -561,6 +562,42 @@ export function useWorkspaceActivity() {
   }, [client, demo]);
 
   return { events, loading, error, demo };
+}
+
+/** Read typed assessment findings with review state from the active local workspace. */
+export function useAssessmentFindings() {
+  const { client, demo } = useApi();
+  const [findings, setFindings] = useState([]);
+  const [assessmentId, setAssessmentId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (demo || !client) {
+      setFindings([]);
+      setAssessmentId(null);
+      setLoading(false);
+      setError(null);
+      return undefined;
+    }
+    let cancelled = false;
+    setLoading(true);
+    client.findings()
+      .then((response) => {
+        if (!cancelled) {
+          setFindings(response.findings);
+          setAssessmentId(response.assessment_id);
+          setError(null);
+        }
+      })
+      .catch((reason) => {
+        if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason));
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [client, demo]);
+
+  return { findings, assessmentId, loading, error, demo };
 }
 
 

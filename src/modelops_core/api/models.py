@@ -83,6 +83,22 @@ class ReportArtifactResponse(BaseModel):
     artifacts: list[ReportArtifactItem]
 
 
+class FindingItem(BaseModel):
+    """Typed assessment finding plus separate human review state."""
+
+    finding: dict[str, Any]
+    review: dict[str, Any] | None = None
+    assessment_id: str
+
+
+class FindingResponse(BaseModel):
+    """Findings from one local assessment package, never canonical model truth."""
+
+    assessment_id: str | None = None
+    total_count: int
+    findings: list[FindingItem]
+
+
 class SearchResultItem(BaseModel):
     """A single search result returned by /api/v1/search."""
 

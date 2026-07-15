@@ -79,6 +79,22 @@ describe("Martenweave workbench", () => {
     expect(screen.queryByText("customer-migration-model-index-2026-07-03.csv")).not.toBeInTheDocument();
   });
 
+  it("renders typed local assessment findings without static gap claims", async () => {
+    window.location.hash = "#/gaps";
+    vi.stubGlobal("fetch", vi.fn((url) => {
+      const payload = String(url).includes("/api/v1/findings")
+        ? { assessment_id: "assessment-run", total_count: 1, findings: [{ assessment_id: "assessment-run", review: { disposition: "confirmed", note: "Verified by stewardship." }, finding: { id: "FINDING-TEST", category: "missing_mapping", severity: "high", message: "Customer Group is missing a target mapping.", lifecycle_state: "open", provenance: { assessment_run_id: "ASSESSMENT-TEST", source_kind: "mapping_profile", location: { sheet: "Mapping", row: 2 } } } }] }
+        : { api_version: "v1", version: "0.5.0", indexed: true, canonical_files: 24 };
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(payload), text: () => Promise.resolve("") });
+    }));
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByText("FINDING-TEST")).toBeInTheDocument());
+    expect(screen.getByText("Customer Group is missing a target mapping.")).toBeInTheDocument();
+    expect(screen.getByText("confirmed")).toBeInTheDocument();
+    expect(screen.queryByText("Missing mapping for TAX_NUMBER")).not.toBeInTheDocument();
+  });
+
   it("navigates to models and filters by query", async () => {
     window.location.hash = "#/models";
     render(<App />);
