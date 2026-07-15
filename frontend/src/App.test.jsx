@@ -216,4 +216,44 @@ describe("Martenweave workbench", () => {
     expect(screen.getByRole("heading", { name: "Model Ledger workbench" })).toBeInTheDocument();
     expect(screen.getByText("Synced with CHANGELOG.md")).toBeInTheDocument();
   });
+
+  it("renders the evidence-backed model assistant on the home screen", () => {
+    window.location.hash = "#/home";
+    render(<App />);
+    expect(screen.getByRole("heading", { name: "Ask about your model" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Ask a model question")).toBeInTheDocument();
+    expect(screen.getByText("Deterministic · works offline")).toBeInTheDocument();
+  });
+
+  it("runs a suggested question and renders evidence-backed result cards", async () => {
+    window.location.hash = "#/home";
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Find Business Partner" }));
+    await waitFor(() => expect(screen.getByText("Search results")).toBeInTheDocument());
+    expect(screen.getByText(/results? · Demo data/)).toBeInTheDocument();
+    expect(screen.getAllByText("Business Partner").length).toBeGreaterThan(0);
+  });
+
+  it("labels unsupported prompts and offers relevant actions instead of invented answers", async () => {
+    window.location.hash = "#/home";
+    render(<App />);
+    const input = screen.getByLabelText("Ask a model question");
+    fireEvent.change(input, { target: { value: "what is the weather today" } });
+    fireEvent.click(screen.getByRole("button", { name: "Run query" }));
+    await waitFor(() => expect(screen.getByText("Not supported yet")).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: /Search objects/ })).toBeInTheDocument();
+  });
+
+  it("navigates from an assistant result card to the object screen", async () => {
+    window.location.hash = "#/home";
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Find Business Partner" }));
+    await waitFor(() => expect(screen.getByText("Search results")).toBeInTheDocument());
+    const resultCards = screen.getAllByText("Business Partner").filter((element) =>
+      element.closest(".result-card")
+    );
+    expect(resultCards.length).toBeGreaterThan(0);
+    fireEvent.click(resultCards[0]);
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Business Partner" })).toBeInTheDocument());
+  });
 });

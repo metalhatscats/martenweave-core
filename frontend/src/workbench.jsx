@@ -32,7 +32,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { fields, gaps, modelObjects, proposals, recentActivity } from "./data.js";
-import { useApi, hasCapability, mutationBlockReason, useImportPreview, useImportProfile, useImportPropose, useImportValidate, useReportGenerate, useWorkspaceActivity } from "./api.jsx";
+import { useApi, hasCapability, mutationBlockReason, useHomeAssistant, useImportPreview, useImportProfile, useImportPropose, useImportValidate, useReportGenerate, useWorkspaceActivity } from "./api.jsx";
 
 const LEDGER_ROWS = [
   {
@@ -365,6 +365,179 @@ function LedgerDetail({ row, tab, onTab, navigate }) {
   );
 }
 
+const SUGGESTED_QUESTIONS = [
+  "Find Business Partner",
+  "Show open high-risk gaps",
+  "Trace TAX_NUMBER across systems",
+  "Show impact of changing ADDRESS_ID",
+  "What changed recently?",
+  "Open pending proposals",
+];
+
+const INTENT_LABELS = {
+  search: "Search results",
+  gaps: "Open gaps",
+  trace: "Lineage trace",
+  impact: "Impact analysis",
+  recent: "Recent activity",
+  proposals: "Proposals",
+  unsupported: "Unsupported question",
+};
+
+function ResultCard({ card, onClick }) {
+  return (
+    <button className="result-card" type="button" onClick={() => onClick(card)}>
+      <span className="result-card-header">
+        <span>
+          <strong>{card.title}</strong>
+          <code>{card.subtitle}</code>
+        </span>
+        <ArrowRight size={15} />
+      </span>
+      {card.description && <p>{card.description}</p>}
+      <span className="result-card-meta">{card.meta}</span>
+      {card.evidence && card.evidence.length > 0 && (
+        <ul className="result-card-evidence">
+          {card.evidence.map((item, index) => (
+            <li key={index}>{item}</li>
+          ))}
+        </ul>
+      )}
+    </button>
+  );
+}
+
+export function HomeAssistant({ navigate }) {
+  const { query, intent, results, loading, error, run, reset } = useHomeAssistant();
+  const [input, setInput] = useState("");
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (!input.trim()) return;
+    run(input);
+  };
+
+  const isUnsupported = intent === "unsupported";
+  const hasResults = !isUnsupported && results.length > 0;
+
+  return (
+    <section className="home-assistant" aria-label="Model assistant">
+      <div className="home-intro">
+        <span className="ai-orb"><MagnifyingGlass size={22} weight="bold" /></span>
+        <h1>Ask about your model</h1>
+        <p>
+          Search objects, trace lineage, review gaps, analyse impact, and open
+          proposals with evidence-backed answers.
+        </p>
+      </div>
+      <form className="prompt-box" onSubmit={handleSubmit}>
+        <textarea
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          placeholder="e.g. Find the Business Partner domain, show high-risk gaps, trace TAX_NUMBER…"
+          aria-label="Ask a model question"
+          rows={2}
+        />
+        <div className="prompt-toolbar">
+          <div>
+            <span className="assistant-byline"><ShieldCheck size={13} /> Deterministic · works offline</span>
+          </div>
+          <button
+            type="submit"
+            className="send-button"
+            disabled={!input.trim() || loading}
+            aria-label="Run query"
+          >
+            {loading ? <CircleNotch size={18} className="spin" /> : <ArrowRight size={18} weight="bold" />}
+          </button>
+        </div>
+      </form>
+      <div className="suggestion-row">
+        {SUGGESTED_QUESTIONS.map((question) => (
+          <button
+            key={question}
+            type="button"
+            onClick={() => { setInput(question); run(question); }}
+            disabled={loading}
+          >
+            {question}
+          </button>
+        ))}
+      </div>
+      {(intent || error) && (
+        <div className="answer-card">
+          {loading && (
+            <div className="thinking-state"><CircleNotch size={20} className="spin" /> Running deterministic query…</div>
+          )}
+          {!loading && error && (
+            <div className="empty-state"><Warning size={28} /><h3>Query could not run</h3><p>{error}</p></div>
+          )}
+          {!loading && !error && isUnsupported && (
+            <div className="assistant-unsupported">
+              <div className="answer-byline">
+                <span className="assistant-mark"><Warning size={15} /></span>
+                <strong>Not supported yet</strong>
+              </div>
+              <p>
+                Try one of the suggested questions, or use the Models, Gaps,
+                Lineage, Proposals, or Reports screens for full investigations.
+              </p>
+              <div className="insight-grid">
+                <button type="button" onClick={() => navigate("models")}>
+                  <span><MagnifyingGlass size={14} /> Models</span>
+                  <strong>Search objects</strong>
+                </button>
+                <button type="button" onClick={() => navigate("gaps")}>
+                  <span><Warning size={14} /> Gaps</span>
+                  <strong>Review findings</strong>
+                </button>
+                <button type="button" onClick={() => navigate("lineage")}>
+                  <span><ShareNetwork size={14} /> Lineage</span>
+                  <strong>Trace relationships</strong>
+                </button>
+              </div>
+            </div>
+          )}
+          {!loading && !error && !isUnsupported && (
+            <>
+              <div className="question-row">
+                <span className="assistant-mark"><Database size={15} /></span>
+                <div>
+                  <strong>{query}</strong>
+                  <p className="answer-byline">
+                    <span className="badge badge-blue">{INTENT_LABELS[intent] || intent}</span>
+                    <span>
+                      {results.length} result{results.length === 1 ? "" : "s"} ·{" "}
+                      {results[0]?.source === "live" ? "Local API" : "Demo data"}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div className="assistant-row">
+                <span className="assistant-mark"><MagnifyingGlass size={15} /></span>
+                <div className="assistant-copy">
+                  {hasResults ? (
+                    <div className="result-cards">
+                      {results.map((card) => (
+                        <ResultCard key={card.id} card={card} onClick={(item) => navigate(item.route, item.params)} />
+                      ))}
+                    </div>
+                  ) : (
+                    <p>
+                      No matching results. Try a more specific term or open the
+                      relevant screen.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function WorkspaceScreen({ navigate, onImport, onExport, onCommands, onShortcuts, refreshKey = 0 }) {
   const [query, setQuery] = useState("");
   const [type, setType] = useState("All types");
@@ -415,6 +588,7 @@ export function WorkspaceScreen({ navigate, onImport, onExport, onCommands, onSh
   return (
     <div className="ledger-page">
       <div className="ledger-main">
+        <HomeAssistant navigate={navigate} />
         <header className="ledger-heading">
           <div>
             <span className="eyebrow">Customer migration / canonical model</span>

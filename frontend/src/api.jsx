@@ -9,7 +9,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import { lineageEdges, lineageNodes, modelObjects, proposals as demoProposals } from "./data.js";
+import { gaps as demoGaps, lineageEdges, lineageNodes, modelObjects, proposals as demoProposals, recentActivity as demoActivity } from "./data.js";
 
 /**
  * @typedef {object} Capability
@@ -953,6 +953,453 @@ function mapProposalToViewModel(data) {
 function findDemoProposal(id) {
   if (id === null || id === undefined) return undefined;
   return demoProposals.find((item) => String(item.id) === String(id));
+}
+
+/**
+ * Format a workspace activity timestamp for display.
+ *
+ * @param {string} timestamp
+ * @returns {string}
+ */
+function formatActivityTime(timestamp) {
+  const time = new Date(timestamp);
+  return Number.isNaN(time.valueOf()) ? timestamp : time.toLocaleString();
+}
+
+/**
+ * Format a workspace activity event type for display.
+ *
+ * @param {{event_type: string}} event
+ * @returns {string}
+ */
+function formatActivityLabel(event) {
+  return event.event_type.replaceAll("_", " ");
+}
+
+/**
+ * Deterministic intent router for the home assistant.
+ *
+ * Parses a free-form prompt into one of a small set of supported intents and
+ * extracts any target term. No generative model is used; the router is
+ * fully deterministic and works with AI disabled.
+ *
+ * @param {string} query
+ * @returns {{intent: string, term: string}}
+ */
+function classifyHomeIntent(query) {
+  const q = query.trim().toLowerCase();
+  if (!q) return { intent: "unsupported", term: "" };
+
+  if (/\b(recent|latest|changed|activity|history|what changed|updates)\b/.test(q)) {
+    return { intent: "recent", term: "" };
+  }
+  if (/\b(gaps?|missing|high.risk|risk|issues?|findings?)\b/.test(q)) {
+    return { intent: "gaps", term: "" };
+  }
+  if (/\b(proposals?|pending|review|approve|approval)\b/.test(q)) {
+    return { intent: "proposals", term: "" };
+  }
+  if (/\b(impact|affected|what happens|who uses|depend|depends on)\b/.test(q)) {
+    const term = q
+      .replace(/^.*?\b(impact|affected by|depends on|who uses|what happens if i change)\b\s*(of|by|if i change)?\s*/, "")
+      .trim();
+    return { intent: "impact", term: term || q };
+  }
+  if (/\b(trace|lineage|upstream|downstream|where does|comes from|flows to)\b/.test(q)) {
+    const term = q
+      .replace(/^.*?\b(trace|lineage of|where does)\b\s*/, "")
+      .trim()
+      .replace(/\b(come from|flow|go|goes)\b.*$/, "")
+      .trim();
+    return { intent: "trace", term: term || q };
+  }
+  if (/\b(find|search|show|lookup|where is|object|field|attribute|mapping|endpoint)\b/.test(q)) {
+    const term = q.replace(/^.*?\b(find|search|show|lookup|where is)\b\s*/, "").trim();
+    return { intent: "search", term: term || q };
+  }
+  return { intent: "unsupported", term: q };
+}
+
+/**
+ * Build a result card for a canonical object.
+ *
+ * @param {Record<string, any>} object
+ * @param {"live"|"demo"} source
+ * @returns {Record<string, any>}
+ */
+function makeObjectResultCard(object, source) {
+  const isProposal = object.type === "PatchProposal" || object.label === "Proposal";
+  return {
+    intent: "search",
+    title: object.name || object.title || object.id,
+    subtitle: object.id,
+    id: object.id,
+    description: object.description || "",
+    meta: `${object.type || object.label} · ${object.status}`,
+    route: isProposal ? "proposal" : "object",
+    params: isProposal ? { id: object.proposalId || object.id } : { id: object.id },
+    evidence: [object.source_file || "Canonical model file"],
+    source,
+  };
+}
+
+/**
+ * Resolve a user-provided term to a canonical object id through search.
+ *
+ * @param {ApiClient|null} client
+ * @param {string} term
+ * @param {boolean} demo
+ * @returns {Promise<string|null>}
+ */
+async function resolveHomeObjectId(client, term, demo) {
+  if (demo || !client) {
+    const match = modelObjects.find((item) =>
+      `${item.name} ${item.id}`.toLowerCase().includes(term.toLowerCase())
+    );
+    return match?.id || null;
+  }
+  const response = await client.search({ q: term, limit: 1 });
+  return response.results[0]?.object_id || null;
+}
+
+/**
+ * Execute a home-assistant search intent.
+ *
+ * @param {ApiClient|null} client
+ * @param {string} term
+ * @param {boolean} demo
+ * @returns {Promise<Record<string, any>[]>}
+ */
+async function executeHomeSearch(client, term, demo) {
+  if (demo || !client) {
+    const q = term.toLowerCase();
+    const matches = modelObjects.filter((item) =>
+      `${item.name} ${item.id} ${item.description} ${item.type}`.toLowerCase().includes(q)
+    );
+    return matches.map((item) => makeObjectResultCard(item, "demo"));
+  }
+  const response = await client.search({ q: term, limit: 10 });
+  return response.results.map((r) =>
+    makeObjectResultCard(
+      {
+        id: r.object_id,
+        name: r.name || r.title || r.object_id,
+        description: r.description || "",
+        type: r.object_type,
+        label: typeToLabel(r.object_type),
+        status: r.status,
+        source_file: r.source_file,
+        proposalId: r.object_type === "PatchProposal" ? r.object_id : undefined,
+      },
+      "live"
+    )
+  );
+}
+
+/**
+ * Execute a home-assistant gaps intent.
+ *
+ * @param {ApiClient|null} client
+ * @param {boolean} demo
+ * @returns {Promise<Record<string, any>[]>}
+ */
+async function executeHomeGaps(client, demo) {
+  if (demo || !client) {
+    return demoGaps.map((gap) => ({
+      intent: "gaps",
+      title: gap.title,
+      subtitle: `GAP-${gap.id}`,
+      id: `GAP-${gap.id}`,
+      description: gap.note,
+      meta: `${gap.severity} severity · ${gap.status}`,
+      route: "gaps",
+      params: { gap: gap.id },
+      evidence: gap.evidence || [],
+      source: "demo",
+    }));
+  }
+  const response = await client.findings();
+  return (response.findings || []).map((finding) => ({
+    intent: "gaps",
+    title: finding.finding?.message || finding.finding?.id || "Finding",
+    subtitle: finding.finding?.id || "",
+    id: finding.finding?.id || "",
+    description: finding.finding?.category?.replaceAll("_", " ") || "",
+    meta: `${finding.finding?.severity || "unknown"} severity · ${finding.finding?.lifecycle_state || "open"}`,
+    route: "gaps",
+    params: {},
+    evidence: [
+      finding.provenance?.assessment_run_id || "Local assessment run",
+      finding.provenance?.source_kind?.replaceAll("_", " ") || "",
+    ].filter(Boolean),
+    source: "live",
+  }));
+}
+
+/**
+ * Execute a home-assistant recent-activity intent.
+ *
+ * @param {ApiClient|null} client
+ * @param {boolean} demo
+ * @returns {Promise<Record<string, any>[]>}
+ */
+async function executeHomeRecent(client, demo) {
+  if (demo || !client) {
+    return demoActivity.map(([action, subject, time], index) => ({
+      intent: "recent",
+      title: action,
+      subtitle: subject,
+      id: `demo-activity-${index}`,
+      description: `Workspace event for ${subject}`,
+      meta: time,
+      route: "changelog",
+      params: {},
+      evidence: ["Demo workspace activity"],
+      source: "demo",
+    }));
+  }
+  const response = await client.activity(10);
+  return (response.events || []).map((event) => ({
+    intent: "recent",
+    title: formatActivityLabel(event),
+    subtitle: event.changed_object_ids?.join(", ") || event.proposal_id || "Workspace event",
+    id: event.event_id,
+    description: `Event type: ${event.event_type}`,
+    meta: formatActivityTime(event.timestamp),
+    route: event.proposal_id
+      ? "proposals"
+      : event.changed_object_ids?.[0]
+        ? "object"
+        : "changelog",
+    params: event.proposal_id
+      ? {}
+      : event.changed_object_ids?.[0]
+        ? { id: event.changed_object_ids[0] }
+        : {},
+    evidence: [
+      event.source_state === "generated"
+        ? "Generated local artifact"
+        : "Canonical model change",
+    ],
+    source: "live",
+  }));
+}
+
+/**
+ * Execute a home-assistant proposals intent.
+ *
+ * @param {ApiClient|null} client
+ * @param {boolean} demo
+ * @returns {Promise<Record<string, any>[]>}
+ */
+async function executeHomeProposals(client, demo) {
+  if (demo || !client) {
+    return demoProposals.map((proposal) => ({
+      intent: "proposals",
+      title: proposal.title,
+      subtitle: `Proposal #${proposal.id}`,
+      id: `PROPOSAL-${proposal.id}`,
+      description: proposal.summary,
+      meta: `${proposal.status} · ${proposal.risk} risk`,
+      route: "proposal",
+      params: { id: proposal.id },
+      evidence: [`${proposal.changes} changes · ${proposal.impactObjects} affected objects`],
+      source: "demo",
+    }));
+  }
+  const response = await client.proposals();
+  const list = Array.isArray(response) ? response : response.proposals || [];
+  return list.map((p) => {
+    const view = mapProposalToViewModel(p);
+    return {
+      intent: "proposals",
+      title: view.title,
+      subtitle: `Proposal #${view.id}`,
+      id: `PROPOSAL-${view.id}`,
+      description: view.summary,
+      meta: `${view.status} · ${view.risk} risk`,
+      route: "proposal",
+      params: { id: view.id },
+      evidence: [
+        `${view.changes} changes · ${view.impactObjects} affected objects`,
+        view.validationStatus,
+      ].filter(Boolean),
+      source: "live",
+    };
+  });
+}
+
+/**
+ * Execute a home-assistant trace intent.
+ *
+ * @param {ApiClient|null} client
+ * @param {string} term
+ * @param {boolean} demo
+ * @returns {Promise<Record<string, any>[]>}
+ */
+async function executeHomeTrace(client, term, demo) {
+  const id = await resolveHomeObjectId(client, term, demo);
+  if (!id) return [];
+  if (demo || !client) {
+    return [{
+      intent: "trace",
+      title: `Trace: ${term}`,
+      subtitle: id,
+      id,
+      description: "Lineage traversal from the selected object across source, mapping, and target layers.",
+      meta: "Lineage snapshot",
+      route: "lineage",
+      params: { id },
+      evidence: ["Demo lineage data"],
+      source: "demo",
+    }];
+  }
+  const trace = await client.trace(id, { direction: "both", max_depth: 3 });
+  return [{
+    intent: "trace",
+    title: `Trace: ${trace.root_object_name || id}`,
+    subtitle: trace.root_object_id,
+    id: trace.root_object_id,
+    description: `${trace.nodes.length} related objects across upstream and downstream lineage.`,
+    meta: `${trace.nodes.length} nodes · ${trace.edges.length} edges`,
+    route: "lineage",
+    params: { id: trace.root_object_id },
+    evidence: trace.edges
+      .slice(0, 3)
+      .map((e) => `${e.from_object_id} → ${e.to_object_id} (${e.relationship_type})`),
+    source: "live",
+  }];
+}
+
+/**
+ * Execute a home-assistant impact intent.
+ *
+ * @param {ApiClient|null} client
+ * @param {string} term
+ * @param {boolean} demo
+ * @returns {Promise<Record<string, any>[]>}
+ */
+async function executeHomeImpact(client, term, demo) {
+  const id = await resolveHomeObjectId(client, term, demo);
+  if (!id) return [];
+  if (demo || !client) {
+    return [{
+      intent: "impact",
+      title: `Impact: ${term}`,
+      subtitle: id,
+      id,
+      description: "Downstream impact analysis from the selected canonical object.",
+      meta: "Impact snapshot",
+      route: "lineage",
+      params: { id },
+      evidence: ["Demo impact data"],
+      source: "demo",
+    }];
+  }
+  const impact = await client.impact(id);
+  return [{
+    intent: "impact",
+    title: `Impact: ${impact.root_object_name || id}`,
+    subtitle: impact.object_id,
+    id: impact.object_id,
+    description: `${impact.total_affected} total affected objects across upstream and downstream dependencies.`,
+    meta: `${impact.total_affected} affected · downstream ${impact.downstream?.length || 0}`,
+    route: "lineage",
+    params: { id: impact.object_id },
+    evidence: (impact.downstream || [])
+      .slice(0, 3)
+      .map((item) => `${item.object_id} · ${item.relationship_type}`),
+    source: "live",
+  }];
+}
+
+/**
+ * Turn a natural-language prompt into structured, evidence-backed actions.
+ *
+ * The assistant is fully deterministic: it classifies the prompt into a small
+ * set of intents, fetches data from the local API when connected, and falls
+ * back to clearly labelled demo data when the API is unavailable. An optional
+ * AI provider may later summarise the retrieved cards, but every citation and
+ * link works without AI.
+ *
+ * @returns {{
+ *   query: string,
+ *   intent: string | null,
+ *   results: Record<string, any>[],
+ *   loading: boolean,
+ *   error: string | null,
+ *   run: (query: string) => Promise<void>,
+ *   reset: () => void
+ * }}
+ */
+export function useHomeAssistant() {
+  const { client, demo } = useApi();
+  const [state, setState] = useState({
+    query: "",
+    intent: null,
+    results: [],
+    loading: false,
+    error: null,
+  });
+
+  const run = useCallback(
+    async (query) => {
+      const trimmed = query.trim();
+      if (!trimmed) {
+        setState({ query: "", intent: null, results: [], loading: false, error: null });
+        return;
+      }
+      setState((current) => ({
+        ...current,
+        query: trimmed,
+        loading: true,
+        error: null,
+        results: [],
+      }));
+      try {
+        const { intent, term } = classifyHomeIntent(trimmed);
+        let results = [];
+        switch (intent) {
+          case "search":
+            results = await executeHomeSearch(client, term, demo);
+            break;
+          case "gaps":
+            results = await executeHomeGaps(client, demo);
+            break;
+          case "recent":
+            results = await executeHomeRecent(client, demo);
+            break;
+          case "proposals":
+            results = await executeHomeProposals(client, demo);
+            break;
+          case "trace":
+            results = await executeHomeTrace(client, term, demo);
+            break;
+          case "impact":
+            results = await executeHomeImpact(client, term, demo);
+            break;
+          default:
+            results = [];
+        }
+        setState({ query: trimmed, intent, results, loading: false, error: null });
+      } catch (err) {
+        setState({
+          query: trimmed,
+          intent: "unsupported",
+          results: [],
+          loading: false,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    },
+    [client, demo]
+  );
+
+  const reset = useCallback(() => {
+    setState({ query: "", intent: null, results: [], loading: false, error: null });
+  }, []);
+
+  return { ...state, run, reset };
 }
 
 /**

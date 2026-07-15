@@ -83,6 +83,7 @@ import {
   useProposalReview,
   useProposalValidate,
   useProposals,
+  useHomeAssistant,
   useWorkspaceActivity,
 } from "./api.jsx";
 import {

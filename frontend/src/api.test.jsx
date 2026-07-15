@@ -11,6 +11,7 @@ import {
   traceResponseToFlowEdges,
   traceResponseToFlowNodes,
   useApi,
+  useHomeAssistant,
   useLineage,
   useObjectDetail,
   useObjectSearch,
@@ -469,5 +470,241 @@ describe("LineageScreen", () => {
     await waitFor(() => expect(screen.getByText("Upstream Field")).toBeInTheDocument());
     expect(screen.getByText("Downstream Attribute")).toBeInTheDocument();
     expect(screen.getByText("Total affected")).toBeInTheDocument();
+  });
+});
+
+function HomeAssistantProbe() {
+  const { query, intent, results, loading, error, run, reset } = useHomeAssistant();
+  return (
+    <div>
+      <span data-testid="loading">{loading ? "loading" : "ready"}</span>
+      <span data-testid="error">{error || "none"}</span>
+      <span data-testid="intent">{intent || "none"}</span>
+      <span data-testid="count">{results.length}</span>
+      <button data-testid="run" onClick={() => run(query)}>Run</button>
+      <button data-testid="reset" onClick={reset}>Reset</button>
+      <input
+        data-testid="query"
+        value={query}
+        onChange={(event) => run(event.target.value)}
+      />
+      {results.map((r) => (
+        <span key={r.id} data-testid="result">{r.title}</span>
+      ))}
+    </div>
+  );
+}
+
+describe("useHomeAssistant", () => {
+  it("classifies and executes a search intent against live API data", async () => {
+    mockFetchRoutes({
+      "/api/v1/search": {
+        total_count: 1,
+        results: [{
+          object_id: "DOMAIN-LIVE",
+          object_type: "MasterDataDomain",
+          status: "active",
+          name: "Live Domain",
+          title: null,
+          description: "Live description",
+          source_file: "DOMAIN-LIVE.md",
+          score: 1,
+          matched_fields: ["name"],
+        }],
+      },
+    });
+    render(<HomeAssistantProbe />, { wrapper: TestWrapper });
+    await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("ready"));
+    fireEvent.change(screen.getByTestId("query"), { target: { value: "find live domain" } });
+    await waitFor(() => expect(screen.getByTestId("intent").textContent).toBe("search"));
+    await waitFor(() => expect(screen.getByTestId("count").textContent).toBe("1"));
+    expect(screen.getByTestId("result").textContent).toBe("Live Domain");
+  });
+
+  it("executes a gaps intent against live findings", async () => {
+    mockFetchRoutes({
+      "/api/v1/findings": {
+        total_count: 1,
+        findings: [{
+          assessment_id: "ASSESSMENT-TEST",
+          finding: {
+            id: "FINDING-TEST",
+            category: "missing_mapping",
+            severity: "high",
+            message: "Customer Group is missing a target mapping.",
+            lifecycle_state: "open",
+          },
+          provenance: {
+            assessment_run_id: "ASSESSMENT-TEST",
+            source_kind: "mapping_profile",
+          },
+        }],
+      },
+    });
+    render(<HomeAssistantProbe />, { wrapper: TestWrapper });
+    await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("ready"));
+    fireEvent.change(screen.getByTestId("query"), { target: { value: "show open high-risk gaps" } });
+    await waitFor(() => expect(screen.getByTestId("intent").textContent).toBe("gaps"));
+    await waitFor(() => expect(screen.getByTestId("count").textContent).toBe("1"));
+    expect(screen.getByText("Customer Group is missing a target mapping.")).toBeInTheDocument();
+  });
+
+  it("executes a recent activity intent against live events", async () => {
+    mockFetchRoutes({
+      "/api/v1/activity": {
+        total_count: 1,
+        events: [{
+          event_id: "EVT-001",
+          event_type: "proposal_applied",
+          timestamp: "2026-07-15T12:00:00Z",
+          proposal_id: "PP-001",
+          changed_object_ids: ["ATTR-CUSTOMER-GROUP"],
+          source_state: "canonical",
+          canonical_change: true,
+        }],
+      },
+    });
+    render(<HomeAssistantProbe />, { wrapper: TestWrapper });
+    await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("ready"));
+    fireEvent.change(screen.getByTestId("query"), { target: { value: "what changed recently" } });
+    await waitFor(() => expect(screen.getByTestId("intent").textContent).toBe("recent"));
+    await waitFor(() => expect(screen.getByTestId("count").textContent).toBe("1"));
+    expect(screen.getByText("proposal applied")).toBeInTheDocument();
+  });
+
+  it("executes a proposals intent against live proposals", async () => {
+    mockFetchRoutes({
+      "/proposals": {
+        total_count: 1,
+        proposals: [{
+          id: "PP-001",
+          title: "Add customer group mapping",
+          name: "Add customer group mapping",
+          status: "pending_review",
+          risk_level: "high",
+          created_by: "Martenweave AI",
+          operations_count: 3,
+          affected_objects_count: 2,
+          validation_status: "passed",
+          operations: [],
+          affected_objects: ["ATTR-CUSTOMER-GROUP"],
+          source_evidence: [],
+          validation_results: [],
+        }],
+      },
+    });
+    render(<HomeAssistantProbe />, { wrapper: TestWrapper });
+    await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("ready"));
+    fireEvent.change(screen.getByTestId("query"), { target: { value: "open pending proposals" } });
+    await waitFor(() => expect(screen.getByTestId("intent").textContent).toBe("proposals"));
+    await waitFor(() => expect(screen.getByTestId("count").textContent).toBe("1"));
+    expect(screen.getByText("Add customer group mapping")).toBeInTheDocument();
+  });
+
+  it("executes a trace intent by resolving the object id and calling the trace API", async () => {
+    mockFetchRoutes({
+      "/api/v1/search": {
+        total_count: 1,
+        results: [{
+          object_id: "DOMAIN-TRACE",
+          object_type: "MasterDataDomain",
+          status: "active",
+          name: "Trace Root",
+          title: null,
+          description: "",
+          source_file: "DOMAIN-TRACE.md",
+          score: 1,
+          matched_fields: ["name"],
+        }],
+      },
+      "/trace/DOMAIN-TRACE": {
+        root_object_id: "DOMAIN-TRACE",
+        root_object_type: "MasterDataDomain",
+        root_object_name: "Trace Root",
+        nodes: [
+          { object_id: "FEP-UP", object_type: "FieldEndpoint", object_name: "Upstream", source_file: "x.md", depth: 1 },
+        ],
+        edges: [
+          { from_object_id: "FEP-UP", to_object_id: "DOMAIN-TRACE", relationship_type: "feeds", direction: "upstream" },
+        ],
+      },
+      "/impact/DOMAIN-TRACE": {
+        object_id: "DOMAIN-TRACE",
+        root_object_type: "MasterDataDomain",
+        root_object_name: "Trace Root",
+        upstream: [],
+        downstream: [],
+        total_affected: 0,
+      },
+    });
+    render(<HomeAssistantProbe />, { wrapper: TestWrapper });
+    await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("ready"));
+    fireEvent.change(screen.getByTestId("query"), { target: { value: "trace Trace Root" } });
+    await waitFor(() => expect(screen.getByTestId("intent").textContent).toBe("trace"));
+    await waitFor(() => expect(screen.getByTestId("count").textContent).toBe("1"));
+    expect(screen.getByText("Trace: Trace Root")).toBeInTheDocument();
+  });
+
+  it("executes an impact intent by resolving the object id and calling the impact API", async () => {
+    mockFetchRoutes({
+      "/api/v1/search": {
+        total_count: 1,
+        results: [{
+          object_id: "DOMAIN-IMPACT",
+          object_type: "MasterDataDomain",
+          status: "active",
+          name: "Impact Root",
+          title: null,
+          description: "",
+          source_file: "DOMAIN-IMPACT.md",
+          score: 1,
+          matched_fields: ["name"],
+        }],
+      },
+      "/impact/DOMAIN-IMPACT": {
+        object_id: "DOMAIN-IMPACT",
+        root_object_type: "MasterDataDomain",
+        root_object_name: "Impact Root",
+        upstream: [],
+        downstream: [{ object_id: "ATTR-DOWN", object_type: "Attribute", object_name: "Downstream", relationship_type: "defines", depth: 1 }],
+        total_affected: 1,
+      },
+    });
+    render(<HomeAssistantProbe />, { wrapper: TestWrapper });
+    await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("ready"));
+    fireEvent.change(screen.getByTestId("query"), { target: { value: "impact of changing Impact Root" } });
+    await waitFor(() => expect(screen.getByTestId("intent").textContent).toBe("impact"));
+    await waitFor(() => expect(screen.getByTestId("count").textContent).toBe("1"));
+    expect(screen.getByText("Impact: Impact Root")).toBeInTheDocument();
+  });
+
+  it("falls back to demo data when the API is unavailable", async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error("Connection refused"));
+    render(<HomeAssistantProbe />, { wrapper: TestWrapper });
+    await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("ready"));
+    fireEvent.change(screen.getByTestId("query"), { target: { value: "find Business Partner" } });
+    await waitFor(() => expect(screen.getByTestId("intent").textContent).toBe("search"));
+    await waitFor(() => expect(screen.getByTestId("count").textContent).toBe("4"));
+    expect(screen.getByText("Business Partner")).toBeInTheDocument();
+  });
+
+  it("labels unsupported questions without fabricating an answer", async () => {
+    mockFetchRoutes({});
+    render(<HomeAssistantProbe />, { wrapper: TestWrapper });
+    await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("ready"));
+    fireEvent.change(screen.getByTestId("query"), { target: { value: "what is the weather today" } });
+    await waitFor(() => expect(screen.getByTestId("intent").textContent).toBe("unsupported"));
+    expect(screen.getByTestId("count").textContent).toBe("0");
+  });
+
+  it("clears state on reset", async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error("Connection refused"));
+    render(<HomeAssistantProbe />, { wrapper: TestWrapper });
+    await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("ready"));
+    fireEvent.change(screen.getByTestId("query"), { target: { value: "find Business Partner" } });
+    await waitFor(() => expect(screen.getByTestId("count").textContent).toBe("4"));
+    fireEvent.click(screen.getByTestId("reset"));
+    await waitFor(() => expect(screen.getByTestId("intent").textContent).toBe("none"));
+    expect(screen.getByTestId("count").textContent).toBe("0");
   });
 });
