@@ -11,6 +11,7 @@ from typer.testing import CliRunner
 from modelops_core.api.app import app
 from modelops_core.api.workspace import clear_workspace, configure_workspace
 from modelops_core.cli import app as cli_app
+from modelops_core.reports.audit_service import AuditEventService, create_audit_event
 
 client = TestClient(app)
 runner = CliRunner()
@@ -78,6 +79,35 @@ def test_api_list_objects(sample_repo: Path) -> None:
     assert len(data) > 0
     ids = [obj["id"] for obj in data]
     assert "DOMAIN-CUSTOMER-BP" in ids
+
+
+def test_api_activity_distinguishes_canonical_and_generated_events(sample_repo: Path) -> None:
+    audit = AuditEventService(sample_repo)
+    generated = create_audit_event(event_type="index_rebuilt")
+    generated.timestamp = "2026-07-15T09:00:00Z"
+    audit.emit(generated)
+    applied = create_audit_event(
+        event_type="proposal_applied",
+        proposal_id="PP-001",
+        changed_object_ids=["DOMAIN-CUSTOMER-BP"],
+    )
+    applied.timestamp = "2026-07-15T10:00:00Z"
+    audit.emit(applied)
+    response = client.get("/api/v1/activity", params={"repo": str(sample_repo)})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_count"] >= 2
+    event_by_type = {event["event_type"]: event for event in data["events"]}
+    assert event_by_type["proposal_applied"]["canonical_change"] is True
+    assert event_by_type["proposal_applied"]["source_state"] == "canonical"
+    assert event_by_type["index_rebuilt"]["canonical_change"] is False
+    assert event_by_type["index_rebuilt"]["source_state"] == "generated"
+
+
+def test_api_activity_is_empty_without_audit_log(temp_model_dir: Path) -> None:
+    response = client.get("/api/v1/activity", params={"repo": str(temp_model_dir.parent)})
+    assert response.status_code == 200
+    assert response.json() == {"total_count": 0, "events": []}
 
 
 def test_api_list_objects_by_type(sample_repo: Path) -> None:

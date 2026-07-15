@@ -297,6 +297,8 @@ namespace. The workbench (and any other local client) should discover capabiliti
   recovery actions for the current workspace state.
 - `GET /api/v1/search?q=...` — paginated keyword search over the generated index.
 - `GET /api/v1/objects/{id}` — canonical object detail plus relationships.
+- `GET /api/v1/activity` — append-only local audit history, with generated events explicitly
+  distinguished from canonical model changes.
 
 The v1 contract is additive: existing endpoints remain available, and mutations still require
 explicit human approval through the proposal/change-request flow.
@@ -305,6 +307,11 @@ Errors preserve FastAPI's `detail` field for compatibility and also return an `e
 stable `code`, `message`, and, where applicable, a non-mutating `recovery` action. For example, a
 missing disposable index reports `INDEX_MISSING` and the exact `martenweave build-index --repo .`
 command; API clients must never infer a canonical-file write from recovery guidance.
+
+The Workbench activity overlay reads `/api/v1/activity` when connected. It links affected canonical
+object IDs or proposal history where available; index, validation, and report events remain local
+generated history rather than canonical model changes. When the local API is unavailable, the UI
+labels its sample activity as demo data.
 
 Use `--help` on any command for full options:
 

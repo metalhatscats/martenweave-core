@@ -114,6 +114,14 @@ describe("createApiClient", () => {
     expect(globalThis.fetch).toHaveBeenCalledWith("http://localhost:8000/api/v1/capabilities");
   });
 
+  it("fetches append-only workspace activity", async () => {
+    mockFetch({ total_count: 0, events: [] });
+    const client = createApiClient("http://localhost:8000");
+    const result = await client.activity();
+    expect(result.events).toEqual([]);
+    expect(globalThis.fetch).toHaveBeenCalledWith("http://localhost:8000/api/v1/activity?limit=50");
+  });
+
   it("searches with query parameters", async () => {
     mockFetch({ total_count: 1, results: [{ object_id: "DOMAIN-TEST", object_type: "MasterDataDomain", status: "draft", name: "Test", title: null, domain: null, description: null, source_file: "DOMAIN-TEST.md", score: 1, matched_fields: ["name"] }] });
     const client = createApiClient("http://localhost:8000");

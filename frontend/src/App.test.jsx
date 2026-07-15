@@ -31,7 +31,7 @@ describe("Martenweave workbench", () => {
     render(<App />);
     fireEvent.click(screen.getByLabelText("Workspace activity"));
     await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
-    expect(screen.getByText("Recent local validation, evidence, and review events.")).toBeInTheDocument();
+    expect(screen.getByText(/Recent local validation, evidence, and review events/)).toBeInTheDocument();
   });
 
   it("completes the sample import flow", async () => {

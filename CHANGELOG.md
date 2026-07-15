@@ -12,6 +12,9 @@ All notable changes to Martenweave Core.
 - **Actionable local API recovery (#516):** API errors now retain compatible `detail` text while
   adding stable error codes and safe recovery actions. Capability discovery advertises missing-index
   and read-only workspace guidance, and the Workbench shows the exact index recovery command.
+- **Live workspace activity (#507):** the Workbench now reads append-only local audit history through
+  `/api/v1/activity`, labels generated/index events separately from canonical changes, and preserves
+  an explicit demo-only fallback when the local API is unavailable.
 
 ## [0.5.0] — 2026-07-14
 

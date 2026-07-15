@@ -9,6 +9,8 @@ from fastapi import APIRouter, HTTPException, Query
 
 from modelops_core import __version__
 from modelops_core.api.models import (
+    ActivityEventItem,
+    ActivityResponse,
     ApiCapabilities,
     CapabilityEntry,
     ObjectDetailResponse,
@@ -29,6 +31,7 @@ from modelops_core.index.query_service import (
     list_related_objects,
     search_objects,
 )
+from modelops_core.reports.audit_service import AuditEventService
 from modelops_core.repository import scan_repository
 
 router = APIRouter(prefix="/api/v1")
@@ -86,6 +89,15 @@ def capabilities(
             method="GET",
             href="/health",
             description="Workspace health summary.",
+        ),
+        CapabilityEntry(
+            name="activity",
+            method="GET",
+            href="/api/v1/activity",
+            description=(
+                "Read append-only local repository activity without treating generated events "
+                "as canonical changes."
+            ),
         ),
         CapabilityEntry(
             name="list_objects",
@@ -181,6 +193,33 @@ def capabilities(
         mutations=mutations,
         recovery=[action.as_dict() for action in recovery],
     )
+
+
+@router.get("/activity", response_model=ActivityResponse)
+def activity(
+    repo: str | None = Query(None, description="Path to model repository"),
+    limit: int = Query(50, ge=1, le=200, description="Maximum number of recent audit events"),
+) -> ActivityResponse:
+    """Return recent audit history; generated operations remain explicitly non-canonical."""
+    repo_root = _resolve_repo(repo)
+    events = AuditEventService(repo_root).read_events()
+    events.sort(key=lambda event: event.timestamp, reverse=True)
+    items = [
+        ActivityEventItem(
+            event_id=event.event_id,
+            event_type=event.event_type,
+            timestamp=event.timestamp,
+            actor=event.actor or None,
+            status=event.status,
+            proposal_id=event.proposal_id,
+            changed_object_ids=event.changed_object_ids,
+            validation_status=event.validation_status,
+            source_state="canonical" if event.changed_object_ids else "generated",
+            canonical_change=bool(event.changed_object_ids),
+        )
+        for event in events[:limit]
+    ]
+    return ActivityResponse(total_count=len(events), events=items)
 
 
 @router.get("/search", response_model=PaginatedSearchResponse)

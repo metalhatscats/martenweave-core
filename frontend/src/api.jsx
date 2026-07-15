@@ -125,6 +125,27 @@ import { lineageEdges, lineageNodes, modelObjects } from "./data.js";
  * @property {(id: string, opts?: {direction?: string, max_depth?: number}) => Promise<TraceResponse>} trace
  * @property {(id: string) => Promise<ImpactResponse>} impact
  * @property {() => Promise<CapabilitiesResponse>} capabilities
+ * @property {(limit?: number) => Promise<ActivityResponse>} activity
+ */
+
+/**
+ * @typedef {object} ActivityEvent
+ * @property {string} event_id
+ * @property {string} event_type
+ * @property {string} timestamp
+ * @property {string|null} actor
+ * @property {string} status
+ * @property {string|null} proposal_id
+ * @property {string[]} changed_object_ids
+ * @property {string|null} validation_status
+ * @property {"canonical"|"generated"} source_state
+ * @property {boolean} canonical_change
+ */
+
+/**
+ * @typedef {object} ActivityResponse
+ * @property {number} total_count
+ * @property {ActivityEvent[]} events
  */
 
 export const API_STATE = {
@@ -237,6 +258,7 @@ export function createApiClient(baseUrl) {
 
   return {
     capabilities: () => fetchJson(`${root}/api/v1/capabilities`),
+    activity: (limit = 50) => fetchJson(`${root}/api/v1/activity?limit=${encodeURIComponent(limit)}`),
     search: ({ q, type, status, domain, limit = 50, offset = 0 } = {}) => {
       const params = new URLSearchParams();
       if (q) params.set("q", q);
@@ -495,6 +517,48 @@ export function useObjectDetail(objectId) {
   }, [objectId, demo, client]);
 
   return { object, loading, error };
+}
+
+/**
+ * Read real, append-only workspace activity while retaining a clearly demo-only fallback offline.
+ *
+ * @returns {{ events: ActivityEvent[], loading: boolean, error: string|null, demo: boolean }}
+ */
+export function useWorkspaceActivity() {
+  const { client, demo } = useApi();
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (demo || !client) {
+      setEvents([]);
+      setLoading(false);
+      setError(null);
+      return undefined;
+    }
+    let cancelled = false;
+    setLoading(true);
+    client.activity()
+      .then((response) => {
+        if (!cancelled) {
+          setEvents(response.events);
+          setError(null);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setEvents([]);
+          setError(err instanceof Error ? err.message : String(err));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [client, demo]);
+
+  return { events, loading, error, demo };
 }
 
 

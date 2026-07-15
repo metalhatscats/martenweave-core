@@ -42,6 +42,28 @@ class ApiCapabilities(BaseModel):
     )
 
 
+class ActivityEventItem(BaseModel):
+    """An append-only local audit event suitable for a Workbench history view."""
+
+    event_id: str
+    event_type: str
+    timestamp: str
+    actor: str | None = None
+    status: str
+    proposal_id: str | None = None
+    changed_object_ids: list[str] = Field(default_factory=list)
+    validation_status: str | None = None
+    source_state: str
+    canonical_change: bool
+
+
+class ActivityResponse(BaseModel):
+    """Recent repository activity sourced exclusively from the local audit log."""
+
+    total_count: int
+    events: list[ActivityEventItem]
+
+
 class SearchResultItem(BaseModel):
     """A single search result returned by /api/v1/search."""
 

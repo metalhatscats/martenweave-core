@@ -35,6 +35,7 @@ Clients should discover capabilities before rendering actions.
 | GET | `/api/v1/capabilities` | API version, workspace health, and capability list |
 | GET | `/api/v1/search` | Paginated keyword search over the generated index |
 | GET | `/api/v1/objects/{id}` | Canonical object detail and relationships |
+| GET | `/api/v1/activity` | Recent append-only local audit events |
 
 `GET /api/v1/capabilities` returns:
 
@@ -76,6 +77,11 @@ index is missing.
 outgoing relationships under `relationships`. It returns `404` for unknown IDs and structured errors
 for a missing index.
 
+`GET /api/v1/activity?limit=50` returns the newest audit events first. Each item contains timestamp,
+event type, status, known actor, proposal ID, affected object IDs, validation status, `source_state`,
+and `canonical_change`. `canonical_change` is only true when the event records affected canonical
+object IDs; index rebuilds and other generated artifacts remain visibly non-canonical.
+
 ### Frontend integration
 
 The local API enables the workbench to read live data without importing backend internals.
@@ -87,6 +93,8 @@ The local API enables the workbench to read live data without importing backend 
 - When the API is unreachable, the index is stale, or the contract version is incompatible, the
   workbench shows the connection state and falls back to explicitly labeled demo data. A stale
   index also shows the server-provided recovery command instead of requiring the UI to parse prose.
+- The activity overlay consumes append-only API history when connected; its fallback is explicitly
+  labeled demo activity and never suggests fixture events are repository history.
 - All write operations continue to require explicit human approval through the proposal/change-
   request flow; the frontend does not edit canonical files directly.
 

@@ -30,6 +30,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { fields, gaps, modelObjects, proposals, recentActivity } from "./data.js";
+import { useWorkspaceActivity } from "./api.jsx";
 
 const LEDGER_ROWS = [
   {
@@ -842,10 +843,43 @@ function ShortcutDialog({ onClose }) {
   );
 }
 
+function activityLabel(event) {
+  return event.event_type.replaceAll("_", " ");
+}
+
+function activityTime(timestamp) {
+  const time = new Date(timestamp);
+  return Number.isNaN(time.valueOf()) ? timestamp : time.toLocaleString();
+}
+
 function ActivityDialog({ onClose, navigate }) {
+  const { events, loading, error, demo } = useWorkspaceActivity();
+  const activity = demo
+    ? recentActivity.map(([action, subject, time], index) => ({
+      event_id: `demo-${index}`,
+      event_type: action,
+      timestamp: time,
+      changed_object_ids: [],
+      proposal_id: null,
+      source_state: "generated",
+      demo_subject: subject,
+    }))
+    : events;
+
+  const openEvent = (event) => {
+    onClose();
+    if (event.proposal_id) navigate("proposals");
+    else if (event.changed_object_ids?.[0]) navigate("object", { id: event.changed_object_ids[0] });
+    else navigate("home");
+  };
   return (
-    <ModalFrame title="Workspace activity" subtitle="Recent local validation, evidence, and review events." onClose={onClose} className="activity-modal">
-      <div className="activity-feed">{recentActivity.map(([action, subject, time], index) => <button key={action} onClick={() => { onClose(); navigate(index === 1 ? "proposal" : index === 2 ? "gaps" : index === 3 ? "lineage" : "home", index === 1 ? { id: 27 } : undefined); }}><span><CheckCircle size={17} /></span><span><strong>{action}</strong><small>{subject}</small></span><time>{time}</time><ArrowRight size={14} /></button>)}</div>
+    <ModalFrame title="Workspace activity" subtitle={demo ? "Recent local validation, evidence, and review events. Demo activity — local API is unavailable." : "Recent local validation, evidence, and review events. Generated events are not canonical changes."} onClose={onClose} className="activity-modal">
+      <div className="activity-feed">
+        {loading && <p>Loading local activity…</p>}
+        {error && <p>Activity could not be loaded: {error}</p>}
+        {!loading && !error && activity.length === 0 && <p>No local audit events yet. Run a validation, assessment, or governed review to record history.</p>}
+        {activity.map((event) => <button key={event.event_id} onClick={() => openEvent(event)}><span><CheckCircle size={17} /></span><span><strong>{demo ? event.event_type : activityLabel(event)}</strong><small>{event.demo_subject || event.changed_object_ids?.join(", ") || event.proposal_id || (event.source_state === "generated" ? "Generated local artifact" : "Canonical model change")}</small></span><time>{demo ? event.timestamp : activityTime(event.timestamp)}</time><ArrowRight size={14} /></button>)}
+      </div>
     </ModalFrame>
   );
 }
