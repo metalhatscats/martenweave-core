@@ -361,6 +361,35 @@ export const API_STATE = {
   INCOMPATIBLE: "incompatible",
 };
 
+/**
+ * Check whether a capability by name is advertised by the local API.
+ *
+ * @param {CapabilitiesResponse|null} capabilities
+ * @param {string} name
+ * @returns {boolean}
+ */
+export function hasCapability(capabilities, name) {
+  if (!capabilities) return false;
+  const all = [
+    ...(capabilities.read || []),
+    ...(capabilities.mutations || []),
+  ];
+  return all.some((capability) => capability.name === name);
+}
+
+/**
+ * Return a human-readable reason why a mutation is unavailable.
+ *
+ * @param {ApiContextValue} api
+ * @returns {string|null}
+ */
+export function mutationBlockReason(api) {
+  if (api.demo) return "Connect the local API to use this action.";
+  if (api.state === API_STATE.STALE_INDEX) return "Build the disposable local index before this action.";
+  if (api.capabilities?.read_only) return "This local workspace is read-only.";
+  return null;
+}
+
 const EXPECTED_API_VERSION = "v1";
 
 const DEFAULT_API_BASE_URL =

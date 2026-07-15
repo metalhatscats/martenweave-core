@@ -42,6 +42,7 @@ import {
   Stack,
   Tag,
   UploadSimple,
+  User,
   UserCircle,
   Users,
   Warning,
@@ -63,6 +64,8 @@ import "@xyflow/react/dist/style.css";
 import {
   API_STATE,
   ApiProvider,
+  hasCapability,
+  mutationBlockReason,
   objectTypeToTone,
   useApi,
   useAssessmentFindings,
@@ -260,15 +263,20 @@ function Topbar({ route, navigate, title, onMenu, actions }) {
   const workspaceLabel = demo ? "Demo workspace" : "Local workspace";
   const connectionLabel = demo
     ? "Demo mode"
-    : capabilities?.read_only
-      ? "Read-only"
-      : state === API_STATE.CONNECTED
-        ? "Local API"
-        : "Connecting";
-  const writeBlocked = Boolean(capabilities?.read_only) || state === API_STATE.STALE_INDEX;
-  const writeBlockReason = capabilities?.read_only
-    ? "This local workspace is read-only"
-    : "Build the disposable local index before this action";
+    : state === API_STATE.INCOMPATIBLE
+      ? "Incompatible API"
+      : state === API_STATE.UNAVAILABLE
+        ? "API unavailable"
+        : state === API_STATE.STALE_INDEX
+          ? "Stale index"
+          : capabilities?.read_only
+            ? "Read-only"
+            : state === API_STATE.CONNECTED
+              ? "Local API"
+              : "Connecting";
+  const blockReason = mutationBlockReason({ demo, state, capabilities });
+  const canImport = !blockReason && hasCapability(capabilities, "import_profile");
+  const canExport = !blockReason && hasCapability(capabilities, "export_model");
 
   useEffect(() => {
     if (!profileOpen) return;
@@ -329,15 +337,15 @@ function Topbar({ route, navigate, title, onMenu, actions }) {
         <button className="top-action-button" onClick={() => actions.open({ type: "commands" })}>
           <Command size={17} /> Commands <kbd>⌘K</kbd>
         </button>
-        {writeBlocked ? (
-          <DisabledButton className="top-action-button" icon={UploadSimple} label="Import" reason={writeBlockReason}>Import</DisabledButton>
+        {!canImport ? (
+          <DisabledButton className="top-action-button" icon={UploadSimple} label="Import" reason={blockReason || "Import is not available in this workspace"}>Import</DisabledButton>
         ) : (
           <button className="top-action-button" onClick={() => actions.open({ type: "import" })}>
             <UploadSimple size={17} /> Import
           </button>
         )}
-        {writeBlocked ? (
-          <DisabledButton className="top-action-button" icon={DownloadSimple} label="Export" reason={writeBlockReason}>Export</DisabledButton>
+        {!canExport ? (
+          <DisabledButton className="top-action-button" icon={DownloadSimple} label="Export" reason={blockReason || "Export is not available in this workspace"}>Export</DisabledButton>
         ) : (
           <button className="top-action-button" onClick={() => actions.open({ type: "export" })}>
             <DownloadSimple size={17} /> Export
@@ -352,10 +360,10 @@ function Topbar({ route, navigate, title, onMenu, actions }) {
         </button>
         <div className="profile-wrap" ref={profileRef}>
           <button className="profile-button" onClick={() => setProfileOpen((value) => !value)}>
-            <span className="avatar">MW</span>
+            <span className="avatar avatar-soft"><User size={16} /></span>
             <span className="profile-copy">
               <strong>{workspaceLabel}</strong>
-              <small>{demo ? "Sample data" : "No user identity"}</small>
+              <small>{demo ? "Sample data" : "Local single-user session"}</small>
             </span>
             <CaretDown size={14} />
           </button>

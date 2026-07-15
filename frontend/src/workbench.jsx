@@ -32,7 +32,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { fields, gaps, modelObjects, proposals, recentActivity } from "./data.js";
-import { useApi, useImportPreview, useImportProfile, useImportPropose, useImportValidate, useReportGenerate, useWorkspaceActivity } from "./api.jsx";
+import { useApi, hasCapability, mutationBlockReason, useImportPreview, useImportProfile, useImportPropose, useImportValidate, useReportGenerate, useWorkspaceActivity } from "./api.jsx";
 
 const LEDGER_ROWS = [
   {
@@ -511,7 +511,11 @@ export function WorkspaceScreen({ navigate, onImport, onExport, onCommands, onSh
 }
 
 export function ReportsScreen({ navigate, onExport }) {
-  const { client, demo } = useApi();
+  const { client, demo, state, capabilities } = useApi();
+  const blockReason = mutationBlockReason({ demo, state, capabilities });
+  const canExport = !blockReason && hasCapability(capabilities, "export_model");
+  const canGenerateReport = !blockReason && hasCapability(capabilities, "generate_report");
+  const canImportPropose = !blockReason && hasCapability(capabilities, "import_propose");
   const [liveArtifacts, setLiveArtifacts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -559,7 +563,7 @@ export function ReportsScreen({ navigate, onExport }) {
   }, [client, demo, refreshKey]);
 
   const handleGenerate = async (reportType) => {
-    if (demo || !client) return;
+    if (!canGenerateReport || !client) return;
     try {
       await generateReport(reportType);
       setRefreshKey((key) => key + 1);
@@ -576,7 +580,7 @@ export function ReportsScreen({ navigate, onExport }) {
   };
 
   const handleValidate = async () => {
-    if (!workbookFile || demo) return;
+    if (!workbookFile || !canImportPropose) return;
     try {
       const result = await validateWorkbook(workbookFile);
       setValidation(result);
@@ -586,7 +590,7 @@ export function ReportsScreen({ navigate, onExport }) {
   };
 
   const handlePreview = async () => {
-    if (!workbookFile || demo) return;
+    if (!workbookFile || !canImportPropose) return;
     try {
       const result = await previewWorkbook(workbookFile);
       setPreview(result.proposal);
@@ -596,7 +600,7 @@ export function ReportsScreen({ navigate, onExport }) {
   };
 
   const handlePropose = async () => {
-    if (!workbookFile || demo) return;
+    if (!workbookFile || !canImportPropose) return;
     try {
       const result = await proposeWorkbook(workbookFile);
       setWorkbookFile(null);
@@ -634,17 +638,17 @@ export function ReportsScreen({ navigate, onExport }) {
     <div className="page-pad reports-page">
       <div className="page-header">
         <div><span className="eyebrow">Reports and exports</span><h1>Project outputs</h1><p>Build traceable artifacts from the current canonical model and generated index.</p></div>
-        <button className="primary-button" onClick={onExport}><FileArrowDown size={17} /> New export</button>
+        <button className="primary-button" onClick={onExport} disabled={!canExport} title={blockReason || (canExport ? "Create a local export" : "Export is not available")}><FileArrowDown size={17} /> New export</button>
       </div>
       <div className="report-options">
         {REPORT_TYPES.map(([id, name, description]) => (
-          <button key={id} onClick={() => handleGenerate(id)} disabled={generating}>
+          <button key={id} onClick={() => handleGenerate(id)} disabled={generating || !canGenerateReport} title={blockReason || (canGenerateReport ? "Generate report" : "Report generation is not available")}>
             <span><FileText size={20} /></span><strong>{name}</strong><p>{description}</p><small>{generating ? "Generating…" : "Generate report"} <ArrowRight size={13} /></small>
           </button>
         ))}
       </div>
       {(generateError || error) && <p className="inline-error">{generateError || error}</p>}
-      {!demo && (
+      {canImportPropose && (
         <section className="surface review-workbook-return">
           <div className="section-title"><div><h2>Return reviewed workbook</h2><p>Import a reviewed business-review workbook, validate its identity, preview changes, and create a PatchProposal.</p></div></div>
           <div className="import-workbook-form">
@@ -654,13 +658,13 @@ export function ReportsScreen({ navigate, onExport }) {
               <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={handleFileChange} />
             </label>
             <div className="import-workbook-actions">
-              <button className="secondary-button" onClick={handleValidate} disabled={!workbookFile || validating || previewing || proposing}>
+              <button className="secondary-button" onClick={handleValidate} disabled={!workbookFile || !canImportPropose || validating || previewing || proposing}>
                 {validating ? "Validating…" : "Validate"}
               </button>
-              <button className="secondary-button" onClick={handlePreview} disabled={!workbookFile || previewing || proposing || (validation && !validation.valid)}>
+              <button className="secondary-button" onClick={handlePreview} disabled={!workbookFile || !canImportPropose || previewing || proposing || (validation && !validation.valid)}>
                 {previewing ? "Previewing…" : "Preview changes"}
               </button>
-              <button className="primary-button" onClick={handlePropose} disabled={!workbookFile || proposing || (validation && !validation.valid)}>
+              <button className="primary-button" onClick={handlePropose} disabled={!workbookFile || !canImportPropose || proposing || (validation && !validation.valid)}>
                 {proposing ? "Creating proposal…" : "Create proposal"}
               </button>
             </div>
