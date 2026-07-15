@@ -36,6 +36,20 @@ def resolve_workspace(requested_repo: str | None) -> Path:
     return _workspace_root
 
 
+def resolve_workspace_input(path_value: str, repo_root: Path) -> Path:
+    """Allow file inputs only inside the bound workspace, including real symlink targets."""
+    candidate = Path(path_value).resolve()
+    if _workspace_root is None:
+        return candidate
+    try:
+        candidate.relative_to(repo_root.resolve())
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=403, detail="Input file must be inside the bound workspace."
+        ) from exc
+    return candidate
+
+
 def workspace_label() -> str:
     return "." if _workspace_root is not None else str(Path.cwd().resolve())
 

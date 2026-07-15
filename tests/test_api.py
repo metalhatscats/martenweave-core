@@ -51,6 +51,26 @@ def test_bound_api_requires_token_for_mutation(temp_model_dir: Path) -> None:
         clear_workspace()
 
 
+def test_bound_api_rejects_external_and_symlinked_dataset(
+    sample_repo: Path, tmp_path: Path
+) -> None:
+    outside = tmp_path / "outside.csv"
+    outside.write_text("id\n1\n")
+    linked = sample_repo / "data" / "outside-link.csv"
+    linked.symlink_to(outside)
+    configure_workspace(sample_repo, mutation_token="local-secret")
+    try:
+        for dataset in (outside, linked):
+            response = client.post(
+                "/gaps",
+                params={"dataset": str(dataset)},
+                headers={"X-Martenweave-Token": "local-secret"},
+            )
+            assert response.status_code == 403
+    finally:
+        clear_workspace()
+
+
 def test_api_list_objects(sample_repo: Path) -> None:
     response = client.get("/objects", params={"repo": str(sample_repo)})
     assert response.status_code == 200

@@ -13,6 +13,7 @@ from modelops_core.api import v1
 from modelops_core.api.workspace import (
     require_mutation_token,
     resolve_workspace,
+    resolve_workspace_input,
     workspace_is_bound,
     workspace_label,
 )
@@ -434,7 +435,7 @@ def gaps(
     the report reflects the current canonical files.
     """
     repo_root = _resolve_repo(repo)
-    dataset_path = Path(dataset)
+    dataset_path = resolve_workspace_input(dataset, repo_root)
     if not dataset_path.exists():
         raise HTTPException(status_code=404, detail=f"Dataset not found: {dataset}")
 
@@ -481,7 +482,7 @@ def dataset_readiness(
     review, following the same AI-proposes/human-approves model as the CLI.
     """
     repo_root = _resolve_repo(repo)
-    dataset_path = Path(dataset)
+    dataset_path = resolve_workspace_input(dataset, repo_root)
     if not dataset_path.exists():
         raise HTTPException(status_code=404, detail=f"Dataset not found: {dataset}")
 
