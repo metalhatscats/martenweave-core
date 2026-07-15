@@ -55,6 +55,9 @@ describe("Martenweave workbench", () => {
   it("navigates to models and filters by query", async () => {
     window.location.hash = "#/models";
     render(<App />);
+    expect(screen.getByText("Canonical search")).toBeInTheDocument();
+    expect(screen.getByText("Local evidence")).toBeInTheDocument();
+    expect(screen.queryByText("AI answer")).not.toBeInTheDocument();
     const pageInput = screen.getByRole("main").querySelector(".global-search input");
     fireEvent.change(pageInput, { target: { value: "TAX_NUMBER" } });
     await waitFor(() => {

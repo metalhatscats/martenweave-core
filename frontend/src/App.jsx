@@ -32,7 +32,6 @@ import {
   List,
   MagnifyingGlass,
   NotePencil,
-  Paperclip,
   Plus,
   SealCheck,
   ShareNetwork,
@@ -77,7 +76,6 @@ import {
   lineageNodes,
   modelObjects,
   proposals,
-  recentActivity,
   severityWeight,
 } from "./data.js";
 import {
@@ -423,181 +421,6 @@ function IconTile({ type, size = 42 }) {
   );
 }
 
-function HomeScreen({ navigate }) {
-  const [prompt, setPrompt] = useState("");
-  const [submittedPrompt, setSubmittedPrompt] = useState("");
-  const [isThinking, setIsThinking] = useState(false);
-  const recommendedProposal = proposals.find((proposal) => proposal.status === "In review") || proposals[0];
-  const suggestions = [
-    "Show high-risk gaps in Business Partner",
-    "Trace TAX_NUMBER across source systems",
-    "What changed in the model this week?",
-  ];
-
-  const submitPrompt = (event, suggestedPrompt) => {
-    event?.preventDefault();
-    const value = suggestedPrompt || prompt;
-    if (!value.trim()) return;
-    setIsThinking(true);
-    setSubmittedPrompt("");
-    window.setTimeout(() => {
-      setSubmittedPrompt(value);
-      setIsThinking(false);
-    }, 650);
-  };
-
-  return (
-    <div className="home-layout page-pad">
-      <section className="home-primary">
-        <div className="home-intro">
-          <span className="ai-orb"><Sparkle size={22} weight="fill" /></span>
-          <h1>Ask your model layer anything</h1>
-          <p>Search, inspect, trace, validate, and review governed model knowledge.</p>
-        </div>
-        <form className="prompt-box" onSubmit={submitPrompt}>
-          <textarea
-            value={prompt}
-            onChange={(event) => setPrompt(event.target.value)}
-            placeholder="Ask about models, fields, lineage, gaps, or proposals…"
-            rows={2}
-          />
-          <div className="prompt-toolbar">
-            <div>
-              <DisabledButton
-                className="icon-button"
-                icon={Paperclip}
-                label="Attach context"
-                reason="Attach canonical objects after backend index is available"
-              />
-              <DisabledButton
-                className="context-button"
-                icon={SlidersHorizontal}
-                label="Context"
-                reason="Attach model/lineage context after backend index is available"
-              >
-                Context
-              </DisabledButton>
-            </div>
-            <button className="send-button" aria-label="Ask Martenweave" disabled={!prompt.trim()}>
-              <ArrowUp size={18} weight="bold" />
-            </button>
-          </div>
-        </form>
-        <div className="suggestion-row" aria-label="Suggested questions">
-          {suggestions.map((suggestion) => (
-            <button key={suggestion} onClick={() => submitPrompt(null, suggestion)}>
-              {suggestion}
-              <ArrowRight size={14} />
-            </button>
-          ))}
-        </div>
-
-        <section className="answer-card" aria-live="polite">
-          {!submittedPrompt && !isThinking ? (
-            <div className="answer-empty">
-              <ClockCounterClockwise size={21} />
-              <span>Recent answer</span>
-              <p>Ask a question to build an evidence-backed model view.</p>
-            </div>
-          ) : isThinking ? (
-            <div className="thinking-state">
-              <CircleNotch className="spin" size={22} />
-              <span>Tracing canonical objects and validation evidence…</span>
-            </div>
-          ) : (
-            <>
-              <div className="question-row">
-                <span className="avatar">AC</span>
-                <div>
-                  <strong>You</strong>
-                  <p>{submittedPrompt}</p>
-                </div>
-              </div>
-              <div className="assistant-row">
-                <span className="assistant-mark"><Sparkle size={18} weight="fill" /></span>
-                <div className="assistant-copy">
-                  <div className="answer-byline">
-                    <strong>Martenweave</strong>
-                    <Badge tone="blue">Evidence-backed</Badge>
-                  </div>
-                  <p>
-                    Business Partner has three unresolved field gaps. The highest-risk issue is
-                    TAX_NUMBER because it affects migration validation, reporting, and two downstream
-                    customer processes.
-                  </p>
-                  <div className="insight-grid">
-                    <button onClick={() => navigate("gaps")}>
-                      <span><WarningCircle size={19} /> Open gaps</span>
-                      <strong>3 fields</strong>
-                      <small>TAX_NUMBER, LANGUAGE, INDUSTRY</small>
-                    </button>
-                    <button onClick={() => navigate("lineage")}>
-                      <span><ShareNetwork size={19} /> Impacted systems</span>
-                      <strong>3 systems</strong>
-                      <small>Sales Order, MDM, Analytics</small>
-                    </button>
-                    <button onClick={() => navigate("proposal", { id: recommendedProposal.id })}>
-                      <span><ShieldCheck size={19} /> Recommended action</span>
-                      <strong>Review Proposal #{recommendedProposal.id}</strong>
-                      <small>All required evidence is attached</small>
-                    </button>
-                  </div>
-                  <div className="affected-table">
-                    <div className="table-heading">
-                      <strong>Affected fields</strong>
-                      <button onClick={() => navigate("gaps")}>View all <ArrowRight size={14} /></button>
-                    </div>
-                    {gaps.slice(0, 3).map((gap) => (
-                      <div className="affected-row" key={gap.id}>
-                        <strong>{gap.title.replace(/.*: |Missing mapping for /, "")}</strong>
-                        <span>{gap.source}</span>
-                        <Badge tone={gap.severity.toLowerCase()}>{gap.severity}</Badge>
-                        <span>{gap.status}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </section>
-      </section>
-      <aside className="home-rail">
-        <RailSection title="Recent objects" action="View all" onAction={() => navigate("models")}>
-          {modelObjects.slice(0, 4).map((item) => (
-            <button className="rail-item" key={item.id} onClick={() => navigate("object", { id: item.id })}>
-              <IconTile type={item.label} size={34} />
-              <span><strong>{item.name}</strong><small>{item.label}</small></span>
-              <CaretRight size={14} />
-            </button>
-          ))}
-        </RailSection>
-        <RailSection title="Recent activity">
-          {recentActivity.map(([action, subject, time], index) => (
-            <div className="activity-item" key={action}>
-              <span className={`activity-icon activity-${index}`}><CheckCircle size={16} /></span>
-              <span><strong>{action}</strong><small>{subject}</small></span>
-              <time>{time}</time>
-            </div>
-          ))}
-        </RailSection>
-      </aside>
-    </div>
-  );
-}
-
-function RailSection({ title, action, onAction, children }) {
-  return (
-    <section className="rail-section">
-      <div className="rail-heading">
-        <h2>{title}</h2>
-        {action && <button onClick={onAction}>{action}</button>}
-      </div>
-      <div>{children}</div>
-    </section>
-  );
-}
-
 function updatedMinutes(value) {
   if (!value) return Infinity;
   const match = value.match(/^(\d+)([mhd])\s+ago$/);
@@ -679,15 +502,14 @@ function ModelsScreen({ navigate, params }) {
         ))}
       </div>
       <section className="ai-summary">
-        <span className="assistant-mark"><Sparkle size={17} weight="fill" /></span>
+        <span className="assistant-mark"><MagnifyingGlass size={17} weight="bold" /></span>
         <div>
-          <span className="summary-title">AI answer <Badge tone="blue">Beta</Badge></span>
+          <span className="summary-title">Canonical search <Badge tone="blue">Local evidence</Badge></span>
           <p>
-            The canonical object is <strong>Business Partner</strong>. It is used by eight source
-            systems, referenced by fourteen rules, and currently has three open field gaps.
+            Results come from the local index when available. Open an object to inspect its
+            canonical definition, relationships, validation evidence, and governed change history.
           </p>
         </div>
-        <button onClick={() => navigate("home")}>Ask follow-up <ArrowRight size={14} /></button>
       </section>
       <div className="results-toolbar">
         <strong>{sortedResults.length} results</strong>

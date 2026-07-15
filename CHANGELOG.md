@@ -25,6 +25,9 @@ All notable changes to Martenweave Core.
 - **Local workspace trust state (#503):** the Workbench chrome now uses local API capabilities for
   Core/API version, repository mode, index availability, and read-only state. It labels demo data
   explicitly and no longer presents a local repository as production or a fictional signed-in user.
+- **Evidence-first Workbench search (#504):** removed an unreachable, fabricated chat response and
+  replaced the search summary with an explicit local-index evidence state. Operators now enter the
+  existing canonical search and object-inspection workflow without unsupported model claims.
 - **Assessment lifecycle comparison (#513):** `martenweave assessment compare` produces JSON and
   Markdown reports that use stable finding IDs to classify new, unchanged, resolved, reopened, and
   severity-changed findings, while separating workbook/evidence, canonical model, configuration,
