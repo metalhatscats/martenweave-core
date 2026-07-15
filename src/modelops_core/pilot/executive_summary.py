@@ -154,6 +154,7 @@ def generate_executive_summary(manifest_path: Path) -> ExecutiveSummary:
     for finding in findings_data.get("findings", []):
         fid = finding.get("id", "")
         if fid in confirmed_ids:
+            provenance = finding.get("provenance", {})
             blocking_findings.append(
                 {
                     "id": fid,
@@ -161,6 +162,9 @@ def generate_executive_summary(manifest_path: Path) -> ExecutiveSummary:
                     "severity": finding.get("severity", "medium"),
                     "message": finding.get("message", ""),
                     "source": finding.get("source", "mapping_profile"),
+                    "readiness_impact": finding.get("readiness_impact", "informational"),
+                    "detection_mode": provenance.get("detection_mode", "deterministic"),
+                    "rule_id": provenance.get("rule_id", ""),
                 }
             )
     blocking_findings.sort(key=lambda x: (_severity_rank(x["severity"]), x["id"]))

@@ -46,6 +46,15 @@ def _load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _detection_mode_counts(findings: list[dict[str, Any]]) -> dict[str, int]:
+    """Aggregate findings by detection mode from provenance."""
+    counts: dict[str, int] = {}
+    for finding in findings:
+        mode = finding.get("provenance", {}).get("detection_mode", "deterministic")
+        counts[mode] = counts.get(mode, 0) + 1
+    return counts
+
+
 def _compute_outcome(
     manifest: dict[str, Any],
     findings_data: dict[str, Any],
@@ -102,7 +111,7 @@ def _compute_outcome(
         if name not in effective_baselines:
             unavailable.append(label)
 
-    return PilotOutcome(
+    outcome = PilotOutcome(
         repo_name=manifest.get("repo_name", "Unknown"),
         generated_at=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         total_findings=total,
@@ -118,6 +127,10 @@ def _compute_outcome(
         baselines=effective_baselines,
         unavailable_baselines=unavailable,
     )
+    # Attach run metadata without changing the dataclass schema.
+    outcome.run_id = manifest.get("run_id", "")  # type: ignore[attr-defined]
+    outcome.detection_mode_counts = _detection_mode_counts(findings)  # type: ignore[attr-defined]
+    return outcome
 
 
 def generate_pilot_outcome(
@@ -146,9 +159,10 @@ def generate_pilot_outcome(
 
 def pilot_outcome_to_dict(outcome: PilotOutcome) -> dict[str, Any]:
     """Convert a ``PilotOutcome`` to a JSON-serializable dict."""
-    return {
+    data: dict[str, Any] = {
         "tool": "martenweave",
         "version": __version__,
+        "run_id": getattr(outcome, "run_id", ""),
         "repo_name": outcome.repo_name,
         "generated_at": outcome.generated_at,
         "total_findings": outcome.total_findings,
@@ -161,9 +175,11 @@ def pilot_outcome_to_dict(outcome: PilotOutcome) -> dict[str, Any]:
         "false_positive_rate": outcome.false_positive_rate,
         "confirmation_rate": outcome.confirmation_rate,
         "recommendation": outcome.recommendation,
+        "detection_mode_counts": getattr(outcome, "detection_mode_counts", {}),
         "baselines": outcome.baselines,
         "unavailable_baselines": outcome.unavailable_baselines,
     }
+    return data
 
 
 def render_pilot_outcome_markdown(outcome: PilotOutcome) -> str:

@@ -2841,6 +2841,15 @@ def migration_assessment(
         console.print(f"[red]Model path does not exist: {model_path}[/red]")
         raise typer.Exit(code=1)
 
+    command = (
+        f"modelops run migration-assessment --repo {repo_root} "
+        f"--mapping {mapping}"
+    )
+    if dataset is not None:
+        command += f" --dataset {dataset}"
+    for ev_path in evidence:
+        command += f" --evidence {ev_path}"
+
     try:
         manifest = generate_migration_assessment(
             repo_root=repo_root,
@@ -2848,6 +2857,7 @@ def migration_assessment(
             dataset_path=dataset,
             evidence_paths=evidence,
             out_dir=out,
+            command=command,
         )
     except (ValueError, RuntimeError, ResourceLimitExceeded) as exc:
         if json_output:
@@ -2858,11 +2868,28 @@ def migration_assessment(
 
     if json_output:
         data = {
+            "run_id": manifest.run_id,
             "martenweave_version": manifest.martenweave_version,
+            "schema_version": manifest.schema_version,
             "repo_name": manifest.repo_name,
             "repo_path": manifest.repo_path,
             "generated_at": manifest.generated_at,
             "inputs": manifest.inputs,
+            "fingerprints": {
+                "mapping": manifest.fingerprints.mapping,
+                "dataset": manifest.fingerprints.dataset,
+                "evidence": manifest.fingerprints.evidence,
+                "repo_state": manifest.fingerprints.repo_state,
+                "config": manifest.fingerprints.config,
+            },
+            "run_identity": {
+                "run_id": manifest.run_identity.run_id,
+                "core_version": manifest.run_identity.core_version,
+                "schema_version": manifest.run_identity.schema_version,
+                "domain_packs": manifest.run_identity.domain_packs,
+                "repo_commit": manifest.run_identity.repo_commit,
+                "command": manifest.run_identity.command,
+            },
             "stage_statuses": [
                 {"name": s.name, "status": s.status, "message": s.message}
                 for s in manifest.stage_statuses

@@ -120,7 +120,12 @@ input is still safe to process.
 5. **Inspect the output**
 
    Open:
-   - `outputs/assessment/manifest.json` — inputs, stage statuses, artifact checksums.
+   - `outputs/assessment/manifest.json` — inputs, stage statuses, artifact checksums,
+     a stable `run_id`, input fingerprints (mapping, dataset, evidence, repo state,
+     config), and run identity (core/schema version, domain packs, repo commit).
+   - `outputs/assessment/findings.json` — typed readiness findings with provenance,
+     evidence references, affected objects, and readiness impact. Findings use a
+     shared contract consumed by review, executive summary, outcome, and UI.
    - `outputs/assessment/01_readiness_scorecard.md` — overall readiness.
    - `outputs/assessment/02_gap_report.md` — consolidated gaps.
    - `outputs/assessment/03_high_risk_fields.md` — ranked risk items.
@@ -317,6 +322,9 @@ Complete this template at the end of the pilot.
 | Readiness verdict | | `executive-summary.json` |
 | Time to first usable report | | Pilot notes |
 | Repeat assessment runs | | `manifest.json` |
+| Run identity stable across identical inputs | | `manifest.json` `run_id` |
+| Input fingerprints changed between runs | | `manifest.json` `fingerprints` |
+| Deterministic findings | | `findings.json` `provenance.detection_mode` |
 
 ### Reviewer Feedback
 

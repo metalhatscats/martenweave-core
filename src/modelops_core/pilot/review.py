@@ -208,6 +208,7 @@ def promote_finding(
         )
 
     proposal_id = _finding_to_proposal_id(finding_id)
+    provenance = finding.get("provenance", {})
     op = PatchOperation(
         op="create_issue",
         object_id=proposal_id,
@@ -223,7 +224,11 @@ def promote_finding(
             "category": finding.get("category", "unknown"),
             "source_finding_id": finding_id,
             "source": finding.get("source", "mapping_profile"),
+            "source_state": "finding",
             "location": finding.get("location", {}),
+            "readiness_impact": finding.get("readiness_impact", "informational"),
+            "detection_mode": provenance.get("detection_mode", "deterministic"),
+            "rule_id": provenance.get("rule_id", ""),
             "disposition": "confirmed",
             "reviewer": review.get("reviewer", ""),
             "reviewed_at": review.get("reviewed_at", ""),
