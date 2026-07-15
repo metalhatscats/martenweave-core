@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +42,12 @@ def test_apply_update_object(temp_model_dir: Path) -> None:
     updated = parse_file(temp_model_dir / "DOMAIN-TEST.md")
     assert updated.frontmatter is not None
     assert updated.frontmatter["name"] == "Updated Domain Name"
+    assert result.receipt_path is not None
+    receipt_path = Path(result.receipt_path)
+    receipt = json.loads(receipt_path.read_text())
+    assert receipt["status"] == "committed"
+    assert (receipt_path.parent / "backups" / "DOMAIN-TEST.md").exists()
+    assert (receipt_path.parent / "staging" / "DOMAIN-TEST.md").exists()
 
 
 def test_apply_creates_object(temp_model_dir: Path) -> None:
@@ -312,19 +319,10 @@ class TestApplyRollback:
         from modelops_core.patching import apply_service
         from modelops_core.repository import parse_file
 
-        original_apply_create = apply_service._apply_create_object
-        call_count = 0
+        def _raising_commit(*args: Any, **kwargs: Any) -> None:
+            raise OSError("disk full")
 
-        def _raising_create(
-            op: Any, repo_model_path: Path, backup_state: dict[Path, str | None]
-        ) -> Path:
-            nonlocal call_count
-            call_count += 1
-            if call_count == 1:
-                raise OSError("disk full")
-            return original_apply_create(op, repo_model_path, backup_state)
-
-        monkeypatch.setattr(apply_service, "_apply_create_object", _raising_create)
+        monkeypatch.setattr(apply_service, "_commit_transaction", _raising_commit)
 
         ops = [
             PatchOperation(
@@ -362,12 +360,10 @@ class TestApplyRollback:
         from modelops_core.patching import apply_service
         from modelops_core.repository import parse_file
 
-        def _raising_update(
-            op: Any, repo_model_path: Path, backup_state: dict[Path, str | None]
-        ) -> Path:
+        def _raising_commit(*args: Any, **kwargs: Any) -> None:
             raise RuntimeError("unexpected failure")
 
-        monkeypatch.setattr(apply_service, "_apply_update_object", _raising_update)
+        monkeypatch.setattr(apply_service, "_commit_transaction", _raising_commit)
 
         op = PatchOperation(
             op="update_object",
@@ -396,12 +392,10 @@ class TestApplyRollback:
         from modelops_core.patching import apply_service
         from modelops_core.reports.audit_service import AuditEventService
 
-        def _raising_update(
-            op: Any, repo_model_path: Path, backup_state: dict[Path, str | None]
-        ) -> Path:
+        def _raising_commit(*args: Any, **kwargs: Any) -> None:
             raise RuntimeError("boom")
 
-        monkeypatch.setattr(apply_service, "_apply_update_object", _raising_update)
+        monkeypatch.setattr(apply_service, "_commit_transaction", _raising_commit)
 
         op = PatchOperation(
             op="update_object",
@@ -426,6 +420,11 @@ class TestApplyRollback:
         assert len(rollback_events) >= 1
         assert rollback_events[0].status == "failed"
         assert "boom" in rollback_events[0].outputs.get("error", "")
+        transaction_root = temp_model_dir.parent / "generated" / "patch-transactions"
+        receipts = list(transaction_root.glob("*/receipt.json"))
+        assert any(
+            json.loads(receipt.read_text())["status"] == "rolled_back" for receipt in receipts
+        )
 
     def test_apply_rolls_back_multi_op_when_second_op_fails(self, sample_repo: Path) -> None:
         """If op 1 writes and op 2 fails, op 1's change is rolled back."""

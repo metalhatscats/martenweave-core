@@ -90,6 +90,9 @@ The remote `v0.4.0` tag already points to an older commit and must not be moved,
 - **Reviewable Excel handoff** (#427): `export-model --out`, `import-excel-review`, and external
   proposal validation now support a strict, proposal-only reviewer round trip. Review rows without
   stable IDs are rejected rather than silently skipped.
+- **Transactional proposal application** (#514): canonical edits are validated before mutation,
+  staged and backed up under `generated/patch-transactions/`, atomically replaced, and recorded in
+  a durable receipt. Failed commits restore the exact backup and leave a rollback receipt.
 - **Static docs build** (#59): Generate static Markdown documentation from the model index.
 - **Usage report** (#89): Aggregate audit events into command and status summaries via `usage-report` CLI.
 - **Config guard** (#43): Scan repositories for secrets and configuration guardrail issues.

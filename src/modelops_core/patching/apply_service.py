@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import hashlib
+import json
+import os
+import shutil
+import tempfile
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -35,6 +39,7 @@ class ApplyResult:
     risk_assessment: dict[str, Any] = field(default_factory=dict)
     approved_change_request_id: str | None = None
     pre_write_warnings: list[str] = field(default_factory=list)
+    receipt_path: str | None = None
 
 
 @dataclass
@@ -174,6 +179,14 @@ def _build_candidate_update_object(op: Any, repo_model_path: Path) -> ParsedObje
     target_field = op.target_path or ""
     if not target_field:
         raise ValueError("update_object requires target_path")
+
+    if op.before is not None:
+        current_value = _get_nested_value(frontmatter, target_field)
+        if current_value != op.before:
+            raise ValueError(
+                f"Before-state mismatch for '{object_id}.{target_field}': "
+                f"expected {op.before!r}, found {current_value!r}."
+            )
 
     if "." in target_field:
         parts = target_field.split(".")
@@ -417,7 +430,86 @@ def _rollback(backup_state: dict[Path, str | None]) -> None:
             if path.exists():
                 path.unlink()
         else:
-            path.write_text(original, encoding="utf-8")
+            _atomic_write(path, original)
+
+
+def _atomic_write(path: Path, content: str) -> None:
+    """Replace a canonical file atomically within its existing filesystem."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", dir=path.parent, prefix=f".{path.name}.", delete=False
+    ) as handle:
+        handle.write(content)
+        temporary_path = Path(handle.name)
+    os.replace(temporary_path, path)
+
+
+def _transaction_directory(repo_root: Path, proposal_id: str) -> Path:
+    safe_id = proposal_id.replace("/", "-")
+    directory = (
+        resolve_generated_path(repo_root)
+        / "patch-transactions"
+        / (f"{_now_iso().replace(':', '').replace('-', '')}-{safe_id}")
+    )
+    (directory / "staging").mkdir(parents=True, exist_ok=False)
+    (directory / "backups").mkdir(parents=True, exist_ok=True)
+    return directory
+
+
+def _stage_transaction(
+    repo_model_path: Path,
+    transaction_dir: Path,
+    writes: dict[Path, str],
+    backup_state: dict[Path, str | None],
+) -> None:
+    """Persist exact backups and staged replacements before canonical mutation."""
+    for target_path, content in writes.items():
+        relative = target_path.relative_to(repo_model_path)
+        backup_path = transaction_dir / "backups" / relative
+        stage_path = transaction_dir / "staging" / relative
+        if target_path.exists():
+            original = target_path.read_text(encoding="utf-8")
+            backup_state[target_path] = original
+            backup_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(target_path, backup_path)
+        else:
+            backup_state[target_path] = None
+        stage_path.parent.mkdir(parents=True, exist_ok=True)
+        stage_path.write_text(content, encoding="utf-8")
+
+
+def _commit_transaction(
+    repo_model_path: Path, transaction_dir: Path, writes: dict[Path, str]
+) -> None:
+    for target_path in writes:
+        staged_path = transaction_dir / "staging" / target_path.relative_to(repo_model_path)
+        _atomic_write(target_path, staged_path.read_text(encoding="utf-8"))
+
+
+def _write_transaction_receipt(
+    transaction_dir: Path,
+    proposal_id: str,
+    changed_files: list[str],
+    status: str,
+    error: str | None = None,
+) -> Path:
+    receipt = transaction_dir / "receipt.json"
+    receipt.write_text(
+        json.dumps(
+            {
+                "proposal_id": proposal_id,
+                "status": status,
+                "created_at": _now_iso(),
+                "changed_files": changed_files,
+                "error": error,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return receipt
 
 
 def _write_dry_run_audit_event(
@@ -674,6 +766,8 @@ def apply_patch_proposal(
     backup_state: dict[Path, str | None] = {}
     changed_files: list[str] = []
     pre_write_warnings: list[str] = []
+    staged_writes: dict[Path, str] = {}
+    transaction_dir: Path | None = None
 
     current_objects = [parse_file(f) for f in scan_repository(repo_model_path)]
     config = load_repo_config(repo_model_path.parent)
@@ -719,27 +813,28 @@ def apply_patch_proposal(
                     if r.severity == ValidationSeverity.WARNING
                 )
 
-            if canonical_op == "update_object":
-                modified_path = _apply_update_object(op, repo_model_path, backup_state)
-                changed_files.append(str(modified_path.resolve()))
-            elif canonical_op == "create_object":
-                created_path = _apply_create_object(op, repo_model_path, backup_state)
-                changed_files.append(str(created_path.resolve()))
+            target_path = Path(candidate.source_path)
+            if target_path in staged_writes and canonical_op == "create_object":
+                raise FileExistsError(f"Cannot create_object: file already exists {target_path}")
+            staged_writes[target_path] = _render_markdown(
+                candidate.frontmatter or {}, candidate.body
+            )
+            changed_files.append(str(target_path.resolve()))
 
             current_objects = candidate_objects
 
-        files = scan_repository(repo_model_path)
-        parsed_objects = [parse_file(f) for f in files]
-        validation_summary = validate_objects(parsed_objects, enabled_packs)
+        validation_summary = validate_objects(current_objects, enabled_packs)
 
         if not validation_summary.is_valid:
-            _rollback(backup_state)
             raise ValueError(
                 f"Post-apply validation failed with {validation_summary.error_count} error(s). "
-                "All changes have been rolled back."
+                "No canonical files were changed."
             )
 
         repo_root = repo_model_path.parent
+        transaction_dir = _transaction_directory(repo_root, proposal_id)
+        _stage_transaction(repo_model_path, transaction_dir, staged_writes, backup_state)
+        _commit_transaction(repo_model_path, transaction_dir, staged_writes)
         audit_event_id = _write_audit_event(
             repo_root,
             proposal_id,
@@ -758,6 +853,9 @@ def apply_patch_proposal(
         )
 
         _update_proposal_metadata(proposal_path, changed_files, audit_event_id)
+        receipt_path = _write_transaction_receipt(
+            transaction_dir, proposal_id, changed_files, "committed"
+        )
 
         db_path = resolve_generated_path(repo_root) / "modelops.db"
         index_rebuilt = False
@@ -792,10 +890,15 @@ def apply_patch_proposal(
                 "affected_object_count": risk.affected_object_count,
                 "max_impact_depth": risk.max_impact_depth,
             },
+            receipt_path=str(receipt_path.resolve()),
         )
 
     except Exception as exc:
         _rollback(backup_state)
+        if transaction_dir is not None:
+            _write_transaction_receipt(
+                transaction_dir, proposal_id, changed_files, "rolled_back", error=str(exc)
+            )
         try:
             from modelops_core.reports.audit_service import (
                 AuditEventService,

@@ -199,6 +199,7 @@ Governance review finds owner change, LoV update, rule change, or mapping change
 | Every change must have a `ChangeRequest` | Audit events reference a CR ID |
 | High-risk changes require explicit approval | Risk rules computed before apply (see issue #32) |
 | Invalid proposals cannot be applied | Post-apply validation fails -> rollback |
+| Applied files remain recoverable | Validated changes stage under `generated/patch-transactions/`; exact backups and a receipt are written before atomic replacement |
 | All states are reversible until `applied` | Rejected CRs stay in repo for audit |
 
 ---
