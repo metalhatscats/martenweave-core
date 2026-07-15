@@ -198,7 +198,12 @@ function Brand() {
 }
 
 function Sidebar({ route, navigate, open, onClose, onWorkspace }) {
+  const { capabilities, demo } = useApi();
   const activeRoute = route === "object" ? "models" : route === "proposal" ? "proposals" : route;
+  const workspaceLabel = demo ? "Demo workspace" : "Local workspace";
+  const workspaceDetail = demo
+    ? "API unavailable · sample data"
+    : `Core ${capabilities?.version || "—"} · ${capabilities?.read_only ? "read-only" : "local"}`;
   return (
     <>
       {open && <button className="mobile-scrim" aria-label="Close navigation" onClick={onClose} />}
@@ -218,7 +223,6 @@ function Sidebar({ route, navigate, open, onClose, onWorkspace }) {
               >
                 <Icon size={20} weight={activeRoute === id ? "fill" : "regular"} />
                 <span>{label}</span>
-                {id === "gaps" && <span className="nav-count">5</span>}
               </button>
             ))}
           </nav>
@@ -226,8 +230,8 @@ function Sidebar({ route, navigate, open, onClose, onWorkspace }) {
         <button className="repo-switcher" type="button" onClick={onWorkspace}>
           <span className="status-dot" />
           <span>
-            <strong>Customer migration</strong>
-            <small>Production · v2.4.1</small>
+            <strong>{workspaceLabel}</strong>
+            <small>{workspaceDetail}</small>
           </span>
           <CaretRight size={14} />
         </button>
@@ -237,10 +241,19 @@ function Sidebar({ route, navigate, open, onClose, onWorkspace }) {
 }
 
 function Topbar({ route, navigate, title, onMenu, actions }) {
+  const { capabilities, demo, state } = useApi();
   const [searchOpen, setSearchOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [query, setQuery] = useState("");
   const profileRef = useRef(null);
+  const workspaceLabel = demo ? "Demo workspace" : "Local workspace";
+  const connectionLabel = demo
+    ? "Demo mode"
+    : capabilities?.read_only
+      ? "Read-only"
+      : state === API_STATE.CONNECTED
+        ? "Local API"
+        : "Connecting";
 
   useEffect(() => {
     if (!profileOpen) return;
@@ -275,7 +288,7 @@ function Topbar({ route, navigate, title, onMenu, actions }) {
           <SidebarSimple size={21} />
         </button>
         <div className="breadcrumb">
-          <span>Customer migration</span>
+          <span>{workspaceLabel}</span>
           <CaretRight size={13} />
           <strong>{title || ROUTE_TITLES[route] || "Workspace"}</strong>
         </div>
@@ -309,23 +322,23 @@ function Topbar({ route, navigate, title, onMenu, actions }) {
         </button>
         <span className="environment-pill">
           <span className="status-dot" />
-          Production
+          {connectionLabel}
         </span>
         <button className="icon-button notification-button" onClick={() => actions.open({ type: "activity" })} aria-label="Workspace activity">
           <Bell size={17} /><span />
         </button>
         <div className="profile-wrap" ref={profileRef}>
           <button className="profile-button" onClick={() => setProfileOpen((value) => !value)}>
-            <span className="avatar">AC</span>
+            <span className="avatar">MW</span>
             <span className="profile-copy">
-              <strong>Alex Chen</strong>
-              <small>Data Steward</small>
+              <strong>{workspaceLabel}</strong>
+              <small>{demo ? "Sample data" : "No user identity"}</small>
             </span>
             <CaretDown size={14} />
           </button>
           {profileOpen && (
             <div className="profile-menu">
-              <button onClick={() => { setProfileOpen(false); actions.open({ type: "workspace" }); }}><UserCircle size={17} /> Workspace profile</button>
+              <button onClick={() => { setProfileOpen(false); actions.open({ type: "workspace" }); }}><UserCircle size={17} /> Workspace status</button>
               <button onClick={() => { setProfileOpen(false); actions.open({ type: "shortcuts" }); }}><SlidersHorizontal size={17} /> Keyboard shortcuts</button>
               <button onClick={() => { setProfileOpen(false); actions.open({ type: "workspace" }); }}><Archive size={17} /> Repository context</button>
             </div>

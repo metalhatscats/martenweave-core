@@ -30,7 +30,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { fields, gaps, modelObjects, proposals, recentActivity } from "./data.js";
-import { useWorkspaceActivity } from "./api.jsx";
+import { useApi, useWorkspaceActivity } from "./api.jsx";
 
 const LEDGER_ROWS = [
   {
@@ -601,6 +601,7 @@ export function ChangelogScreen() {
 }
 
 export function SettingsScreen({ onToast, onShortcuts }) {
+  const { capabilities, demo } = useApi();
   const [strictValidation, setStrictValidation] = useState(true);
   const [blockInvalid, setBlockInvalid] = useState(true);
   const [includeAudit, setIncludeAudit] = useState(true);
@@ -614,10 +615,11 @@ export function SettingsScreen({ onToast, onShortcuts }) {
         <section className="surface">
           <div className="section-title"><div><h2>Repository</h2><p>Canonical truth and rebuildable output locations</p></div><span className="status-dot" /></div>
           <dl>
-            <dt>Workspace</dt><dd>Customer migration</dd>
-            <dt>Canonical model</dt><dd><code>examples/customer_bp_model/model</code></dd>
-            <dt>Generated index</dt><dd><code>examples/customer_bp_model/generated/modelops.db</code></dd>
-            <dt>Configuration</dt><dd><code>modelops.config.yaml</code></dd>
+            <dt>Workspace</dt><dd>{demo ? "Demo workspace" : "Local workspace"}</dd>
+            <dt>Core version</dt><dd><code>{capabilities?.version || "Unavailable"}</code></dd>
+            <dt>API contract</dt><dd><code>{capabilities?.api_version || "Unavailable"}</code></dd>
+            <dt>Canonical model</dt><dd><code>model/ (authoritative)</code></dd>
+            <dt>Generated index</dt><dd><code>{capabilities?.indexed ? "Available (disposable)" : "Not available"}</code></dd>
           </dl>
         </section>
         <section className="surface">
@@ -634,8 +636,8 @@ export function SettingsScreen({ onToast, onShortcuts }) {
           <div className="section-title"><div><h2>Integration surfaces</h2><p>Local processes using the same core services</p></div></div>
           {[
             ["CLI", "modelops validate · build-index · impact", "Available"],
-            ["Local API", "127.0.0.1 only", "Ready"],
-            ["MCP server", "Tool surface for agent workflows", "Ready"],
+            ["Local API", "127.0.0.1 only", demo ? "Demo mode" : "Connected"],
+            ["MCP server", "Tool surface for agent workflows", "Local only"],
           ].map(([name, description, status]) => <div className="integration-row" key={name}><span><strong>{name}</strong><small>{description}</small></span><span><i className="status-dot" />{status}</span></div>)}
         </section>
         <section className="surface shortcut-settings">
@@ -885,13 +887,14 @@ function ActivityDialog({ onClose, navigate }) {
 }
 
 function WorkspaceDialog({ onClose }) {
-  const [environment, setEnvironment] = useState("Production");
+  const { capabilities, demo, state } = useApi();
+  const indexed = Boolean(capabilities?.indexed);
   return (
     <ModalFrame title="Workspace" subtitle="Local repository context for this investigation." onClose={onClose} className="workspace-modal">
-      <div className="workspace-summary"><img src="/martenweave-logo.png" alt="" /><span><strong>Customer migration</strong><small>examples/customer_bp_model</small></span><StatusBadge value="Validated" /></div>
-      <dl className="workspace-details"><dt>Version</dt><dd>v2.4.1</dd><dt>Objects</dt><dd>24 canonical</dd><dt>Generated index</dt><dd>Fresh · 2m ago</dd><dt>Environment</dt><dd><select value={environment} onChange={(event) => setEnvironment(event.target.value)}><option>Production</option><option>Review</option><option>Draft</option></select></dd></dl>
-      <div className="export-note"><ShieldCheck size={17} /> Changing the prototype environment does not mutate repository files.</div>
-      <footer><button className="primary-button" onClick={onClose}>Apply workspace view</button></footer>
+      <div className="workspace-summary"><img src="/martenweave-logo.png" alt="" /><span><strong>{demo ? "Demo workspace" : "Local workspace"}</strong><small>{demo ? "Sample data only" : "Repository path hidden for local privacy"}</small></span><StatusBadge value={indexed ? "Validated" : "Index needed"} /></div>
+      <dl className="workspace-details"><dt>Core version</dt><dd>{capabilities?.version || "Unavailable"}</dd><dt>API contract</dt><dd>{capabilities?.api_version || "Unavailable"}</dd><dt>Canonical files</dt><dd>{capabilities?.canonical_files ?? "—"}</dd><dt>Mode</dt><dd>{demo ? "Demo" : capabilities?.read_only ? "Read-only" : state === API_STATE.CONNECTED ? "Connected local" : "Connecting"}</dd></dl>
+      <div className="export-note"><ShieldCheck size={17} /> Canonical files remain authoritative; indexes and reports are disposable local outputs.</div>
+      <footer><button className="primary-button" onClick={onClose}>Close</button></footer>
     </ModalFrame>
   );
 }

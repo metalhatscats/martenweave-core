@@ -22,6 +22,9 @@ All notable changes to Martenweave Core.
 - **Live workspace activity (#507):** the Workbench now reads append-only local audit history through
   `/api/v1/activity`, labels generated/index events separately from canonical changes, and preserves
   an explicit demo-only fallback when the local API is unavailable.
+- **Local workspace trust state (#503):** the Workbench chrome now uses local API capabilities for
+  Core/API version, repository mode, index availability, and read-only state. It labels demo data
+  explicitly and no longer presents a local repository as production or a fictional signed-in user.
 - **Assessment lifecycle comparison (#513):** `martenweave assessment compare` produces JSON and
   Markdown reports that use stable finding IDs to classify new, unchanged, resolved, reopened, and
   severity-changed findings, while separating workbook/evidence, canonical model, configuration,

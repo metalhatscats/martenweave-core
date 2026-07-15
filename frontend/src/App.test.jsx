@@ -1,9 +1,11 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { App } from "./App";
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   window.location.hash = "#/";
 });
 
@@ -14,6 +16,38 @@ describe("Martenweave workbench", () => {
     expect(screen.getByRole("heading", { name: "Canonical model ledger" })).toBeInTheDocument();
     expect(screen.getAllByText("ATTR-BP-TAX-NUMBER").length).toBeGreaterThan(0);
     expect(screen.getByText("AI proposes. Validators verify. Humans approve.")).toBeInTheDocument();
+  });
+
+  it("labels an unavailable local backend as demo data without fictional identity", async () => {
+    window.location.hash = "#/home";
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+    render(<App />);
+
+    await waitFor(() => expect(screen.getAllByText("Demo workspace").length).toBeGreaterThan(0));
+    expect(screen.getAllByText("Demo mode").length).toBeGreaterThan(0);
+    fireEvent.click(document.querySelector(".profile-button"));
+    expect(screen.getByText("Sample data")).toBeInTheDocument();
+    expect(screen.queryByText("Production")).not.toBeInTheDocument();
+  });
+
+  it("derives the workspace label and version from the local API", async () => {
+    window.location.hash = "#/home";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        api_version: "v1",
+        version: "0.5.0",
+        indexed: true,
+        canonical_files: 24,
+        read_only: true,
+      }),
+      text: () => Promise.resolve(""),
+    }));
+    render(<App />);
+
+    await waitFor(() => expect(screen.getAllByText("Local workspace").length).toBeGreaterThan(0));
+    expect(screen.getByText("Read-only")).toBeInTheDocument();
   });
 
   it("navigates to models and filters by query", async () => {
