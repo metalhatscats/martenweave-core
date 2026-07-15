@@ -75,7 +75,7 @@ describe("Martenweave workbench", () => {
 
     await waitFor(() => expect(screen.getByText("review.md")).toBeInTheDocument());
     expect(screen.getByText("assessment/review.md")).toBeInTheDocument();
-    expect(screen.getByText("MD · local only")).toBeInTheDocument();
+    expect(screen.getByText("MD · Local only — review before sharing")).toBeInTheDocument();
     expect(screen.queryByText("customer-migration-model-index-2026-07-03.csv")).not.toBeInTheDocument();
   });
 

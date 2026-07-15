@@ -560,13 +560,26 @@ export function ReportsScreen({ onExport }) {
     }
   };
 
+  function safetyLabel(classification) {
+    if (classification === "sanitized_bundle") return "Sanitized for external sharing";
+    if (classification === "local_only") return "Local only — review before sharing";
+    return classification.replaceAll("_", " ");
+  }
+
+  function safetyTone(classification) {
+    if (classification === "sanitized_bundle") return "green";
+    if (classification === "local_only") return "orange";
+    return "neutral";
+  }
+
   const reports = demo
-    ? demoReports.map(([name, file, time, meta]) => ({ name, file, time, meta, downloadUrl: null }))
+    ? demoReports.map(([name, file, time, meta]) => ({ name, file, time, meta, downloadUrl: null, safety: null }))
     : liveArtifacts.map((artifact) => ({
       name: artifact.name,
       file: artifact.artifact_id,
       time: new Date(artifact.created_at).toLocaleString(),
-      meta: `${artifact.format} · ${artifact.safety_classification.replaceAll("_", " ")}`,
+      meta: `${artifact.format}`,
+      safety: artifact.safety_classification,
       downloadUrl: client.reportDownloadUrl(artifact.artifact_id),
     }));
   return (
@@ -584,13 +597,17 @@ export function ReportsScreen({ onExport }) {
       </div>
       {(generateError || error) && <p className="inline-error">{generateError || error}</p>}
       <section className="surface recent-exports">
-        <div className="section-title"><div><h2>Recent outputs</h2><p>{demo ? "Demo artifacts — local API is unavailable." : "Generated locally from rebuildable repository data."}</p></div></div>
+        <div className="section-title"><div><h2>Recent outputs</h2><p>{demo ? "Demo artifacts — local API is unavailable." : "Generated locally from rebuildable repository data. Safety classification is shown for each artifact."}</p></div></div>
         {loading && <p>Loading generated artifacts…</p>}
         {error && <p>Generated artifact inventory could not be loaded: {error}</p>}
         {!loading && !error && reports.length === 0 && !demo && <p>No generated report artifacts are available in this workspace.</p>}
-        {reports.map(({ name, file, time, meta, downloadUrl }) => (
+        {reports.map(({ name, file, time, meta, safety, downloadUrl }) => (
           <button key={file} onClick={() => downloadUrl ? window.location.assign(downloadUrl) : onExport(name.toLowerCase().split(" ")[0])}>
-            <FileArrowDown size={18} /><span><strong>{name}</strong><code>{file}</code></span><small>{meta}</small><time>{time}</time><ArrowRight size={15} />
+            <FileArrowDown size={18} />
+            <span><strong>{name}</strong><code>{file}</code></span>
+            <small>{meta}{safety ? ` · ${safetyLabel(safety)}` : ""}</small>
+            <time>{time}</time>
+            <ArrowRight size={15} />
           </button>
         ))}
       </section>
