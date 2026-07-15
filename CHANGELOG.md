@@ -6,6 +6,9 @@ All notable changes to Martenweave Core.
 
 ### Changed
 
+- **Deterministic evidence ingestion (#430):** `martenweave evidence ingest` turns local Markdown
+  notes and CSV/XLSX validation reports into a validated external `PatchProposal` containing
+  candidate Issues and source hash metadata. It never writes canonical model files directly.
 - **Workbook-first pilot bootstrap (#489):** `martenweave bootstrap-assessment` initializes an
   empty local repository from an `.xlsx` mapping workbook, profiles its evidence, and writes a
   deterministic draft proposal and review report without applying inferred canonical objects.

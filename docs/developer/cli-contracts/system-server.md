@@ -5,6 +5,7 @@
 ```bash
 modelops clean --repo <repo> --dry-run
 modelops bootstrap-assessment --mapping <workbook.xlsx> --name <pilot> --out-repo <repo> [--dataset <sample.csv|sample.xlsx>] [--json]
+modelops evidence ingest --repo <repo> --from <note.md|validation.csv|validation.xlsx> --out <proposal.md> [--json]
 modelops diff <base-repo> <head-repo> --json
 modelops migrate --repo <repo>
 modelops serve --repo <repo> --host <host> --port <port>
@@ -24,6 +25,12 @@ Stable fields: `repo`, `proposal_id`, `proposal`, `report_json`, `report_markdow
 initializes an empty local repository and creates a draft `PatchProposal`; inferred canonical objects
 remain operations for human review. Invalid or unsupported workbooks leave a diagnostics file and no
 proposal rather than applying any inferred object.
+
+### `evidence ingest --json`
+
+Stable fields: `proposal_id`, `path`, `finding_count`, `source_sha256`, `validation_status`, and
+`canonical_files_changed`. Ingestion emits candidate `Issue` creation operations into an external
+draft proposal; it never changes canonical files and rejects unsupported input formats.
 
 ### `diff --json`
 

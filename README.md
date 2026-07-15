@@ -266,6 +266,7 @@ For a release-grade demo path that exercises validation, indexing, search, trace
 | `pilot-preflight` | Metadata-only safety checks for pilot inputs |
 | `assessment-review` | Record dispositions and promote confirmed findings |
 | `bootstrap-assessment` | Initialize a proposal-only pilot from an SAP mapping workbook |
+| `evidence ingest` | Turn local notes or validation reports into a reviewable proposal |
 
 `docs-build` produces disposable generated files such as `index.html`, `objects.html`,
 `gaps.html`, `decisions.html`, `owners.html`, object detail pages, `search-index.json`, and
@@ -356,6 +357,22 @@ model object is created.
   --mapping ./sap-customer-mapping.xlsx \
   --name "SAP Customer Pilot" \
   --out-repo ./sap-customer-pilot
+```
+
+### Evidence Ingestion
+
+Turn a local Markdown note or CSV/XLSX validation report into a deterministic, reviewable
+`PatchProposal`. The evidence file remains an input: no canonical file is changed by ingestion.
+
+```bash
+.venv/bin/martenweave evidence ingest \
+  --repo examples/customer_bp_model \
+  --from ./validation-report.csv \
+  --out /tmp/evidence-proposal.md
+
+.venv/bin/martenweave proposal validate \
+  --repo examples/customer_bp_model \
+  --proposal /tmp/evidence-proposal.md
 ```
 
 ## Example Models

@@ -3299,6 +3299,62 @@ def pilot_preflight(
 
 
 # ---------------------------------------------------------------------------
+# Evidence ingestion subcommands
+# ---------------------------------------------------------------------------
+evidence_app = typer.Typer(
+    name="evidence",
+    help="Create reviewable proposals from local project evidence.",
+)
+app.add_typer(evidence_app, name="evidence")
+
+
+@evidence_app.command("ingest")
+@with_telemetry("evidence-ingest")
+def evidence_ingest(
+    source: Path = typer.Option(  # noqa: B008
+        ..., "--from", help="Markdown/text note or CSV/XLSX validation report."
+    ),
+    repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Explicit output path for the reviewable PatchProposal Markdown file."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output proposal metadata as JSON."),
+) -> None:
+    """Extract deterministic candidate Issues into a proposal without mutating canonical files."""
+    from modelops_core.evidence_ingestion import (
+        EvidenceIngestionError,
+        ingest_evidence,
+        write_evidence_proposal,
+    )
+
+    repo_root = _resolve_repo(repo)
+    try:
+        result = ingest_evidence(source, resolve_model_path(repo_root))
+        output_path = write_evidence_proposal(result, out)
+    except EvidenceIngestionError as exc:
+        if json_output:
+            print(json.dumps({"error": str(exc)}, indent=2))
+        else:
+            console.print(f"[red]Evidence ingestion failed: {exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    payload = {
+        "proposal_id": result.proposal["id"],
+        "path": str(output_path),
+        "finding_count": result.finding_count,
+        "source_sha256": result.source_sha256,
+        "validation_status": "valid",
+        "canonical_files_changed": False,
+    }
+    if json_output:
+        print(json.dumps(payload, indent=2))
+        return
+    console.print(f"[green]Review proposal written: {output_path}[/green]")
+    console.print(f"  Candidate findings: {result.finding_count}")
+    console.print("  Canonical files changed: no")
+
+
+# ---------------------------------------------------------------------------
 # Issue-draft subcommands
 # ---------------------------------------------------------------------------
 draft_app = typer.Typer(
