@@ -30,7 +30,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { fields, gaps, modelObjects, proposals, recentActivity } from "./data.js";
-import { useApi, useImportPreview, useImportProfile, useReportGenerate, useWorkspaceActivity } from "./api.jsx";
+import { useApi, useImportPreview, useImportProfile, useImportPropose, useImportValidate, useReportGenerate, useWorkspaceActivity } from "./api.jsx";
 
 const LEDGER_ROWS = [
   {
@@ -508,7 +508,7 @@ export function WorkspaceScreen({ navigate, onImport, onExport, onCommands, onSh
   );
 }
 
-export function ReportsScreen({ onExport }) {
+export function ReportsScreen({ navigate, onExport }) {
   const { client, demo } = useApi();
   const [liveArtifacts, setLiveArtifacts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -517,6 +517,12 @@ export function ReportsScreen({ onExport }) {
   const [comparison, setComparison] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const { run: generateReport, loading: generating, error: generateError } = useReportGenerate();
+  const [workbookFile, setWorkbookFile] = useState(null);
+  const [validation, setValidation] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const { run: validateWorkbook, loading: validating, error: validateError } = useImportValidate();
+  const { run: previewWorkbook, loading: previewing, error: previewError } = useImportPreview();
+  const { run: proposeWorkbook, loading: proposing, error: proposeError } = useImportPropose();
   const demoReports = [
     ["Model index", "customer-migration-model-index-2026-07-03.csv", "2m ago", "24 objects"],
     ["Gap report", "customer-migration-gaps-2026-07-03.xlsx", "18m ago", "5 gaps"],
@@ -560,6 +566,46 @@ export function ReportsScreen({ onExport }) {
     }
   };
 
+  const handleFileChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    setWorkbookFile(file);
+    setValidation(null);
+    setPreview(null);
+  };
+
+  const handleValidate = async () => {
+    if (!workbookFile || demo) return;
+    try {
+      const result = await validateWorkbook(workbookFile);
+      setValidation(result);
+    } catch {
+      setValidation(null);
+    }
+  };
+
+  const handlePreview = async () => {
+    if (!workbookFile || demo) return;
+    try {
+      const result = await previewWorkbook(workbookFile);
+      setPreview(result.proposal);
+    } catch {
+      setPreview(null);
+    }
+  };
+
+  const handlePropose = async () => {
+    if (!workbookFile || demo) return;
+    try {
+      const result = await proposeWorkbook(workbookFile);
+      setWorkbookFile(null);
+      setValidation(null);
+      setPreview(null);
+      if (navigate) navigate("proposals");
+    } catch {
+      // error surfaced by hook
+    }
+  };
+
   function safetyLabel(classification) {
     if (classification === "sanitized_bundle") return "Sanitized for external sharing";
     if (classification === "local_only") return "Local only — review before sharing";
@@ -596,6 +642,69 @@ export function ReportsScreen({ onExport }) {
         ))}
       </div>
       {(generateError || error) && <p className="inline-error">{generateError || error}</p>}
+      {!demo && (
+        <section className="surface review-workbook-return">
+          <div className="section-title"><div><h2>Return reviewed workbook</h2><p>Import a reviewed business-review workbook, validate its identity, preview changes, and create a PatchProposal.</p></div></div>
+          <div className="import-workbook-form">
+            <label className="file-input-label">
+              <UploadSimple size={18} />
+              <span>{workbookFile ? workbookFile.name : "Choose business-review workbook (.xlsx)"}</span>
+              <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={handleFileChange} />
+            </label>
+            <div className="import-workbook-actions">
+              <button className="secondary-button" onClick={handleValidate} disabled={!workbookFile || validating || previewing || proposing}>
+                {validating ? "Validating…" : "Validate"}
+              </button>
+              <button className="secondary-button" onClick={handlePreview} disabled={!workbookFile || previewing || proposing || (validation && !validation.valid)}>
+                {previewing ? "Previewing…" : "Preview changes"}
+              </button>
+              <button className="primary-button" onClick={handlePropose} disabled={!workbookFile || proposing || (validation && !validation.valid)}>
+                {proposing ? "Creating proposal…" : "Create proposal"}
+              </button>
+            </div>
+          </div>
+          {(validateError || previewError || proposeError) && (
+            <p className="inline-error">{validateError || previewError || proposeError}</p>
+          )}
+          {validation && (
+            <div className={`import-validation ${validation.valid ? "valid" : "invalid"}`}>
+              <p><strong>{validation.valid ? "Workbook is valid" : "Workbook is not valid"}</strong></p>
+              <p>{validation.overlap_count} of {validation.workbook_object_count} workbook IDs match {validation.existing_object_count} existing objects.</p>
+              {validation.errors.length > 0 && (
+                <div className="validation-messages">
+                  <strong>Errors</strong>
+                  <ul>{validation.errors.map((err, idx) => <li key={idx}>{err}</li>)}</ul>
+                </div>
+              )}
+              {validation.warnings.length > 0 && (
+                <div className="validation-messages">
+                  <strong>Warnings</strong>
+                  <ul>{validation.warnings.map((warn, idx) => <li key={idx}>{warn}</li>)}</ul>
+                </div>
+              )}
+            </div>
+          )}
+          {preview && (
+            <div className="import-preview">
+              <p><strong>Preview: {preview.operations?.length || 0} operations</strong></p>
+              {preview.warnings?.length > 0 && (
+                <div className="validation-messages">
+                  <strong>Warnings</strong>
+                  <ul>{preview.warnings.map((warn, idx) => <li key={idx}>{warn}</li>)}</ul>
+                </div>
+              )}
+              {preview.operations?.length > 0 && (
+                <ul className="preview-operations">
+                  {preview.operations.slice(0, 10).map((op, idx) => (
+                    <li key={idx}>{op.op} <code>{op.object_id}</code>{op.target_path ? ` · ${op.target_path}` : ""}</li>
+                  ))}
+                  {preview.operations.length > 10 && <li>…and {preview.operations.length - 10} more</li>}
+                </ul>
+              )}
+            </div>
+          )}
+        </section>
+      )}
       <section className="surface recent-exports">
         <div className="section-title"><div><h2>Recent outputs</h2><p>{demo ? "Demo artifacts — local API is unavailable." : "Generated locally from rebuildable repository data. Safety classification is shown for each artifact."}</p></div></div>
         {loading && <p>Loading generated artifacts…</p>}

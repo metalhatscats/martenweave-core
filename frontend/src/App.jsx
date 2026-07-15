@@ -2155,7 +2155,7 @@ export function App({ apiBaseUrl }) {
     gaps: <GapsScreen navigate={navigate} params={params} onDraft={actions.draft} onToast={actions.toast} />,
     proposals: <ProposalsScreen navigate={navigate} onDraft={actions.draft} refreshKey={proposalRefreshKey} />,
     proposal: <ProposalScreen navigate={navigate} params={params} onToast={actions.toast} onRefreshProposals={actions.refreshProposals} refreshKey={proposalRefreshKey} />,
-    reports: <ReportsScreen onExport={actions.export} />,
+    reports: <ReportsScreen navigate={navigate} onExport={actions.export} />,
     changelog: <ChangelogScreen navigate={navigate} refreshKey={proposalRefreshKey} />,
     settings: <SettingsScreen onToast={actions.toast} onShortcuts={actions.shortcuts} />,
   }[route] || <WorkspaceScreen navigate={navigate} onImport={actions.import} onExport={actions.export} onCommands={actions.commands} onShortcuts={actions.shortcuts} refreshKey={proposalRefreshKey} />;

@@ -139,6 +139,8 @@ import { lineageEdges, lineageNodes, modelObjects, proposals as demoProposals } 
  * @property {(body: {assessment: string, finding_id: string, created_by?: string}) => Promise<{finding_id: string, proposal_id: string, proposal_path: string}>} promoteFinding
  * @property {(file: File, dataset_id?: string) => Promise<ProfileResponse>} importProfile
  * @property {(file: File) => Promise<PreviewResponse>} importPreview
+ * @property {(file: File) => Promise<ImportValidateResponse>} importValidate
+ * @property {(file: File) => Promise<ImportProposeResponse>} importPropose
  * @property {(format: string, business_review?: boolean) => Promise<ExportModelResponse>} exportModel
  * @property {(reportType: string, format?: string | null) => Promise<{artifact_id: string, name: string, format: string, created_at: string}>} generateReport
  * @property {(limit?: number) => Promise<{total_count: number, artifacts: any[]}>} reports
@@ -296,6 +298,24 @@ import { lineageEdges, lineageNodes, modelObjects, proposals as demoProposals } 
 /**
  * @typedef {object} PreviewResponse
  * @property {ProposalResponse} proposal
+ * @property {string[]} warnings
+ */
+
+/**
+ * @typedef {object} ImportValidateResponse
+ * @property {boolean} valid
+ * @property {string[]} errors
+ * @property {string[]} warnings
+ * @property {number} workbook_object_count
+ * @property {number} existing_object_count
+ * @property {number} overlap_count
+ */
+
+/**
+ * @typedef {object} ImportProposeResponse
+ * @property {string} proposal_id
+ * @property {string} proposal_path
+ * @property {number} operations_count
  * @property {string[]} warnings
  */
 
@@ -472,6 +492,8 @@ export function createApiClient(baseUrl) {
     promoteFinding: (body) => postJson(`${root}/api/v1/findings/promote`, body),
     importProfile: (file, dataset_id) => postMultipart(`${root}/api/v1/imports/profile`, file, { dataset_id }),
     importPreview: (file) => postMultipart(`${root}/api/v1/imports/preview`, file),
+    importValidate: (file) => postMultipart(`${root}/api/v1/imports/validate`, file),
+    importPropose: (file) => postMultipart(`${root}/api/v1/imports/propose`, file),
     exportModel: (format, business_review = false) => postJson(
       `${root}/api/v1/exports?format=${encodeURIComponent(format)}&business_review=${encodeURIComponent(business_review)}`,
       {}
@@ -1160,6 +1182,24 @@ export function useImportProfile() {
  */
 export function useImportPreview() {
   return useImportMutation((client, file) => client.importPreview(file));
+}
+
+/**
+ * Mutation hook for validating a returned review workbook.
+ *
+ * @returns {{ run: (file: File) => Promise<ImportValidateResponse>, loading: boolean, error: string|null, result: ImportValidateResponse|null }}
+ */
+export function useImportValidate() {
+  return useImportMutation((client, file) => client.importValidate(file));
+}
+
+/**
+ * Mutation hook for turning a validated review workbook into a PatchProposal.
+ *
+ * @returns {{ run: (file: File) => Promise<ImportProposeResponse>, loading: boolean, error: string|null, result: ImportProposeResponse|null }}
+ */
+export function useImportPropose() {
+  return useImportMutation((client, file) => client.importPropose(file));
 }
 
 /**

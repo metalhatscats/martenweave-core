@@ -122,3 +122,138 @@ def test_api_v1_import_preview_xlsx(tmp_path: Path) -> None:
     assert proposal["type"] == "PatchProposal"
     assert proposal["id"].startswith("PP-IMPORT-")
     assert any(op["object_id"] == "ATTR-NEW" for op in proposal["operations"])
+
+
+def _xlsx_buffer(rows: list[list[str]], sheet_title: str = "Attribute") -> BytesIO:
+    openpyxl = pytest.importorskip("openpyxl")
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = sheet_title
+    for row in rows:
+        ws.append(row)
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+
+def test_api_v1_import_validate_valid_review_workbook(tmp_path: Path) -> None:
+    repo = _build_repo(tmp_path)
+    buffer = _xlsx_buffer([
+        ["id", "type", "status", "name", "domain"],
+        ["ATTR-TEST", "Attribute", "draft", "Renamed Attribute", "DOMAIN-TEST"],
+    ])
+
+    response = client.post(
+        "/api/v1/imports/validate",
+        params={"repo": str(repo)},
+        files={
+            "file": (
+                "review.xlsx",
+                buffer,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["valid"] is True
+    assert data["workbook_object_count"] == 1
+    assert data["overlap_count"] == 1
+    assert not data["errors"]
+
+
+def test_api_v1_import_validate_rejects_unrelated_workbook(tmp_path: Path) -> None:
+    repo = _build_repo(tmp_path)
+    buffer = _xlsx_buffer([
+        ["id", "type", "status", "name", "domain"],
+        ["ATTR-OTHER", "Attribute", "draft", "Other Attribute", "DOMAIN-TEST"],
+    ])
+
+    response = client.post(
+        "/api/v1/imports/validate",
+        params={"repo": str(repo)},
+        files={
+            "file": (
+                "review.xlsx",
+                buffer,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["valid"] is False
+    assert data["overlap_count"] == 0
+    assert any("does not match" in err for err in data["errors"])
+
+
+def test_api_v1_import_validate_rejects_workbook_missing_ids(tmp_path: Path) -> None:
+    repo = _build_repo(tmp_path)
+    buffer = _xlsx_buffer([
+        ["id", "type", "status", "name", "domain"],
+        ["", "Attribute", "draft", "Missing ID", "DOMAIN-TEST"],
+    ])
+
+    response = client.post(
+        "/api/v1/imports/validate",
+        params={"repo": str(repo)},
+        files={
+            "file": (
+                "review.xlsx",
+                buffer,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["valid"] is False
+    assert any("missing stable" in err.lower() for err in data["errors"])
+
+
+def test_api_v1_import_propose_creates_patch_proposal(tmp_path: Path) -> None:
+    repo = _build_repo(tmp_path)
+    buffer = _xlsx_buffer([
+        ["id", "type", "status", "name", "domain"],
+        ["ATTR-TEST", "Attribute", "draft", "Renamed Attribute", "DOMAIN-TEST"],
+    ])
+
+    response = client.post(
+        "/api/v1/imports/propose",
+        params={"repo": str(repo)},
+        files={
+            "file": (
+                "review.xlsx",
+                buffer,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["proposal_id"].startswith("PP-IMPORT-")
+    assert data["operations_count"] == 1
+    proposal_path = repo / "model" / "patch-proposals" / f"{data['proposal_id']}.md"
+    assert proposal_path.is_file()
+
+
+def test_api_v1_import_propose_rejects_invalid_workbook(tmp_path: Path) -> None:
+    repo = _build_repo(tmp_path)
+    buffer = _xlsx_buffer([
+        ["id", "type", "status", "name", "domain"],
+        ["ATTR-OTHER", "Attribute", "draft", "Other Attribute", "DOMAIN-TEST"],
+    ])
+
+    response = client.post(
+        "/api/v1/imports/propose",
+        params={"repo": str(repo)},
+        files={
+            "file": (
+                "review.xlsx",
+                buffer,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+    )
+    assert response.status_code == 400

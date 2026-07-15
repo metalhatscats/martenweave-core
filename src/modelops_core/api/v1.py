@@ -27,6 +27,8 @@ from modelops_core.api.models import (
     FindingReviewResponse,
     ImportPreviewResponse,
     ImportProfileResponse,
+    ImportProposeResponse,
+    ImportValidateResponse,
     ObjectDetailResponse,
     PaginatedSearchResponse,
     RelatedObjectItem,
@@ -55,13 +57,20 @@ from modelops_core.imports.dataset_profiler import (
     profile_csv,
     profile_xlsx,
 )
-from modelops_core.imports.model_sheet_import_service import import_model_sheet_xlsx
+from modelops_core.imports.model_sheet_import_service import (
+    _detect_formulas,
+    _load_existing_objects,
+    _read_xlsx,
+    _validate_import,
+    import_model_sheet_xlsx,
+)
 from modelops_core.index import build_index
 from modelops_core.index.query_service import (
     get_object_by_id,
     list_related_objects,
     search_objects,
 )
+from modelops_core.patching.patch_proposal_service import write_patch_proposal
 from modelops_core.pilot.outcome import generate_pilot_outcome, write_pilot_outcome
 from modelops_core.pilot.review import promote_finding, set_review
 from modelops_core.reports.audit_service import AuditEventService
@@ -297,6 +306,18 @@ def capabilities(
             description="Preview an uploaded XLSX workbook as a PatchProposal.",
         ),
         CapabilityEntry(
+            name="import_validate",
+            method="POST",
+            href="/api/v1/imports/validate",
+            description="Validate a returned review workbook before it is turned into a proposal.",
+        ),
+        CapabilityEntry(
+            name="import_propose",
+            method="POST",
+            href="/api/v1/imports/propose",
+            description="Turn a validated review workbook into a reviewable PatchProposal.",
+        ),
+        CapabilityEntry(
             name="export_model",
             method="POST",
             href="/api/v1/exports",
@@ -359,7 +380,8 @@ def reports(
     limit: int = Query(100, ge=1, le=500, description="Maximum artifacts to return"),
 ) -> ReportArtifactResponse:
     """List safe metadata for generated reports; canonical source files are never listed."""
-    generated_root = resolve_generated_path(_resolve_repo(repo))
+    repo_root = _resolve_repo(repo)
+    generated_root = resolve_generated_path(repo_root)
     if not generated_root.exists():
         return ReportArtifactResponse(total_count=0, artifacts=[])
 
@@ -380,6 +402,8 @@ def reports(
             created_at=datetime.fromtimestamp(path.stat().st_mtime, UTC).isoformat(),
             size_bytes=path.stat().st_size,
             safety_classification=_report_safety_classification(path),
+            source_repository=workspace_label(),
+            tool_version=__version__,
         )
         for path in paths[:limit]
     ]
@@ -893,6 +917,146 @@ def import_preview(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return {"proposal": proposal}
+
+
+def _validate_review_workbook(upload_path: Path, model_path: Path) -> dict[str, Any]:
+    """Validate a returned XLSX workbook for identity, stable IDs, and references."""
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    suffix = upload_path.suffix.lower()
+    if suffix != ".xlsx":
+        errors.append(f"Review workbook must be an XLSX file, got '{suffix}'.")
+        return {
+            "valid": False,
+            "errors": errors,
+            "warnings": warnings,
+            "workbook_object_count": 0,
+            "existing_object_count": 0,
+            "overlap_count": 0,
+        }
+
+    try:
+        rows_by_type = _read_xlsx(upload_path)
+    except Exception as exc:
+        errors.append(f"Could not read workbook: {exc}")
+        return {
+            "valid": False,
+            "errors": errors,
+            "warnings": warnings,
+            "workbook_object_count": 0,
+            "existing_object_count": 0,
+            "overlap_count": 0,
+        }
+
+    existing = _load_existing_objects(model_path)
+    workbook_ids = {
+        row_id
+        for rows in rows_by_type.values()
+        for row in rows
+        if (row_id := row.get("id", "").strip())
+    }
+    if not workbook_ids and not any(rows_by_type.values()):
+        errors.append("Workbook contains no sheets with model rows.")
+    elif not workbook_ids:
+        errors.append("Workbook rows are missing stable 'id' values.")
+
+    overlap = workbook_ids & set(existing.keys())
+    if workbook_ids and not overlap:
+        errors.append(
+            "Workbook does not match this repository. No object IDs overlap with the current model."
+        )
+
+    warnings.extend(_validate_import(rows_by_type, existing))
+    warnings.extend(_detect_formulas(upload_path))
+
+    return {
+        "valid": not errors,
+        "errors": errors,
+        "warnings": warnings,
+        "workbook_object_count": len(workbook_ids),
+        "existing_object_count": len(existing),
+        "overlap_count": len(overlap),
+    }
+
+
+@router.post(
+    "/imports/validate",
+    dependencies=[Depends(require_mutation_token)],
+    response_model=ImportValidateResponse,
+)
+def import_validate(
+    file: Annotated[
+        UploadFile, File(..., description="XLSX workbook to validate as a returned review artifact")
+    ],
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Validate a returned review workbook without creating a PatchProposal."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    generated_root = resolve_generated_path(repo_root)
+    uploads_dir = generated_root / "uploads"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+
+    safe_name = _safe_upload_filename(file.filename)
+    upload_path = uploads_dir / safe_name
+    upload_path.write_bytes(file.file.read())
+
+    return _validate_review_workbook(upload_path, model_path)
+
+
+@router.post(
+    "/imports/propose",
+    dependencies=[Depends(require_mutation_token)],
+    response_model=ImportProposeResponse,
+)
+def import_propose(
+    file: Annotated[
+        UploadFile, File(..., description="XLSX workbook to turn into a PatchProposal")
+    ],
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Turn a validated review workbook into a reviewable PatchProposal."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    generated_root = resolve_generated_path(repo_root)
+    uploads_dir = generated_root / "uploads"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+
+    safe_name = _safe_upload_filename(file.filename)
+    suffix = Path(safe_name).suffix.lower()
+    if suffix != ".xlsx":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Review workbook proposal requires an XLSX workbook, got '{suffix}'.",
+        )
+
+    upload_path = uploads_dir / safe_name
+    upload_path.write_bytes(file.file.read())
+
+    validation = _validate_review_workbook(upload_path, model_path)
+    if not validation["valid"]:
+        raise HTTPException(status_code=400, detail="; ".join(validation["errors"]))
+
+    try:
+        proposal = import_model_sheet_xlsx(upload_path, model_path, require_stable_ids=True)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+    proposal_id = f"PP-IMPORT-{timestamp}"
+    proposal["id"] = proposal_id
+    proposal["name"] = proposal_id
+    proposal["title"] = f"Spreadsheet review: {safe_name}"
+
+    proposal_path = write_patch_proposal(proposal, model_path)
+
+    return {
+        "proposal_id": proposal_id,
+        "proposal_path": str(proposal_path),
+        "operations_count": len(proposal.get("operations", [])),
+        "warnings": proposal.get("warnings", []),
+    }
 
 
 # ---------------------------------------------------------------------------

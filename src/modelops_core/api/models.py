@@ -108,6 +108,26 @@ class ImportPreviewResponse(BaseModel):
     proposal: dict[str, Any]
 
 
+class ImportValidateResponse(BaseModel):
+    """Response body for validating a returned review workbook."""
+
+    valid: bool
+    errors: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    workbook_object_count: int = 0
+    existing_object_count: int = 0
+    overlap_count: int = 0
+
+
+class ImportProposeResponse(BaseModel):
+    """Response body after turning a reviewed workbook into a PatchProposal."""
+
+    proposal_id: str
+    proposal_path: str
+    operations_count: int
+    warnings: list[str] = Field(default_factory=list)
+
+
 class ExportResponse(BaseModel):
     """Response body for a model export request."""
 
@@ -182,6 +202,8 @@ class ReportArtifactItem(BaseModel):
     size_bytes: int
     source_state: str = "generated"
     safety_classification: str
+    source_repository: str | None = None
+    tool_version: str | None = None
 
 
 class ReportArtifactResponse(BaseModel):
