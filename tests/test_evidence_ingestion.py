@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from modelops_core.cli import app
@@ -47,6 +48,22 @@ def test_markdown_note_becomes_valid_proposal(sample_repo: Path, tmp_path: Path)
 
     assert result.finding_count == 2
     assert all(operation["object_type"] == "Issue" for operation in result.proposal["operations"])
+
+
+def test_xlsx_validation_report_becomes_valid_proposal(sample_repo: Path, tmp_path: Path) -> None:
+    openpyxl = pytest.importorskip("openpyxl")
+    source = tmp_path / "validation-report.xlsx"
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.append(["severity", "rule_id", "message"])
+    worksheet.append(["high", "OWNER_REQUIRED", "Missing owner for customer mapping"])
+    workbook.save(source)
+    workbook.close()
+
+    result = ingest_evidence(source, sample_repo / "model")
+
+    assert result.finding_count == 1
+    assert "validation_report_xlsx" in result.proposal["source_evidence"]
 
 
 def test_evidence_ingest_cli_writes_external_proposal_and_validates_it(
