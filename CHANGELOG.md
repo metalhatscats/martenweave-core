@@ -4,6 +4,8 @@ All notable changes to Martenweave Core.
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-07-15
+
 ### Changed
 
 - **Reliable pilot demo defaults:** `martenweave demo-bundle build --out <directory>` now resolves

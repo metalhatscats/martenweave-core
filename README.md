@@ -28,7 +28,7 @@ For Workbench setup and development notes, see [`frontend/README.md`](frontend/R
 
 ## Status
 
-- Current source version: `0.5.0`
+- Current source version: `0.6.0`
 - Package / PyPI name: `martenweave-core`
 - PyPI currently installs the historical MIT-licensed 0.4.1 release.
 - Source install remains available for contributors and local development.

@@ -56,7 +56,7 @@ function mockFetchSequence(...responses) {
 function mockFetchRoutes(routeMap) {
   const capabilities = {
     api_version: "v1",
-    version: "0.5.0",
+    version: "0.6.0",
     indexed: true,
     canonical_files: 3,
   };
@@ -107,10 +107,10 @@ function Probe() {
 
 describe("createApiClient", () => {
   it("fetches capabilities", async () => {
-    mockFetch({ api_version: "v1", version: "0.5.0", indexed: true });
+    mockFetch({ api_version: "v1", version: "0.6.0", indexed: true });
     const client = createApiClient("http://localhost:8000");
     const caps = await client.capabilities();
-    expect(caps.version).toBe("0.5.0");
+    expect(caps.version).toBe("0.6.0");
     expect(globalThis.fetch).toHaveBeenCalledWith("http://localhost:8000/api/v1/capabilities");
   });
 
@@ -265,11 +265,11 @@ describe("apiObjectToViewModel", () => {
 
 describe("ApiProvider", () => {
   it("marks the connection as live when capabilities are compatible", async () => {
-    mockFetch({ api_version: "v1", version: "0.5.0", indexed: true, canonical_files: 24 });
+    mockFetch({ api_version: "v1", version: "0.6.0", indexed: true, canonical_files: 24 });
     render(<Probe />, { wrapper: TestWrapper });
     await waitFor(() => expect(screen.getByTestId("state").textContent).toBe(API_STATE.CONNECTED));
     expect(screen.getByTestId("demo").textContent).toBe("live");
-    expect(screen.getByTestId("version").textContent).toBe("0.5.0");
+    expect(screen.getByTestId("version").textContent).toBe("0.6.0");
   });
 
   it("falls back to demo mode when the API is unreachable", async () => {
@@ -280,7 +280,7 @@ describe("ApiProvider", () => {
   });
 
   it("falls back to demo mode when the index is stale", async () => {
-    mockFetch({ api_version: "v1", version: "0.5.0", indexed: false, canonical_files: 0, recovery: [{ code: "BUILD_INDEX", label: "Build the disposable local index", command: "martenweave build-index --repo .", requires_confirmation: false }] });
+    mockFetch({ api_version: "v1", version: "0.6.0", indexed: false, canonical_files: 0, recovery: [{ code: "BUILD_INDEX", label: "Build the disposable local index", command: "martenweave build-index --repo .", requires_confirmation: false }] });
     render(<Probe />, { wrapper: TestWrapper });
     await waitFor(() => expect(screen.getByTestId("state").textContent).toBe(API_STATE.STALE_INDEX));
     expect(screen.getByTestId("demo").textContent).toBe("demo");
@@ -314,7 +314,7 @@ function SearchProbe() {
 describe("useObjectSearch", () => {
   it("returns live API results when connected", async () => {
     mockFetchSequence(
-      { api_version: "v1", version: "0.5.0", indexed: true, canonical_files: 1 },
+      { api_version: "v1", version: "0.6.0", indexed: true, canonical_files: 1 },
       { total_count: 1, results: [{ object_id: "DOMAIN-LIVE", object_type: "MasterDataDomain", status: "active", name: "Live Domain", title: null, domain: null, description: "Live", source_file: "x.md", score: 1, matched_fields: [] }] }
     );
     render(<SearchProbe />, { wrapper: TestWrapper });
@@ -345,7 +345,7 @@ function ObjectProbe({ id }) {
 describe("useObjectDetail", () => {
   it("returns a live object when connected", async () => {
     mockFetchSequence(
-      { api_version: "v1", version: "0.5.0", indexed: true, canonical_files: 1 },
+      { api_version: "v1", version: "0.6.0", indexed: true, canonical_files: 1 },
       { object: { id: "DOMAIN-LIVE", type: "MasterDataDomain", name: "Live Object" }, relationships: [] }
     );
     render(<ObjectProbe id="DOMAIN-LIVE" />, { wrapper: TestWrapper });

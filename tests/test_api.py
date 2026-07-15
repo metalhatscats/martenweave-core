@@ -187,7 +187,7 @@ def test_api_compares_typed_assessments_inside_workspace(sample_repo: Path) -> N
             "run_id": run_id,
             "input_fingerprint": run_id,
             "input_checksums": {"mapping": run_id},
-            "martenweave_version": "0.5.0",
+            "martenweave_version": "0.6.0",
         }
         finding = AssessmentFinding(
             id="FINDING-TEST",

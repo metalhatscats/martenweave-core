@@ -37,7 +37,7 @@ describe("Martenweave workbench", () => {
       status: 200,
       json: () => Promise.resolve({
         api_version: "v1",
-        version: "0.5.0",
+        version: "0.6.0",
         indexed: true,
         canonical_files: 24,
         read_only: true,
@@ -68,7 +68,7 @@ describe("Martenweave workbench", () => {
             safety_classification: "local_only",
           }],
         }
-        : { api_version: "v1", version: "0.5.0", indexed: true, canonical_files: 24 };
+        : { api_version: "v1", version: "0.6.0", indexed: true, canonical_files: 24 };
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(payload), text: () => Promise.resolve("") });
     }));
     render(<App />);
@@ -84,7 +84,7 @@ describe("Martenweave workbench", () => {
     vi.stubGlobal("fetch", vi.fn((url) => {
       const payload = String(url).includes("/api/v1/activity")
         ? { total_count: 1, events: [{ event_id: "EVT-001", event_type: "proposal_applied", timestamp: "2026-07-15T12:00:00Z", proposal_id: "PP-001", changed_object_ids: ["ATTR-CUSTOMER-GROUP"], source_state: "canonical", canonical_change: true }] }
-        : { api_version: "v1", version: "0.5.0", indexed: true, canonical_files: 24 };
+        : { api_version: "v1", version: "0.6.0", indexed: true, canonical_files: 24 };
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(payload), text: () => Promise.resolve("") });
     }));
     render(<App />);
@@ -100,7 +100,7 @@ describe("Martenweave workbench", () => {
     vi.stubGlobal("fetch", vi.fn((url) => {
       const payload = String(url).includes("/api/v1/findings")
         ? { assessment_id: "assessment-run", total_count: 1, findings: [{ assessment_id: "assessment-run", review: { disposition: "confirmed", note: "Verified by stewardship." }, finding: { id: "FINDING-TEST", category: "missing_mapping", severity: "high", message: "Customer Group is missing a target mapping.", lifecycle_state: "open", provenance: { assessment_run_id: "ASSESSMENT-TEST", source_kind: "mapping_profile", location: { sheet: "Mapping", row: 2 } } } }] }
-        : { api_version: "v1", version: "0.5.0", indexed: true, canonical_files: 24 };
+        : { api_version: "v1", version: "0.6.0", indexed: true, canonical_files: 24 };
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(payload), text: () => Promise.resolve("") });
     }));
     render(<App />);

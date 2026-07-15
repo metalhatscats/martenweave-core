@@ -38,7 +38,7 @@ def _write_run(
         "run_id": run_id,
         "input_fingerprint": f"fingerprint-{run_id}",
         "input_checksums": checksums or {"mapping": run_id},
-        "martenweave_version": "0.5.0",
+        "martenweave_version": "0.6.0",
         "enabled_domain_packs": ["sap"],
     }
     (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
