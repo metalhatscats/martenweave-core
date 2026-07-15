@@ -136,6 +136,7 @@ import { lineageEdges, lineageNodes, modelObjects, proposals as demoProposals } 
  * @property {() => Promise<{total_count: number, change_requests: ChangeRequestResponse[]}>} changeRequests
  * @property {(data: ChangeRequestCreateData) => Promise<ChangeRequestResponse>} createChangeRequest
  * @property {(body: FindingReviewRequest) => Promise<any>} reviewFinding
+ * @property {(body: {assessment: string, finding_id: string, created_by?: string}) => Promise<{finding_id: string, proposal_id: string, proposal_path: string}>} promoteFinding
  * @property {(file: File, dataset_id?: string) => Promise<ProfileResponse>} importProfile
  * @property {(file: File) => Promise<PreviewResponse>} importPreview
  * @property {(format: string, business_review?: boolean) => Promise<ExportModelResponse>} exportModel
@@ -467,6 +468,7 @@ export function createApiClient(baseUrl) {
     changeRequests: () => fetchJson(`${root}/change-requests`),
     createChangeRequest: (data) => postJson(`${root}/change-requests`, data),
     reviewFinding: (body) => postJson(`${root}/api/v1/findings/review`, body),
+    promoteFinding: (body) => postJson(`${root}/api/v1/findings/promote`, body),
     importProfile: (file, dataset_id) => postMultipart(`${root}/api/v1/imports/profile`, file, { dataset_id }),
     importPreview: (file) => postMultipart(`${root}/api/v1/imports/preview`, file),
     exportModel: (format, business_review = false) => postJson(
@@ -1075,6 +1077,35 @@ export function useFindingReview() {
   }, [client]);
 
   return { reviewFinding, loading, error };
+}
+
+/**
+ * Mutation hook for promoting a confirmed finding to a PatchProposal.
+ *
+ * @returns {{ promoteFinding: (body: {assessment: string, finding_id: string, created_by?: string}) => Promise<any>, loading: boolean, error: string|null }}
+ */
+export function useFindingPromote() {
+  const { client } = useApi();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const promoteFinding = useCallback(async (body) => {
+    if (!client) throw new Error("API client is not available");
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await client.promoteFinding(body);
+      return result;
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : String(reason);
+      setError(message);
+      throw reason;
+    } finally {
+      setLoading(false);
+    }
+  }, [client]);
+
+  return { promoteFinding, loading, error };
 }
 
 /**

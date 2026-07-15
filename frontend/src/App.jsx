@@ -66,6 +66,7 @@ import {
   objectTypeToTone,
   useApi,
   useAssessmentFindings,
+  useFindingPromote,
   useFindingReview,
   useImportPreview,
   useImportProfile,
@@ -1159,7 +1160,7 @@ export function LineageScreen({ navigate, params, onExport }) {
   );
 }
 
-function GapsScreen({ navigate, params, onDraft }) {
+function GapsScreen({ navigate, params, onDraft, onToast }) {
   const liveFindings = useAssessmentFindings();
   const [query, setQuery] = useState("");
   const [severity, setSeverity] = useState("All severities");
@@ -1202,7 +1203,7 @@ function GapsScreen({ navigate, params, onDraft }) {
   const selectedGap = gaps.find((gap) => gap.id === expandedId) || gaps[0];
 
   if (!liveFindings.demo) {
-    return <LiveFindingsScreen navigate={navigate} {...liveFindings} />;
+    return <LiveFindingsScreen navigate={navigate} {...liveFindings} onToast={onToast} />;
   }
 
   return (
@@ -1342,10 +1343,13 @@ function GapsScreen({ navigate, params, onDraft }) {
 
 const DISPOSITION_OPTIONS = ["", "confirmed", "false_positive", "accepted_risk", "deferred", "resolved"];
 
-function FindingReviewForm({ assessmentId, findingId, currentReview, onReviewed }) {
+function FindingReviewForm({ assessmentId, findingId, currentReview, onReviewed, onPromoted }) {
   const [disposition, setDisposition] = useState(currentReview?.disposition || "");
   const [note, setNote] = useState(currentReview?.note || "");
+  const { demo } = useApi();
   const { reviewFinding, loading, error } = useFindingReview();
+  const { promoteFinding, loading: promoteLoading, error: promoteError } = useFindingPromote();
+  const isConfirmed = currentReview?.disposition === "confirmed";
 
   const save = async () => {
     if (!disposition) return;
@@ -1363,6 +1367,20 @@ function FindingReviewForm({ assessmentId, findingId, currentReview, onReviewed 
     }
   };
 
+  const promote = async () => {
+    if (demo) return;
+    try {
+      const result = await promoteFinding({
+        assessment: assessmentId,
+        finding_id: findingId,
+        created_by: "workbench",
+      });
+      onPromoted(result);
+    } catch {
+      // error is surfaced below
+    }
+  };
+
   return (
     <div className="finding-review-form">
       <label>
@@ -1375,16 +1393,24 @@ function FindingReviewForm({ assessmentId, findingId, currentReview, onReviewed 
         <span>Note (optional)</span>
         <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={2} placeholder="Add context for the disposition…" />
       </label>
-      <button className="secondary-button" onClick={save} disabled={!disposition || loading}>
-        {loading ? "Saving…" : "Save disposition"}
-      </button>
-      {error && <span className="inline-error">{error}</span>}
+      <div className="finding-review-actions">
+        <button className="secondary-button" onClick={save} disabled={!disposition || loading}>
+          {loading ? "Saving…" : "Save disposition"}
+        </button>
+        {isConfirmed && (
+          <button className="primary-button" onClick={promote} disabled={promoteLoading || demo} title={demo ? "Promotion requires a connected local API" : "Create a reviewable PatchProposal from this confirmed finding"}>
+            {promoteLoading ? "Promoting…" : "Promote to proposal"}
+          </button>
+        )}
+      </div>
+      {(error || promoteError) && <span className="inline-error">{error || promoteError}</span>}
     </div>
   );
 }
 
-function LiveFindingsScreen({ navigate, findings, assessmentId, loading, error }) {
+function LiveFindingsScreen({ navigate, findings, assessmentId, loading, error, onToast }) {
   const [localReviews, setLocalReviews] = useState({});
+  const [promoted, setPromoted] = useState({});
   return (
     <div className="page-pad gaps-page">
       <PageHeader
@@ -1416,7 +1442,12 @@ function LiveFindingsScreen({ navigate, findings, assessmentId, loading, error }
                   findingId={finding.id}
                   currentReview={localReview || review}
                   onReviewed={(updated) => setLocalReviews((current) => ({ ...current, [finding.id]: updated }))}
+                  onPromoted={(result) => {
+                    setPromoted((current) => ({ ...current, [finding.id]: result.proposal_id }));
+                    onToast?.(`Promoted ${finding.id} to proposal ${result.proposal_id}. Canonical files remain unchanged.`);
+                  }}
                 />
+                {promoted[finding.id] && <footer><span>Promoted to proposal <strong>{promoted[finding.id]}</strong></span></footer>}
                 {(localReview?.note || review?.note) && <footer><span>Reviewer note: {localReview?.note || review.note}</span></footer>}
               </article>
             );
@@ -2048,7 +2079,7 @@ export function App({ apiBaseUrl }) {
     models: <ModelsScreen navigate={navigate} params={params} />,
     object: <ObjectScreen navigate={navigate} params={params} onExport={actions.export} onDraft={actions.draft} />,
     lineage: <LineageScreen navigate={navigate} params={params} onExport={actions.export} />,
-    gaps: <GapsScreen navigate={navigate} params={params} onDraft={actions.draft} />,
+    gaps: <GapsScreen navigate={navigate} params={params} onDraft={actions.draft} onToast={actions.toast} />,
     proposals: <ProposalsScreen navigate={navigate} onDraft={actions.draft} refreshKey={proposalRefreshKey} />,
     proposal: <ProposalScreen navigate={navigate} params={params} onToast={actions.toast} onRefreshProposals={actions.refreshProposals} refreshKey={proposalRefreshKey} />,
     reports: <ReportsScreen onExport={actions.export} />,

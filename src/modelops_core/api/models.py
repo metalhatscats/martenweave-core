@@ -78,6 +78,22 @@ class FindingReviewResponse(BaseModel):
     note: str
 
 
+class FindingPromoteRequest(BaseModel):
+    """Request body for promoting a confirmed assessment finding."""
+
+    assessment: str = Field(..., description="Generated-relative assessment directory.")
+    finding_id: str = Field(..., description="Stable finding ID from findings.json.")
+    created_by: str = Field(default="workbench", description="Actor recorded on the proposal.")
+
+
+class FindingPromoteResponse(BaseModel):
+    """Response body after promoting a confirmed finding to a PatchProposal."""
+
+    finding_id: str
+    proposal_id: str
+    proposal_path: str
+
+
 class ImportProfileResponse(BaseModel):
     """Response body for a profiled dataset upload."""
 

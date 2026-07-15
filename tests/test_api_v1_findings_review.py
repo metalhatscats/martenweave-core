@@ -100,3 +100,51 @@ def test_api_v1_review_finding_rejects_path_traversal(sample_repo: Path) -> None
         },
     )
     assert response.status_code == 400
+
+
+def test_api_v1_promote_confirmed_finding(sample_repo: Path) -> None:
+    _build_assessment(sample_repo)
+
+    client.post(
+        "/api/v1/findings/review",
+        params={"repo": str(sample_repo)},
+        json={
+            "assessment": "assessment-run",
+            "finding_id": "FINDING-TEST",
+            "disposition": "confirmed",
+            "reviewer": "alice",
+        },
+    )
+
+    response = client.post(
+        "/api/v1/findings/promote",
+        params={"repo": str(sample_repo)},
+        json={
+            "assessment": "assessment-run",
+            "finding_id": "FINDING-TEST",
+            "created_by": "workbench",
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["finding_id"] == "FINDING-TEST"
+    assert data["proposal_id"].startswith("AR-")
+    assert data["proposal_path"].startswith("model/patch-proposals/")
+
+    proposal_path = sample_repo / data["proposal_path"]
+    assert proposal_path.exists()
+
+
+def test_api_v1_promote_unconfirmed_finding_is_rejected(sample_repo: Path) -> None:
+    _build_assessment(sample_repo)
+
+    response = client.post(
+        "/api/v1/findings/promote",
+        params={"repo": str(sample_repo)},
+        json={
+            "assessment": "assessment-run",
+            "finding_id": "FINDING-TEST",
+        },
+    )
+    assert response.status_code == 400
+    assert "must be reviewed as 'confirmed'" in response.json()["detail"]

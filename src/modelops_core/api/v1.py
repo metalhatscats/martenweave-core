@@ -20,6 +20,8 @@ from modelops_core.api.models import (
     CapabilityEntry,
     ExportResponse,
     FindingItem,
+    FindingPromoteRequest,
+    FindingPromoteResponse,
     FindingResponse,
     FindingReviewRequest,
     FindingReviewResponse,
@@ -56,7 +58,7 @@ from modelops_core.index.query_service import (
     list_related_objects,
     search_objects,
 )
-from modelops_core.pilot.review import set_review
+from modelops_core.pilot.review import promote_finding, set_review
 from modelops_core.reports.audit_service import AuditEventService
 from modelops_core.repository import scan_repository
 
@@ -613,6 +615,47 @@ def review_finding(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return record
+
+
+@router.post(
+    "/findings/promote",
+    dependencies=[Depends(require_mutation_token)],
+    response_model=FindingPromoteResponse,
+)
+def promote_finding_endpoint(
+    request: FindingPromoteRequest,
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Promote a confirmed assessment finding to a reviewable PatchProposal."""
+    repo_root = _resolve_repo(repo)
+    generated_root = resolve_generated_path(repo_root).resolve()
+    assessment_dir = (generated_root / request.assessment).resolve()
+    try:
+        assessment_dir.relative_to(generated_root)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400, detail="Assessment must remain inside generated/."
+        ) from exc
+
+    if not (assessment_dir / "findings.json").is_file():
+        raise HTTPException(status_code=404, detail="Assessment findings were not found.")
+
+    try:
+        proposal_path = promote_finding(
+            assessment_dir,
+            repo_root,
+            request.finding_id,
+            created_by=request.created_by,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    proposal_id = proposal_path.stem
+    return {
+        "finding_id": request.finding_id,
+        "proposal_id": proposal_id,
+        "proposal_path": proposal_path.relative_to(repo_root).as_posix(),
+    }
 
 
 # ---------------------------------------------------------------------------
