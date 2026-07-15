@@ -1411,6 +1411,47 @@ function FindingReviewForm({ assessmentId, findingId, currentReview, onReviewed,
 function LiveFindingsScreen({ navigate, findings, assessmentId, loading, error, onToast }) {
   const [localReviews, setLocalReviews] = useState({});
   const [promoted, setPromoted] = useState({});
+  const [query, setQuery] = useState("");
+  const [severityFilter, setSeverityFilter] = useState("All");
+  const [sourceFilter, setSourceFilter] = useState("All");
+  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [stateFilter, setStateFilter] = useState("All");
+  const [reviewFilter, setReviewFilter] = useState("All");
+
+  const severityOptions = useMemo(
+    () => ["All", ...Array.from(new Set(findings.map(({ finding }) => finding.severity))).sort()],
+    [findings]
+  );
+  const sourceOptions = useMemo(
+    () => ["All", ...Array.from(new Set(findings.map(({ finding }) => finding.provenance.source_kind))).sort()],
+    [findings]
+  );
+  const categoryOptions = useMemo(
+    () => ["All", ...Array.from(new Set(findings.map(({ finding }) => finding.category))).sort()],
+    [findings]
+  );
+  const stateOptions = useMemo(
+    () => ["All", ...Array.from(new Set(findings.map(({ finding }) => finding.lifecycle_state))).sort()],
+    [findings]
+  );
+
+  const filteredFindings = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return findings.filter(({ finding, review }) => {
+      const text = `${finding.id} ${finding.message} ${finding.category}`.toLowerCase();
+      const currentDisposition = localReviews[finding.id]?.disposition || review?.disposition;
+      const reviewState = currentDisposition || "unreviewed";
+      return (
+        (!q || text.includes(q)) &&
+        (severityFilter === "All" || finding.severity === severityFilter) &&
+        (sourceFilter === "All" || finding.provenance.source_kind === sourceFilter) &&
+        (categoryFilter === "All" || finding.category === categoryFilter) &&
+        (stateFilter === "All" || finding.lifecycle_state === stateFilter) &&
+        (reviewFilter === "All" || reviewState === reviewFilter)
+      );
+    });
+  }, [findings, query, severityFilter, sourceFilter, categoryFilter, stateFilter, reviewFilter, localReviews]);
+
   return (
     <div className="page-pad gaps-page">
       <PageHeader
@@ -1422,7 +1463,39 @@ function LiveFindingsScreen({ navigate, findings, assessmentId, loading, error, 
           {loading && <div className="empty-state"><CircleNotch className="spin" size={24} /> Loading assessment findings…</div>}
           {error && <div className="empty-state"><WarningCircle size={24} /> {error}</div>}
           {!loading && !error && findings.length === 0 && <div className="empty-state"><Warning size={30} /><h3>No assessment findings are available</h3><p>Run a local assessment to create reviewable evidence. Canonical model files remain unchanged.</p></div>}
-          {findings.map(({ finding, review, assessment_id: itemAssessmentId }) => {
+          {!loading && !error && findings.length > 0 && (
+            <div className="gap-controls">
+              <label className="inline-search">
+                <MagnifyingGlass size={16} />
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search findings…" />
+              </label>
+              <select value={severityFilter} onChange={(event) => setSeverityFilter(event.target.value)} aria-label="Severity">
+                {severityOptions.map((option) => <option key={option} value={option}>{option === "All" ? "All severities" : option}</option>)}
+              </select>
+              <select value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)} aria-label="Source">
+                {sourceOptions.map((option) => <option key={option} value={option}>{option === "All" ? "All sources" : option.replaceAll("_", " ")}</option>)}
+              </select>
+              <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} aria-label="Category">
+                {categoryOptions.map((option) => <option key={option} value={option}>{option === "All" ? "All categories" : option.replaceAll("_", " ")}</option>)}
+              </select>
+              <select value={stateFilter} onChange={(event) => setStateFilter(event.target.value)} aria-label="Lifecycle state">
+                {stateOptions.map((option) => <option key={option} value={option}>{option === "All" ? "All states" : option.replaceAll("_", " ")}</option>)}
+              </select>
+              <select value={reviewFilter} onChange={(event) => setReviewFilter(event.target.value)} aria-label="Review state">
+                <option value="All">All review states</option>
+                <option value="unreviewed">Unreviewed</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="false_positive">False positive</option>
+                <option value="accepted_risk">Accepted risk</option>
+                <option value="deferred">Deferred</option>
+                <option value="resolved">Resolved</option>
+              </select>
+              <button className="secondary-button" onClick={() => { setQuery(""); setSeverityFilter("All"); setSourceFilter("All"); setCategoryFilter("All"); setStateFilter("All"); setReviewFilter("All"); }}>Reset</button>
+              <small className="finding-count">{filteredFindings.length} of {findings.length}</small>
+            </div>
+          )}
+          {!loading && !error && filteredFindings.length === 0 && findings.length > 0 && <div className="empty-state"><Warning size={30} /><h3>No findings match the current filters</h3></div>}
+          {filteredFindings.map(({ finding, review, assessment_id: itemAssessmentId }) => {
             const localReview = localReviews[finding.id];
             const currentDisposition = localReview?.disposition || review?.disposition;
             return (
