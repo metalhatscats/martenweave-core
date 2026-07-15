@@ -22,9 +22,11 @@ from modelops_core.api.recovery import BUILD_INDEX, INSPECT_READ_ONLY
 from modelops_core.api.workspace import (
     mutation_enabled,
     resolve_workspace,
+    resolve_workspace_input,
     workspace_is_bound,
     workspace_label,
 )
+from modelops_core.assessment.comparison import AssessmentComparisonError, compare_assessments
 from modelops_core.config import resolve_generated_path, resolve_model_path
 from modelops_core.index.query_service import (
     get_object_by_id,
@@ -97,6 +99,15 @@ def capabilities(
             description=(
                 "Read append-only local repository activity without treating generated events "
                 "as canonical changes."
+            ),
+        ),
+        CapabilityEntry(
+            name="assessment_comparison",
+            method="GET",
+            href="/api/v1/assessment-comparisons?base_manifest={path}&head_manifest={path}",
+            description=(
+                "Compare two typed assessment manifests inside the local workspace without "
+                "inferring finding resolution."
             ),
         ),
         CapabilityEntry(
@@ -220,6 +231,24 @@ def activity(
         for event in events[:limit]
     ]
     return ActivityResponse(total_count=len(events), events=items)
+
+
+@router.get("/assessment-comparisons")
+def assessment_comparison(
+    base_manifest: str = Query(..., description="Path to the earlier assessment manifest"),
+    head_manifest: str = Query(..., description="Path to the later assessment manifest"),
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Compare local typed assessment packages while preserving stable finding provenance."""
+    repo_root = _resolve_repo(repo)
+    base_path = resolve_workspace_input(base_manifest, repo_root)
+    head_path = resolve_workspace_input(head_manifest, repo_root)
+    if base_path.suffix.lower() != ".json" or head_path.suffix.lower() != ".json":
+        raise HTTPException(status_code=400, detail="Assessment manifests must be JSON files.")
+    try:
+        return compare_assessments(base_path, head_path).to_dict()
+    except AssessmentComparisonError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get("/search", response_model=PaginatedSearchResponse)

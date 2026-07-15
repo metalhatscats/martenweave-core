@@ -62,6 +62,7 @@ Clients should discover capabilities before rendering actions.
 | GET | `/api/v1/search` | Paginated keyword search over the generated index |
 | GET | `/api/v1/objects/{id}` | Canonical object detail and relationships |
 | GET | `/api/v1/activity` | Recent append-only local audit events |
+| GET | `/api/v1/assessment-comparisons` | Stable-ID lifecycle comparison of two local assessment manifests |
 
 `GET /api/v1/capabilities` returns:
 

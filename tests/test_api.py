@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -108,6 +109,66 @@ def test_api_activity_is_empty_without_audit_log(temp_model_dir: Path) -> None:
     response = client.get("/api/v1/activity", params={"repo": str(temp_model_dir.parent)})
     assert response.status_code == 200
     assert response.json() == {"total_count": 0, "events": []}
+
+
+def test_api_compares_typed_assessments_inside_workspace(sample_repo: Path) -> None:
+    from modelops_core.assessment.finding_contract import AssessmentFinding
+
+    def write_run(name: str, run_id: str, severity: str) -> Path:
+        run_dir = sample_repo / "generated" / name
+        run_dir.mkdir(parents=True)
+        manifest = {
+            "run_id": run_id,
+            "input_fingerprint": run_id,
+            "input_checksums": {"mapping": run_id},
+            "martenweave_version": "0.5.0",
+        }
+        finding = AssessmentFinding(
+            id="FINDING-TEST",
+            category="missing_mapping",
+            severity=severity,
+            message="Missing mapping",
+            provenance={
+                "assessment_run_id": run_id,
+                "source_kind": "mapping_profile",
+                "location": {"sheet": "Mappings", "row": 2},
+            },
+        )
+        (run_dir / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+        (run_dir / "findings.json").write_text(
+            json.dumps({"findings": [finding.model_dump(mode="json")]}), encoding="utf-8"
+        )
+        return run_dir / "manifest.json"
+
+    base = write_run("assessment-base", "ASSESSMENT-BASE", "low")
+    head = write_run("assessment-head", "ASSESSMENT-HEAD", "high")
+    response = client.get(
+        "/api/v1/assessment-comparisons",
+        params={
+            "repo": str(sample_repo),
+            "base_manifest": str(base),
+            "head_manifest": str(head),
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["counts"] == {"severity_changed": 1}
+    assert data["findings"][0]["finding_id"] == "FINDING-TEST"
+
+
+def test_bound_api_rejects_external_assessment_manifest(sample_repo: Path, tmp_path: Path) -> None:
+    outside = tmp_path / "manifest.json"
+    outside.write_text("{}", encoding="utf-8")
+    configure_workspace(sample_repo)
+    try:
+        response = client.get(
+            "/api/v1/assessment-comparisons",
+            params={"base_manifest": str(outside), "head_manifest": str(outside)},
+        )
+        assert response.status_code == 403
+    finally:
+        clear_workspace()
 
 
 def test_api_list_objects_by_type(sample_repo: Path) -> None:

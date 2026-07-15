@@ -25,7 +25,8 @@ All notable changes to Martenweave Core.
 - **Assessment lifecycle comparison (#513):** `martenweave assessment compare` produces JSON and
   Markdown reports that use stable finding IDs to classify new, unchanged, resolved, reopened, and
   severity-changed findings, while separating workbook/evidence, canonical model, configuration,
-  and rule-set changes.
+  and rule-set changes. The read-only local API now exposes the same comparison for manifests that
+  remain inside the bound workspace.
 
 ## [0.5.0] — 2026-07-14
 

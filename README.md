@@ -301,6 +301,9 @@ namespace. The workbench (and any other local client) should discover capabiliti
 - `GET /api/v1/objects/{id}` — canonical object detail plus relationships.
 - `GET /api/v1/activity` — append-only local audit history, with generated events explicitly
   distinguished from canonical model changes.
+- `GET /api/v1/assessment-comparisons` — deterministic lifecycle comparison for two typed
+  assessment manifests inside the local workspace; stable finding IDs preserve prior/current
+  provenance without inferring resolution.
 
 The v1 contract is additive: existing endpoints remain available, and mutations still require
 explicit human approval through the proposal/change-request flow.
