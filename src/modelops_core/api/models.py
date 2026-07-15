@@ -281,6 +281,34 @@ class ProposalDiffResponse(BaseModel):
     diffs: list[ProposalDiffItem]
 
 
+class FieldChangeItem(BaseModel):
+    """A single field-level change between two object versions."""
+
+    field: str
+    old_value: Any | None = None
+    new_value: Any | None = None
+
+
+class ChangedObjectItem(BaseModel):
+    """An object that exists in both base and head but has differences."""
+
+    object_id: str
+    object_type: str
+    object_name: str | None = None
+    field_changes: list[FieldChangeItem] = Field(default_factory=list)
+
+
+class DiffResultResponse(BaseModel):
+    """Added, removed, and changed canonical objects between two repository states."""
+
+    base_count: int
+    head_count: int
+    added: list[dict[str, Any]] = Field(default_factory=list)
+    removed: list[dict[str, Any]] = Field(default_factory=list)
+    changed: list[ChangedObjectItem] = Field(default_factory=list)
+    has_changes: bool
+
+
 class FindingItem(BaseModel):
     """Typed assessment finding plus separate human review state."""
 

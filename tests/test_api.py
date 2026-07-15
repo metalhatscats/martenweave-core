@@ -111,6 +111,90 @@ def test_api_activity_is_empty_without_audit_log(temp_model_dir: Path) -> None:
     assert response.json() == {"total_count": 0, "events": []}
 
 
+def _domain_frontmatter(object_id: str, name: str, status: str = "draft") -> str:
+    return f"---\nid: {object_id}\ntype: MasterDataDomain\nname: {name}\nstatus: {status}\n---\n"
+
+
+def test_api_diff_repositories_returns_added_removed_changed(  # noqa: E501
+    sample_repo: Path, tmp_path: Path
+) -> None:
+    base_model = tmp_path / "base" / "model"
+    head_model = tmp_path / "head" / "model"
+    base_model.mkdir(parents=True)
+    head_model.mkdir(parents=True)
+
+    (base_model / "DOMAIN-OLD.md").write_text(
+        _domain_frontmatter("DOMAIN-OLD", "Old Domain"), encoding="utf-8"
+    )
+    (base_model / "DOMAIN-BOTH.md").write_text(
+        _domain_frontmatter("DOMAIN-BOTH", "Both Domain"), encoding="utf-8"
+    )
+    (head_model / "DOMAIN-NEW.md").write_text(
+        _domain_frontmatter("DOMAIN-NEW", "New Domain"), encoding="utf-8"
+    )
+    (head_model / "DOMAIN-BOTH.md").write_text(
+        _domain_frontmatter("DOMAIN-BOTH", "Both Domain Updated", "active"),
+        encoding="utf-8",
+    )
+
+    response = client.get(
+        "/api/v1/diff",
+        params={
+            "base_path": str(base_model),
+            "head_path": str(head_model),
+            "repo": str(sample_repo),
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["base_count"] == 2
+    assert data["head_count"] == 2
+    assert data["has_changes"] is True
+    added_ids = {obj["object_id"] for obj in data["added"]}
+    removed_ids = {obj["object_id"] for obj in data["removed"]}
+    changed_ids = {obj["object_id"] for obj in data["changed"]}
+    assert added_ids == {"DOMAIN-NEW"}
+    assert removed_ids == {"DOMAIN-OLD"}
+    assert changed_ids == {"DOMAIN-BOTH"}
+    both = next(obj for obj in data["changed"] if obj["object_id"] == "DOMAIN-BOTH")
+    assert any(change["field"] == "name" for change in both["field_changes"])
+    assert any(change["field"] == "status" for change in both["field_changes"])
+
+
+def test_api_diff_repositories_defaults_head_to_current_workspace_model(
+    sample_repo: Path, tmp_path: Path
+) -> None:
+    base_model = tmp_path / "base" / "model"
+    base_model.mkdir(parents=True)
+    (base_model / "DOMAIN-EXTRA.md").write_text(
+        _domain_frontmatter("DOMAIN-EXTRA", "Extra"), encoding="utf-8"
+    )
+
+    response = client.get(
+        "/api/v1/diff",
+        params={"base_path": str(base_model), "repo": str(sample_repo)},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["base_count"] == 1
+    assert data["head_count"] > 0
+    removed_ids = {obj["object_id"] for obj in data["removed"]}
+    assert "DOMAIN-EXTRA" in removed_ids
+
+
+def test_api_diff_repositories_rejects_missing_directory(sample_repo: Path) -> None:
+    response = client.get(
+        "/api/v1/diff",
+        params={
+            "base_path": "/does/not/exist",
+            "head_path": "/also/missing",
+            "repo": str(sample_repo),
+        },
+    )
+    assert response.status_code == 400
+    assert "not found" in response.json()["detail"].lower()
+
+
 def test_api_lists_and_downloads_generated_reports_without_exposing_paths(
     sample_repo: Path,
 ) -> None:

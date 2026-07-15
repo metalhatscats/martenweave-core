@@ -32,7 +32,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { fields, gaps, modelObjects, proposals, recentActivity } from "./data.js";
-import { useApi, hasCapability, mutationBlockReason, useHomeAssistant, useImportPreview, useImportProfile, useImportPropose, useImportValidate, useReportGenerate, useWorkspaceActivity } from "./api.jsx";
+import { useApi, hasCapability, mutationBlockReason, useHomeAssistant, useImportPreview, useImportProfile, useImportPropose, useImportValidate, useReportGenerate, useRepositoryDiff, useWorkspaceActivity } from "./api.jsx";
 
 const LEDGER_ROWS = [
   {
@@ -905,6 +905,92 @@ export function ReportsScreen({ navigate, onExport }) {
   );
 }
 
+function DiffObjectList({ title, items, navigate, emptyNote }) {
+  if (!items || items.length === 0) {
+    return <p className="diff-empty">{emptyNote}</p>;
+  }
+  return (
+    <div className="diff-group">
+      <strong>{title} <span className="diff-count">{items.length}</span></strong>
+      <ul>
+        {items.map((item) => (
+          <li key={item.object_id}>
+            <button type="button" onClick={() => navigate("object", { id: item.object_id })}>
+              <code>{item.object_id}</code>
+              <span>{item.object_name || item.object_type}</span>
+            </button>
+            <button type="button" className="diff-impact" onClick={() => navigate("lineage", { id: item.object_id })} title="Impact / lineage">
+              <ShareNetwork size={13} />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function CompareModelStates({ navigate }) {
+  const { demo } = useApi();
+  const [baseInput, setBaseInput] = useState("");
+  const [headInput, setHeadInput] = useState("");
+  const [params, setParams] = useState({ base: "", head: "" });
+  const { result, loading, error } = useRepositoryDiff(params.base, params.head);
+
+  const runCompare = (event) => {
+    event.preventDefault();
+    setParams({ base: baseInput.trim(), head: headInput.trim() });
+  };
+
+  return (
+    <section className="surface changelog-compare">
+      <div className="section-title">
+        <div>
+          <h2>Compare model states</h2>
+          <p>Compare two repository model/ directories to see added, removed, and changed canonical objects.</p>
+        </div>
+      </div>
+      <form className="compare-form" onSubmit={runCompare}>
+        <label>
+          <span>Base repository model path</span>
+          <input
+            type="text"
+            value={baseInput}
+            onChange={(event) => setBaseInput(event.target.value)}
+            placeholder="/path/to/base/model"
+            disabled={demo}
+          />
+        </label>
+        <label>
+          <span>Head repository model path (optional)</span>
+          <input
+            type="text"
+            value={headInput}
+            onChange={(event) => setHeadInput(event.target.value)}
+            placeholder="Defaults to current workspace model/"
+            disabled={demo}
+          />
+        </label>
+        <button type="submit" className="secondary-button" disabled={demo || !baseInput.trim() || loading}>
+          {loading ? "Comparing…" : "Compare"} <GitBranch size={15} />
+        </button>
+      </form>
+      {demo && <p className="inline-note">Connect the local API to compare repository states.</p>}
+      {error && <p className="inline-error">{error}</p>}
+      {result && (
+        <div className="diff-result">
+          <p className="diff-summary">
+            Base: <strong>{result.base_count}</strong> objects · Head: <strong>{result.head_count}</strong> objects
+            {result.has_changes ? "" : " · No differences found"}
+          </p>
+          <DiffObjectList title="Added" items={result.added} navigate={navigate} emptyNote="No objects added." />
+          <DiffObjectList title="Removed" items={result.removed} navigate={navigate} emptyNote="No objects removed." />
+          <DiffObjectList title="Changed" items={result.changed} navigate={navigate} emptyNote="No objects changed." />
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function ChangelogScreen({ navigate, refreshKey = 0 }) {
   const { events, loading, error, demo } = useWorkspaceActivity(refreshKey);
   const openEvent = (event) => {
@@ -990,6 +1076,7 @@ export function ChangelogScreen({ navigate, refreshKey = 0 }) {
           ))}
         </div>
       </section>
+      <CompareModelStates navigate={navigate} />
     </div>
   );
 }

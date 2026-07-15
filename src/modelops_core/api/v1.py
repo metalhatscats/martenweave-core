@@ -19,7 +19,10 @@ from modelops_core.api.models import (
     AssessmentManifestItem,
     AssessmentManifestResponse,
     CapabilityEntry,
+    ChangedObjectItem,
+    DiffResultResponse,
     ExportResponse,
+    FieldChangeItem,
     FindingItem,
     FindingPromoteRequest,
     FindingPromoteResponse,
@@ -58,6 +61,7 @@ from modelops_core.assessment.assessment_service import generate_review_pack, ge
 from modelops_core.assessment.comparison import AssessmentComparisonError, compare_assessments
 from modelops_core.assessment.finding_contract import AssessmentFinding
 from modelops_core.config import resolve_generated_path, resolve_model_path
+from modelops_core.diff.diff_service import diff_repositories
 from modelops_core.exports.export_service import export_model_csv, export_model_xlsx
 from modelops_core.imports.dataset_profiler import (
     dataset_profile_to_dict,
@@ -749,6 +753,58 @@ def assessment_comparison(
         return compare_assessments(base_path, head_path).to_dict()
     except AssessmentComparisonError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/diff", response_model=DiffResultResponse)
+def diff_repositories_endpoint(
+    base_path: str = Query(..., description="Path to the base repository model directory"),
+    head_path: str | None = Query(
+        None, description="Head repository model directory; defaults to current workspace model/."
+    ),
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> DiffResultResponse:
+    """Compare two repository model directories and return added, removed, and changed objects."""
+    repo_root = _resolve_repo(repo)
+    base = resolve_workspace_input(base_path, repo_root)
+    head = (
+        resolve_workspace_input(head_path, repo_root)
+        if head_path
+        else resolve_model_path(repo_root)
+    )
+
+    if not base.is_dir():
+        raise HTTPException(status_code=400, detail=f"Base model directory not found: {base}")
+    if not head.is_dir():
+        raise HTTPException(status_code=400, detail=f"Head model directory not found: {head}")
+
+    try:
+        result = diff_repositories(base, head)
+    except (OSError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=f"Diff failed: {exc}") from exc
+
+    return DiffResultResponse(
+        base_count=result.base_count,
+        head_count=result.head_count,
+        added=result.added,
+        removed=result.removed,
+        changed=[
+            ChangedObjectItem(
+                object_id=obj.object_id,
+                object_type=obj.object_type,
+                object_name=obj.object_name,
+                field_changes=[
+                    FieldChangeItem(
+                        field=change.field,
+                        old_value=change.old_value,
+                        new_value=change.new_value,
+                    )
+                    for change in obj.field_changes
+                ],
+            )
+            for obj in result.changed
+        ],
+        has_changes=result.has_changes,
+    )
 
 
 @router.get("/search", response_model=PaginatedSearchResponse)

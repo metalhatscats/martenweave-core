@@ -137,6 +137,7 @@ import { gaps as demoGaps, lineageEdges, lineageNodes, modelObjects, proposals a
  * @property {(data: ChangeRequestCreateData) => Promise<ChangeRequestResponse>} createChangeRequest
  * @property {(body: FindingReviewRequest) => Promise<any>} reviewFinding
  * @property {(body: {assessment: string, finding_id: string, created_by?: string}) => Promise<{finding_id: string, proposal_id: string, proposal_path: string}>} promoteFinding
+ * @property {(basePath: string, headPath: string) => Promise<DiffResultResponse>} diffRepositories
  * @property {(file: File, dataset_id?: string) => Promise<ProfileResponse>} importProfile
  * @property {(file: File) => Promise<PreviewResponse>} importPreview
  * @property {(file: File) => Promise<ImportValidateResponse>} importValidate
@@ -517,6 +518,7 @@ export function createApiClient(baseUrl) {
     findings: () => fetchJson(`${root}/api/v1/findings`),
     assessmentManifests: () => fetchJson(`${root}/api/v1/assessment-manifests`),
     compareAssessments: (base, head) => fetchJson(`${root}/api/v1/assessment-comparisons?${new URLSearchParams({ base_manifest: base, head_manifest: head })}`),
+    diffRepositories: (basePath, headPath) => fetchJson(`${root}/api/v1/diff?${new URLSearchParams({ base_path: basePath, head_path: headPath })}`),
     search: ({ q, type, status, domain, limit = 50, offset = 0 } = {}) => {
       const params = new URLSearchParams();
       if (q) params.set("q", q);
@@ -1400,6 +1402,54 @@ export function useHomeAssistant() {
   }, []);
 
   return { ...state, run, reset };
+}
+
+/**
+ * Compare two repository model directories.
+ *
+ * @param {string} basePath
+ * @param {string} headPath
+ * @returns {{ result: DiffResultResponse|null, loading: boolean, error: string|null }}
+ */
+export function useRepositoryDiff(basePath, headPath) {
+  const { client, demo } = useApi();
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!basePath || !headPath) {
+      setResult(null);
+      setLoading(false);
+      setError(null);
+      return undefined;
+    }
+    if (demo || !client) {
+      setResult(null);
+      setLoading(false);
+      setError("Connect the local API to compare repository states.");
+      return undefined;
+    }
+    let cancelled = false;
+    setLoading(true);
+    client.diffRepositories(basePath, headPath)
+      .then((data) => {
+        if (!cancelled) {
+          setResult(data);
+          setError(null);
+        }
+      })
+      .catch((reason) => {
+        if (!cancelled) {
+          setError(reason instanceof Error ? reason.message : String(reason));
+          setResult(null);
+        }
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [basePath, headPath, demo, client]);
+
+  return { result, loading, error };
 }
 
 /**
