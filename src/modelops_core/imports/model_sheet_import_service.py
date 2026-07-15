@@ -306,7 +306,9 @@ def _build_proposal(
                 )
                 affected_objects.append(obj_id)
 
-    proposal_stem = Path(source).stem.upper().replace("_", "-")
+    proposal_stem = Path(source).stem.upper()
+    if require_stable_ids:
+        proposal_stem = proposal_stem.replace("_", "-")
     proposal_id = f"PP-IMPORT-{proposal_stem}"
     return {
         "id": proposal_id,
