@@ -74,13 +74,13 @@ def _file_hash(path: Path) -> str:
 
 def _default_repo_root() -> Path:
     """Return the bundled customer-bp example repository path."""
-    return Path(__file__).resolve().parents[4] / "examples" / "customer_bp_model"
+    return Path(__file__).resolve().parents[3] / "examples" / "customer_bp_model"
 
 
 def _default_mapping_path() -> Path:
     """Return the bundled synthetic SAP mapping workbook path."""
     return (
-        Path(__file__).resolve().parents[4]
+        Path(__file__).resolve().parents[3]
         / "tests"
         / "fixtures"
         / "pilot"

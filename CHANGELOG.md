@@ -6,6 +6,8 @@ All notable changes to Martenweave Core.
 
 ### Changed
 
+- **Reliable pilot demo defaults:** `martenweave demo-bundle build --out <directory>` now resolves
+  its bundled Customer BP example and synthetic mapping workbook from the source tree as documented.
 - **Deterministic evidence ingestion (#430):** `martenweave evidence ingest` turns local Markdown
   notes and CSV/XLSX validation reports into a validated external `PatchProposal` containing
   candidate Issues and source hash metadata. It never writes canonical model files directly.

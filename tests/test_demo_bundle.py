@@ -16,6 +16,14 @@ FIXTURE_DIR = Path(__file__).parent / "fixtures" / "pilot"
 MAPPING_WORKBOOK = FIXTURE_DIR / "sap_customer_mapping.xlsx"
 
 
+def test_demo_bundle_defaults_resolve_bundled_source_tree_assets() -> None:
+    """Source-tree defaults support the documented no-input demo path."""
+    from modelops_core.pilot.demo_bundle import _default_mapping_path, _default_repo_root
+
+    assert (_default_repo_root() / "modelops.config.yaml").is_file()
+    assert _default_mapping_path().is_file()
+
+
 @pytest.fixture
 def demo_bundle(sample_repo: Path, tmp_path: Path):
     """Build a demo bundle using the golden pilot fixture."""
