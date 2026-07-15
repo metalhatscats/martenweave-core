@@ -39,7 +39,7 @@ def test_workbench_serves_index_html_and_api_routes(sample_repo: Path) -> None:
     root = client.get("/")
     assert root.status_code == 200
     assert "text/html" in root.headers["content-type"]
-    assert b"<div id=\"root\"></div>" in root.content
+    assert b'<div id="root"></div>' in root.content
 
     health = client.get("/health", params={"repo": str(sample_repo)})
     assert health.status_code == 200
@@ -55,7 +55,7 @@ def test_workbench_spa_fallback(sample_repo: Path) -> None:
 
     response = client.get("/models")
     assert response.status_code == 200
-    assert b"<div id=\"root\"></div>" in response.content
+    assert b'<div id="root"></div>' in response.content
 
 
 def test_workbench_cli_help() -> None:
@@ -118,7 +118,7 @@ def test_workbench_subprocess_launches(sample_repo: Path) -> None:
         with urllib.request.urlopen(base, timeout=5) as resp:
             assert resp.status == 200
             body = resp.read()
-            assert b"<div id=\"root\"></div>" in body
+            assert b'<div id="root"></div>' in body
 
         with urllib.request.urlopen(f"{base}/health?repo={sample_repo}", timeout=5) as resp:
             assert resp.status == 200

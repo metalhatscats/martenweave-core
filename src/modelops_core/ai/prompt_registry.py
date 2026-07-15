@@ -129,9 +129,7 @@ class PromptRegistry:
                 return template
         raise KeyError(f"No prompt template found for workflow: {workflow}")
 
-    def render_for_workflow(
-        self, workflow: str, inputs: dict[str, Any]
-    ) -> tuple[str, str]:
+    def render_for_workflow(self, workflow: str, inputs: dict[str, Any]) -> tuple[str, str]:
         """Render system and user prompts for a workflow.
 
         Returns a tuple of (system_prompt, user_prompt). Raises KeyError if

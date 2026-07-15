@@ -757,9 +757,7 @@ def create_mcp_server(repo: str | None = None) -> FastMCP:
                 "would_change": result.would_change,
                 "operations_preview": result.operations_preview,
                 "error": result.error,
-                "assumptions": [
-                    "This dry-run is a simulation; no canonical files were changed."
-                ],
+                "assumptions": ["This dry-run is a simulation; no canonical files were changed."],
                 "human_checks": [
                     "Review the operations preview before applying the proposal.",
                     "Ensure the proposal is accepted through governance before applying.",

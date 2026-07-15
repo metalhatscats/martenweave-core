@@ -70,12 +70,9 @@ def test_demo_bundle_excludes_raw_datasets_and_binary_files(demo_bundle) -> None
     bundle_dir = demo_bundle.bundle_dir
     manifest = demo_bundle.manifest
 
+    assert not any("dataset_readiness" in a["path"] for a in manifest["artifacts"])
     assert not any(
-        "dataset_readiness" in a["path"] for a in manifest["artifacts"]
-    )
-    assert not any(
-        Path(a["path"]).suffix not in {".md", ".json", ".xlsx"}
-        for a in manifest["artifacts"]
+        Path(a["path"]).suffix not in {".md", ".json", ".xlsx"} for a in manifest["artifacts"]
     )
 
     for path in bundle_dir.rglob("*"):

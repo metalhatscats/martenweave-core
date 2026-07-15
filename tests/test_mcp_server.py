@@ -328,8 +328,7 @@ class TestMCPWriteIntentTools:
         events = [json.loads(line) for line in raw_lines if line.strip()]
         matching = [e for e in events if e.get("command") == "mcp-propose-model-change"]
         assert matching, (
-            "Expected a telemetry event with command='mcp-propose-model-change' "
-            f"in {events}"
+            f"Expected a telemetry event with command='mcp-propose-model-change' in {events}"
         )
         assert matching[-1]["provider"] == "NoProviderAdapter"
 

@@ -12,9 +12,7 @@ from modelops_core.cli import app
 
 runner = CliRunner()
 
-MAPPING_WORKBOOK = (
-    Path(__file__).parent / "fixtures" / "pilot" / "sap_customer_mapping.xlsx"
-)
+MAPPING_WORKBOOK = Path(__file__).parent / "fixtures" / "pilot" / "sap_customer_mapping.xlsx"
 SAMPLE_DATASET = (
     Path(__file__).parent.parent
     / "examples"
@@ -27,8 +25,7 @@ SAMPLE_DATASET = (
 
 def _write_evidence_with_secret(path: Path) -> None:
     path.write_text(
-        "# Pilot evidence\n\n"
-        "The legacy API password=supersecret123 was found in a test script.\n",
+        "# Pilot evidence\n\nThe legacy API password=supersecret123 was found in a test script.\n",
         encoding="utf-8",
     )
 

@@ -41,9 +41,7 @@ def _sensitive_column_warnings(columns: list[str]) -> list[str]:
         low = col.lower()
         for term in SENSITIVE_COLUMN_TERMS:
             if term in low and col not in seen:
-                warnings.append(
-                    f"Column '{col}' may contain sensitive data ('{term}')."
-                )
+                warnings.append(f"Column '{col}' may contain sensitive data ('{term}').")
                 seen.add(col)
                 break
     return warnings
@@ -114,9 +112,7 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
 
     wb_meta = load_workbook(path, data_only=True, read_only=True)
     sheet_names = list(wb_meta.sheetnames)
-    hidden_sheets = [
-        name for name in sheet_names if wb_meta[name].sheet_state != "visible"
-    ]
+    hidden_sheets = [name for name in sheet_names if wb_meta[name].sheet_state != "visible"]
     external_links: list[str] = []
     for link in getattr(wb_meta, "external_links", []) or []:
         target = getattr(link, "Target", None) or str(link)

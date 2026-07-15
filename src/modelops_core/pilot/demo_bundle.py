@@ -212,9 +212,7 @@ def build_demo_bundle(
         },
         generated_at=generated_at,
     )
-    pilot_outcome_service.write_pilot_outcome(
-        outcome, assessment_dir / "pilot-outcome.md"
-    )
+    pilot_outcome_service.write_pilot_outcome(outcome, assessment_dir / "pilot-outcome.md")
 
     # Sanitize and package only shareable artifacts into the bundle root.
     bundle_dir = out_dir
@@ -233,14 +231,11 @@ def build_demo_bundle(
     # remove their entries from the copied assessment manifest.
     assessment_manifest_path = bundle_dir / "manifest.json"
     if assessment_manifest_path.exists():
-        assessment_manifest = json.loads(
-            assessment_manifest_path.read_text(encoding="utf-8")
-        )
+        assessment_manifest = json.loads(assessment_manifest_path.read_text(encoding="utf-8"))
         assessment_manifest["generated_artifacts"] = [
             a
             for a in assessment_manifest.get("generated_artifacts", [])
-            if a["path"] != "manifest.json"
-            and not a["path"].lower().endswith(".xlsx")
+            if a["path"] != "manifest.json" and not a["path"].lower().endswith(".xlsx")
         ]
         assessment_manifest_path.write_text(
             json.dumps(assessment_manifest, indent=2, sort_keys=True),
@@ -270,8 +265,7 @@ def build_demo_bundle(
 
     # Write bundle manifest (exclude the manifest from its own artifact list).
     artifacts = [
-        a for a in _collect_artifact_manifest(bundle_dir)
-        if a["path"] != "bundle-manifest.json"
+        a for a in _collect_artifact_manifest(bundle_dir) if a["path"] != "bundle-manifest.json"
     ]
     manifest: dict[str, Any] = {
         "tool": "martenweave",

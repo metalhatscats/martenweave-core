@@ -108,9 +108,7 @@ class OpenAICompatibleAdapter:
         self.base_url = base_url or os.getenv("OPENAI_BASE_URL", _DEFAULT_BASE_URL)
         self.model = model or os.getenv("OPENAI_MODEL", _DEFAULT_MODEL)
         self.timeout = timeout or int(os.getenv("MARTENWEAVE_AI_TIMEOUT", str(_DEFAULT_TIMEOUT)))
-        self.max_retries = int(
-            os.getenv("MARTENWEAVE_AI_MAX_RETRIES", str(_DEFAULT_MAX_RETRIES))
-        )
+        self.max_retries = int(os.getenv("MARTENWEAVE_AI_MAX_RETRIES", str(_DEFAULT_MAX_RETRIES)))
 
     def generate_candidates(self, context: AIContextBundle) -> list[AICandidateOutput]:
         """Generate candidate patch proposals from context."""

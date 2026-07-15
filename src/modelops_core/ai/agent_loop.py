@@ -100,9 +100,7 @@ def _extract_error_key(error: dict[str, Any]) -> tuple[str, ...]:
     )
 
 
-def _errors_unchanged(
-    previous: list[dict[str, Any]], current: list[dict[str, Any]]
-) -> bool:
+def _errors_unchanged(previous: list[dict[str, Any]], current: list[dict[str, Any]]) -> bool:
     """Return True when two error lists are semantically identical."""
     if len(previous) != len(current):
         return False
@@ -286,9 +284,7 @@ def run_agent_loop(
 
     # Guard against an unusable iteration budget.
     if max_iterations < 1:
-        result.human_checks = [
-            "max_iterations must be at least 1 to run the agent loop."
-        ]
+        result.human_checks = ["max_iterations must be at least 1 to run the agent loop."]
         return result
 
     # Baseline validation before first propose.
@@ -509,9 +505,7 @@ def run_agent_loop(
             )
         except (AIProviderError, ValueError, KeyError, OSError) as exc:
             result.operations_preview = []
-            result.human_checks.append(
-                f"Dry-run preview could not be generated: {exc}"
-            )
+            result.human_checks.append(f"Dry-run preview could not be generated: {exc}")
         final_proposal_path = model_path / "patch-proposals" / f"{final_proposal['id']}.md"
         result.proposal_path = str(final_proposal_path)
     else:
@@ -545,18 +539,14 @@ def run_agent_loop(
             result.operations_preview = [dict(op) for op in dry_run_result.operations_preview]
         except (AIProviderError, ValueError, KeyError, OSError) as exc:
             result.operations_preview = []
-            result.human_checks.append(
-                f"Operations preview could not be generated: {exc}"
-            )
+            result.human_checks.append(f"Operations preview could not be generated: {exc}")
 
     result.proposal_id = final_proposal.get("id")
 
     if is_high_risk:
         result.final_status = AgentLoopStatus.HIGH_RISK
         result.validation_status = "valid"
-        result.human_checks.append(
-            _change_request_guidance(final_proposal.get("id", "unknown"))
-        )
+        result.human_checks.append(_change_request_guidance(final_proposal.get("id", "unknown")))
         result.log = log
         return result
 

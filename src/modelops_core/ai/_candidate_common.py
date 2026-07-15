@@ -98,9 +98,7 @@ def build_prompt_messages(context: AIContextBundle) -> tuple[str, str]:
 
     try:
         registry = PromptRegistry()
-        system_prompt, user_prompt = registry.render_for_workflow(
-            "propose-patch", context_dict
-        )
+        system_prompt, user_prompt = registry.render_for_workflow("propose-patch", context_dict)
     except KeyError:
         system_prompt, user_prompt = _SYSTEM_PROMPT, _build_prompt(context)
 

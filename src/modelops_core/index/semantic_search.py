@@ -143,9 +143,7 @@ class SemanticIndexBuilder:
 
         for row in rows:
             object_id, obj_type, name, title, description, body, frontmatter_json = row
-            text = self._extract_text(
-                name, title, description, body, frontmatter_json
-            )
+            text = self._extract_text(name, title, description, body, frontmatter_json)
             tokens = _tokenize(text)
             tf = _term_frequencies(tokens)
             for term in tf:
@@ -159,9 +157,7 @@ class SemanticIndexBuilder:
                 )
             )
 
-        idf = {
-            term: _compute_idf(doc_count, df) for term, df in term_dfs.items()
-        }
+        idf = {term: _compute_idf(doc_count, df) for term, df in term_dfs.items()}
 
         # Store vocabulary
         for term, df in term_dfs.items():
@@ -174,18 +170,11 @@ class SemanticIndexBuilder:
         final_entries: list[tuple[str, str, float, int]] = []
         for entry in entries:
             # Re-tokenize to rebuild tf; small repos only, so this is fine.
-            row = next(
-                r
-                for r in rows
-                if r[0] == entry.object_id
-            )
-            text = self._extract_text(
-                row[2], row[3], row[4], row[5], row[6]
-            )
+            row = next(r for r in rows if r[0] == entry.object_id)
+            text = self._extract_text(row[2], row[3], row[4], row[5], row[6])
             tf = _term_frequencies(_tokenize(text))
             vector = {
-                term: (1 + math.log(tf_val)) * idf.get(term, 0.0)
-                for term, tf_val in tf.items()
+                term: (1 + math.log(tf_val)) * idf.get(term, 0.0) for term, tf_val in tf.items()
             }
             vector = _normalize_vector(vector)
             final_entries.append(
@@ -268,9 +257,7 @@ class SemanticSearcher:
         conn.row_factory = sqlite3.Row
         try:
             expansion_ids = (
-                expand_candidate_ids
-                if expand_candidate_ids is not None
-                else candidate_ids
+                expand_candidate_ids if expand_candidate_ids is not None else candidate_ids
             )
             if not self._has_index(conn, expand=expand, candidate_ids=expansion_ids):
                 return []
@@ -285,7 +272,10 @@ class SemanticSearcher:
 
             if expand and expansion_ids:
                 query_vector = self._expand_query_vector(
-                    conn, query_vector, expansion_ids, vocabulary,
+                    conn,
+                    query_vector,
+                    expansion_ids,
+                    vocabulary,
                     max_relationships=max_relationships,
                 )
 
@@ -356,13 +346,10 @@ class SemanticSearcher:
         rows = conn.execute("SELECT term, idf FROM semantic_vocabulary").fetchall()
         return {row["term"]: row["idf"] for row in rows}
 
-    def _build_query_vector(
-        self, query: str, vocabulary: dict[str, float]
-    ) -> dict[str, float]:
+    def _build_query_vector(self, query: str, vocabulary: dict[str, float]) -> dict[str, float]:
         tf = _term_frequencies(_tokenize(query))
         vector = {
-            term: (1 + math.log(tf_val)) * vocabulary.get(term, 0.0)
-            for term, tf_val in tf.items()
+            term: (1 + math.log(tf_val)) * vocabulary.get(term, 0.0) for term, tf_val in tf.items()
         }
         return _normalize_vector(vector)
 
@@ -387,8 +374,7 @@ class SemanticSearcher:
                 "FROM semantic_index si JOIN objects o ON o.id = si.object_id"
             ).fetchall()
         return [
-            (row["object_id"], row["type"], json.loads(row["term_vector_json"]))
-            for row in rows
+            (row["object_id"], row["type"], json.loads(row["term_vector_json"])) for row in rows
         ]
 
     def _expand_query_vector(

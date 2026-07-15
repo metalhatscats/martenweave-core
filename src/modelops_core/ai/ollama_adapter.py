@@ -68,16 +68,12 @@ def _post_chat(
                     continue
                 # Retries exhausted; break out of the loop and raise below.
                 break
-            raise AIProviderRequestError(
-                f"Ollama API error: {exc.code} {exc.reason}"
-            ) from exc
+            raise AIProviderRequestError(f"Ollama API error: {exc.code} {exc.reason}") from exc
         except urllib.error.URLError as exc:
             last_error = exc
             if isinstance(exc.reason, TimeoutError):
                 raise AITimeoutError("Ollama API timed out") from exc
-            raise AIProviderRequestError(
-                f"Ollama API request failed: {exc.reason}"
-            ) from exc
+            raise AIProviderRequestError(f"Ollama API request failed: {exc.reason}") from exc
         except TimeoutError as exc:
             raise AITimeoutError("Ollama API timed out") from exc
         except json.JSONDecodeError as exc:
@@ -103,9 +99,7 @@ class OllamaAdapter:
         self.base_url = base_url or os.getenv("OLLAMA_BASE_URL", _DEFAULT_BASE_URL)
         self.model = model or os.getenv("OLLAMA_MODEL", _DEFAULT_MODEL)
         self.timeout = timeout or int(os.getenv("MARTENWEAVE_AI_TIMEOUT", str(_DEFAULT_TIMEOUT)))
-        self.max_retries = int(
-            os.getenv("MARTENWEAVE_AI_MAX_RETRIES", str(_DEFAULT_MAX_RETRIES))
-        )
+        self.max_retries = int(os.getenv("MARTENWEAVE_AI_MAX_RETRIES", str(_DEFAULT_MAX_RETRIES)))
 
     def generate_candidates(self, context: AIContextBundle) -> list[AICandidateOutput]:
         """Generate candidate patch proposals from context."""

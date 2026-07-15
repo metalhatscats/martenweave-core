@@ -112,7 +112,7 @@ def test_pilot_outcome_recommends_pivot_when_high_false_positive_rate(tmp_path: 
 
     result = runner.invoke(
         app,
-        ["pilot-outcome", "--assessment", str(assessment_dir / "manifest.json"), "--out", str(out)]
+        ["pilot-outcome", "--assessment", str(assessment_dir / "manifest.json"), "--out", str(out)],
     )
     assert result.exit_code == 0, result.output
     content = out.read_text(encoding="utf-8")
@@ -125,7 +125,7 @@ def test_pilot_outcome_shows_missing_baselines(tmp_path: Path) -> None:
 
     result = runner.invoke(
         app,
-        ["pilot-outcome", "--assessment", str(assessment_dir / "manifest.json"), "--out", str(out)]
+        ["pilot-outcome", "--assessment", str(assessment_dir / "manifest.json"), "--out", str(out)],
     )
     assert result.exit_code == 0, result.output
     content = out.read_text(encoding="utf-8")
@@ -191,7 +191,7 @@ def test_pilot_outcome_missing_reviews_file_is_not_blocking(tmp_path: Path) -> N
 
     result = runner.invoke(
         app,
-        ["pilot-outcome", "--assessment", str(assessment_dir / "manifest.json"), "--out", str(out)]
+        ["pilot-outcome", "--assessment", str(assessment_dir / "manifest.json"), "--out", str(out)],
     )
     assert result.exit_code == 0, result.output
     content = out.read_text(encoding="utf-8")

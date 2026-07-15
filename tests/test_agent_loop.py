@@ -55,7 +55,8 @@ def _invalid_proposal(
             }
         ],
         "validation_status": "invalid",
-        "validation_results": errors or [
+        "validation_results": errors
+        or [
             {
                 "severity": "ERROR",
                 "code": "PATCH_UPDATE_OBJECT_NOT_FOUND",
@@ -152,14 +153,16 @@ def test_agent_loop_refines_on_validation_error(
     mock_build,
     sample_repo: Path,
 ) -> None:
-    invalid = _invalid_proposal(errors=[
-        {
-            "severity": "ERROR",
-            "code": "PATCH_UPDATE_OBJECT_NOT_FOUND",
-            "message": "Target missing.",
-            "object_id": "PP-TEST-001",
-        }
-    ])
+    invalid = _invalid_proposal(
+        errors=[
+            {
+                "severity": "ERROR",
+                "code": "PATCH_UPDATE_OBJECT_NOT_FOUND",
+                "message": "Target missing.",
+                "object_id": "PP-TEST-001",
+            }
+        ]
+    )
     valid = _valid_proposal()
     mock_build.side_effect = [
         _make_result(invalid),
@@ -195,14 +198,16 @@ def test_agent_loop_max_iterations(
 ) -> None:
     # Return a different error each iteration so no_progress is not triggered.
     def _make_invalid(iteration: int) -> dict:
-        return _invalid_proposal(errors=[
-            {
-                "severity": "ERROR",
-                "code": "PATCH_UPDATE_OBJECT_NOT_FOUND",
-                "message": f"Target missing in iteration {iteration}.",
-                "object_id": "PP-TEST-001",
-            }
-        ])
+        return _invalid_proposal(
+            errors=[
+                {
+                    "severity": "ERROR",
+                    "code": "PATCH_UPDATE_OBJECT_NOT_FOUND",
+                    "message": f"Target missing in iteration {iteration}.",
+                    "object_id": "PP-TEST-001",
+                }
+            ]
+        )
 
     mock_build.side_effect = [
         _make_result(_make_invalid(1)),
@@ -355,8 +360,7 @@ def test_agent_loop_emits_terminal_impact_audit(
 
     assert result.final_status == AgentLoopStatus.VALID_PROPOSAL
     impact_calls = [
-        call for call in mock_audit.call_args_list
-        if call.kwargs.get("action") == "impact_analysis"
+        call for call in mock_audit.call_args_list if call.kwargs.get("action") == "impact_analysis"
     ]
     assert len(impact_calls) == 1
     assert impact_calls[0].kwargs["proposal_id"] == proposal["id"]
@@ -394,8 +398,7 @@ def test_agent_loop_emits_high_risk_audit(
 
     assert result.final_status == AgentLoopStatus.HIGH_RISK
     impact_calls = [
-        call for call in mock_audit.call_args_list
-        if call.kwargs.get("action") == "impact_analysis"
+        call for call in mock_audit.call_args_list if call.kwargs.get("action") == "impact_analysis"
     ]
     assert len(impact_calls) == 1
     assert impact_calls[0].kwargs["status"] == "high_risk"

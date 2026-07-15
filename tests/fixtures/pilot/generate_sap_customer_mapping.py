@@ -1121,9 +1121,10 @@ def _save_deterministic_xlsx(wb: Workbook, out_path: Path) -> None:
     buf.seek(0)
 
     fixed_dt = (2020, 1, 1, 0, 0, 0)
-    with zipfile.ZipFile(buf, "r") as zin, zipfile.ZipFile(
-        out_path, "w", compression=zipfile.ZIP_DEFLATED
-    ) as zout:
+    with (
+        zipfile.ZipFile(buf, "r") as zin,
+        zipfile.ZipFile(out_path, "w", compression=zipfile.ZIP_DEFLATED) as zout,
+    ):
         for item in sorted(zin.infolist(), key=lambda info: info.filename):
             data = zin.read(item.filename)
             new_info = zipfile.ZipInfo(item.filename, date_time=fixed_dt)

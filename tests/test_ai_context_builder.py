@@ -326,9 +326,7 @@ class TestIncludedSourcesRedacted:
             ],
         )
 
-        with mock.patch(
-            "modelops_core.ai.context_builder.trace_object", return_value=trace_result
-        ):
+        with mock.patch("modelops_core.ai.context_builder.trace_object", return_value=trace_result):
             bundle = build_context_bundle(
                 db_path=db_path,
                 workflow="chat-to-model",
@@ -386,9 +384,7 @@ class TestIncludedSourcesRedacted:
             ],
         )
 
-        with mock.patch(
-            "modelops_core.ai.context_builder.trace_object", return_value=trace_result
-        ):
+        with mock.patch("modelops_core.ai.context_builder.trace_object", return_value=trace_result):
             bundle = build_context_bundle(
                 db_path=db_path,
                 workflow="chat-to-model",
@@ -433,9 +429,7 @@ class TestOversizedBundleSummaryFallback:
             edges=[],
         )
 
-        with mock.patch(
-            "modelops_core.ai.context_builder.trace_object", return_value=trace_result
-        ):
+        with mock.patch("modelops_core.ai.context_builder.trace_object", return_value=trace_result):
             bundle = build_context_bundle(
                 db_path=db_path,
                 workflow="chat-to-model",

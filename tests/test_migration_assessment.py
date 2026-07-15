@@ -135,9 +135,7 @@ def test_profile_mapping_workbook_detects_formulas(tmp_path: Path) -> None:
     assert "Formula in sheet 'Mappings' cell" in profile.formula_warnings[0]
 
 
-def test_generate_migration_assessment_happy_path(
-    sample_repo: Path, tmp_path: Path
-) -> None:
+def test_generate_migration_assessment_happy_path(sample_repo: Path, tmp_path: Path) -> None:
     mapping = tmp_path / "mapping.xlsx"
     _write_minimal_mapping_workbook(mapping)
     out = tmp_path / "assessment"
@@ -175,14 +173,10 @@ def test_generate_migration_assessment_happy_path(
     assert manifest_data["inputs"]["mapping"] == str(mapping)
     assert manifest_data["inputs"]["dataset"] is None
     assert manifest_data["inputs"]["evidence"] == []
-    assert any(
-        a["path"] == "manifest.json" for a in manifest_data["generated_artifacts"]
-    )
+    assert any(a["path"] == "manifest.json" for a in manifest_data["generated_artifacts"])
 
 
-def test_generate_migration_assessment_with_dataset(
-    sample_repo: Path, tmp_path: Path
-) -> None:
+def test_generate_migration_assessment_with_dataset(sample_repo: Path, tmp_path: Path) -> None:
     mapping = tmp_path / "mapping.xlsx"
     _write_minimal_mapping_workbook(mapping)
     dataset = sample_repo / "data" / "samples" / "customer_messy.csv"
@@ -226,9 +220,7 @@ def test_cli_migration_assessment_happy_path(sample_repo: Path, tmp_path: Path) 
     assert (out / "manifest.json").exists()
 
 
-def test_cli_migration_assessment_json_output(
-    sample_repo: Path, tmp_path: Path
-) -> None:
+def test_cli_migration_assessment_json_output(sample_repo: Path, tmp_path: Path) -> None:
     mapping = tmp_path / "mapping.xlsx"
     _write_minimal_mapping_workbook(mapping)
     out = tmp_path / "assessment"
@@ -255,9 +247,7 @@ def test_cli_migration_assessment_json_output(
     assert any(s["name"] == "assessment_package" for s in data["stage_statuses"])
 
 
-def test_cli_migration_assessment_missing_mapping_fails(
-    sample_repo: Path, tmp_path: Path
-) -> None:
+def test_cli_migration_assessment_missing_mapping_fails(sample_repo: Path, tmp_path: Path) -> None:
     out = tmp_path / "assessment"
     result = runner.invoke(
         app,

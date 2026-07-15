@@ -143,9 +143,7 @@ class ProviderOutputValidator:
 
             object_id = op.get("object_id")
             if not isinstance(object_id, str) or not _OBJECT_ID_PATTERN.match(object_id):
-                raise AIOutputValidationError(
-                    f"Invalid object_id '{object_id}' in operation."
-                )
+                raise AIOutputValidationError(f"Invalid object_id '{object_id}' in operation.")
 
             object_type = op.get("object_type")
             if object_type is not None and object_type not in self._registered_types:

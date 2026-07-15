@@ -39,8 +39,7 @@ def _build_provider_adapter(name: str) -> AIProviderAdapter:
 
         return OllamaAdapter()
     raise ValueError(
-        f"Unknown AI provider '{name}'. "
-        f"Known providers: {', '.join(_KNOWN_PROVIDERS)}."
+        f"Unknown AI provider '{name}'. Known providers: {', '.join(_KNOWN_PROVIDERS)}."
     )
 
 

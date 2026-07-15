@@ -69,9 +69,7 @@ def _command_name(command) -> str | None:
     return None
 
 
-def _collect_commands(
-    typer_app: typer.Typer, prefix: tuple[str, ...] = ()
-) -> set[str]:
+def _collect_commands(typer_app: typer.Typer, prefix: tuple[str, ...] = ()) -> set[str]:
     """Recursively collect all valid command paths from a Typer app."""
     commands: set[str] = set()
 
@@ -111,9 +109,7 @@ def _is_ignored(lines: list[str], snippet_line_index: int) -> bool:
     return False
 
 
-def _find_invalid_snippets(
-    file_path: Path, valid_commands: set[str]
-) -> list[tuple[int, str, str]]:
+def _find_invalid_snippets(file_path: Path, valid_commands: set[str]) -> list[tuple[int, str, str]]:
     """Return list of (line_number, line_text, matched_command) for invalid snippets."""
     invalid: list[tuple[int, str, str]] = []
     text = file_path.read_text(encoding="utf-8")

@@ -130,9 +130,7 @@ def _insert_relationship(
 
 
 def test_tokenize_lowercase_and_splits() -> None:
-    assert _tokenize("Customer Group, KNVV-KDGRP!") == [
-        "customer", "group", "knvv", "kdgrp"
-    ]
+    assert _tokenize("Customer Group, KNVV-KDGRP!") == ["customer", "group", "knvv", "kdgrp"]
 
 
 def test_term_frequencies_counts() -> None:
@@ -386,21 +384,37 @@ def test_cli_search_semantic_json(tmp_path: Path) -> None:
     conn.execute(
         "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
-            "ATTR-001", "Attribute", "active", "Customer Group", "Customer Group", None,
-            "Sales-area-dependent customer grouping", "# Customer Group",
-            "model/ATTR-001.md", "hash", '{"id": "ATTR-001", "type": "Attribute"}',
-            None, None,
+            "ATTR-001",
+            "Attribute",
+            "active",
+            "Customer Group",
+            "Customer Group",
+            None,
+            "Sales-area-dependent customer grouping",
+            "# Customer Group",
+            "model/ATTR-001.md",
+            "hash",
+            '{"id": "ATTR-001", "type": "Attribute"}',
+            None,
+            None,
         ),
     )
     conn.execute(
         "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
-            "FEP-001", "FieldEndpoint", "active", "KNVV KDGRP", None, None,
-            "SAP field for customer grouping", "# KNVV KDGRP",
+            "FEP-001",
+            "FieldEndpoint",
+            "active",
+            "KNVV KDGRP",
+            None,
+            None,
+            "SAP field for customer grouping",
+            "# KNVV KDGRP",
             "model/FEP-001.md",
             "hash",
             '{"id": "FEP-001", "type": "FieldEndpoint", "technical_name": "KDGRP"}',
-            None, None,
+            None,
+            None,
         ),
     )
     SemanticIndexBuilder().build(conn)
@@ -455,9 +469,16 @@ def test_cli_search_semantic_keyword_only_ranks_last(tmp_path: Path) -> None:
         "source_file, content_hash, frontmatter_json) "
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
-            "ATTR-001", "Attribute", "active", "Customer Group", "Customer Group", None,
-            "Sales-area-dependent customer grouping", "# Customer Group",
-            "model/ATTR-001.md", "hash",
+            "ATTR-001",
+            "Attribute",
+            "active",
+            "Customer Group",
+            "Customer Group",
+            None,
+            "Sales-area-dependent customer grouping",
+            "# Customer Group",
+            "model/ATTR-001.md",
+            "hash",
             '{"id": "ATTR-001", "type": "Attribute"}',
         ),
     )
@@ -467,9 +488,16 @@ def test_cli_search_semantic_keyword_only_ranks_last(tmp_path: Path) -> None:
         "source_file, content_hash, frontmatter_json) "
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
-            "FEP-001", "FieldEndpoint", "active", "KNVV KDGRP", None, None,
-            "SAP field for customer grouping", "# KNVV KDGRP",
-            "model/FEP-001.md", "hash",
+            "FEP-001",
+            "FieldEndpoint",
+            "active",
+            "KNVV KDGRP",
+            None,
+            None,
+            "SAP field for customer grouping",
+            "# KNVV KDGRP",
+            "model/FEP-001.md",
+            "hash",
             '{"id": "FEP-001", "type": "FieldEndpoint", "technical_name": "KDGRP"}',
         ),
     )

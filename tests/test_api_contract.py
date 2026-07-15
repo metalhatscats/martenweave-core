@@ -105,9 +105,7 @@ def test_api_v1_search_missing_index(temp_model_dir: Path) -> None:
 
 
 def test_api_v1_object_detail_shape(sample_repo: Path) -> None:
-    response = client.get(
-        "/api/v1/objects/DOMAIN-CUSTOMER-BP", params={"repo": str(sample_repo)}
-    )
+    response = client.get("/api/v1/objects/DOMAIN-CUSTOMER-BP", params={"repo": str(sample_repo)})
     assert response.status_code == 200
     data = response.json()
 
@@ -119,9 +117,7 @@ def test_api_v1_object_detail_shape(sample_repo: Path) -> None:
 
 
 def test_api_v1_object_detail_not_found(sample_repo: Path) -> None:
-    response = client.get(
-        "/api/v1/objects/DOES-NOT-EXIST", params={"repo": str(sample_repo)}
-    )
+    response = client.get("/api/v1/objects/DOES-NOT-EXIST", params={"repo": str(sample_repo)})
     assert response.status_code == 404
     assert "not found" in response.json()["detail"].lower()
 

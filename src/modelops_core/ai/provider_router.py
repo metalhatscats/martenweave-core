@@ -54,9 +54,7 @@ class ProviderRouter:
             _default_adapter_name(adapter) for adapter in self.fallbacks
         ]
         if len(self._fallback_names) != len(self.fallbacks):
-            raise ValueError(
-                "fallback_names must have the same length as fallbacks when provided."
-            )
+            raise ValueError("fallback_names must have the same length as fallbacks when provided.")
 
     def generate_candidates(self, context: AIContextBundle) -> list[AICandidateOutput]:
         """Generate candidates from the primary, falling back on eligible errors."""
@@ -113,8 +111,7 @@ class ProviderRouter:
             return candidates
 
         attempt_summary = ", ".join(
-            f"{name} ({status})"
-            for name, status in attempts + [(success_name, "success")]
+            f"{name} ({status})" for name, status in attempts + [(success_name, "success")]
         )
         assumption = f"Provider attempts: {attempt_summary}"
 

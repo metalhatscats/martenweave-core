@@ -61,9 +61,7 @@ def _build_assessment_input(tmp_path: Path) -> Path:
                     "dataset": "/Users/alice/client/project/sample.csv",
                     "evidence": [],
                 },
-                "generated_artifacts": [
-                    {"path": "dataset_readiness/sample.csv", "sha256": "abc"}
-                ],
+                "generated_artifacts": [{"path": "dataset_readiness/sample.csv", "sha256": "abc"}],
                 "stage_statuses": [],
                 "generated_at": "2026-01-01T00:00:00Z",
             },

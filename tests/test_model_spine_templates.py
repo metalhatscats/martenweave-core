@@ -149,9 +149,7 @@ def test_ams_field_dictionary_has_expected_structure() -> None:
 
 def test_init_with_sap_bp_customer_migration_template() -> None:
     with tempfile.TemporaryDirectory() as td:
-        result = runner.invoke(
-            app, ["init", td, "--template", "sap_bp_customer_migration"]
-        )
+        result = runner.invoke(app, ["init", td, "--template", "sap_bp_customer_migration"])
         assert result.exit_code == 0
         model_dir = Path(td) / "model"
         assert (model_dir / "DOMAIN-CUSTOMER-MIGRATION.md").exists()

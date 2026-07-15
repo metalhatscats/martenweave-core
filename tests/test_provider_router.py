@@ -106,9 +106,7 @@ class TestProviderRouter:
         )
 
     def test_router_falls_back_on_invalid_output(self) -> None:
-        primary = MockAdapter(
-            name="primary", exc=AIOutputValidationError("primary bad output")
-        )
+        primary = MockAdapter(name="primary", exc=AIOutputValidationError("primary bad output"))
         fallback = MockAdapter(name="fallback", result=[_candidate("fallback")])
         router = ProviderRouter(primary=primary, fallbacks=[fallback])
         context = AIContextBundle(note="test")
@@ -175,12 +173,7 @@ class TestGetDefaultAdapterFromRepoConfig:
         monkeypatch.delenv("MARTENWEAVE_AI_PROVIDER", raising=False)
         config_path = tmp_path / "modelops.config.yaml"
         config_path.write_text(
-            "name: test\n"
-            "ai:\n"
-            "  providers:\n"
-            "    - no_provider\n"
-            "    - kimi\n"
-            "    - ollama\n",
+            "name: test\nai:\n  providers:\n    - no_provider\n    - kimi\n    - ollama\n",
             encoding="utf-8",
         )
 
