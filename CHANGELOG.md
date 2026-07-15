@@ -4,6 +4,12 @@ All notable changes to Martenweave Core.
 
 ## [Unreleased]
 
+### Changed
+
+- **Safe repository migrations (#515):** `martenweave migrate` now previews by default. Explicit
+  `--apply` writes only reviewed legacy schema versions, makes atomic file replacements, stores a
+  generated backup and receipt, validates canonical files, and rebuilds the disposable index.
+
 ## [0.5.0] — 2026-07-14
 
 ### Added

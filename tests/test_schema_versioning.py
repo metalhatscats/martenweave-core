@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from modelops_core.cli import app
@@ -225,6 +226,15 @@ runner = CliRunner()
 
 
 class TestMigrateCliJson:
+    @pytest.mark.parametrize("fixture_name", ["schema-v0", "schema-v0_9"])
+    def test_historical_fixture_migration_preview(self, fixture_name: str) -> None:
+        fixture = Path(__file__).parent / "fixtures" / "repositories" / fixture_name
+        result = runner.invoke(app, ["migrate", "--repo", str(fixture), "--json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["dry_run"] is True
+        assert data["migrated_count"] == 1
+
     def test_migrate_json_empty_model(self, tmp_path: Path) -> None:
         repo = tmp_path / "repo"
         repo.mkdir()
@@ -280,3 +290,86 @@ class TestMigrateCliJson:
         # Verify file was NOT changed in dry-run
         text = obj.read_text(encoding="utf-8")
         assert "schema_version: 0.1" in text
+
+    def test_migrate_defaults_to_preview(self, tmp_path: Path) -> None:
+        repo = tmp_path / "repo"
+        model_dir = repo / "model"
+        model_dir.mkdir(parents=True)
+        obj = model_dir / "DOMAIN-TEST.md"
+        obj.write_text(
+            "---\n"
+            "id: DOMAIN-TEST\n"
+            "type: MasterDataDomain\n"
+            "status: draft\n"
+            "schema_version: 0.1\n"
+            "---\n",
+            encoding="utf-8",
+        )
+        result = runner.invoke(app, ["migrate", "--repo", str(repo), "--json"])
+        assert result.exit_code == 0
+        assert json.loads(result.output)["dry_run"] is True
+        assert "schema_version: 0.1" in obj.read_text(encoding="utf-8")
+
+    def test_migrate_apply_preserves_unknown_metadata_and_writes_receipt(
+        self, tmp_path: Path
+    ) -> None:
+        repo = tmp_path / "repo"
+        model_dir = repo / "model"
+        model_dir.mkdir(parents=True)
+        obj = model_dir / "DOMAIN-TEST.md"
+        obj.write_text(
+            "---\n"
+            "id: DOMAIN-TEST\n"
+            "type: MasterDataDomain\n"
+            "status: draft\n"
+            "name: Test\n"
+            "schema_version: 0.1\n"
+            "custom_field: retain-me\n"
+            "---\n\n# Body\n",
+            encoding="utf-8",
+        )
+        result = runner.invoke(app, ["migrate", "--repo", str(repo), "--apply", "--json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["receipt"]
+        assert (repo / data["receipt"]).exists()
+        text = obj.read_text(encoding="utf-8")
+        assert "schema_version: '1.0'" in text
+        assert "custom_field: retain-me" in text
+        assert "# Body" in text
+
+    def test_migrate_rejects_future_version_without_writing(self, tmp_path: Path) -> None:
+        repo = tmp_path / "repo"
+        model_dir = repo / "model"
+        model_dir.mkdir(parents=True)
+        obj = model_dir / "DOMAIN-TEST.md"
+        original = (
+            "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\n"
+            "schema_version: 99.0\n---\n"
+        )
+        obj.write_text(original, encoding="utf-8")
+        result = runner.invoke(app, ["migrate", "--repo", str(repo), "--apply", "--json"])
+        assert result.exit_code == 1
+        assert json.loads(result.output)["unsupported_files"] == ["model/DOMAIN-TEST.md"]
+        assert obj.read_text(encoding="utf-8") == original
+
+    def test_migrate_rolls_back_when_index_rebuild_fails(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        repo = tmp_path / "repo"
+        model_dir = repo / "model"
+        model_dir.mkdir(parents=True)
+        obj = model_dir / "DOMAIN-TEST.md"
+        original = (
+            "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test\n"
+            "schema_version: 0.1\nunknown: preserved\n---\n\n# Body\n"
+        )
+        obj.write_text(original, encoding="utf-8")
+        monkeypatch.setattr(
+            "modelops_core.cli._build_index", lambda **_: (_ for _ in ()).throw(OSError("boom"))
+        )
+
+        result = runner.invoke(app, ["migrate", "--repo", str(repo), "--apply", "--json"])
+        assert result.exit_code == 1
+        assert json.loads(result.output)["rolled_back"] is True
+        assert obj.read_text(encoding="utf-8") == original

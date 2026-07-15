@@ -34,6 +34,16 @@ class Migration:
 # Registered migrations (ordered by from_version).
 MIGRATIONS: list[Migration] = []
 
+# Read compatibility is deliberately explicit.  These historic versions have
+# the same frontmatter shape as 1.0, so migration only records the current
+# schema marker.  Future versions are never rewritten by an older Core.
+SUPPORTED_MIGRATION_SOURCES: frozenset[str] = frozenset({"", "0.0", "0.1", "0.9", "1.0"})
+
+
+def can_migrate_from(version: object | None) -> bool:
+    """Return whether this Core has a reviewed migration path for *version*."""
+    return str(version or "").strip() in SUPPORTED_MIGRATION_SOURCES
+
 
 def register_migration(migration: Migration) -> None:
     """Register a migration step.

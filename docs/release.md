@@ -123,6 +123,22 @@ This produces:
 - `dist/martenweave-core-<version>.tar.gz` — source distribution
 - `dist/martenweave-core-<version>-py3-none-any.whl` — wheel
 
+## Canonical repository migrations
+
+`martenweave migrate --repo <repo>` is preview-first. It reports each planned schema marker
+change without touching canonical files. Use `--apply` only after reviewing the plan:
+
+```bash
+.venv/bin/martenweave migrate --repo ./my-model
+.venv/bin/martenweave migrate --repo ./my-model --apply
+```
+
+The current Core writes only schema versions with an explicit migration path. Future or unknown
+versions fail without mutation. On apply, the original canonical files are copied under
+`generated/migration-backups/`, writes are atomically replaced, the repository is validated, the
+disposable index is rebuilt, and a receipt is written under `generated/migration-receipts/`.
+Restore the recorded backup and rebuild the index to roll back a completed migration.
+
 Clean build artifacts between releases:
 
 ```bash

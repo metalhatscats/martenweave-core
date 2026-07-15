@@ -164,7 +164,7 @@ from modelops_core.run import (
     generate_migration_assessment,
     write_readiness_report,
 )
-from modelops_core.schemas.migration import migrate_object, needs_migration
+from modelops_core.schemas.migration import can_migrate_from, migrate_object, needs_migration
 from modelops_core.schemas.versioning import (
     CURRENT_SCHEMA_VERSION,
     validate_repo_schema_version,
@@ -473,11 +473,7 @@ def ai_provider_list(
         if config["api_key_env"]:
             required.append(config["api_key_env"])
         # Base URL and model are optional for all providers because defaults exist.
-        configured = (
-            True
-            if provider == "no_provider"
-            else all(_env_set(v) for v in required)
-        )
+        configured = True if provider == "no_provider" else all(_env_set(v) for v in required)
         rows.append(
             {
                 "provider": provider,
@@ -5600,8 +5596,7 @@ def workbench(
         import uvicorn
     except ImportError as exc:
         console.print(
-            "[red]uvicorn is required for the workbench. "
-            "Install it with: pip install uvicorn[/red]"
+            "[red]uvicorn is required for the workbench. Install it with: pip install uvicorn[/red]"
         )
         raise typer.Exit(code=1) from exc
 
@@ -5612,9 +5607,7 @@ def workbench(
     repo_root = _resolve_repo(repo)
     model_path = resolve_model_path(repo_root)
     if not model_path.exists():
-        console.print(
-            f"[red]Repository not found or missing model/ directory: {repo_root}[/red]"
-        )
+        console.print(f"[red]Repository not found or missing model/ directory: {repo_root}[/red]")
         raise typer.Exit(code=1)
 
     # Prefer the in-tree frontend/dist during development; fall back to the
@@ -6434,9 +6427,7 @@ def _filter_semantic_ids(
         params.append(domain)
     if tags:
         placeholders = ", ".join("?" for _ in tags)
-        conditions.append(
-            f"id IN (SELECT object_id FROM tags WHERE tag IN ({placeholders}))"
-        )
+        conditions.append(f"id IN (SELECT object_id FROM tags WHERE tag IN ({placeholders}))")
         params.extend(tags)
     sql = "SELECT id FROM objects WHERE " + " AND ".join(conditions)
     conn = sqlite3.connect(str(db_path))
@@ -6447,9 +6438,7 @@ def _filter_semantic_ids(
     return {row[0] for row in rows}
 
 
-def _load_search_results_for_ids(
-    db_path: Path, object_ids: set[str]
-) -> dict[str, SearchResult]:
+def _load_search_results_for_ids(db_path: Path, object_ids: set[str]) -> dict[str, SearchResult]:
     """Load SearchResult metadata for a set of object IDs."""
     if not object_ids:
         return {}
@@ -6582,9 +6571,7 @@ def search(
         except ResourceLimitExceeded as exc:
             semantic_error = str(exc)
             if not json_output:
-                console.print(
-                    f"[yellow]Semantic search disabled: {semantic_error}[/yellow]"
-                )
+                console.print(f"[yellow]Semantic search disabled: {semantic_error}[/yellow]")
         except Exception as exc:  # noqa: BLE001
             semantic_error = f"Semantic search failed: {exc}"
             if not json_output:
@@ -6719,7 +6706,9 @@ def query(
 @app.command("migrate")
 def migrate(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Preview changes without writing files."),
+    dry_run: bool = typer.Option(
+        True, "--dry-run/--apply", help="Preview by default; use --apply to write."
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Migrate canonical objects to the current schema version."""
@@ -6738,6 +6727,8 @@ def migrate(
     skipped_count = 0
     migrated_files = []
     config_updated = False
+    unsupported_files: list[str] = []
+    planned_writes: list[tuple[Path, dict[str, Any]]] = []
 
     for file_path_str in files:
         file_path = Path(file_path_str)
@@ -6748,6 +6739,10 @@ def migrate(
             continue
         if not needs_migration(fm):
             skipped_count += 1
+            continue
+
+        if not can_migrate_from(fm.get("schema_version")):
+            unsupported_files.append(file_path.relative_to(repo_root).as_posix())
             continue
 
         new_fm = migrate_object(fm)
@@ -6764,6 +6759,7 @@ def migrate(
                 "new_version": CURRENT_SCHEMA_VERSION,
             }
         )
+        planned_writes.append((file_path, new_fm))
         if dry_run:
             if not json_output:
                 console.print(
@@ -6772,16 +6768,6 @@ def migrate(
                 )
             continue
 
-        # Rewrite file with new frontmatter
-        from modelops_core.repository import rewrite_frontmatter
-
-        rewrite_frontmatter(file_path, new_fm)
-        if not json_output:
-            console.print(
-                f"[green]Migrated[/green] {file_path.name} "
-                f"({old_version} → {CURRENT_SCHEMA_VERSION})"
-            )
-
     # Update repo config schema_version
     config_path = repo_root / "modelops.config.yaml"
     if not config_path.exists():
@@ -6789,27 +6775,96 @@ def migrate(
     if config_path.exists():
         config = load_repo_config(repo_root)
         if config and config.schema_version != CURRENT_SCHEMA_VERSION:
-            config_updated = True
+            if not can_migrate_from(config.schema_version):
+                unsupported_files.append(config_path.name)
+            else:
+                config_updated = True
+        if config_updated:
             if dry_run:
                 if not json_output:
                     console.print(
                         f"[yellow]Would update[/yellow] {config_path.name} "
                         f"({config.schema_version} → {CURRENT_SCHEMA_VERSION})"
                     )
-            else:
-                import yaml
+    if unsupported_files:
+        message = (
+            "Migration refused: this Core does not support writing the following schema versions: "
+            + ", ".join(unsupported_files)
+        )
+        if json_output:
+            print(json.dumps({"error": message, "unsupported_files": unsupported_files}))
+        else:
+            console.print(f"[red]{message}[/red]")
+        raise typer.Exit(code=1)
 
-                raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    receipt_path: Path | None = None
+    if not dry_run and (planned_writes or config_updated):
+        # Preserve exact originals before an atomic write.  A failed validation
+        # restores them verbatim, including unknown frontmatter fields and bodies.
+        timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+        backup_root = resolve_generated_path(repo_root) / "migration-backups" / timestamp
+        originals: dict[Path, str] = {}
+        try:
+            for path, frontmatter in planned_writes:
+                originals[path] = path.read_text(encoding="utf-8")
+                backup_path = backup_root / path.relative_to(repo_root)
+                backup_path.parent.mkdir(parents=True, exist_ok=True)
+                backup_path.write_text(originals[path], encoding="utf-8")
+                from modelops_core.repository import rewrite_frontmatter
+
+                temporary = path.with_name(f".{path.stem}.migrate{path.suffix}")
+                temporary.write_text(originals[path], encoding="utf-8")
+                rewrite_frontmatter(temporary, frontmatter)
+                temporary.replace(path)
+            if config_updated:
+                originals[config_path] = config_path.read_text(encoding="utf-8")
+                backup_path = backup_root / config_path.name
+                backup_path.parent.mkdir(parents=True, exist_ok=True)
+                backup_path.write_text(originals[config_path], encoding="utf-8")
+                raw = yaml.safe_load(originals[config_path]) or {}
                 raw["schema_version"] = CURRENT_SCHEMA_VERSION
-                config_path.write_text(
-                    yaml.safe_dump(raw, default_flow_style=False, sort_keys=False),
-                    encoding="utf-8",
+                temporary = config_path.with_name(
+                    f".{config_path.stem}.migrate{config_path.suffix}"
                 )
-                if not json_output:
-                    console.print(
-                        f"[green]Updated[/green] {config_path.name} "
-                        f"({config.schema_version} → {CURRENT_SCHEMA_VERSION})"
-                    )
+                temporary.write_text(
+                    yaml.safe_dump(raw, default_flow_style=False, sort_keys=False), encoding="utf-8"
+                )
+                temporary.replace(config_path)
+
+            summary = validate_objects([parse_file(path) for path, _ in planned_writes])
+            if not summary.is_valid:
+                raise ValueError(
+                    f"Post-migration validation failed with {summary.error_count} error(s)."
+                )
+            _build_index(
+                repo_root=repo_root, db_path=resolve_generated_path(repo_root) / "modelops.db"
+            )
+            receipt_path = (
+                resolve_generated_path(repo_root) / "migration-receipts" / f"{timestamp}.json"
+            )
+            receipt_path.parent.mkdir(parents=True, exist_ok=True)
+            receipt_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": CURRENT_SCHEMA_VERSION,
+                        "changed_files": [
+                            path.relative_to(repo_root).as_posix() for path, _ in planned_writes
+                        ],
+                        "backup": backup_root.relative_to(repo_root).as_posix(),
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+        except Exception as exc:
+            for path, original in originals.items():
+                path.write_text(original, encoding="utf-8")
+            if json_output:
+                print(json.dumps({"error": str(exc), "rolled_back": True}))
+            else:
+                console.print(f"[red]Migration rolled back: {exc}[/red]")
+            raise typer.Exit(code=1) from exc
 
     if json_output:
         print(
@@ -6821,6 +6876,11 @@ def migrate(
                     "schema_version": CURRENT_SCHEMA_VERSION,
                     "migrated_files": migrated_files,
                     "config_updated": config_updated,
+                    "receipt": str(receipt_path.relative_to(repo_root)) if receipt_path else None,
+                    "rollback": (
+                        "Restore files from generated/migration-backups/<timestamp> and rebuild "
+                        "the index."
+                    ),
                 },
                 indent=2,
                 default=str,
