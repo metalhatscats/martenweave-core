@@ -7,7 +7,7 @@
  * surface the connection state visibly.
  */
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import { lineageEdges, lineageNodes, modelObjects } from "./data.js";
 
@@ -284,60 +284,27 @@ export function ApiProvider({ children, baseUrl = DEFAULT_API_BASE_URL }) {
     capabilities: null,
   }));
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function probe() {
-      try {
-        const capabilities = await client.capabilities();
-        if (cancelled) return;
-
-        if (capabilities.api_version !== EXPECTED_API_VERSION) {
-          setValue({
-            state: API_STATE.INCOMPATIBLE,
-            demo: true,
-            client,
-            error: `API version ${capabilities.api_version} is not supported`,
-            capabilities,
-          });
-          return;
-        }
-
-        if (!capabilities.indexed) {
-          setValue({
-            state: API_STATE.STALE_INDEX,
-            demo: true,
-            client,
-            error: "Index is missing. Run build-index first.",
-            capabilities,
-          });
-          return;
-        }
-
-        setValue({
-          state: API_STATE.CONNECTED,
-          demo: false,
-          client,
-          error: null,
-          capabilities,
-        });
-      } catch (err) {
-        if (cancelled) return;
-        setValue({
-          state: API_STATE.UNAVAILABLE,
-          demo: true,
-          client,
-          error: err instanceof Error ? err.message : String(err),
-          capabilities: null,
-        });
+  const probe = useCallback(async () => {
+    try {
+      const capabilities = await client.capabilities();
+      if (capabilities.api_version !== EXPECTED_API_VERSION) {
+        setValue({ state: API_STATE.INCOMPATIBLE, demo: true, client, error: `API version ${capabilities.api_version} is not supported`, capabilities, retry: probe });
+        return;
       }
+      if (!capabilities.indexed) {
+        setValue({ state: API_STATE.STALE_INDEX, demo: true, client, error: "Index is missing. Run build-index first.", capabilities, retry: probe });
+        return;
+      }
+      setValue({ state: API_STATE.CONNECTED, demo: false, client, error: null, capabilities, retry: probe });
+    } catch (err) {
+      setValue({ state: API_STATE.UNAVAILABLE, demo: true, client, error: err instanceof Error ? err.message : String(err), capabilities: null, retry: probe });
     }
-
-    probe();
-    return () => {
-      cancelled = true;
-    };
   }, [client]);
+
+  useEffect(() => {
+    probe();
+    return undefined;
+  }, [probe]);
 
   return <ApiContext.Provider value={value}>{children}</ApiContext.Provider>;
 }

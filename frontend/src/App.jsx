@@ -90,7 +90,7 @@ import {
 } from "./workbench.jsx";
 
 function ConnectionBanner() {
-  const { state, demo, error } = useApi();
+  const { state, demo, error, retry } = useApi();
   if (state === API_STATE.CONNECTED) return null;
 
   const messages = {
@@ -105,6 +105,9 @@ function ConnectionBanner() {
       <span className={`connection-dot connection-${state}`} />
       <span>{messages[state] || "Waiting for local API…"}</span>
       {demo && <span className="connection-demo">Demo mode</span>}
+      {state !== API_STATE.UNKNOWN && retry && (
+        <button className="connection-retry" onClick={retry}>Retry connection</button>
+      )}
     </div>
   );
 }
