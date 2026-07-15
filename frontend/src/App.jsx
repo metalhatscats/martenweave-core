@@ -254,6 +254,10 @@ function Topbar({ route, navigate, title, onMenu, actions }) {
       : state === API_STATE.CONNECTED
         ? "Local API"
         : "Connecting";
+  const writeBlocked = Boolean(capabilities?.read_only) || state === API_STATE.STALE_INDEX;
+  const writeBlockReason = capabilities?.read_only
+    ? "This local workspace is read-only"
+    : "Build the disposable local index before this action";
 
   useEffect(() => {
     if (!profileOpen) return;
@@ -314,12 +318,20 @@ function Topbar({ route, navigate, title, onMenu, actions }) {
         <button className="top-action-button" onClick={() => actions.open({ type: "commands" })}>
           <Command size={17} /> Commands <kbd>⌘K</kbd>
         </button>
-        <button className="top-action-button" onClick={() => actions.open({ type: "import" })}>
-          <UploadSimple size={17} /> Import
-        </button>
-        <button className="top-action-button" onClick={() => actions.open({ type: "export" })}>
-          <DownloadSimple size={17} /> Export
-        </button>
+        {writeBlocked ? (
+          <DisabledButton className="top-action-button" icon={UploadSimple} label="Import" reason={writeBlockReason}>Import</DisabledButton>
+        ) : (
+          <button className="top-action-button" onClick={() => actions.open({ type: "import" })}>
+            <UploadSimple size={17} /> Import
+          </button>
+        )}
+        {writeBlocked ? (
+          <DisabledButton className="top-action-button" icon={DownloadSimple} label="Export" reason={writeBlockReason}>Export</DisabledButton>
+        ) : (
+          <button className="top-action-button" onClick={() => actions.open({ type: "export" })}>
+            <DownloadSimple size={17} /> Export
+          </button>
+        )}
         <span className="environment-pill">
           <span className="status-dot" />
           {connectionLabel}

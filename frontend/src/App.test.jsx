@@ -48,6 +48,8 @@ describe("Martenweave workbench", () => {
 
     await waitFor(() => expect(screen.getAllByText("Local workspace").length).toBeGreaterThan(0));
     expect(screen.getByText("Read-only")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Import — This local workspace is read-only/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Export — This local workspace is read-only/ })).toBeDisabled();
   });
 
   it("navigates to models and filters by query", async () => {
