@@ -78,6 +78,41 @@ def _stable_id(*parts: str) -> str:
     return ":".join(cleaned)
 
 
+def _readiness_impact_for_severity(severity: str) -> str:
+    """Map severity to a readiness impact label."""
+    if severity in ("high", "critical"):
+        return "blocking"
+    if severity == "medium":
+        return "ready_with_warnings"
+    return "informational"
+
+
+_RECOMMENDED_ACTIONS: dict[str, str] = {
+    "missing_owner": "Assign an owner in the mapping workbook or canonical object.",
+    "missing_mapping": "Add the target mapping and link it to a canonical attribute.",
+    "obsolete_field": "Review and retire the obsolete field or document the exception.",
+    "validation_coverage_gap": "Add a ValidationRule for the conditional mapping.",
+    "unresolved_decision": "Record a Decision object with status and rationale.",
+    "conflicting_decision": "Reconcile conflicting decisions and update the decision register.",
+    "duplicate_target": "Consolidate duplicate target mappings into a single representation.",
+}
+
+
+def _affected_objects_from_location(location: dict[str, Any]) -> list[str]:
+    """Extract stable identifiers from a workbook location when available."""
+    objects: list[str] = []
+    key_columns = location.get("key_columns") or {}
+    if key_columns.get("target_table"):
+        objects.append(key_columns["target_table"])
+    if key_columns.get("target_field"):
+        objects.append(key_columns["target_field"])
+    if key_columns.get("source_field"):
+        objects.append(key_columns["source_field"])
+    if not objects and location.get("topic"):
+        objects.append(str(location["topic"]))
+    return objects
+
+
 def _build_findings(
     profile: MappingWorkbookProfile, assessment_run_id: str
 ) -> list[dict[str, Any]]:
@@ -180,11 +215,24 @@ def _build_findings(
             category=finding["category"],
             severity=finding["severity"],
             message=finding["message"],
+            status="open",
+            lifecycle_state="open",
             provenance=FindingProvenance(
                 assessment_run_id=assessment_run_id,
                 source_kind="mapping_profile",
+                detection_mode="deterministic",
+                rule_id=f"mapping_profile:{finding['category']}",
                 location=finding["location"],
+                evidence_refs=["mapping_profile.json"],
+                affected_objects=_affected_objects_from_location(finding["location"]),
             ),
+            rule_id=f"mapping_profile:{finding['category']}",
+            evidence_refs=["mapping_profile.json"],
+            affected_objects=_affected_objects_from_location(finding["location"]),
+            recommended_action=_RECOMMENDED_ACTIONS.get(
+                finding["category"], "Review the finding and record a decision."
+            ),
+            readiness_impact=_readiness_impact_for_severity(finding["severity"]),
         ).model_dump(mode="json")
         for finding in findings
     ]
@@ -744,7 +792,9 @@ def generate_migration_assessment(
 
     # Stage: assessment package
     try:
-        generate_assessment_package(repo_root, out_dir, generated_at=generated_at)
+        generate_assessment_package(
+            repo_root, out_dir, generated_at=generated_at, assessment_run_id=assessment_run_id
+        )
         _stage("assessment_package", statuses, "success")
     except Exception as exc:
         _stage("assessment_package", statuses, "failed", message=str(exc))

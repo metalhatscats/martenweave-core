@@ -237,11 +237,22 @@ def test_api_lists_typed_assessment_findings_with_separate_review_state(sample_r
         category="missing_mapping",
         severity="high",
         message="Customer Group is missing a target mapping.",
+        status="open",
+        lifecycle_state="open",
         provenance={
             "assessment_run_id": "ASSESSMENT-TEST",
             "source_kind": "mapping_profile",
+            "detection_mode": "deterministic",
             "location": {"sheet": "Mapping", "row": 2},
+            "rule_id": "mapping_profile:missing_mapping",
+            "evidence_refs": ["mapping_profile.json"],
+            "affected_objects": ["Customer Group"],
         },
+        rule_id="mapping_profile:missing_mapping",
+        evidence_refs=["mapping_profile.json"],
+        affected_objects=["Customer Group"],
+        recommended_action="Add the target mapping and link it to a canonical attribute.",
+        readiness_impact="blocking",
     )
     (assessment / "findings.json").write_text(
         json.dumps({"findings": [finding.model_dump(mode="json")]}), encoding="utf-8"
@@ -278,11 +289,24 @@ def test_api_compares_typed_assessments_inside_workspace(sample_repo: Path) -> N
             category="missing_mapping",
             severity=severity,
             message="Missing mapping",
+            status="open",
+            lifecycle_state="open",
             provenance={
                 "assessment_run_id": run_id,
                 "source_kind": "mapping_profile",
+                "detection_mode": "deterministic",
                 "location": {"sheet": "Mappings", "row": 2},
+                "rule_id": "mapping_profile:missing_mapping",
+                "evidence_refs": ["mapping_profile.json"],
+                "affected_objects": [],
             },
+            rule_id="mapping_profile:missing_mapping",
+            evidence_refs=["mapping_profile.json"],
+            affected_objects=[],
+            recommended_action="Add the target mapping and link it to a canonical attribute.",
+            readiness_impact=(
+                "blocking" if severity in ("high", "critical") else "ready_with_warnings"
+            ),
         )
         (run_dir / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
         (run_dir / "findings.json").write_text(

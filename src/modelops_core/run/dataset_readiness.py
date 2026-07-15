@@ -193,6 +193,45 @@ def _compute_verdict(
     return "ready"
 
 
+def _readiness_impact_for_gap(gap_code: str, severity: str) -> str:
+    """Map gap code and severity to a readiness impact label."""
+    if severity in ("high", "critical") or gap_code == "MODEL_ATTRIBUTE_MISSING_SOURCE":
+        return "blocking"
+    if severity == "medium":
+        return "ready_with_warnings"
+    return "informational"
+
+
+def _recommended_action_for_gap(gap: ColumnGap) -> str:
+    """Return a deterministic recommended action for a dataset/model gap."""
+    if gap.recommended_proposal_op:
+        op = gap.recommended_proposal_op
+        return f"{op['op']} {op['object_type']} {op['object_id']}: {op['reason']}"
+    actions: dict[str, str] = {
+        "UNMODELED_DATASET_COLUMN": (
+            "Create a FieldEndpoint and link it to the matching attribute."
+        ),
+
+        "DATASET_COLUMN_MULTIPLE_MATCHES": (
+            "Resolve the ambiguous column-to-endpoint match and update the mapping."
+        ),
+        "MODEL_ATTRIBUTE_MISSING_SOURCE": (
+            "Add a source FieldEndpoint or Mapping for the unattributed attribute."
+        ),
+        "MISSING_OWNER": "Assign a business_owner or technical_owner to the object.",
+        "DUPLICATE_COLUMN_NAME": (
+            "Deduplicate the source column or map it to a single canonical representation."
+        ),
+        "EMPTY_DATASET": (
+            "Provide a non-empty dataset or exclude the source from readiness checks."
+        ),
+        "NO_MATCHING_ENDPOINTS": (
+            "Model the dataset columns as FieldEndpoints or update the source profile."
+        ),
+    }
+    return actions.get(gap.gap_code, "Review the gap and record a decision or proposal.")
+
+
 def _gap_to_dict(gap: ColumnGap, readiness_run_id: str) -> dict[str, Any]:
     data = {
         "column_name": gap.column_name,
@@ -206,16 +245,30 @@ def _gap_to_dict(gap: ColumnGap, readiness_run_id: str) -> dict[str, Any]:
     finding_id = gap.gap_id or f"GAP-{gap.gap_code}-{gap.column_name}"
     source_kind = "model_validation" if finding_id.startswith("GAP-MODEL-") else "dataset_readiness"
     severity = gap.severity if gap.severity in {"low", "medium", "high", "critical"} else "medium"
+    affected_objects = [gap.column_name] if gap.column_name else []
+    if finding_id.startswith("GAP-MODEL-") and gap.column_name:
+        affected_objects = [gap.column_name]
     data["finding"] = AssessmentFinding(
         id=finding_id,
         category=gap.gap_code.lower(),
         severity=severity,
         message=gap.message,
+        status="open",
+        lifecycle_state="open",
         provenance=FindingProvenance(
             assessment_run_id=readiness_run_id,
             source_kind=source_kind,
+            detection_mode="deterministic",
+            rule_id=f"gap:{gap.gap_code}",
             location={"sheet_name": gap.sheet_name, "column_name": gap.column_name},
+            evidence_refs=["readiness.json", "dataset_profile.json"],
+            affected_objects=affected_objects,
         ),
+        rule_id=f"gap:{gap.gap_code}",
+        evidence_refs=["readiness.json", "dataset_profile.json"],
+        affected_objects=affected_objects,
+        recommended_action=_recommended_action_for_gap(gap),
+        readiness_impact=_readiness_impact_for_gap(gap.gap_code, severity),
     ).model_dump(mode="json")
     return data
 

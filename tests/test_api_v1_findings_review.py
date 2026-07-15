@@ -21,11 +21,22 @@ def _build_assessment(repo: Path) -> Path:
         category="missing_mapping",
         severity="high",
         message="Customer Group is missing a target mapping.",
+        status="open",
+        lifecycle_state="open",
         provenance={
             "assessment_run_id": "ASSESSMENT-TEST",
             "source_kind": "mapping_profile",
+            "detection_mode": "deterministic",
             "location": {"sheet": "Mapping", "row": 2},
+            "rule_id": "mapping_profile:missing_mapping",
+            "evidence_refs": ["mapping_profile.json"],
+            "affected_objects": ["Customer Group"],
         },
+        rule_id="mapping_profile:missing_mapping",
+        evidence_refs=["mapping_profile.json"],
+        affected_objects=["Customer Group"],
+        recommended_action="Add the target mapping and link it to a canonical attribute.",
+        readiness_impact="blocking",
     )
     (assessment / "findings.json").write_text(
         json.dumps({"findings": [finding.model_dump(mode="json")]}), encoding="utf-8"

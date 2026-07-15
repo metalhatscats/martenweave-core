@@ -69,12 +69,22 @@ test.describe("connected workbench", () => {
       category: "coverage",
       severity: "medium",
       message: "Missing Customer Group mapping in connected e2e test",
+      status: "open",
       lifecycle_state: "open",
       provenance: {
         assessment_run_id: assessmentName,
         source_kind: "model_validation",
+        detection_mode: "deterministic",
+        rule_id: "model_validation:coverage",
         location: { file: "model/attributes/ATTR-CUST-SALES-CUSTOMER-GROUP.md" },
+        evidence_refs: ["model/attributes/ATTR-CUST-SALES-CUSTOMER-GROUP.md"],
+        affected_objects: ["ATTR-CUST-SALES-CUSTOMER-GROUP"],
       },
+      rule_id: "model_validation:coverage",
+      evidence_refs: ["model/attributes/ATTR-CUST-SALES-CUSTOMER-GROUP.md"],
+      affected_objects: ["ATTR-CUST-SALES-CUSTOMER-GROUP"],
+      recommended_action: "Add the missing Customer Group mapping.",
+      readiness_impact: "ready_with_warnings",
     });
 
     // Verify the API sees the seeded finding.

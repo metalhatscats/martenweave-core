@@ -18,12 +18,24 @@ def _finding(run_id: str, finding_id: str, severity: str, lifecycle_state: str =
         "category": "missing_mapping",
         "severity": severity,
         "message": finding_id,
+        "status": lifecycle_state,
         "lifecycle_state": lifecycle_state,
         "provenance": {
             "assessment_run_id": run_id,
             "source_kind": "mapping_profile",
+            "detection_mode": "deterministic",
             "location": {"sheet": "Mappings", "row": 2},
+            "rule_id": "mapping_profile:missing_mapping",
+            "evidence_refs": ["mapping_profile.json"],
+            "affected_objects": [],
         },
+        "rule_id": "mapping_profile:missing_mapping",
+        "evidence_refs": ["mapping_profile.json"],
+        "affected_objects": [],
+        "recommended_action": "Add the target mapping and link it to a canonical attribute.",
+        "readiness_impact": (
+            "blocking" if severity in ("high", "critical") else "ready_with_warnings"
+        ),
     }
 
 

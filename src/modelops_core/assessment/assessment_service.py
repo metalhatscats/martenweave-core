@@ -5,12 +5,14 @@ Composes existing Martenweave services into a client-reviewable output folder.
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from modelops_core.assessment.finding_contract import AssessmentFinding, FindingProvenance
 from modelops_core.config import load_repo_config
 from modelops_core.exports.export_service import export_model_xlsx
 from modelops_core.impact.impact_report import render_impact_report_markdown
@@ -50,6 +52,116 @@ class _RiskItem:
     object_type: str | None
     severity: str  # high, medium, low
     reasons: list[str] = field(default_factory=list)
+
+
+def _readiness_impact_for_risk_severity(severity: str) -> str:
+    """Map risk severity to a readiness impact label."""
+    if severity == "high":
+        return "blocking"
+    if severity == "medium":
+        return "ready_with_warnings"
+    return "informational"
+
+
+def _build_model_findings(
+    assessment_run_id: str,
+    validation_errors: list[dict[str, Any]],
+    risk_items: list[_RiskItem],
+    scorecard_gaps: Any,
+    input_fingerprint: str,
+    generated_at: str,
+) -> list[dict[str, Any]]:
+    """Map validation errors, risk items, and scorecard gaps to typed findings."""
+    findings: list[AssessmentFinding] = []
+
+    for error in validation_errors:
+        obj_id = error.get("object_id") or "UNKNOWN"
+        code = error.get("code") or "VALIDATION_ERROR"
+        findings.append(
+            AssessmentFinding(
+                id=f"finding-validation-{obj_id}-{code}".lower().replace(" ", "-"),
+                category="validation_error",
+                severity="critical",
+                message=error.get("message", f"Validation error {code} on {obj_id}"),
+                status="open",
+                lifecycle_state="open",
+                provenance=FindingProvenance(
+                    assessment_run_id=assessment_run_id,
+                    source_kind="model_validation",
+                    detection_mode="deterministic",
+                    rule_id=f"validation:{code}",
+                    location={"object_id": obj_id, "object_type": error.get("object_type")},
+                    evidence_refs=["validation_results.json", "modelops.db"],
+                    affected_objects=[obj_id] if obj_id != "UNKNOWN" else [],
+                    input_fingerprint=input_fingerprint,
+                ),
+                rule_id=f"validation:{code}",
+                evidence_refs=["validation_results.json", "modelops.db"],
+                affected_objects=[obj_id] if obj_id != "UNKNOWN" else [],
+                recommended_action=(
+                    error.get("suggested_fix") or "Fix the validation error and re-run validation."
+                ),
+                readiness_impact="blocking",
+            )
+        )
+
+    for item in risk_items:
+        findings.append(
+            AssessmentFinding(
+                id=f"finding-risk-{item.object_id}".lower().replace(" ", "-"),
+                category="risk_analysis",
+                severity="high" if item.severity == "high" else "medium",
+                message="; ".join(item.reasons[:3]) or f"Risk for {item.object_id}",
+                status="open",
+                lifecycle_state="open",
+                provenance=FindingProvenance(
+                    assessment_run_id=assessment_run_id,
+                    source_kind="risk_analysis",
+                    detection_mode="deterministic",
+                    rule_id="risk_analysis:high_risk_item",
+                    location={"object_id": item.object_id, "object_type": item.object_type},
+                    evidence_refs=["03_high_risk_fields.md"],
+                    affected_objects=[item.object_id],
+                    input_fingerprint=input_fingerprint,
+                ),
+                rule_id="risk_analysis:high_risk_item",
+                evidence_refs=["03_high_risk_fields.md"],
+                affected_objects=[item.object_id],
+                recommended_action="Review the impact report and assign an owner or decision.",
+                readiness_impact=_readiness_impact_for_risk_severity(item.severity),
+            )
+        )
+
+    for gap in scorecard_gaps or []:
+        obj_id = gap.object_id or "UNKNOWN"
+        gap_type = gap.gap_type or "unknown_gap"
+        findings.append(
+            AssessmentFinding(
+                id=f"finding-scorecard-{obj_id}-{gap_type}".lower().replace(" ", "-"),
+                category=gap_type,
+                severity="medium",
+                message=f"{gap_type}: {gap.suggested_action}",
+                status="open",
+                lifecycle_state="open",
+                provenance=FindingProvenance(
+                    assessment_run_id=assessment_run_id,
+                    source_kind="model_validation",
+                    detection_mode="deterministic",
+                    rule_id=f"scorecard:{gap_type}",
+                    location={"object_id": obj_id, "object_type": gap.object_type},
+                    evidence_refs=["01_readiness_scorecard.md", "02_gap_report.md"],
+                    affected_objects=[obj_id] if obj_id != "UNKNOWN" else [],
+                    input_fingerprint=input_fingerprint,
+                ),
+                rule_id=f"scorecard:{gap_type}",
+                evidence_refs=["01_readiness_scorecard.md", "02_gap_report.md"],
+                affected_objects=[obj_id] if obj_id != "UNKNOWN" else [],
+                recommended_action=gap.suggested_action or "Address the scorecard gap.",
+                readiness_impact="ready_with_warnings",
+            )
+        )
+
+    return [{"finding": f.model_dump(mode="json"), "generated_at": generated_at} for f in findings]
 
 
 def _ensure_index(repo_root: Path) -> Path:
@@ -347,6 +459,7 @@ def generate_assessment_package(
     repo_root: Path,
     out_dir: Path,
     generated_at: str | None = None,
+    assessment_run_id: str | None = None,
 ) -> AssessmentPackage:
     """Generate a full Migration Model Readiness Assessment package.
 
@@ -382,6 +495,47 @@ def generate_assessment_package(
     risk_items = _build_high_risk_items(analysis, validation_errors)
 
     generated_at = generated_at or datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+    # Merge with any existing findings (e.g. mapping-profile findings written earlier
+    # by the migration assessment workflow) so provenance stays under one run id.
+    findings_path = out_dir / "findings.json"
+    existing_findings: list[dict[str, Any]] = []
+    if findings_path.exists():
+        try:
+            existing_payload = json.loads(findings_path.read_text(encoding="utf-8"))
+            existing_findings = list(existing_payload.get("findings", []))
+        except (OSError, json.JSONDecodeError):
+            existing_findings = []
+
+    run_id = assessment_run_id or (
+        existing_findings[0].get("provenance", {}).get("assessment_run_id")
+        if existing_findings
+        else None
+    ) or f"ASSESSMENT-PKG-{generated_at.replace(':', '-').replace('.', '-')}"[:40]
+
+    # Typed findings from model/validation/risk signals
+    model_findings = _build_model_findings(
+        assessment_run_id=run_id,
+        validation_errors=validation_errors,
+        risk_items=risk_items,
+        scorecard_gaps=scorecard.gaps,
+        input_fingerprint=generated_at,
+        generated_at=generated_at,
+    )
+    merged_findings = existing_findings + [f["finding"] for f in model_findings]
+    findings_path.write_text(
+        json.dumps(
+            {
+                "generated_at": generated_at,
+                "finding_count": len(merged_findings),
+                "findings": merged_findings,
+            },
+            indent=2,
+            default=str,
+        ),
+        encoding="utf-8",
+    )
+
     artifacts: list[AssessmentArtifact] = []
 
     # 01_readiness_scorecard.md
