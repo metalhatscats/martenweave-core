@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
 from modelops_core.api.app import app
+from modelops_core.api.workspace import clear_workspace, configure_workspace
 from modelops_core.cli import app as cli_app
 
 client = TestClient(app)
@@ -21,6 +22,33 @@ def test_api_health(sample_repo: Path) -> None:
     data = response.json()
     assert data["status"] in ("healthy", "no_index")
     assert data["repository"] == str(sample_repo)
+
+
+def test_bound_api_rejects_workspace_switch_and_hides_path(
+    sample_repo: Path, tmp_path: Path
+) -> None:
+    configure_workspace(sample_repo)
+    try:
+        rejected = client.get("/health", params={"repo": str(tmp_path)})
+        assert rejected.status_code == 403
+        response = client.get("/health")
+        assert response.status_code == 200
+        assert response.json()["repository"] == "."
+        mutation = client.post("/export")
+        assert mutation.status_code == 403
+    finally:
+        clear_workspace()
+
+
+def test_bound_api_requires_token_for_mutation(temp_model_dir: Path) -> None:
+    configure_workspace(temp_model_dir.parent, mutation_token="local-secret")
+    try:
+        denied = client.post("/export")
+        assert denied.status_code == 401
+        allowed = client.post("/export", headers={"X-Martenweave-Token": "local-secret"})
+        assert allowed.status_code == 200
+    finally:
+        clear_workspace()
 
 
 def test_api_list_objects(sample_repo: Path) -> None:

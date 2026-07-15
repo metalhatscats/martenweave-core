@@ -93,6 +93,9 @@ The remote `v0.4.0` tag already points to an older commit and must not be moved,
 - **Transactional proposal application** (#514): canonical edits are validated before mutation,
   staged and backed up under `generated/patch-transactions/`, atomically replaced, and recorded in
   a durable receipt. Failed commits restore the exact backup and leave a rollback receipt.
+- **Bound local API workspace** (#510): `serve` now binds API requests to one repository, rejects
+  caller path switching, avoids exposing the bound absolute path, and makes mutations read-only
+  unless an explicit local `--mutation-token` is configured.
 - **Static docs build** (#59): Generate static Markdown documentation from the model index.
 - **Usage report** (#89): Aggregate audit events into command and status summaries via `usage-report` CLI.
 - **Config guard** (#43): Scan repositories for secrets and configuration guardrail issues.

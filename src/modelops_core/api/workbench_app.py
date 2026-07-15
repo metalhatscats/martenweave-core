@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
 
 from modelops_core.api.app import app as api_app
+from modelops_core.api.workspace import configure_workspace
 
 
 class _SPAStaticFiles(StaticFiles):
@@ -34,10 +35,10 @@ def create_workbench_app(repo_root: Path, static_dir: Path) -> FastAPI:
     The SPA is served with ``html=True`` so client-side routes fall back to
     ``index.html``.
     """
-    del repo_root  # The existing API endpoints read the repo from query params.
     if not static_dir.is_dir():
         raise ValueError(f"Workbench static files not found: {static_dir}")
 
+    configure_workspace(repo_root)
     workbench_app = FastAPI(
         title="Martenweave Workbench",
         description="Local workbench for the agentic data model registry.",

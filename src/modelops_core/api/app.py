@@ -5,11 +5,17 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from modelops_core import __version__
 from modelops_core.api import v1
+from modelops_core.api.workspace import (
+    require_mutation_token,
+    resolve_workspace,
+    workspace_is_bound,
+    workspace_label,
+)
 from modelops_core.approval.risk_service import compute_proposal_risk
 from modelops_core.change_request.service import find_approved_cr_for_proposal
 from modelops_core.config import load_repo_config, resolve_generated_path, resolve_model_path
@@ -32,7 +38,7 @@ app = FastAPI(
 
 
 def _resolve_repo(repo: str | None) -> Path:
-    return Path(repo).resolve() if repo else Path.cwd().resolve()
+    return resolve_workspace(repo)
 
 
 app.include_router(v1.router)
@@ -65,7 +71,7 @@ def health(repo: str | None = Query(None, description="Path to model repository"
     files = scan_repository(model_path)
     return {
         "status": "healthy",
-        "repository": str(repo_root),
+        "repository": workspace_label() if workspace_is_bound() else str(repo_root),
         "indexed": True,
         "canonical_files": len(files),
     }
@@ -280,7 +286,7 @@ def get_proposal(
     return result
 
 
-@app.post("/proposals/{proposal_id}/validate")
+@app.post("/proposals/{proposal_id}/validate", dependencies=[Depends(require_mutation_token)])
 def validate_proposal(
     proposal_id: str,
     repo: str | None = Query(None, description="Path to model repository"),
@@ -332,7 +338,7 @@ def dry_run_proposal(
     }
 
 
-@app.post("/proposals/{proposal_id}/apply")
+@app.post("/proposals/{proposal_id}/apply", dependencies=[Depends(require_mutation_token)])
 def apply_proposal(
     proposal_id: str,
     repo: str | None = Query(None, description="Path to model repository"),
@@ -397,7 +403,7 @@ def apply_proposal(
     }
 
 
-@app.post("/export")
+@app.post("/export", dependencies=[Depends(require_mutation_token)])
 def export(
     repo: str | None = Query(None, description="Path to model repository"),
     format: str = Query("csv", alias="format", description="Export format: csv or xlsx"),
@@ -416,7 +422,7 @@ def export(
         raise HTTPException(status_code=400, detail=f"Unknown format: {format}")
 
 
-@app.post("/gaps")
+@app.post("/gaps", dependencies=[Depends(require_mutation_token)])
 def gaps(
     dataset: str = Query(..., description="Path to CSV or XLSX dataset file"),
     repo: str | None = Query(None, description="Path to model repository"),
@@ -458,7 +464,7 @@ def gaps(
     }
 
 
-@app.post("/dataset-readiness")
+@app.post("/dataset-readiness", dependencies=[Depends(require_mutation_token)])
 def dataset_readiness(
     dataset: str = Query(..., description="Path to CSV or XLSX dataset file"),
     repo: str | None = Query(None, description="Path to model repository"),

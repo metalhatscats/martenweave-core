@@ -5576,6 +5576,9 @@ def serve(
     host: str = typer.Option("127.0.0.1", "--host", help="Bind host."),
     port: int = typer.Option(8000, "--port", help="Bind port."),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    mutation_token: str | None = typer.Option(
+        None, "--mutation-token", help="Optional token required for API mutations."
+    ),
 ) -> None:
     """Start the local API server."""
     try:
@@ -5592,7 +5595,9 @@ def serve(
     console.print(f"  Repository: {repo_root}")
 
     from modelops_core.api.app import app as api_app
+    from modelops_core.api.workspace import configure_workspace
 
+    configure_workspace(repo_root, mutation_token=mutation_token)
     uvicorn.run(api_app, host=host, port=port)
 
 

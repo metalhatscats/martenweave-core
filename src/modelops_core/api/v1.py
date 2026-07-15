@@ -16,6 +16,12 @@ from modelops_core.api.models import (
     RelatedObjectItem,
     SearchResultItem,
 )
+from modelops_core.api.workspace import (
+    mutation_enabled,
+    resolve_workspace,
+    workspace_is_bound,
+    workspace_label,
+)
 from modelops_core.config import resolve_generated_path, resolve_model_path
 from modelops_core.index.query_service import (
     get_object_by_id,
@@ -28,7 +34,7 @@ router = APIRouter(prefix="/api/v1")
 
 
 def _resolve_repo(repo: str | None) -> Path:
-    return Path(repo).resolve() if repo else Path.cwd().resolve()
+    return resolve_workspace(repo)
 
 
 def _workspace_health(repo_root: Path) -> dict[str, Any]:
@@ -38,7 +44,7 @@ def _workspace_health(repo_root: Path) -> dict[str, Any]:
     return {
         "indexed": db_path.exists(),
         "canonical_files": len(files),
-        "repository": str(repo_root),
+        "repository": workspace_label() if workspace_is_bound() else str(repo_root),
     }
 
 
@@ -164,7 +170,7 @@ def capabilities(
         repository=health["repository"],
         indexed=health["indexed"],
         canonical_files=health["canonical_files"],
-        read_only=False,
+        read_only=not mutation_enabled(),
         read=read,
         mutations=mutations,
     )
