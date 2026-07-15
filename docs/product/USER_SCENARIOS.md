@@ -101,11 +101,11 @@ This catalog defines the end-to-end user scenarios Martenweave supports across t
 | **Trigger** | Assessment findings need human triage before they become issues or proposals. |
 | **Required inputs** | Finding ID; reviewer disposition (`confirmed`, `false_positive`, `accepted_risk`, `deferred`, `resolved`). |
 | **UI entry point** | `gaps` → expanded finding card → disposition controls. |
-| **Core / API operations** | Finding review service and CLI disposition commands are implemented in PR [#526](https://github.com/metalhatscats/martenweave-core/pull/526). |
+| **Core / API operations** | `martenweave assessment review` records a human disposition against a stable finding ID; `martenweave pilot-outcome` summarizes reviewed findings without inventing unavailable baselines. |
 | **Generated artifacts** | Updated finding record with disposition, reviewer note, and timestamp; disposition history. |
 | **Safety boundary** | Review metadata only; no canonical model mutation. |
 | **Success metric** | A reviewer can inspect evidence, set a disposition, refresh the screen, and see the persisted state with source evidence links intact. |
-| **Status** | **missing** — backend review model and CLI are in PR [#526](https://github.com/metalhatscats/martenweave-core/pull/526); UI disposition controls are not wired. |
+| **Status** | **partial** — backend review and pilot-outcome commands are available; UI disposition controls are not wired. |
 
 ### S07 — Promote evidence or a finding into an Issue or PatchProposal
 
@@ -185,11 +185,11 @@ This catalog defines the end-to-end user scenarios Martenweave supports across t
 | **Trigger** | Pilot is complete and a public demo bundle must be published. |
 | **Required inputs** | Assessment output folder; optional review dispositions. |
 | **UI entry point** | `reports` → "Export project output" with sanitization option. |
-| **Core / API operations** | `modelops config-guard --repo <path> --json`; sanitization, pilot-outcome report, and deterministic demo bundle are implemented in PRs [#526](https://github.com/metalhatscats/martenweave-core/pull/526) (`assessment sanitize`, `pilot-outcome`) and [#528](https://github.com/metalhatscats/martenweave-core/pull/528) (`demo-bundle build`). |
+| **Core / API operations** | `martenweave config-guard --repo <path> --json`, `martenweave assessment sanitize`, `martenweave pilot-outcome`, and `martenweave demo-bundle build`. |
 | **Generated artifacts** | Sanitized bundle, `sanitization-manifest.json`, pilot outcome report, bundle manifest with checksums. |
 | **Safety boundary** | Absolute paths, raw datasets, secrets, and identifying metadata are excluded or redacted; source folder is never modified. |
 | **Success metric** | Bundle passes config-guard checks, contains no raw source data or local paths, and two runs from the same commit produce byte-stable text outputs. |
-| **Status** | **partial** — `config-guard` exists; `assessment sanitize`, `pilot-outcome`, and `demo-bundle build` are in open PRs. |
+| **Status** | **partial** — the local CLI workflow is implemented and verified; the Workbench Reports route does not yet expose it. |
 
 ---
 
@@ -202,20 +202,20 @@ This catalog defines the end-to-end user scenarios Martenweave supports across t
 | S03 | Add dataset and detect gaps | `modelops profile-dataset`, `modelops gaps`, `modelops run dataset-readiness` | `POST /gaps`, `POST /dataset-readiness` | `import`, `gaps` | `test_gaps.py`, `test_run_dataset_readiness.py`, `test_e2e_dataset_workflow.py` | partial | [#499](https://github.com/metalhatscats/martenweave-core/issues/499) |
 | S04 | Search object and inspect evidence | `modelops search`, `modelops query`, `modelops object-card` | `GET /objects`, `GET /objects/{id}` | `models`, `object` | `test_search_documents.py`, `test_query_service.py`, `test_object_card_command.py`, `test_api.py` | partial | [#492](https://github.com/metalhatscats/martenweave-core/issues/492) |
 | S05 | Trace lineage and impact | `modelops trace`, `modelops impact` | `GET /trace/{id}`, `GET /impact/{id}` | `lineage`, `object` → Impact | `test_trace.py`, `test_impact_service.py`, `test_impact_report.py`, `test_system_lineage.py`, `test_api.py` | partial | [#500](https://github.com/metalhatscats/martenweave-core/issues/500) |
-| S06 | Review and disposition finding | `assessment review` (PR [#526](https://github.com/metalhatscats/martenweave-core/pull/526)) | planned | `gaps` | planned | missing | [#491](https://github.com/metalhatscats/martenweave-core/issues/491), [#493](https://github.com/metalhatscats/martenweave-core/issues/493), [#499](https://github.com/metalhatscats/martenweave-core/issues/499) |
+| S06 | Review and disposition finding | `assessment review`, `pilot-outcome` | planned | `gaps` | `test_assessment_review.py`, `test_pilot_outcome.py` | partial | [#499](https://github.com/metalhatscats/martenweave-core/issues/499) |
 | S07 | Promote evidence to Issue/Proposal | `modelops issue-draft`, `modelops infer-model`, `modelops propose-patch` | `POST /dataset-readiness?promote_to_proposal=true` | `import`, `gaps` | `test_issue_draft.py`, `test_ai_patch_proposal_service.py`, `test_e2e_proposal_lifecycle.py`, `test_import_model_sheet.py` | partial | [#430](https://github.com/metalhatscats/martenweave-core/issues/430), [#499](https://github.com/metalhatscats/martenweave-core/issues/499) |
 | S08 | Review, approve, apply Proposal | `modelops proposal *`, `modelops change-request *` | `GET /proposals/{id}`, `POST /proposals/{id}/validate`, `POST /proposals/{id}/dry-run`, `POST /proposals/{id}/apply` | `proposals`, `proposal` | `test_e2e_proposal_full_lifecycle.py`, `test_patch_apply.py`, `test_patch_proposal_validation.py`, `test_change_request_service.py`, `test_approval_gates.py`, `test_proposal_cli.py`, `test_api.py` | partial | [#492](https://github.com/metalhatscats/martenweave-core/issues/492) |
 | S09 | Generate business review pack | `modelops review-pack create`, `modelops export-model` | `POST /export` | `reports` | `test_review_pack.py`, `test_export_model.py` | partial | — |
 | S10 | Import reviewed Excel and preview changes | `modelops import-model-sheet`, `modelops proposal validate`, `modelops proposal diff` | planned | `import` | `test_import_model_sheet.py`, `test_patch_proposal_validation.py` | partial | [#427](https://github.com/metalhatscats/martenweave-core/issues/427) |
 | S11 | Compare versions and change history | `modelops diff`, `modelops audit-log`, `modelops migrate` | planned | `changelog` | `test_diff.py`, `test_audit_log.py`, `test_schema_versioning.py` | partial | — |
-| S12 | Sanitized pilot outcome/demo bundle | `modelops config-guard`; `assessment sanitize`, `pilot-outcome`, `demo-bundle build` in PRs | planned | `reports` | `test_demo_bundle.py` (PR [#528](https://github.com/metalhatscats/martenweave-core/pull/528)) | partial | [#491](https://github.com/metalhatscats/martenweave-core/issues/491), [#493](https://github.com/metalhatscats/martenweave-core/issues/493), [#495](https://github.com/metalhatscats/martenweave-core/issues/495) |
+| S12 | Sanitized pilot outcome/demo bundle | `martenweave config-guard`, `assessment sanitize`, `pilot-outcome`, `demo-bundle build` | planned | `reports` | `test_demo_bundle.py`, `test_pilot_outcome.py` | partial | [#502](https://github.com/metalhatscats/martenweave-core/issues/502) |
 
 ### Matrix status summary
 
 - `complete`: 0 scenarios (no UI route is fully live end-to-end yet).
-- `partial`: 10 scenarios (CLI + API present; UI is static or one step is pending in an open PR).
+- `partial`: 11 scenarios (CLI + API present; UI is static or one step is pending in an open issue).
 - `mocked`: 0 scenarios at the scenario level; individual UI screens use static data.
-- `missing`: 1 scenario (S06 finding disposition) pending backend + UI work.
+- `missing`: 0 scenarios.
 
 ### Mock-only UI behavior
 
