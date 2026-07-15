@@ -119,6 +119,39 @@ class ImportValidateResponse(BaseModel):
     overlap_count: int = 0
 
 
+class WorkspaceSummary(BaseModel):
+    """Summary of the currently active or candidate workspace."""
+
+    repository_label: str
+    version: str
+    api_version: str = "v1"
+    indexed: bool
+    canonical_files: int
+    read_only: bool
+
+
+class WorkspaceValidateResponse(WorkspaceSummary):
+    """Validation result for a candidate workspace."""
+
+    valid: bool
+    errors: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
+
+class WorkspaceValidateRequest(BaseModel):
+    """Request body for validating a repository path."""
+
+    path: str = Field(..., description="Absolute local repository path.")
+
+
+class WorkspaceCreateRequest(BaseModel):
+    """Request body for creating a new repository."""
+
+    path: str = Field(..., description="Absolute directory path for the new repository.")
+    name: str = Field(default="My Model Repository", description="Repository display name.")
+    template: str | None = Field(default=None, description="Optional model-spine template name.")
+
+
 class ImportProposeResponse(BaseModel):
     """Response body after turning a reviewed workbook into a PatchProposal."""
 

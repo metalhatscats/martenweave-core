@@ -145,6 +145,10 @@ import { lineageEdges, lineageNodes, modelObjects, proposals as demoProposals } 
  * @property {(reportType: string, format?: string | null) => Promise<{artifact_id: string, name: string, format: string, created_at: string}>} generateReport
  * @property {(limit?: number) => Promise<{total_count: number, artifacts: any[]}>} reports
  * @property {(artifactId: string) => string} reportDownloadUrl
+ * @property {() => Promise<WorkspaceSummary>} workspace
+ * @property {(path: string) => Promise<WorkspaceValidateResponse>} validateWorkspace
+ * @property {(path: string) => Promise<WorkspaceValidateResponse>} openWorkspace
+ * @property {(data: {path: string, name: string, template?: string | null}) => Promise<WorkspaceValidateResponse>} createWorkspace
  * @property {() => Promise<any>} findings
  */
 
@@ -317,6 +321,29 @@ import { lineageEdges, lineageNodes, modelObjects, proposals as demoProposals } 
  * @property {string} proposal_path
  * @property {number} operations_count
  * @property {string[]} warnings
+ */
+
+/**
+ * @typedef {object} WorkspaceSummary
+ * @property {string} repository_label
+ * @property {string} version
+ * @property {string} api_version
+ * @property {boolean} indexed
+ * @property {number} canonical_files
+ * @property {boolean} read_only
+ */
+
+/**
+ * @typedef {object} WorkspaceValidateResponse
+ * @property {boolean} valid
+ * @property {string[]} errors
+ * @property {string[]} warnings
+ * @property {string} repository_label
+ * @property {string} version
+ * @property {string} api_version
+ * @property {boolean} indexed
+ * @property {number} canonical_files
+ * @property {boolean} read_only
  */
 
 /**
@@ -502,6 +529,10 @@ export function createApiClient(baseUrl) {
       `${root}/api/v1/reports/generate`,
       { report_type: reportType, format }
     ),
+    workspace: () => fetchJson(`${root}/api/v1/workspace`),
+    validateWorkspace: (path) => postJson(`${root}/api/v1/workspace/validate`, { path }),
+    openWorkspace: (path) => postJson(`${root}/api/v1/workspace/open`, { path }),
+    createWorkspace: (data) => postJson(`${root}/api/v1/workspace/create`, data),
   };
 }
 
@@ -513,6 +544,7 @@ export function createApiClient(baseUrl) {
  * @property {string|null} error
  * @property {CapabilitiesResponse|null} capabilities
  * @property {RecoveryAction|null} recovery
+ * @property {() => void} refresh
  */
 
 /**
@@ -525,6 +557,7 @@ export const ApiContext = createContext({
   error: null,
   capabilities: null,
   recovery: null,
+  refresh: () => {},
 });
 
 /**
@@ -541,22 +574,23 @@ export function ApiProvider({ children, baseUrl = DEFAULT_API_BASE_URL }) {
     error: null,
     capabilities: null,
     recovery: null,
+    refresh: () => {},
   }));
 
   const probe = useCallback(async () => {
     try {
       const capabilities = await client.capabilities();
       if (capabilities.api_version !== EXPECTED_API_VERSION) {
-        setValue({ state: API_STATE.INCOMPATIBLE, demo: true, client, error: `API version ${capabilities.api_version} is not supported`, capabilities, recovery: null, retry: probe });
+        setValue({ state: API_STATE.INCOMPATIBLE, demo: true, client, error: `API version ${capabilities.api_version} is not supported`, capabilities, recovery: null, retry: probe, refresh: probe });
         return;
       }
       if (!capabilities.indexed) {
-        setValue({ state: API_STATE.STALE_INDEX, demo: true, client, error: "Index is missing. Run build-index first.", capabilities, recovery: capabilities.recovery?.find((action) => action.code === "BUILD_INDEX") || null, retry: probe });
+        setValue({ state: API_STATE.STALE_INDEX, demo: true, client, error: "Index is missing. Run build-index first.", capabilities, recovery: capabilities.recovery?.find((action) => action.code === "BUILD_INDEX") || null, retry: probe, refresh: probe });
         return;
       }
-      setValue({ state: API_STATE.CONNECTED, demo: false, client, error: null, capabilities, recovery: null, retry: probe });
+      setValue({ state: API_STATE.CONNECTED, demo: false, client, error: null, capabilities, recovery: null, retry: probe, refresh: probe });
     } catch (err) {
-      setValue({ state: API_STATE.UNAVAILABLE, demo: true, client, error: err instanceof Error ? err.message : String(err), capabilities: null, recovery: null, retry: probe });
+      setValue({ state: API_STATE.UNAVAILABLE, demo: true, client, error: err instanceof Error ? err.message : String(err), capabilities: null, recovery: null, retry: probe, refresh: probe });
     }
   }, [client]);
 

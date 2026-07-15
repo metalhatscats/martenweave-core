@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import shutil
 import sqlite3
 import urllib.error
 import urllib.request
@@ -48,7 +47,6 @@ from modelops_core.change_request import (
     update_change_request_status,
 )
 from modelops_core.config import (
-    RepoConfig,
     load_repo_config,
     load_resource_limits,
     resolve_generated_path,
@@ -530,7 +528,6 @@ def ai_provider_health(
 app.add_typer(ai_provider_app, name="ai-provider")
 
 
-_TEMPLATES_DIR = Path(__file__).parent.parent.parent / "templates" / "model_spines"
 
 
 @app.command()
@@ -550,71 +547,20 @@ def init(
     ),
 ) -> None:
     """Scaffold a new model repository."""
-    target = path.resolve()
-    target.mkdir(parents=True, exist_ok=True)
+    from modelops_core.repository.scaffold import init_repository
 
-    model_dir = target / "model"
-    model_dir.mkdir(exist_ok=True)
+    try:
+        target = init_repository(path, name=name, template=template)
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
 
-    generated_dir = target / "generated"
-    generated_dir.mkdir(exist_ok=True)
-
-    data_dir = target / "data" / "samples"
-    data_dir.mkdir(parents=True, exist_ok=True)
-
-    config = RepoConfig(name=name)
-    config_path = target / "modelops.config.yaml"
-    config_path.write_text(
-        yaml.safe_dump(config.model_dump(), default_flow_style=False, sort_keys=False),
-        encoding="utf-8",
-    )
-
+    console.print(f"[green]Initialized model repository at {target}[/green]")
     if template:
-        template_path = _TEMPLATES_DIR / template
-        if not template_path.exists():
-            console.print(f"[red]Template not found: {template}[/red]")
-            available = ", ".join(t.name for t in _TEMPLATES_DIR.iterdir() if t.is_dir())
-            console.print(f"  Available: {available}")
-            raise typer.Exit(code=1)
-
-        template_model = template_path / "model"
-        if template_model.exists():
-            for src_file in template_model.iterdir():
-                if src_file.is_file():
-                    shutil.copy2(src_file, model_dir / src_file.name)
-
-        template_config = template_path / "modelops.config.yaml"
-        if template_config.exists():
-            shutil.copy2(template_config, config_path)
-
-        template_readme = template_path / "README.md"
-        if template_readme.exists():
-            shutil.copy2(template_readme, target / "README.md")
-
-        console.print(
-            f"[green]Initialized model repository at {target} from template '{template}'[/green]"
-        )
-    else:
-        # Create a minimal example domain object
-        example_md = model_dir / "DOMAIN-EXAMPLE.md"
-        example_md.write_text(
-            "---\n"
-            "id: DOMAIN-EXAMPLE\n"
-            "type: MasterDataDomain\n"
-            "status: draft\n"
-            'schema_version: "1.0"\n'
-            "name: Example Domain\n"
-            "---\n\n"
-            "# Example Domain\n\n"
-            "This is a placeholder domain object.\n",
-            encoding="utf-8",
-        )
-
-        console.print(f"[green]Initialized model repository at {target}[/green]")
-
-    console.print(f"  Config:   {config_path}")
-    console.print(f"  Model:    {model_dir}")
-    console.print(f"  Generated: {generated_dir}")
+        console.print(f"  Template: {template}")
+    console.print(f"  Config:   {target / 'modelops.config.yaml'}")
+    console.print(f"  Model:    {target / 'model'}")
+    console.print(f"  Generated: {target / 'generated'}")
 
 
 @app.command("bootstrap-assessment")

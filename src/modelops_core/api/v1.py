@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any
@@ -37,9 +38,15 @@ from modelops_core.api.models import (
     ReportGenerateRequest,
     ReportGenerateResponse,
     SearchResultItem,
+    WorkspaceCreateRequest,
+    WorkspaceSummary,
+    WorkspaceValidateRequest,
+    WorkspaceValidateResponse,
 )
 from modelops_core.api.recovery import BUILD_INDEX, INSPECT_READ_ONLY
 from modelops_core.api.workspace import (
+    configure_workspace,
+    current_mutation_token,
     mutation_enabled,
     require_mutation_token,
     resolve_workspace,
@@ -81,8 +88,65 @@ from modelops_core.reports.model_summary_service import (
 )
 from modelops_core.reports.scorecard_service import generate_scorecard
 from modelops_core.repository import scan_repository
+from modelops_core.repository.scaffold import available_templates, init_repository
 
 router = APIRouter(prefix="/api/v1")
+
+
+def _workspace_summary(repo_root: Path) -> dict[str, Any]:
+    """Return a safe workspace summary for the given repository root."""
+    generated_root = resolve_generated_path(repo_root)
+    model_path = resolve_model_path(repo_root)
+    files = scan_repository(model_path) if model_path.exists() else []
+    return {
+        "repository_label": workspace_label() if workspace_is_bound() else str(repo_root),
+        "version": __version__,
+        "api_version": "v1",
+        "indexed": (generated_root / "modelops.db").exists(),
+        "canonical_files": len(files),
+        "read_only": not os.access(repo_root, os.W_OK),
+    }
+
+
+def _validate_repository_path(repo_root: Path) -> dict[str, Any]:
+    """Check that a directory looks like a usable model repository."""
+    errors: list[str] = []
+    warnings: list[str] = []
+
+    if not repo_root.is_absolute():
+        errors.append("Repository path must be absolute.")
+    if not repo_root.exists():
+        errors.append(f"Directory does not exist: {repo_root}")
+    elif not repo_root.is_dir():
+        errors.append(f"Path is not a directory: {repo_root}")
+
+    if repo_root.exists() and repo_root.is_dir() and not os.access(repo_root, os.R_OK):
+        errors.append(f"Directory is not readable: {repo_root}")
+
+    model_path = resolve_model_path(repo_root)
+    config_path = repo_root / "modelops.config.yaml"
+
+    if not model_path.exists() and not config_path.exists():
+        errors.append(
+            "Directory does not contain a model/ folder or modelops.config.yaml file."
+        )
+    elif config_path.exists():
+        from modelops_core.config import load_repo_config
+
+        config = load_repo_config(repo_root)
+        if config is None:
+            errors.append("modelops.config.yaml exists but could not be parsed.")
+
+    generated_root = resolve_generated_path(repo_root)
+    if not (generated_root / "modelops.db").exists():
+        warnings.append("Index is missing. Run build-index after opening.")
+
+    return {
+        "valid": not errors,
+        "errors": errors,
+        "warnings": warnings,
+        **_workspace_summary(repo_root),
+    }
 
 _REPORT_EXTENSIONS = frozenset({".csv", ".json", ".md", ".pdf", ".xlsx"})
 
@@ -318,10 +382,34 @@ def capabilities(
             description="Turn a validated review workbook into a reviewable PatchProposal.",
         ),
         CapabilityEntry(
+            name="get_workspace",
+            method="GET",
+            href="/api/v1/workspace",
+            description="Read the currently active local workspace summary.",
+        ),
+        CapabilityEntry(
+            name="validate_workspace",
+            method="POST",
+            href="/api/v1/workspace/validate",
+            description="Validate a candidate local repository path without switching.",
+        ),
+        CapabilityEntry(
             name="export_model",
             method="POST",
             href="/api/v1/exports",
             description="Export the canonical model to CSV or XLSX.",
+        ),
+        CapabilityEntry(
+            name="open_workspace",
+            method="POST",
+            href="/api/v1/workspace/open",
+            description="Switch the API process to a different local workspace.",
+        ),
+        CapabilityEntry(
+            name="create_workspace",
+            method="POST",
+            href="/api/v1/workspace/create",
+            description="Create a new repository from a template and open it.",
         ),
     ]
 
@@ -1089,3 +1177,73 @@ def export_model(
         return {"format": "xlsx", "artifact_id": "exports/model.xlsx"}
     else:
         raise HTTPException(status_code=400, detail=f"Unknown format: {format}")
+
+
+# ---------------------------------------------------------------------------
+# Workspace
+# ---------------------------------------------------------------------------
+
+
+@router.get("/workspace", response_model=WorkspaceSummary)
+def get_workspace() -> dict[str, Any]:
+    """Return a safe summary of the currently active workspace."""
+    repo_root = _resolve_repo(None)
+    return _workspace_summary(repo_root)
+
+
+@router.post("/workspace/validate", response_model=WorkspaceValidateResponse)
+def validate_workspace(
+    request: WorkspaceValidateRequest,
+) -> dict[str, Any]:
+    """Validate a candidate repository path without switching workspaces."""
+    repo_root = Path(request.path)
+    return _validate_repository_path(repo_root)
+
+
+@router.post(
+    "/workspace/open",
+    dependencies=[Depends(require_mutation_token)],
+    response_model=WorkspaceValidateResponse,
+)
+def open_workspace(
+    request: WorkspaceValidateRequest,
+) -> dict[str, Any]:
+    """Validate and switch the API process to a different local workspace."""
+    repo_root = Path(request.path)
+    validation = _validate_repository_path(repo_root)
+    if not validation["valid"]:
+        raise HTTPException(status_code=400, detail="; ".join(validation["errors"]))
+
+    configure_workspace(repo_root, mutation_token=current_mutation_token())
+    return {**_validate_repository_path(repo_root), "valid": True, "errors": []}
+
+
+@router.post(
+    "/workspace/create",
+    dependencies=[Depends(require_mutation_token)],
+    response_model=WorkspaceValidateResponse,
+)
+def create_workspace(
+    request: WorkspaceCreateRequest,
+) -> dict[str, Any]:
+    """Create a new repository from a template and open it."""
+    repo_root = Path(request.path)
+    if repo_root.exists() and any(repo_root.iterdir()):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Target directory is not empty: {repo_root}",
+        )
+
+    if request.template and request.template not in available_templates():
+        raise HTTPException(
+            status_code=400,
+            detail=f"Template '{request.template}' not found.",
+        )
+
+    try:
+        init_repository(repo_root, name=request.name, template=request.template)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    configure_workspace(repo_root, mutation_token=current_mutation_token())
+    return {**_validate_repository_path(repo_root), "valid": True, "errors": []}

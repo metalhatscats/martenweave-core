@@ -25,6 +25,11 @@ def clear_workspace() -> None:
     _mutation_token = None
 
 
+def current_mutation_token() -> str | None:
+    """Return the mutation token for the currently bound workspace, if any."""
+    return _mutation_token
+
+
 def resolve_workspace(requested_repo: str | None) -> Path:
     """Resolve the bound workspace and reject attempts to switch it."""
     if _workspace_root is None:

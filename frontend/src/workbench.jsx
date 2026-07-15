@@ -14,12 +14,14 @@ import {
   FileArrowDown,
   FileCsv,
   FileText,
+  FolderOpen,
   Funnel,
   GitBranch,
   GridFour,
   Keyboard,
   MagnifyingGlass,
   NotePencil,
+  Plus,
   Rows,
   ShareNetwork,
   ShieldCheck,
@@ -1224,15 +1226,181 @@ function ActivityDialog({ onClose, navigate, refreshKey = 0 }) {
   );
 }
 
+const RECENT_WORKSPACES_KEY = "martenweave:recent-workspaces";
+
+function readRecentWorkspaces() {
+  try {
+    const raw = window.localStorage.getItem(RECENT_WORKSPACES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeRecentWorkspaces(entries) {
+  try {
+    window.localStorage.setItem(RECENT_WORKSPACES_KEY, JSON.stringify(entries.slice(0, 5)));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function workspaceDisplayName(path) {
+  if (!path) return "Unnamed workspace";
+  return path.replace(/\\/g, "/").split("/").filter(Boolean).pop() || path;
+}
+
 function WorkspaceDialog({ onClose }) {
-  const { capabilities, demo, state } = useApi();
+  const { capabilities, demo, state, client, refresh } = useApi();
   const indexed = Boolean(capabilities?.indexed);
+  const [mode, setMode] = useState("open");
+  const [path, setPath] = useState("");
+  const [name, setName] = useState("My Model Repository");
+  const [template, setTemplate] = useState("");
+  const [recent, setRecent] = useState(() => readRecentWorkspaces());
+  const [validation, setValidation] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleValidate = async () => {
+    if (!client || demo) return;
+    setLoading(true);
+    setError("");
+    setValidation(null);
+    try {
+      const result = await client.validateWorkspace(path);
+      setValidation(result);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addRecent = (workspacePath) => {
+    const next = [{ path: workspacePath, label: workspaceDisplayName(workspacePath), openedAt: new Date().toISOString() }, ...recent.filter((r) => r.path !== workspacePath)];
+    setRecent(next);
+    writeRecentWorkspaces(next);
+  };
+
+  const handleOpen = async () => {
+    if (!client || demo) return;
+    setLoading(true);
+    setError("");
+    try {
+      const result = await client.openWorkspace(path);
+      if (!result.valid) {
+        setValidation(result);
+        return;
+      }
+      addRecent(path);
+      refresh();
+      onClose();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!client || demo) return;
+    setLoading(true);
+    setError("");
+    try {
+      const result = await client.createWorkspace({ path, name, template: template || null });
+      if (!result.valid) {
+        setValidation(result);
+        return;
+      }
+      addRecent(path);
+      refresh();
+      onClose();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <ModalFrame title="Workspace" subtitle="Local repository context for this investigation." onClose={onClose} className="workspace-modal">
+    <ModalFrame title="Workspace" subtitle="Open or create a local model repository." onClose={onClose} className="workspace-modal">
       <div className="workspace-summary"><img src="/martenweave-logo.png" alt="" /><span><strong>{demo ? "Demo workspace" : "Local workspace"}</strong><small>{demo ? "Sample data only" : "Repository path hidden for local privacy"}</small></span><StatusBadge value={indexed ? "Validated" : "Index needed"} /></div>
       <dl className="workspace-details"><dt>Core version</dt><dd>{capabilities?.version || "Unavailable"}</dd><dt>API contract</dt><dd>{capabilities?.api_version || "Unavailable"}</dd><dt>Canonical files</dt><dd>{capabilities?.canonical_files ?? "—"}</dd><dt>Mode</dt><dd>{demo ? "Demo" : capabilities?.read_only ? "Read-only" : state === API_STATE.CONNECTED ? "Connected local" : "Connecting"}</dd></dl>
+
+      <div className="workspace-mode-tabs">
+        <button type="button" className={mode === "open" ? "is-active" : ""} onClick={() => { setMode("open"); setValidation(null); setError(""); }}><FolderOpen size={16} /> Open existing</button>
+        <button type="button" className={mode === "create" ? "is-active" : ""} onClick={() => { setMode("create"); setValidation(null); setError(""); }}><Plus size={16} /> Create new</button>
+      </div>
+
+      {mode === "open" && (
+        <div className="workspace-form">
+          <label className="workspace-field">
+            <span>Repository path</span>
+            <input type="text" value={path} onChange={(e) => setPath(e.target.value)} placeholder="/absolute/path/to/model-repository" />
+          </label>
+          {recent.length > 0 && (
+            <div className="workspace-recent">
+              <strong>Recent workspaces</strong>
+              <div className="recent-list">
+                {recent.map((entry) => (
+                  <button type="button" key={entry.path} onClick={() => { setPath(entry.path); setValidation(null); }}>
+                    <Database size={15} />
+                    <span><strong>{entry.label}</strong><small>{entry.path}</small></span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="workspace-actions">
+            <button type="button" className="secondary-button" onClick={handleValidate} disabled={!path || loading}>{loading && mode === "open" ? "Checking…" : "Validate"}</button>
+            <button type="button" className="primary-button" onClick={handleOpen} disabled={!path || loading || (validation && !validation.valid)}>{loading && mode === "open" ? "Opening…" : "Open workspace"}</button>
+          </div>
+        </div>
+      )}
+
+      {mode === "create" && (
+        <div className="workspace-form">
+          <label className="workspace-field">
+            <span>New repository path</span>
+            <input type="text" value={path} onChange={(e) => setPath(e.target.value)} placeholder="/absolute/path/to/new-model-repository" />
+          </label>
+          <label className="workspace-field">
+            <span>Repository name</span>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+          <label className="workspace-field">
+            <span>Template (optional)</span>
+            <select value={template} onChange={(e) => setTemplate(e.target.value)}>
+              <option value="">Minimal example domain</option>
+              <option value="business_partner">Business partner</option>
+              <option value="generic_large_object">Generic large object</option>
+              <option value="sap_bp_customer_migration">SAP BP customer migration</option>
+              <option value="ams_field_dictionary">AMS field dictionary</option>
+            </select>
+          </label>
+          <div className="workspace-actions">
+            <button type="button" className="primary-button" onClick={handleCreate} disabled={!path || !name || loading}>{loading && mode === "create" ? "Creating…" : "Create and open"}</button>
+          </div>
+        </div>
+      )}
+
+      {error && <p className="inline-error">{error}</p>}
+      {validation && (
+        <div className={`workspace-validation ${validation.valid ? "valid" : "invalid"}`}>
+          <p><strong>{validation.valid ? "Repository is valid" : "Repository is not valid"}</strong></p>
+          <p>{validation.canonical_files} canonical file{validation.canonical_files === 1 ? "" : "s"} · {validation.indexed ? "index present" : "index missing"} · {validation.read_only ? "read-only" : "writable"}</p>
+          {validation.errors.length > 0 && (
+            <div className="validation-messages"><strong>Errors</strong><ul>{validation.errors.map((err, idx) => <li key={idx}>{err}</li>)}</ul></div>
+          )}
+          {validation.warnings.length > 0 && (
+            <div className="validation-messages"><strong>Warnings</strong><ul>{validation.warnings.map((warn, idx) => <li key={idx}>{warn}</li>)}</ul></div>
+          )}
+        </div>
+      )}
+
       <div className="export-note"><ShieldCheck size={17} /> Canonical files remain authoritative; indexes and reports are disposable local outputs.</div>
-      <footer><button className="primary-button" onClick={onClose}>Close</button></footer>
+      <footer><button className="secondary-button" onClick={onClose}>Close</button></footer>
     </ModalFrame>
   );
 }
