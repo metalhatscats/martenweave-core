@@ -466,3 +466,46 @@ kbd {
 .connection-recovery { font-weight: 600; color: #92400e; }
 .connection-retry { margin-left: 8px; }
 .connection-banner .spin { margin-right: 8px; }
+.connection-recovery-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+.connection-recovery-item {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.08);
+  font-size: 12px;
+}
+.connection-recovery-item strong { font-weight: 600; }
+.connection-recovery-item span { color: #7c4d0f; }
+.connection-severity-critical { background: rgba(239, 68, 68, 0.1); }
+.connection-severity-critical strong,
+.connection-severity-critical span { color: #991b1b; }
+.connection-severity-warning { background: rgba(245, 158, 11, 0.12); }
+.connection-severity-warning strong,
+.connection-severity-warning span { color: #92400e; }
+.connection-severity-info { background: rgba(36, 104, 237, 0.08); }
+.connection-severity-info strong,
+.connection-severity-info span { color: #1e40af; }
+.connection-recovery-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.connection-recovery-action {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  font-size: 11px;
+  font-weight: 500;
+}

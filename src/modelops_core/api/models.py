@@ -186,6 +186,23 @@ class RecoveryActionEntry(BaseModel):
     requires_confirmation: bool = False
 
 
+class RecoveryStateEntry(BaseModel):
+    """A degraded workspace state with safe recovery actions."""
+
+    code: str
+    severity: str
+    label: str
+    message: str
+    actions: list[RecoveryActionEntry]
+    more_info: str | None = None
+
+
+class RecoveryResponse(BaseModel):
+    """All active recovery states for the current workspace."""
+
+    states: list[RecoveryStateEntry]
+
+
 class ApiCapabilities(BaseModel):
     """Capability discovery response for the versioned API."""
 

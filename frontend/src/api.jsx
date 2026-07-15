@@ -41,6 +41,16 @@ import { gaps as demoGaps, lineageEdges, lineageNodes, modelObjects, proposals a
  */
 
 /**
+ * @typedef {object} RecoveryState
+ * @property {string} code
+ * @property {"critical"|"warning"|"info"} severity
+ * @property {string} label
+ * @property {string} message
+ * @property {RecoveryAction[]} actions
+ * @property {string|null} [more_info]
+ */
+
+/**
  * @typedef {object} SearchResult
  * @property {string} object_id
  * @property {string} object_type
@@ -120,6 +130,7 @@ import { gaps as demoGaps, lineageEdges, lineageNodes, modelObjects, proposals a
 
 /**
  * @typedef {object} ApiClient
+ * @property {() => Promise<{states: RecoveryState[]}>} recovery
  * @property {(params?: {q?: string, type?: string, status?: string, domain?: string, limit?: number, offset?: number}) => Promise<SearchResponse>} search
  * @property {(id: string) => Promise<ObjectDetailResponse>} object
  * @property {(id: string, opts?: {direction?: string, max_depth?: number}) => Promise<TraceResponse>} trace
@@ -360,6 +371,14 @@ export const API_STATE = {
   UNAVAILABLE: "unavailable",
   STALE_INDEX: "stale_index",
   INCOMPATIBLE: "incompatible",
+  INVALID_REPO: "invalid_repo",
+  READ_ONLY_REPO: "read_only_repo",
+  AI_UNAVAILABLE: "ai_unavailable",
+  BLOCKED_IMPORT: "blocked_import",
+  PARTIAL_ASSESSMENT: "partial_assessment",
+  INVALID_PROPOSAL: "invalid_proposal",
+  FAILED_APPLY: "failed_apply",
+  MUTATION_AUTH_REQUIRED: "mutation_auth_required",
 };
 
 /**
@@ -512,6 +531,7 @@ export function createApiClient(baseUrl) {
 
   return {
     capabilities: () => fetchJson(`${root}/api/v1/capabilities`),
+    recovery: () => fetchJson(`${root}/api/v1/recovery`),
     activity: (limit = 50) => fetchJson(`${root}/api/v1/activity?limit=${encodeURIComponent(limit)}`),
     reports: (limit = 100) => fetchJson(`${root}/api/v1/reports?limit=${encodeURIComponent(limit)}`),
     reportDownloadUrl: (artifactId) => `${root}/api/v1/reports/${artifactId.split("/").map(encodeURIComponent).join("/")}`,
@@ -575,6 +595,7 @@ export function createApiClient(baseUrl) {
  * @property {string|null} error
  * @property {CapabilitiesResponse|null} capabilities
  * @property {RecoveryAction|null} recovery
+ * @property {RecoveryState[]} recoveryStates
  * @property {() => void} refresh
  */
 
@@ -588,6 +609,7 @@ export const ApiContext = createContext({
   error: null,
   capabilities: null,
   recovery: null,
+  recoveryStates: [],
   refresh: () => {},
 });
 
@@ -605,25 +627,95 @@ export function ApiProvider({ children, baseUrl = DEFAULT_API_BASE_URL }) {
     error: null,
     capabilities: null,
     recovery: null,
+    recoveryStates: [],
+    retry: () => {},
     refresh: () => {},
   }));
+
+  const normalizeRecoveryStates = useCallback((response) => {
+    if (response && Array.isArray(response.states)) return response.states;
+    return [];
+  }, []);
+
+  const pickPrimaryRecoveryAction = useCallback((states, capabilities) => {
+    if (capabilities?.recovery?.length) return capabilities.recovery[0];
+    if (!states.length) return null;
+    const prioritized =
+      states.find((s) => s.severity === "critical") ||
+      states.find((s) => s.severity === "warning") ||
+      states[0];
+    return prioritized.actions?.[0] || null;
+  }, []);
 
   const probe = useCallback(async () => {
     try {
       const capabilities = await client.capabilities();
+      const degraded =
+        capabilities.api_version !== EXPECTED_API_VERSION ||
+        !capabilities.indexed ||
+        capabilities.read_only;
+      let recoveryStates = [];
+      if (degraded) {
+        try {
+          recoveryStates = normalizeRecoveryStates(await client.recovery());
+        } catch {
+          recoveryStates = [];
+        }
+      }
+      const primaryRecovery = pickPrimaryRecoveryAction(recoveryStates, capabilities);
       if (capabilities.api_version !== EXPECTED_API_VERSION) {
-        setValue({ state: API_STATE.INCOMPATIBLE, demo: true, client, error: `API version ${capabilities.api_version} is not supported`, capabilities, recovery: null, retry: probe, refresh: probe });
+        setValue({
+          state: API_STATE.INCOMPATIBLE,
+          demo: true,
+          client,
+          error: `API version ${capabilities.api_version} is not supported`,
+          capabilities,
+          recovery: primaryRecovery,
+          recoveryStates,
+          retry: probe,
+          refresh: probe,
+        });
         return;
       }
       if (!capabilities.indexed) {
-        setValue({ state: API_STATE.STALE_INDEX, demo: true, client, error: "Index is missing. Run build-index first.", capabilities, recovery: capabilities.recovery?.find((action) => action.code === "BUILD_INDEX") || null, retry: probe, refresh: probe });
+        setValue({
+          state: API_STATE.STALE_INDEX,
+          demo: true,
+          client,
+          error: "Index is missing. Run build-index first.",
+          capabilities,
+          recovery: primaryRecovery,
+          recoveryStates,
+          retry: probe,
+          refresh: probe,
+        });
         return;
       }
-      setValue({ state: API_STATE.CONNECTED, demo: false, client, error: null, capabilities, recovery: null, retry: probe, refresh: probe });
+      setValue({
+        state: API_STATE.CONNECTED,
+        demo: false,
+        client,
+        error: null,
+        capabilities,
+        recovery: primaryRecovery,
+        recoveryStates,
+        retry: probe,
+        refresh: probe,
+      });
     } catch (err) {
-      setValue({ state: API_STATE.UNAVAILABLE, demo: true, client, error: err instanceof Error ? err.message : String(err), capabilities: null, recovery: null, retry: probe, refresh: probe });
+      setValue({
+        state: API_STATE.UNAVAILABLE,
+        demo: true,
+        client,
+        error: err instanceof Error ? err.message : String(err),
+        capabilities: null,
+        recovery: null,
+        recoveryStates: [],
+        retry: probe,
+        refresh: probe,
+      });
     }
-  }, [client]);
+  }, [client, normalizeRecoveryStates, pickPrimaryRecoveryAction]);
 
   useEffect(() => {
     probe();

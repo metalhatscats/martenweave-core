@@ -105,24 +105,55 @@ import {
 } from "./workbench.jsx";
 
 function ConnectionBanner() {
-  const { state, demo, error, recovery, retry } = useApi();
-  if (state === API_STATE.CONNECTED) return null;
+  const { state, demo, error, recovery, recoveryStates, retry } = useApi();
+  const showBanner = state !== API_STATE.CONNECTED || recoveryStates.length > 0;
+  if (!showBanner) return null;
 
   const messages = {
     [API_STATE.UNKNOWN]: "Connecting to local Martenweave API…",
     [API_STATE.UNAVAILABLE]: `Local API unavailable. Showing demo data. ${error || ""}`,
     [API_STATE.STALE_INDEX]: "Local API index is stale. Run build-index, or continue in demo mode.",
     [API_STATE.INCOMPATIBLE]: `Local API contract is incompatible. ${error || ""}`,
+    [API_STATE.INVALID_REPO]: "The configured repository path is not a valid Martenweave workspace.",
+    [API_STATE.READ_ONLY_REPO]: "This workspace is read-only. Search and inspection still work.",
+    [API_STATE.AI_UNAVAILABLE]: "AI provider is not configured. Deterministic workflows still work.",
+    [API_STATE.BLOCKED_IMPORT]: "Import is blocked because the file is outside the bound workspace.",
+    [API_STATE.PARTIAL_ASSESSMENT]: "Assessment completed partially. Review the generated artifacts.",
+    [API_STATE.INVALID_PROPOSAL]: "The proposal cannot be applied. Review it before retrying.",
+    [API_STATE.FAILED_APPLY]: "Applying the proposal failed. No canonical files were changed.",
+    [API_STATE.MUTATION_AUTH_REQUIRED]: "Provide the configured mutation token to make changes.",
   };
+
+  const primaryMessage = messages[state] || (recoveryStates[0]?.message || "Waiting for local API…");
 
   return (
     <div className="connection-banner" role="status">
       <span className={`connection-dot connection-${state}`} />
-      <span>{messages[state] || "Waiting for local API…"}</span>
+      <span>{primaryMessage}</span>
       {recovery && (
         <span className="connection-recovery">
           Next: {recovery.label}{recovery.command ? ` (${recovery.command})` : ""}
         </span>
+      )}
+      {recoveryStates.length > 0 && (
+        <ul className="connection-recovery-list">
+          {recoveryStates.map((rs) => (
+            <li key={rs.code} className={`connection-recovery-item connection-severity-${rs.severity}`}>
+              <strong>{rs.label}</strong>
+              <span>{rs.message}</span>
+              {rs.actions?.length > 0 && (
+                <span className="connection-recovery-actions">
+                  {rs.actions.map((action) => (
+                    <span key={action.code} className="connection-recovery-action">
+                      {action.label}
+                      {action.command ? ` (${action.command})` : ""}
+                    </span>
+                  ))}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
       )}
       {demo && <span className="connection-demo">Demo mode</span>}
       {state !== API_STATE.UNKNOWN && retry && (

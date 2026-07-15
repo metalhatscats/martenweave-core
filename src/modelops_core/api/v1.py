@@ -35,6 +35,9 @@ from modelops_core.api.models import (
     ImportValidateResponse,
     ObjectDetailResponse,
     PaginatedSearchResponse,
+    RecoveryActionEntry,
+    RecoveryResponse,
+    RecoveryStateEntry,
     RelatedObjectItem,
     ReportArtifactItem,
     ReportArtifactResponse,
@@ -46,7 +49,12 @@ from modelops_core.api.models import (
     WorkspaceValidateRequest,
     WorkspaceValidateResponse,
 )
-from modelops_core.api.recovery import BUILD_INDEX, INSPECT_READ_ONLY
+from modelops_core.api.recovery import (
+    AI_UNAVAILABLE_ACTION,
+    BUILD_INDEX,
+    INSPECT_READ_ONLY,
+    workspace_recovery_states,
+)
 from modelops_core.api.workspace import (
     configure_workspace,
     current_mutation_token,
@@ -60,7 +68,7 @@ from modelops_core.api.workspace import (
 from modelops_core.assessment.assessment_service import generate_review_pack, generate_risk_report
 from modelops_core.assessment.comparison import AssessmentComparisonError, compare_assessments
 from modelops_core.assessment.finding_contract import AssessmentFinding
-from modelops_core.config import resolve_generated_path, resolve_model_path
+from modelops_core.config import load_repo_config, resolve_generated_path, resolve_model_path
 from modelops_core.diff.diff_service import diff_repositories
 from modelops_core.exports.export_service import export_model_csv, export_model_xlsx
 from modelops_core.imports.dataset_profiler import (
@@ -182,6 +190,9 @@ def capabilities(
         recovery.append(BUILD_INDEX)
     if not mutation_enabled():
         recovery.append(INSPECT_READ_ONLY)
+    config = load_repo_config(repo_root)
+    if config is None or config.ai is None:
+        recovery.append(AI_UNAVAILABLE_ACTION)
 
     read = [
         CapabilityEntry(
@@ -427,6 +438,38 @@ def capabilities(
         read=read,
         mutations=mutations,
         recovery=[action.as_dict() for action in recovery],
+    )
+
+
+@router.get("/recovery", response_model=RecoveryResponse)
+def recovery_states(
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> RecoveryResponse:
+    """Return all active degraded-mode states and safe recovery actions."""
+    repo_root = _resolve_repo(repo)
+    health = _workspace_health(repo_root)
+    config = load_repo_config(repo_root)
+    ai_configured = config is not None and config.ai is not None
+    states = workspace_recovery_states(
+        repo_root,
+        indexed=health["indexed"],
+        read_only=not mutation_enabled(),
+        ai_configured=ai_configured,
+    )
+    return RecoveryResponse(
+        states=[
+            RecoveryStateEntry(
+                code=state.code,
+                severity=state.severity,
+                label=state.label,
+                message=state.message,
+                actions=[
+                    RecoveryActionEntry(**action.as_dict()) for action in state.actions
+                ],
+                more_info=state.more_info,
+            )
+            for state in states
+        ]
     )
 
 

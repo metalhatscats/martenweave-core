@@ -468,7 +468,7 @@ def test_api_impact_missing_index(temp_model_dir: Path) -> None:
     assert response.status_code == 400
     assert "Index not found" in response.json()["detail"]
     assert response.json()["error"] == {
-        "code": "INDEX_MISSING",
+        "code": "MISSING_INDEX",
         "message": "Index not found. Run build-index first.",
         "recovery": {
             "code": "BUILD_INDEX",
