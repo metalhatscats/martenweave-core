@@ -1,5 +1,9 @@
 # Martenweave Core v0.4.1 — Public Source Release Notes
 
+> **Historical release notes.** Version 0.4.1 shipped on 2026-06-23 as the first public source release.
+> The current supported release is **0.6.0**; see [`CHANGELOG.md`](../CHANGELOG.md) and
+> [`docs/release-validation-evidence.md`](release-validation-evidence.md) for the latest evidence.
+
 Release date: 2026-06-23
 
 This is the first public source release of Martenweave Core.

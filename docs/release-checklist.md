@@ -83,10 +83,10 @@ Do not release if:
 
 ## Tagging Decision
 
-`v0.5.0` is the planned Apache-licensed release. Push the tag only after local
+`v0.6.0` is the planned Apache-licensed release. Push the tag only after local
 validation passes and the PyPI trusted-publisher setup is confirmed:
 
 ```bash
-git tag -a vX.Y.Z -m "Release vX.Y.Z"
-git push origin vX.Y.Z
+git tag -a v0.6.0 -m "Release v0.6.0"
+git push origin v0.6.0
 ```
