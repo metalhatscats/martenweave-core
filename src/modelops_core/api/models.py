@@ -7,6 +7,98 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
+class ProposalReviewRequest(BaseModel):
+    """Request body for reviewing a PatchProposal."""
+
+    status: str = Field(..., description="Target review status.")
+    reviewer: str = Field(default="workbench", description="Identity of the reviewer.")
+    reviewer_notes: str | None = Field(default=None, description="Free-form reviewer notes.")
+    rejection_reason: str | None = Field(
+        default=None, description="Reason for rejection when status is rejected."
+    )
+
+
+class ProposalReviewResponse(BaseModel):
+    """Response body after transitioning a PatchProposal's review status."""
+
+    proposal_id: str
+    status: str
+    reviewer: str
+    reviewed_at: str
+    warning: str | None = None
+
+
+class ChangeRequestCreateRequest(BaseModel):
+    """Request body for creating a ChangeRequest."""
+
+    id: str
+    title: str
+    status: str = Field(default="pending")
+    requester: str | None = None
+    reason: str | None = None
+    requested_change: str | None = None
+    expected_impact: str | None = None
+    affected_objects: list[str] | None = None
+    linked_proposals: list[str] | None = None
+    related_issues: list[str] | None = None
+    related_decisions: list[str] | None = None
+    approvers: list[str] | None = None
+    priority: str | None = None
+    source_evidence: str | None = None
+
+
+class ChangeRequestResponse(BaseModel):
+    """Summary response for a ChangeRequest."""
+
+    id: str
+    status: str
+    title: str
+    requester: str | None = None
+    affected_objects: list[str] = Field(default_factory=list)
+    source_path: str | None = None
+
+
+class FindingReviewRequest(BaseModel):
+    """Request body for reviewing an assessment finding."""
+
+    assessment: str = Field(..., description="Generated-relative assessment directory.")
+    finding_id: str = Field(..., description="Stable finding ID from findings.json.")
+    disposition: str = Field(..., description="Human disposition for the finding.")
+    reviewer: str = Field(default="workbench", description="Identity of the reviewer.")
+    note: str | None = Field(default=None, description="Optional free-form note.")
+
+
+class FindingReviewResponse(BaseModel):
+    """Response body after recording a finding review."""
+
+    finding_id: str
+    disposition: str
+    reviewer: str
+    reviewed_at: str
+    note: str
+
+
+class ImportProfileResponse(BaseModel):
+    """Response body for a profiled dataset upload."""
+
+    dataset_id: str
+    format: str
+    profile: dict[str, Any]
+
+
+class ImportPreviewResponse(BaseModel):
+    """Response body for an XLSX import preview."""
+
+    proposal: dict[str, Any]
+
+
+class ExportResponse(BaseModel):
+    """Response body for a model export request."""
+
+    format: str
+    artifact_id: str
+
+
 class CapabilityEntry(BaseModel):
     """A single supported operation exposed by the API."""
 

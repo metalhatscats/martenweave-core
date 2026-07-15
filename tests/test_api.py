@@ -860,3 +860,158 @@ def test_api_dataset_readiness_source_states(tmp_path: Path) -> None:
     assert data["dataset_profile"]["source_state"] == "evidence"
     for gap in data["dataset_gaps"]:
         assert gap["source_state"] == "finding"
+
+
+# ---------------------------------------------------------------------------
+# proposal review
+# ---------------------------------------------------------------------------
+
+
+def test_api_review_proposal_transitions_status(temp_model_dir: Path) -> None:
+    repo = str(temp_model_dir.parent)
+    _create_test_proposal(temp_model_dir, "PP-REVIEW-001", "pending_review")
+    response = client.post(
+        "/proposals/PP-REVIEW-001/review",
+        params={"repo": repo},
+        json={"status": "accepted", "reviewer": "alice", "reviewer_notes": "Looks good"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["proposal_id"] == "PP-REVIEW-001"
+    assert data["status"] == "accepted"
+    assert data["reviewer"] == "alice"
+    assert data["reviewed_at"] is not None
+
+    proposal_path = temp_model_dir / "patch-proposals" / "PP-REVIEW-001.md"
+    assert "reviewer: alice" in proposal_path.read_text(encoding="utf-8")
+
+
+def test_api_review_proposal_invalid_status(temp_model_dir: Path) -> None:
+    repo = str(temp_model_dir.parent)
+    _create_test_proposal(temp_model_dir, "PP-REVIEW-002", "pending_review")
+    response = client.post(
+        "/proposals/PP-REVIEW-002/review",
+        params={"repo": repo},
+        json={"status": "banana"},
+    )
+    assert response.status_code == 400
+    assert "Invalid status" in response.json()["detail"]
+
+
+def test_api_review_proposal_not_found(temp_model_dir: Path) -> None:
+    repo = str(temp_model_dir.parent)
+    response = client.post(
+        "/proposals/PP-REVIEW-MISSING/review",
+        params={"repo": repo},
+        json={"status": "accepted"},
+    )
+    assert response.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# proposal list/detail enrichment
+# ---------------------------------------------------------------------------
+
+
+def test_api_list_proposals_includes_risk_and_counts(temp_model_dir: Path) -> None:
+    repo = str(temp_model_dir.parent)
+    _create_test_proposal(temp_model_dir, "PP-ENRICH-001", "pending_review")
+    response = client.get("/proposals", params={"repo": repo})
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    item = data[0]
+    assert item["id"] == "PP-ENRICH-001"
+    assert "risk_level" in item
+    assert "operations_count" in item
+    assert "affected_objects_count" in item
+    assert "title" in item
+    assert "name" in item
+    assert "created_by" in item
+
+
+def test_api_get_proposal_includes_risk_assessment(temp_model_dir: Path) -> None:
+    repo = str(temp_model_dir.parent)
+    _create_test_proposal(temp_model_dir, "PP-ENRICH-002", "pending_review")
+    response = client.get("/proposals/PP-ENRICH-002", params={"repo": repo})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == "PP-ENRICH-002"
+    assert "risk_level" in data
+    assert "risk_assessment" in data
+    assert "requires_approval" in data["risk_assessment"]
+    assert "risk_reasons" in data["risk_assessment"]
+
+
+# ---------------------------------------------------------------------------
+# ChangeRequest endpoints
+# ---------------------------------------------------------------------------
+
+
+def test_api_create_and_list_change_requests(temp_model_dir: Path) -> None:
+    repo = str(temp_model_dir.parent)
+    response = client.post(
+        "/change-requests",
+        params={"repo": repo},
+        json={
+            "id": "CR-API-001",
+            "title": "Test Change Request",
+            "status": "pending",
+            "requester": "bob",
+            "affected_objects": ["DOMAIN-TEST"],
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == "CR-API-001"
+    assert data["status"] == "pending"
+    assert data["title"] == "Test Change Request"
+    assert data["requester"] == "bob"
+
+    response = client.get("/change-requests", params={"repo": repo})
+    assert response.status_code == 200
+    items = response.json()
+    assert len(items) == 1
+    assert items[0]["id"] == "CR-API-001"
+
+
+def test_api_get_change_request_not_found(temp_model_dir: Path) -> None:
+    repo = str(temp_model_dir.parent)
+    response = client.get("/change-requests/CR-MISSING", params={"repo": repo})
+    assert response.status_code == 404
+
+
+def test_api_approve_and_reject_change_request(temp_model_dir: Path) -> None:
+    repo = str(temp_model_dir.parent)
+    client.post(
+        "/change-requests",
+        params={"repo": repo},
+        json={"id": "CR-API-002", "title": "Approve me", "status": "pending"},
+    )
+
+    response = client.post(
+        "/change-requests/CR-API-002/approve",
+        params={"repo": repo},
+        json={"approver": "alice"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "approved"
+
+    # Rejecting an approved CR is a valid transition
+    response = client.post(
+        "/change-requests/CR-API-002/reject",
+        params={"repo": repo},
+        json={"approver": "bob"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "rejected"
+
+
+def test_api_create_change_request_invalid_status(temp_model_dir: Path) -> None:
+    repo = str(temp_model_dir.parent)
+    response = client.post(
+        "/change-requests",
+        params={"repo": repo},
+        json={"id": "CR-API-003", "title": "Bad status", "status": "banana"},
+    )
+    assert response.status_code == 400

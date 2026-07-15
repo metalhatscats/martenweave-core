@@ -8,9 +8,16 @@ from typing import Any
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 from modelops_core import __version__
 from modelops_core.api import v1
+from modelops_core.api.models import (
+    ChangeRequestCreateRequest,
+    ChangeRequestResponse,
+    ProposalReviewRequest,
+    ProposalReviewResponse,
+)
 from modelops_core.api.recovery import recovery_for_error
 from modelops_core.api.workspace import (
     require_mutation_token,
@@ -20,15 +27,23 @@ from modelops_core.api.workspace import (
     workspace_label,
 )
 from modelops_core.approval.risk_service import compute_proposal_risk
-from modelops_core.change_request.service import find_approved_cr_for_proposal
+from modelops_core.change_request.service import (
+    approve_change_request,
+    create_change_request,
+    find_approved_cr_for_proposal,
+    list_change_requests,
+    load_change_request,
+    reject_change_request,
+)
 from modelops_core.config import load_repo_config, resolve_generated_path, resolve_model_path
 from modelops_core.exports import export_model_csv, export_model_xlsx
 from modelops_core.impact.impact_service import generate_impact_report
 from modelops_core.patching.apply_service import apply_patch_proposal, dry_run_patch_proposal
+from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
 from modelops_core.patching.patch_validator import validate_patch_proposal
 from modelops_core.repository import parse_file, scan_repository
 from modelops_core.run import generate_dataset_readiness_report
-from modelops_core.schemas.common import SourceState
+from modelops_core.schemas.common import PatchProposalStatus, SourceState
 from modelops_core.source_state import classify_dataset_gap, classify_object_type
 from modelops_core.trace import trace_object
 from modelops_core.validation import validate_objects
@@ -62,7 +77,9 @@ app.add_middleware(
         "http://localhost",
         "http://127.0.0.1",
         "http://localhost:5173",
+        "http://127.0.0.1:5173",
         "http://localhost:4173",
+        "http://127.0.0.1:4173",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -255,13 +272,31 @@ def impact(
     }
 
 
+def _proposal_risk_summary(fm: dict[str, Any], model_path: Path) -> dict[str, Any]:
+    """Compute a JSON-serializable risk summary for a PatchProposal frontmatter."""
+    operations = fm.get("operations") or []
+    risk = compute_proposal_risk(operations, model_path)
+    return {
+        "risk_level": risk.risk_level,
+        "risk_assessment": {
+            "requires_approval": risk.requires_approval,
+            "risk_level": risk.risk_level,
+            "risk_reasons": risk.risk_reasons,
+            "triggering_rules": risk.triggering_rules,
+            "affected_object_count": risk.affected_object_count,
+            "max_impact_depth": risk.max_impact_depth,
+        },
+    }
+
+
 @app.get("/proposals")
 def list_proposals(
     repo: str | None = Query(None, description="Path to model repository"),
 ) -> list[dict[str, Any]]:
     """List all PatchProposals in the repository."""
     repo_root = _resolve_repo(repo)
-    proposals_dir = resolve_model_path(repo_root) / "patch-proposals"
+    model_path = resolve_model_path(repo_root)
+    proposals_dir = model_path / "patch-proposals"
     if not proposals_dir.exists():
         return []
 
@@ -269,10 +304,19 @@ def list_proposals(
     for f in sorted(proposals_dir.glob("PP-*.md")):
         parsed = parse_file(f)
         fm = parsed.frontmatter or {}
+        operations = fm.get("operations") or []
+        risk = compute_proposal_risk(operations, model_path)
+        affected_objects = fm.get("affected_objects") or []
         results.append(
             {
                 "id": fm.get("id", f.stem),
                 "status": fm.get("status", "pending_review"),
+                "title": fm.get("title"),
+                "name": fm.get("name"),
+                "created_by": fm.get("created_by"),
+                "operations_count": len(operations),
+                "affected_objects_count": len(affected_objects),
+                "risk_level": risk.risk_level,
                 "validation_status": fm.get("validation_status", "pending"),
                 "applied_at": fm.get("applied_at"),
                 "source_state": SourceState.PROPOSAL.value,
@@ -286,17 +330,66 @@ def get_proposal(
     proposal_id: str,
     repo: str | None = Query(None, description="Path to model repository"),
 ) -> dict[str, Any]:
-    """Get a PatchProposal by ID."""
+    """Get a PatchProposal by ID, including computed risk assessment."""
     repo_root = _resolve_repo(repo)
-    proposal_path = resolve_model_path(repo_root) / "patch-proposals" / f"{proposal_id}.md"
+    model_path = resolve_model_path(repo_root)
+    proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
     if not proposal_path.exists():
         raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
 
     parsed = parse_file(proposal_path)
     fm = parsed.frontmatter or {}
     result = dict(fm)
+    result.update(_proposal_risk_summary(fm, model_path))
     result["source_state"] = SourceState.PROPOSAL.value
     return result
+
+
+@app.post(
+    "/proposals/{proposal_id}/review",
+    dependencies=[Depends(require_mutation_token)],
+    response_model=ProposalReviewResponse,
+)
+def review_proposal(
+    proposal_id: str,
+    request: ProposalReviewRequest,
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Review a PatchProposal, transitioning its status in the canonical file."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
+    if not proposal_path.exists():
+        raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
+
+    try:
+        PatchProposalStatus(request.status)
+    except ValueError as exc:
+        allowed = ", ".join(s.value for s in PatchProposalStatus)
+        raise HTTPException(
+            status_code=400, detail=f"Invalid status '{request.status}'. Allowed: {allowed}"
+        ) from exc
+
+    try:
+        warning = transition_patch_proposal_status(
+            proposal_path,
+            request.status,
+            reviewer=request.reviewer,
+            reviewer_notes=request.reviewer_notes,
+            rejection_reason=request.rejection_reason,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    parsed = parse_file(proposal_path)
+    fm = parsed.frontmatter or {}
+    return {
+        "proposal_id": fm.get("id", proposal_id),
+        "status": fm.get("status", request.status),
+        "reviewer": fm.get("reviewer", request.reviewer),
+        "reviewed_at": fm.get("reviewed_at"),
+        "warning": warning,
+    }
 
 
 @app.post("/proposals/{proposal_id}/validate", dependencies=[Depends(require_mutation_token)])
@@ -414,6 +507,137 @@ def apply_proposal(
         "audit_event_written": result.audit_event_written,
         "index_rebuilt": result.index_rebuilt,
     }
+
+
+# ---------------------------------------------------------------------------
+# ChangeRequest endpoints
+# ---------------------------------------------------------------------------
+
+
+@app.get("/change-requests")
+def list_change_requests_endpoint(
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> list[dict[str, Any]]:
+    """List all ChangeRequests in the repository."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    return list_change_requests(model_path)
+
+
+@app.post(
+    "/change-requests",
+    dependencies=[Depends(require_mutation_token)],
+    response_model=ChangeRequestResponse,
+)
+def create_change_request_endpoint(
+    request: ChangeRequestCreateRequest,
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Create a new ChangeRequest."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    try:
+        create_change_request(
+            model_path=model_path,
+            cr_id=request.id,
+            title=request.title,
+            status=request.status,
+            requester=request.requester,
+            reason=request.reason,
+            requested_change=request.requested_change,
+            expected_impact=request.expected_impact,
+            affected_objects=request.affected_objects,
+            linked_proposals=request.linked_proposals,
+            related_issues=request.related_issues,
+            related_decisions=request.related_decisions,
+            approvers=request.approvers,
+            priority=request.priority,
+            source_evidence=request.source_evidence,
+            dry_run=False,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    cr = load_change_request(model_path, request.id)
+    if cr is None:
+        raise HTTPException(status_code=500, detail="ChangeRequest was not created")
+    return {
+        "id": cr.get("id", request.id),
+        "status": cr.get("status", request.status),
+        "title": cr.get("title") or cr.get("name") or request.title,
+        "requester": cr.get("requester"),
+        "affected_objects": cr.get("affected_objects") or [],
+        "source_path": str(model_path / "change-requests" / f"{request.id}.md"),
+    }
+
+
+@app.get("/change-requests/{cr_id}")
+def get_change_request(
+    cr_id: str,
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Get a ChangeRequest by ID."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    cr = load_change_request(model_path, cr_id)
+    if cr is None:
+        raise HTTPException(status_code=404, detail=f"ChangeRequest {cr_id} not found")
+    return dict(cr)
+
+
+class _ChangeRequestDecisionRequest(BaseModel):
+    approver: str
+    skip_risk_check: bool = False
+
+
+@app.post(
+    "/change-requests/{cr_id}/approve",
+    dependencies=[Depends(require_mutation_token)],
+)
+def approve_change_request_endpoint(
+    cr_id: str,
+    request: _ChangeRequestDecisionRequest,
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Approve a ChangeRequest."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    try:
+        frontmatter = approve_change_request(
+            model_path,
+            cr_id,
+            request.approver,
+            skip_risk_check=request.skip_risk_check,
+            dry_run=False,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return dict(frontmatter)
+
+
+@app.post(
+    "/change-requests/{cr_id}/reject",
+    dependencies=[Depends(require_mutation_token)],
+)
+def reject_change_request_endpoint(
+    cr_id: str,
+    request: _ChangeRequestDecisionRequest,
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Reject a ChangeRequest."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    try:
+        frontmatter = reject_change_request(
+            model_path,
+            cr_id,
+            request.approver,
+            reason=None,
+            dry_run=False,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return dict(frontmatter)
 
 
 @app.post("/export", dependencies=[Depends(require_mutation_token)])

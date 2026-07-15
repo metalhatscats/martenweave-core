@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 
 from modelops_core import __version__
@@ -18,8 +18,13 @@ from modelops_core.api.models import (
     AssessmentManifestItem,
     AssessmentManifestResponse,
     CapabilityEntry,
+    ExportResponse,
     FindingItem,
     FindingResponse,
+    FindingReviewRequest,
+    FindingReviewResponse,
+    ImportPreviewResponse,
+    ImportProfileResponse,
     ObjectDetailResponse,
     PaginatedSearchResponse,
     RelatedObjectItem,
@@ -30,6 +35,7 @@ from modelops_core.api.models import (
 from modelops_core.api.recovery import BUILD_INDEX, INSPECT_READ_ONLY
 from modelops_core.api.workspace import (
     mutation_enabled,
+    require_mutation_token,
     resolve_workspace,
     resolve_workspace_input,
     workspace_is_bound,
@@ -38,11 +44,19 @@ from modelops_core.api.workspace import (
 from modelops_core.assessment.comparison import AssessmentComparisonError, compare_assessments
 from modelops_core.assessment.finding_contract import AssessmentFinding
 from modelops_core.config import resolve_generated_path, resolve_model_path
+from modelops_core.exports.export_service import export_model_csv, export_model_xlsx
+from modelops_core.imports.dataset_profiler import (
+    dataset_profile_to_dict,
+    profile_csv,
+    profile_xlsx,
+)
+from modelops_core.imports.model_sheet_import_service import import_model_sheet_xlsx
 from modelops_core.index.query_service import (
     get_object_by_id,
     list_related_objects,
     search_objects,
 )
+from modelops_core.pilot.review import set_review
 from modelops_core.reports.audit_service import AuditEventService
 from modelops_core.repository import scan_repository
 
@@ -147,6 +161,12 @@ def capabilities(
             description="List canonical objects with optional type filter.",
         ),
         CapabilityEntry(
+            name="list_change_requests",
+            method="GET",
+            href="/change-requests",
+            description="List ChangeRequests in the repository.",
+        ),
+        CapabilityEntry(
             name="get_object",
             method="GET",
             href="/objects/{id}",
@@ -220,6 +240,54 @@ def capabilities(
             method="POST",
             href="/proposals/{id}/apply",
             description="Apply an accepted PatchProposal.",
+        ),
+        CapabilityEntry(
+            name="review_proposal",
+            method="POST",
+            href="/proposals/{id}/review",
+            description="Review a PatchProposal and transition its status.",
+        ),
+        CapabilityEntry(
+            name="create_change_request",
+            method="POST",
+            href="/change-requests",
+            description="Create a new ChangeRequest.",
+        ),
+        CapabilityEntry(
+            name="approve_change_request",
+            method="POST",
+            href="/change-requests/{id}/approve",
+            description="Approve a ChangeRequest.",
+        ),
+        CapabilityEntry(
+            name="reject_change_request",
+            method="POST",
+            href="/change-requests/{id}/reject",
+            description="Reject a ChangeRequest.",
+        ),
+        CapabilityEntry(
+            name="review_finding",
+            method="POST",
+            href="/api/v1/findings/review",
+            description="Record a human disposition for an assessment finding.",
+        ),
+        CapabilityEntry(
+            name="import_profile",
+            method="POST",
+            href="/api/v1/imports/profile",
+            description="Profile an uploaded CSV or XLSX dataset.",
+        ),
+        CapabilityEntry(
+            name="import_preview",
+            method="POST",
+            href="/api/v1/imports/preview",
+            description="Preview an uploaded XLSX workbook as a PatchProposal.",
+        ),
+        CapabilityEntry(
+            name="export_model",
+            method="POST",
+            href="/api/v1/exports",
+            description="Export the canonical model to CSV or XLSX.",
         ),
     ]
 
@@ -503,3 +571,177 @@ def object_detail(
         for r in related
     ]
     return ObjectDetailResponse(object=obj, relationships=related_items)
+
+
+# ---------------------------------------------------------------------------
+# Finding review
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/findings/review",
+    dependencies=[Depends(require_mutation_token)],
+    response_model=FindingReviewResponse,
+)
+def review_finding(
+    request: FindingReviewRequest,
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Record a human disposition for an assessment finding."""
+    repo_root = _resolve_repo(repo)
+    generated_root = resolve_generated_path(repo_root).resolve()
+    assessment_dir = (generated_root / request.assessment).resolve()
+    try:
+        assessment_dir.relative_to(generated_root)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400, detail="Assessment must remain inside generated/."
+        ) from exc
+
+    if not (assessment_dir / "findings.json").is_file():
+        raise HTTPException(status_code=404, detail="Assessment findings were not found.")
+
+    try:
+        record = set_review(
+            assessment_dir,
+            request.finding_id,
+            request.disposition,
+            request.reviewer,
+            request.note,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return record
+
+
+# ---------------------------------------------------------------------------
+# Imports
+# ---------------------------------------------------------------------------
+
+
+def _safe_upload_filename(filename: str | None) -> str:
+    """Return a safe basename with no path traversal and no dangerous characters."""
+    if not filename:
+        return "upload"
+    from pathlib import Path as _Path
+
+    name = _Path(filename).name
+    safe = "".join(c if c.isalnum() or c in "._-" else "_" for c in name)
+    if not safe or safe.startswith("."):
+        safe = "upload" + safe
+    return safe
+
+
+@router.post(
+    "/imports/profile",
+    dependencies=[Depends(require_mutation_token)],
+    response_model=ImportProfileResponse,
+)
+def import_profile(
+    file: Annotated[UploadFile, File(..., description="CSV or XLSX dataset file")],
+    dataset_id: str | None = Query(None, description="Optional stable dataset identifier"),
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Profile an uploaded CSV or XLSX dataset."""
+    repo_root = _resolve_repo(repo)
+    generated_root = resolve_generated_path(repo_root)
+    uploads_dir = generated_root / "uploads"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+
+    safe_name = _safe_upload_filename(file.filename)
+    suffix = Path(safe_name).suffix.lower()
+    if suffix not in {".csv", ".xlsx", ".xls"}:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file format '{suffix}'. Expected .csv, .xlsx, or .xls.",
+        )
+
+    if dataset_id is None:
+        dataset_id = Path(safe_name).stem
+    dataset_id = "".join(c if c.isalnum() or c in "_-" else "_" for c in dataset_id)
+
+    upload_path = uploads_dir / safe_name
+    upload_path.write_bytes(file.file.read())
+
+    if suffix == ".csv":
+        profile = profile_csv(upload_path, dataset_id)
+        format_name = "csv"
+    else:
+        profile = profile_xlsx(upload_path, dataset_id)
+        format_name = "xlsx"
+
+    return {
+        "dataset_id": dataset_id,
+        "format": format_name,
+        "profile": dataset_profile_to_dict(profile),
+    }
+
+
+@router.post(
+    "/imports/preview",
+    dependencies=[Depends(require_mutation_token)],
+    response_model=ImportPreviewResponse,
+)
+def import_preview(
+    file: Annotated[
+        UploadFile, File(..., description="XLSX workbook to preview as a PatchProposal")
+    ],
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Preview an uploaded XLSX workbook as a PatchProposal without applying it."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    generated_root = resolve_generated_path(repo_root)
+    uploads_dir = generated_root / "uploads"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+
+    safe_name = _safe_upload_filename(file.filename)
+    suffix = Path(safe_name).suffix.lower()
+    if suffix != ".xlsx":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Import preview requires an XLSX workbook, got '{suffix}'.",
+        )
+
+    upload_path = uploads_dir / safe_name
+    upload_path.write_bytes(file.file.read())
+
+    try:
+        proposal = import_model_sheet_xlsx(upload_path, model_path, require_stable_ids=True)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {"proposal": proposal}
+
+
+# ---------------------------------------------------------------------------
+# Exports
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/exports",
+    dependencies=[Depends(require_mutation_token)],
+    response_model=ExportResponse,
+)
+def export_model(
+    repo: str | None = Query(None, description="Path to model repository"),
+    format: str = Query("xlsx", description="Export format: csv or xlsx"),
+    business_review: bool = Query(False, description="Produce a styled business-review workbook"),
+) -> dict[str, Any]:
+    """Export the canonical model to CSV or XLSX."""
+    repo_root = _resolve_repo(repo)
+    model_path = resolve_model_path(repo_root)
+    generated_root = resolve_generated_path(repo_root)
+
+    if format.lower() == "csv":
+        output_dir = generated_root / "exports" / "csv"
+        export_model_csv(model_path, output_dir=output_dir)
+        return {"format": "csv", "artifact_id": "exports/csv"}
+    elif format.lower() == "xlsx":
+        output_path = generated_root / "exports" / "model.xlsx"
+        export_model_xlsx(model_path, output_path=output_path, business_review=business_review)
+        return {"format": "xlsx", "artifact_id": "exports/model.xlsx"}
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown format: {format}")
