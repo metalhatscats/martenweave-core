@@ -191,6 +191,22 @@ class ReportArtifactResponse(BaseModel):
     artifacts: list[ReportArtifactItem]
 
 
+class ReportGenerateRequest(BaseModel):
+    """Request body for generating a disposable report."""
+
+    report_type: str = Field(..., description="Type of report to generate.")
+    format: str | None = Field(default=None, description="Optional output format hint.")
+
+
+class ReportGenerateResponse(BaseModel):
+    """Response body after generating a report."""
+
+    artifact_id: str
+    name: str
+    format: str
+    created_at: str
+
+
 class ProposalDiffItem(BaseModel):
     """A single before/after diff entry for a PatchProposal operation."""
 

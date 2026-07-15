@@ -140,6 +140,7 @@ import { lineageEdges, lineageNodes, modelObjects, proposals as demoProposals } 
  * @property {(file: File, dataset_id?: string) => Promise<ProfileResponse>} importProfile
  * @property {(file: File) => Promise<PreviewResponse>} importPreview
  * @property {(format: string, business_review?: boolean) => Promise<ExportModelResponse>} exportModel
+ * @property {(reportType: string, format?: string | null) => Promise<{artifact_id: string, name: string, format: string, created_at: string}>} generateReport
  * @property {(limit?: number) => Promise<{total_count: number, artifacts: any[]}>} reports
  * @property {(artifactId: string) => string} reportDownloadUrl
  * @property {() => Promise<any>} findings
@@ -474,6 +475,10 @@ export function createApiClient(baseUrl) {
     exportModel: (format, business_review = false) => postJson(
       `${root}/api/v1/exports?format=${encodeURIComponent(format)}&business_review=${encodeURIComponent(business_review)}`,
       {}
+    ),
+    generateReport: (reportType, format = null) => postJson(
+      `${root}/api/v1/reports/generate`,
+      { report_type: reportType, format }
     ),
   };
 }
@@ -1155,6 +1160,38 @@ export function useImportProfile() {
  */
 export function useImportPreview() {
   return useImportMutation((client, file) => client.importPreview(file));
+}
+
+/**
+ * Mutation hook for generating a local report.
+ *
+ * @returns {{ run: (reportType: string, format?: string | null) => Promise<any>, loading: boolean, error: string|null, result: any }}
+ */
+export function useReportGenerate() {
+  const { client } = useApi();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [result, setResult] = useState(null);
+
+  const run = useCallback(async (reportType, format = null) => {
+    if (!client) throw new Error("API client is not available");
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const data = await client.generateReport(reportType, format);
+      setResult(data);
+      return data;
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : String(reason);
+      setError(message);
+      throw reason;
+    } finally {
+      setLoading(false);
+    }
+  }, [client]);
+
+  return { run, loading, error, result };
 }
 
 /**

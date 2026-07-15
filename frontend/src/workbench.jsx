@@ -30,7 +30,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { fields, gaps, modelObjects, proposals, recentActivity } from "./data.js";
-import { useApi, useImportPreview, useImportProfile, useWorkspaceActivity } from "./api.jsx";
+import { useApi, useImportPreview, useImportProfile, useReportGenerate, useWorkspaceActivity } from "./api.jsx";
 
 const LEDGER_ROWS = [
   {
@@ -181,6 +181,15 @@ const EXPORT_TYPES = [
   ["lineage", "Lineage snapshot", "Visible relationship graph with node and edge evidence"],
   ["proposal", "Patch proposal", "Review bundle with diff, validation, and risk context"],
   ["evidence", "Evidence summary", "Sources, validation results, coverage, and decisions"],
+];
+
+const REPORT_TYPES = [
+  ["gap_report", "Gap report", "JSON summary of current model gaps"],
+  ["risk_report", "Risk report", "Markdown risk items from the current model"],
+  ["readiness", "Readiness scorecard", "JSON readiness metrics"],
+  ["model_summary", "Model summary", "Markdown model summary"],
+  ["pilot_outcome", "Pilot outcome", "Markdown pilot outcome report"],
+  ["business_review_pack", "Business review pack", "Directory of review artifacts"],
 ];
 
 function StatusBadge({ value }) {
@@ -506,6 +515,8 @@ export function ReportsScreen({ onExport }) {
   const [error, setError] = useState("");
   const [manifests, setManifests] = useState([]);
   const [comparison, setComparison] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const { run: generateReport, loading: generating, error: generateError } = useReportGenerate();
   const demoReports = [
     ["Model index", "customer-migration-model-index-2026-07-03.csv", "2m ago", "24 objects"],
     ["Gap report", "customer-migration-gaps-2026-07-03.xlsx", "18m ago", "5 gaps"],
@@ -537,7 +548,17 @@ export function ReportsScreen({ onExport }) {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [client, demo]);
+  }, [client, demo, refreshKey]);
+
+  const handleGenerate = async (reportType) => {
+    if (demo || !client) return;
+    try {
+      await generateReport(reportType);
+      setRefreshKey((key) => key + 1);
+    } catch {
+      // error surfaced by hook
+    }
+  };
 
   const reports = demo
     ? demoReports.map(([name, file, time, meta]) => ({ name, file, time, meta, downloadUrl: null }))
@@ -555,12 +576,13 @@ export function ReportsScreen({ onExport }) {
         <button className="primary-button" onClick={onExport}><FileArrowDown size={17} /> New export</button>
       </div>
       <div className="report-options">
-        {EXPORT_TYPES.map(([id, name, description]) => (
-          <button key={id} onClick={() => onExport(id)}>
-            <span><FileText size={20} /></span><strong>{name}</strong><p>{description}</p><small>Configure export <ArrowRight size={13} /></small>
+        {REPORT_TYPES.map(([id, name, description]) => (
+          <button key={id} onClick={() => handleGenerate(id)} disabled={generating}>
+            <span><FileText size={20} /></span><strong>{name}</strong><p>{description}</p><small>{generating ? "Generating…" : "Generate report"} <ArrowRight size={13} /></small>
           </button>
         ))}
       </div>
+      {(generateError || error) && <p className="inline-error">{generateError || error}</p>}
       <section className="surface recent-exports">
         <div className="section-title"><div><h2>Recent outputs</h2><p>{demo ? "Demo artifacts — local API is unavailable." : "Generated locally from rebuildable repository data."}</p></div></div>
         {loading && <p>Loading generated artifacts…</p>}

@@ -32,6 +32,8 @@ from modelops_core.api.models import (
     RelatedObjectItem,
     ReportArtifactItem,
     ReportArtifactResponse,
+    ReportGenerateRequest,
+    ReportGenerateResponse,
     SearchResultItem,
 )
 from modelops_core.api.recovery import BUILD_INDEX, INSPECT_READ_ONLY
@@ -43,6 +45,7 @@ from modelops_core.api.workspace import (
     workspace_is_bound,
     workspace_label,
 )
+from modelops_core.assessment.assessment_service import generate_review_pack, generate_risk_report
 from modelops_core.assessment.comparison import AssessmentComparisonError, compare_assessments
 from modelops_core.assessment.finding_contract import AssessmentFinding
 from modelops_core.config import resolve_generated_path, resolve_model_path
@@ -53,13 +56,21 @@ from modelops_core.imports.dataset_profiler import (
     profile_xlsx,
 )
 from modelops_core.imports.model_sheet_import_service import import_model_sheet_xlsx
+from modelops_core.index import build_index
 from modelops_core.index.query_service import (
     get_object_by_id,
     list_related_objects,
     search_objects,
 )
+from modelops_core.pilot.outcome import generate_pilot_outcome, write_pilot_outcome
 from modelops_core.pilot.review import promote_finding, set_review
 from modelops_core.reports.audit_service import AuditEventService
+from modelops_core.reports.gap_summary import generate_gap_summary_report
+from modelops_core.reports.model_summary_service import (
+    generate_model_summary,
+    model_summary_to_markdown,
+)
+from modelops_core.reports.scorecard_service import generate_scorecard
 from modelops_core.repository import scan_repository
 
 router = APIRouter(prefix="/api/v1")
@@ -397,6 +408,132 @@ def download_report(
     if not candidate.is_file():
         raise HTTPException(status_code=404, detail="Generated artifact not found.")
     return FileResponse(candidate, filename=candidate.name)
+
+
+def _ensure_index(repo_root: Path) -> Path:
+    """Build the disposable index if missing; return the SQLite path."""
+    db_path = resolve_generated_path(repo_root) / "modelops.db"
+    if not db_path.exists():
+        build_index(repo_root)
+    return db_path
+
+
+@router.post(
+    "/reports/generate",
+    dependencies=[Depends(require_mutation_token)],
+    response_model=ReportGenerateResponse,
+)
+def generate_report(
+    request: ReportGenerateRequest,
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> ReportGenerateResponse:
+    """Generate a disposable report using existing Martenweave report services."""
+    repo_root = _resolve_repo(repo)
+    generated_root = resolve_generated_path(repo_root)
+    reports_dir = generated_root / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+    created_at = datetime.now(UTC).isoformat()
+
+    artifact_path: Path
+    artifact_format: str
+
+    if request.report_type == "gap_report":
+        db_path = _ensure_index(repo_root)
+        report = generate_gap_summary_report(db_path, repo_root)
+        artifact_path = reports_dir / f"gap-report-{timestamp}.json"
+        artifact_path.write_text(
+            json.dumps(
+                {
+                    "martenweave_version": __version__,
+                    "gaps_by_type": {
+                        key: {
+                            "count": summary.count,
+                            "sample_object_ids": summary.sample_object_ids,
+                        }
+                        for key, summary in report.gaps_by_type.items()
+                    },
+                    "total_gap_count": report.total_gap_count,
+                    "gap_score": report.gap_score,
+                    "top_objects": report.top_objects,
+                    "total_objects": report.total_objects,
+                    "sources_checked": report.sources_checked,
+                },
+                indent=2,
+                default=str,
+            ),
+            encoding="utf-8",
+        )
+        artifact_format = "json"
+
+    elif request.report_type == "risk_report":
+        content = generate_risk_report(repo_root)
+        artifact_path = reports_dir / f"risk-report-{timestamp}.md"
+        artifact_path.write_text(content, encoding="utf-8")
+        artifact_format = "md"
+
+    elif request.report_type == "readiness":
+        db_path = _ensure_index(repo_root)
+        scorecard = generate_scorecard(db_path, repo_root)
+        artifact_path = reports_dir / f"readiness-report-{timestamp}.json"
+        artifact_path.write_text(
+            json.dumps(
+                {
+                    "repo_name": scorecard.repo_name,
+                    "generated_at": scorecard.generated_at,
+                    "readiness_level": scorecard.readiness_level,
+                    "object_count": scorecard.object_count,
+                    "metrics": [m.__dict__ for m in scorecard.metrics],
+                    "gaps": [g.__dict__ for g in scorecard.gaps],
+                    "summary": scorecard.summary,
+                },
+                indent=2,
+                default=str,
+            ),
+            encoding="utf-8",
+        )
+        artifact_format = "json"
+
+    elif request.report_type == "model_summary":
+        db_path = _ensure_index(repo_root)
+        report = generate_model_summary(repo_root, db_path=db_path)
+        artifact_path = reports_dir / f"model-summary-{timestamp}.md"
+        artifact_path.write_text(model_summary_to_markdown(report), encoding="utf-8")
+        artifact_format = "md"
+
+    elif request.report_type == "pilot_outcome":
+        manifests = list(generated_root.rglob("manifest.json"))
+        if not manifests:
+            raise HTTPException(
+                status_code=400,
+                detail="No assessment manifest found. Run an assessment first.",
+            )
+        manifest_path = max(manifests, key=lambda p: p.stat().st_mtime)
+        outcome = generate_pilot_outcome(manifest_path)
+        artifact_path = reports_dir / f"pilot-outcome-{timestamp}.md"
+        write_pilot_outcome(outcome, artifact_path)
+        artifact_format = "md"
+
+    elif request.report_type == "business_review_pack":
+        artifact_path = reports_dir / f"business-review-pack-{timestamp}"
+        generate_review_pack(repo_root, artifact_path)
+        # The summary.md acts as the pack manifest for download.
+        artifact_path = artifact_path / "summary.md"
+        artifact_format = "md"
+
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported report_type: {request.report_type}",
+        )
+
+    return ReportGenerateResponse(
+        artifact_id=artifact_path.relative_to(generated_root).as_posix(),
+        name=artifact_path.name,
+        format=artifact_format,
+        created_at=created_at,
+    )
 
 
 def _finding_package(generated_root: Path, assessment: str | None) -> Path | None:
