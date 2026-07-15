@@ -139,9 +139,7 @@ def _validate_repository_path(repo_root: Path) -> dict[str, Any]:
     config_path = repo_root / "modelops.config.yaml"
 
     if not model_path.exists() and not config_path.exists():
-        errors.append(
-            "Directory does not contain a model/ folder or modelops.config.yaml file."
-        )
+        errors.append("Directory does not contain a model/ folder or modelops.config.yaml file.")
     elif config_path.exists():
         from modelops_core.config import load_repo_config
 
@@ -159,6 +157,7 @@ def _validate_repository_path(repo_root: Path) -> dict[str, Any]:
         "warnings": warnings,
         **_workspace_summary(repo_root),
     }
+
 
 _REPORT_EXTENSIONS = frozenset({".csv", ".json", ".md", ".pdf", ".xlsx"})
 
@@ -463,9 +462,7 @@ def recovery_states(
                 severity=state.severity,
                 label=state.label,
                 message=state.message,
-                actions=[
-                    RecoveryActionEntry(**action.as_dict()) for action in state.actions
-                ],
+                actions=[RecoveryActionEntry(**action.as_dict()) for action in state.actions],
                 more_info=state.more_info,
             )
             for state in states

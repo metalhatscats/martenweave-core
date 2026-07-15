@@ -1038,8 +1038,6 @@ def test_api_list_proposals_includes_risk_and_counts(temp_model_dir: Path) -> No
     assert "created_by" in item
 
 
-
-
 def test_api_get_proposal_includes_risk_assessment(temp_model_dir: Path) -> None:
     repo = str(temp_model_dir.parent)
     _create_test_proposal(temp_model_dir, "PP-ENRICH-002", "pending_review")

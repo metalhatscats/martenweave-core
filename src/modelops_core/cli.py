@@ -528,8 +528,6 @@ def ai_provider_health(
 app.add_typer(ai_provider_app, name="ai-provider")
 
 
-
-
 @app.command()
 def init(
     path: Path = typer.Argument(  # noqa: B008

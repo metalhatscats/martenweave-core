@@ -158,9 +158,7 @@ AI_UNAVAILABLE = RecoveryState(
     code="AI_UNAVAILABLE",
     severity="info",
     label="AI provider is not configured",
-    message=(
-        "Deterministic workflows still work. To use AI proposals, configure an AI provider."
-    ),
+    message=("Deterministic workflows still work. To use AI proposals, configure an AI provider."),
     actions=[INSPECT_READ_ONLY],
 )
 AI_UNAVAILABLE_ACTION = RecoveryAction(

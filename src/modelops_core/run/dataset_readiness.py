@@ -211,7 +211,6 @@ def _recommended_action_for_gap(gap: ColumnGap) -> str:
         "UNMODELED_DATASET_COLUMN": (
             "Create a FieldEndpoint and link it to the matching attribute."
         ),
-
         "DATASET_COLUMN_MULTIPLE_MATCHES": (
             "Resolve the ambiguous column-to-endpoint match and update the mapping."
         ),

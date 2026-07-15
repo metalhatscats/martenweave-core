@@ -139,10 +139,12 @@ def _xlsx_buffer(rows: list[list[str]], sheet_title: str = "Attribute") -> Bytes
 
 def test_api_v1_import_validate_valid_review_workbook(tmp_path: Path) -> None:
     repo = _build_repo(tmp_path)
-    buffer = _xlsx_buffer([
-        ["id", "type", "status", "name", "domain"],
-        ["ATTR-TEST", "Attribute", "draft", "Renamed Attribute", "DOMAIN-TEST"],
-    ])
+    buffer = _xlsx_buffer(
+        [
+            ["id", "type", "status", "name", "domain"],
+            ["ATTR-TEST", "Attribute", "draft", "Renamed Attribute", "DOMAIN-TEST"],
+        ]
+    )
 
     response = client.post(
         "/api/v1/imports/validate",
@@ -165,10 +167,12 @@ def test_api_v1_import_validate_valid_review_workbook(tmp_path: Path) -> None:
 
 def test_api_v1_import_validate_rejects_unrelated_workbook(tmp_path: Path) -> None:
     repo = _build_repo(tmp_path)
-    buffer = _xlsx_buffer([
-        ["id", "type", "status", "name", "domain"],
-        ["ATTR-OTHER", "Attribute", "draft", "Other Attribute", "DOMAIN-TEST"],
-    ])
+    buffer = _xlsx_buffer(
+        [
+            ["id", "type", "status", "name", "domain"],
+            ["ATTR-OTHER", "Attribute", "draft", "Other Attribute", "DOMAIN-TEST"],
+        ]
+    )
 
     response = client.post(
         "/api/v1/imports/validate",
@@ -190,10 +194,12 @@ def test_api_v1_import_validate_rejects_unrelated_workbook(tmp_path: Path) -> No
 
 def test_api_v1_import_validate_rejects_workbook_missing_ids(tmp_path: Path) -> None:
     repo = _build_repo(tmp_path)
-    buffer = _xlsx_buffer([
-        ["id", "type", "status", "name", "domain"],
-        ["", "Attribute", "draft", "Missing ID", "DOMAIN-TEST"],
-    ])
+    buffer = _xlsx_buffer(
+        [
+            ["id", "type", "status", "name", "domain"],
+            ["", "Attribute", "draft", "Missing ID", "DOMAIN-TEST"],
+        ]
+    )
 
     response = client.post(
         "/api/v1/imports/validate",
@@ -214,10 +220,12 @@ def test_api_v1_import_validate_rejects_workbook_missing_ids(tmp_path: Path) -> 
 
 def test_api_v1_import_propose_creates_patch_proposal(tmp_path: Path) -> None:
     repo = _build_repo(tmp_path)
-    buffer = _xlsx_buffer([
-        ["id", "type", "status", "name", "domain"],
-        ["ATTR-TEST", "Attribute", "draft", "Renamed Attribute", "DOMAIN-TEST"],
-    ])
+    buffer = _xlsx_buffer(
+        [
+            ["id", "type", "status", "name", "domain"],
+            ["ATTR-TEST", "Attribute", "draft", "Renamed Attribute", "DOMAIN-TEST"],
+        ]
+    )
 
     response = client.post(
         "/api/v1/imports/propose",
@@ -240,10 +248,12 @@ def test_api_v1_import_propose_creates_patch_proposal(tmp_path: Path) -> None:
 
 def test_api_v1_import_propose_rejects_invalid_workbook(tmp_path: Path) -> None:
     repo = _build_repo(tmp_path)
-    buffer = _xlsx_buffer([
-        ["id", "type", "status", "name", "domain"],
-        ["ATTR-OTHER", "Attribute", "draft", "Other Attribute", "DOMAIN-TEST"],
-    ])
+    buffer = _xlsx_buffer(
+        [
+            ["id", "type", "status", "name", "domain"],
+            ["ATTR-OTHER", "Attribute", "draft", "Other Attribute", "DOMAIN-TEST"],
+        ]
+    )
 
     response = client.post(
         "/api/v1/imports/propose",

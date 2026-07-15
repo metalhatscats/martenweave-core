@@ -507,11 +507,15 @@ def generate_assessment_package(
         except (OSError, json.JSONDecodeError):
             existing_findings = []
 
-    run_id = assessment_run_id or (
-        existing_findings[0].get("provenance", {}).get("assessment_run_id")
-        if existing_findings
-        else None
-    ) or f"ASSESSMENT-PKG-{generated_at.replace(':', '-').replace('.', '-')}"[:40]
+    run_id = (
+        assessment_run_id
+        or (
+            existing_findings[0].get("provenance", {}).get("assessment_run_id")
+            if existing_findings
+            else None
+        )
+        or f"ASSESSMENT-PKG-{generated_at.replace(':', '-').replace('.', '-')}"[:40]
+    )
 
     # Typed findings from model/validation/risk signals
     model_findings = _build_model_findings(
