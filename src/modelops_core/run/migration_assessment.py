@@ -19,6 +19,7 @@ from modelops_core.assessment.assessment_service import (
     generate_assessment_package,
     generate_review_pack,
 )
+from modelops_core.assessment.finding_contract import AssessmentFinding, FindingProvenance
 from modelops_core.config import (
     RepoConfig,
     load_repo_config,
@@ -77,7 +78,9 @@ def _stable_id(*parts: str) -> str:
     return ":".join(cleaned)
 
 
-def _build_findings(profile: MappingWorkbookProfile) -> list[dict[str, Any]]:
+def _build_findings(
+    profile: MappingWorkbookProfile, assessment_run_id: str
+) -> list[dict[str, Any]]:
     """Convert mapping-workbook profile findings into stable, reviewable IDs."""
     findings: list[dict[str, Any]] = []
 
@@ -171,7 +174,20 @@ def _build_findings(profile: MappingWorkbookProfile) -> list[dict[str, Any]]:
             }
         )
 
-    return findings
+    return [
+        AssessmentFinding(
+            id=finding["id"],
+            category=finding["category"],
+            severity=finding["severity"],
+            message=finding["message"],
+            provenance=FindingProvenance(
+                assessment_run_id=assessment_run_id,
+                source_kind="mapping_profile",
+                location=finding["location"],
+            ),
+        ).model_dump(mode="json")
+        for finding in findings
+    ]
 
 
 @dataclass
@@ -632,6 +648,7 @@ def generate_migration_assessment(
         evidence_paths,
         config.enabled_domain_packs if config else None,
     )
+    assessment_run_id = f"ASSESSMENT-{input_fingerprint[:16].upper()}"
 
     # Stage: validation
     try:
@@ -689,7 +706,7 @@ def generate_migration_assessment(
         )
 
         # Stable findings derived from the mapping workbook profile.
-        findings = _build_findings(mapping_profile)
+        findings = _build_findings(mapping_profile, assessment_run_id)
         findings_path = out_dir / "findings.json"
         findings_path.write_text(
             json.dumps(
@@ -756,7 +773,7 @@ def generate_migration_assessment(
         stage_statuses=statuses,
         generated_artifacts=artifacts,
         generated_at=generated_at,
-        run_id=f"ASSESSMENT-{input_fingerprint[:16].upper()}",
+        run_id=assessment_run_id,
         input_fingerprint=input_fingerprint,
         input_checksums=input_checksums,
     )

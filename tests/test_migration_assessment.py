@@ -119,6 +119,20 @@ def test_assessment_manifest_has_reproducible_input_fingerprint(
     assert manifest["input_checksums"] == first.input_checksums
 
 
+def test_assessment_findings_use_typed_provenance(sample_repo: Path, tmp_path: Path) -> None:
+    mapping = tmp_path / "mapping.xlsx"
+    _write_minimal_mapping_workbook(mapping)
+    manifest = generate_migration_assessment(
+        sample_repo, mapping, None, [], tmp_path / "assessment"
+    )
+
+    findings = json.loads((tmp_path / "assessment" / "findings.json").read_text())["findings"]
+    assert findings
+    assert findings[0]["lifecycle_state"] == "open"
+    assert findings[0]["provenance"]["assessment_run_id"] == manifest.run_id
+    assert findings[0]["provenance"]["source_kind"] == "mapping_profile"
+
+
 def test_profile_mapping_workbook_detects_missing_owner(tmp_path: Path) -> None:
     mapping = tmp_path / "mapping.xlsx"
     _write_minimal_mapping_workbook(mapping)
