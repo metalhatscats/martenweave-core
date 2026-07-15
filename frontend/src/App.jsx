@@ -66,9 +66,19 @@ import {
   objectTypeToTone,
   useApi,
   useAssessmentFindings,
+  useFindingReview,
+  useImportPreview,
+  useImportProfile,
   useLineage,
   useObjectDetail,
   useObjectSearch,
+  useProposalApply,
+  useProposalDetail,
+  useProposalDryRun,
+  useProposalReview,
+  useProposalValidate,
+  useProposals,
+  useWorkspaceActivity,
 } from "./api.jsx";
 import {
   fields,
@@ -429,6 +439,11 @@ function updatedMinutes(value) {
   const n = parseInt(match[1], 10);
   const unit = match[2];
   return unit === "m" ? n : unit === "h" ? n * 60 : n * 1440;
+}
+
+function capitalize(value) {
+  if (!value) return "";
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function getHashSearchParam() {
@@ -1324,7 +1339,51 @@ function GapsScreen({ navigate, params, onDraft }) {
   );
 }
 
+const DISPOSITION_OPTIONS = ["", "confirmed", "false_positive", "accepted_risk", "deferred", "resolved"];
+
+function FindingReviewForm({ assessmentId, findingId, currentReview, onReviewed }) {
+  const [disposition, setDisposition] = useState(currentReview?.disposition || "");
+  const [note, setNote] = useState(currentReview?.note || "");
+  const { reviewFinding, loading, error } = useFindingReview();
+
+  const save = async () => {
+    if (!disposition) return;
+    try {
+      await reviewFinding({
+        assessment: assessmentId,
+        finding_id: findingId,
+        disposition,
+        reviewer: "workbench",
+        note,
+      });
+      onReviewed({ disposition, note });
+    } catch {
+      // error is surfaced below
+    }
+  };
+
+  return (
+    <div className="finding-review-form">
+      <label>
+        <span>Disposition</span>
+        <select value={disposition} onChange={(event) => setDisposition(event.target.value)}>
+          {DISPOSITION_OPTIONS.map((option) => <option key={option} value={option}>{option ? option.replaceAll("_", " ") : "— Select —"}</option>)}
+        </select>
+      </label>
+      <label>
+        <span>Note (optional)</span>
+        <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={2} placeholder="Add context for the disposition…" />
+      </label>
+      <button className="secondary-button" onClick={save} disabled={!disposition || loading}>
+        {loading ? "Saving…" : "Save disposition"}
+      </button>
+      {error && <span className="inline-error">{error}</span>}
+    </div>
+  );
+}
+
 function LiveFindingsScreen({ navigate, findings, assessmentId, loading, error }) {
+  const [localReviews, setLocalReviews] = useState({});
   return (
     <div className="page-pad gaps-page">
       <PageHeader
@@ -1336,21 +1395,31 @@ function LiveFindingsScreen({ navigate, findings, assessmentId, loading, error }
           {loading && <div className="empty-state"><CircleNotch className="spin" size={24} /> Loading assessment findings…</div>}
           {error && <div className="empty-state"><WarningCircle size={24} /> {error}</div>}
           {!loading && !error && findings.length === 0 && <div className="empty-state"><Warning size={30} /><h3>No assessment findings are available</h3><p>Run a local assessment to create reviewable evidence. Canonical model files remain unchanged.</p></div>}
-          {findings.map(({ finding, review, assessment_id: itemAssessmentId }) => (
-            <article className="gap-card is-expanded" key={finding.id}>
-              <div className="gap-card-main">
-                <span className="gap-index">{finding.id}</span>
-                <span className="gap-title"><span><strong>{finding.message}</strong><Badge tone={finding.severity}>{finding.severity}</Badge></span><small>{finding.category} · {finding.provenance.source_kind}</small></span>
-              </div>
-              <div className="gap-detail">
-                <div><small>Assessment</small><strong>{itemAssessmentId}</strong></div>
-                <div><small>Detection</small><strong>{finding.provenance.source_kind}</strong></div>
-                <div><small>Review state</small><strong>{review?.disposition || "Unreviewed"}</strong></div>
-                <div><small>Evidence location</small><strong>{Object.entries(finding.provenance.location).map(([key, value]) => `${key}: ${value}`).join(" · ") || "Not recorded"}</strong></div>
-              </div>
-              {review?.note && <footer><span>Reviewer note: {review.note}</span></footer>}
-            </article>
-          ))}
+          {findings.map(({ finding, review, assessment_id: itemAssessmentId }) => {
+            const localReview = localReviews[finding.id];
+            const currentDisposition = localReview?.disposition || review?.disposition;
+            return (
+              <article className="gap-card is-expanded" key={finding.id}>
+                <div className="gap-card-main">
+                  <span className="gap-index">{finding.id}</span>
+                  <span className="gap-title"><span><strong>{finding.message}</strong><Badge tone={finding.severity}>{finding.severity}</Badge></span><small>{finding.category} · {finding.provenance.source_kind}</small></span>
+                </div>
+                <div className="gap-detail">
+                  <div><small>Assessment</small><strong>{itemAssessmentId}</strong></div>
+                  <div><small>Detection</small><strong>{finding.provenance.source_kind}</strong></div>
+                  <div><small>Review state</small><strong>{currentDisposition ? currentDisposition.replaceAll("_", " ") : "Unreviewed"}</strong></div>
+                  <div><small>Evidence location</small><strong>{Object.entries(finding.provenance.location).map(([key, value]) => `${key}: ${value}`).join(" · ") || "Not recorded"}</strong></div>
+                </div>
+                <FindingReviewForm
+                  assessmentId={itemAssessmentId}
+                  findingId={finding.id}
+                  currentReview={localReview || review}
+                  onReviewed={(updated) => setLocalReviews((current) => ({ ...current, [finding.id]: updated }))}
+                />
+                {(localReview?.note || review?.note) && <footer><span>Reviewer note: {localReview?.note || review.note}</span></footer>}
+              </article>
+            );
+          })}
         </section>
         <aside className="gaps-rail">
           <section className="surface gap-summary"><div className="section-title"><div><h2>Evidence boundary</h2><p>{assessmentId || "No local assessment package"}</p></div></div><p>Findings are derived local evidence. Human dispositions are shown separately and do not modify canonical model files.</p><button className="secondary-button full-width" onClick={() => navigate("reports")}>Open generated artifacts</button></section>
@@ -1363,9 +1432,11 @@ function LiveFindingsScreen({ navigate, findings, assessmentId, loading, error }
 function ProposalsScreen({ navigate, onDraft }) {
   const [tab, setTab] = useState("All");
   const [query, setQuery] = useState("");
+  const { proposals, loading, error, demo } = useProposals();
+  const tabs = ["All", "In review", "Approved", "Rejected"];
   const shown = proposals.filter((proposal) => {
-    const matchesTab = tab === "All" || proposal.status === tab;
-    const matchesQuery = `${proposal.title} ${proposal.summary}`.toLowerCase().includes(query.toLowerCase());
+    const matchesTab = tab === "All" || proposal.status === tab || (tab === "Rejected" && proposal.status === "Changes requested");
+    const matchesQuery = `${proposal.title} ${proposal.summary} ${proposal.author}`.toLowerCase().includes(query.toLowerCase());
     return matchesTab && matchesQuery;
   });
   return (
@@ -1379,12 +1450,14 @@ function ProposalsScreen({ navigate, onDraft }) {
       />
       <div className="proposal-toolbar">
         <div className="segmented-control">
-          {["All", "In review", "Draft", "Approved"].map((item) => <button className={tab === item ? "is-active" : ""} key={item} onClick={() => setTab(item)}>{item}</button>)}
+          {tabs.map((item) => <button className={tab === item ? "is-active" : ""} key={item} onClick={() => setTab(item)}>{item}</button>)}
         </div>
         <label className="inline-search"><MagnifyingGlass size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search proposals" /></label>
       </div>
       <div className="proposal-list">
-        {shown.length === 0 ? (
+        {loading && <div className="empty-state"><CircleNotch className="spin" size={24} /> Loading proposals…</div>}
+        {error && <div className="empty-state"><WarningCircle size={24} /> {error}</div>}
+        {!loading && !error && shown.length === 0 ? (
           <div className="empty-state">
             <NotePencil size={30} />
             <h3>No proposals match</h3>
@@ -1392,20 +1465,24 @@ function ProposalsScreen({ navigate, onDraft }) {
             <button onClick={() => { setTab("All"); setQuery(""); }}>Clear filters</button>
           </div>
         ) : (
-          shown.map((proposal) => (
-            <button className="proposal-row" key={proposal.id} onClick={() => navigate("proposal", { id: proposal.id })}>
-              <span className="proposal-number">#{proposal.id}</span>
-              <span className="proposal-copy">
-                <span><Badge tone={proposal.status === "In review" ? "violet" : "neutral"}>{proposal.status}</Badge><Badge tone={proposal.risk.toLowerCase()}>{proposal.risk} risk</Badge></span>
-                <strong>{proposal.title}</strong>
-                <p>{proposal.summary}</p>
-                <small>{proposal.changes} proposed changes · {proposal.author} · Updated {proposal.updated}</small>
-              </span>
-              <span className="proposal-review">Review <ArrowRight size={16} /></span>
-            </button>
-          ))
+          shown.map((proposal) => {
+            const pid = proposal.proposalId || proposal.id;
+            return (
+              <button className="proposal-row" key={pid} onClick={() => navigate("proposal", { id: pid })}>
+                <span className="proposal-number">#{pid}</span>
+                <span className="proposal-copy">
+                  <span><Badge tone={proposal.status === "In review" ? "violet" : proposal.status === "Approved" ? "green" : "neutral"}>{proposal.status}</Badge><Badge tone={proposal.risk.toLowerCase()}>{proposal.risk} risk</Badge></span>
+                  <strong>{proposal.title}</strong>
+                  <p>{proposal.summary}</p>
+                  <small>{proposal.changes} proposed changes · {proposal.author} · Updated {proposal.updated}</small>
+                </span>
+                <span className="proposal-review">Review <ArrowRight size={16} /></span>
+              </button>
+            );
+          })
         )}
       </div>
+      {demo && <p className="demo-note">Demo proposals shown. Connect the local API to review live proposals.</p>}
     </div>
   );
 }
@@ -1416,8 +1493,28 @@ function ProposalScreen({ navigate, params, onToast }) {
   const [comment, setComment] = useState("");
   const [savedComment, setSavedComment] = useState("");
   const [reviewStatus, setReviewStatus] = useState("");
-  const proposalId = Number(params.get("id"));
-  const proposal = proposals.find((item) => item.id === proposalId) || proposals[0];
+  const [applied, setApplied] = useState(false);
+  const proposalId = params.get("id");
+  const { demo } = useApi();
+  const {
+    proposal: liveProposal,
+    loading,
+    error,
+  } = useProposalDetail(proposalId);
+  const proposal = liveProposal || (proposalId ? proposals.find((item) => String(item.id) === String(proposalId)) : proposals[0]);
+  const { reviewProposal, loading: reviewLoading } = useProposalReview();
+  const { run: runValidate, loading: validateLoading, result: validateResult } = useProposalValidate();
+  const { run: runDryRun, loading: dryRunLoading, result: dryRunResult } = useProposalDryRun();
+  const { run: runApply, loading: applyLoading, error: applyError, result: applyResult } = useProposalApply();
+
+  const pid = proposal?.proposalId || proposal?.id;
+  const effectiveStatus = reviewStatus || proposal?.status || "";
+  const isApproved = effectiveStatus === "Approved";
+
+  useEffect(() => {
+    setReviewStatus("");
+    setApplied(false);
+  }, [proposalId]);
 
   useEffect(() => {
     const openApproval = () => setDecision("approve");
@@ -1425,19 +1522,103 @@ function ProposalScreen({ navigate, params, onToast }) {
     return () => window.removeEventListener("martenweave:approve", openApproval);
   }, []);
 
+  useEffect(() => {
+    if (tab === "Validation" && proposal && pid && !demo) {
+      runValidate(pid).catch(() => {});
+    }
+  }, [tab, proposal, demo, runValidate, pid]);
+
+  useEffect(() => {
+    if (tab === "Impact" && proposal && pid && !demo) {
+      runDryRun(pid).catch(() => {});
+    }
+  }, [tab, proposal, demo, runDryRun, pid]);
+
+  const handleConfirm = async (decisionType, reason) => {
+    if (!proposal || !pid) return;
+    const nextStatus = decisionType === "approve" ? "Approved" : "Changes requested";
+    if (demo) {
+      setReviewStatus(nextStatus);
+      onToast(`${nextStatus}: Proposal #${pid}. Canonical files remain unchanged.`);
+      return;
+    }
+    const status = decisionType === "approve" ? "accepted" : "rejected";
+    const body = { status, reviewer: "workbench" };
+    if (decisionType === "reject") body.rejection_reason = reason;
+    else if (reason) body.reviewer_notes = reason;
+    try {
+      await reviewProposal(pid, body);
+      setReviewStatus(nextStatus);
+      onToast(`${nextStatus}: Proposal #${pid}. Canonical files remain unchanged.`);
+    } catch {
+      onToast(`Review failed for Proposal #${pid}.`);
+    }
+  };
+
+  const handleApply = async () => {
+    if (!proposal || !pid) return;
+    if (demo) {
+      setApplied(true);
+      onToast(`Applied Proposal #${pid}: 1 file(s) changed.`);
+      return;
+    }
+    try {
+      const result = await runApply(pid);
+      setApplied(true);
+      const count = result?.changed_files?.length ?? 0;
+      onToast(`Applied Proposal #${pid}: ${count} file(s) changed.`);
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : String(reason);
+      onToast(`Apply failed: ${message}`);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="proposal-review-page page-pad">
+        <div className="empty-state"><CircleNotch className="spin" size={24} /> Loading proposal…</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="proposal-review-page page-pad">
+        <div className="empty-state"><WarningCircle size={24} /> {error}</div>
+      </div>
+    );
+  }
+
+  if (!proposal) {
+    return (
+      <div className="proposal-review-page page-pad">
+        <div className="empty-state"><NotePencil size={30} /><h3>Proposal not found</h3></div>
+      </div>
+    );
+  }
+
+  const linkedGapText = proposal.source_evidence?.[0] || proposal.linkedGap;
+  const linkedGapId = proposal.linkedGapId;
+
   return (
     <div className="proposal-review-page">
       <div className="proposal-review-header page-pad">
         <button className="back-link" onClick={() => navigate("proposals")}><CaretLeft size={15} /> Back to proposals</button>
         <div className="proposal-title-row">
           <div>
-            <div className="object-type-row"><Badge tone={reviewStatus === "Approved" ? "green" : "violet"}>{reviewStatus || proposal.status}</Badge><Badge tone={proposal.risk.toLowerCase()}>{proposal.risk} impact</Badge></div>
+            <div className="object-type-row"><Badge tone={isApproved ? "green" : "violet"}>{effectiveStatus}</Badge><Badge tone={proposal.risk.toLowerCase()}>{proposal.risk} impact</Badge></div>
             <h1>{proposal.title}</h1>
-            <p>Proposal #{proposal.id} · Created by {proposal.author} · Updated {proposal.updated}</p>
+            <p>Proposal #{pid} · Created by {proposal.author} · Updated {proposal.updated}</p>
           </div>
           <div className="page-actions">
-            <button className="danger-button" onClick={() => setDecision("reject")} disabled={Boolean(reviewStatus)}><XCircle size={17} /> Request changes</button>
-            <button className="approve-button" onClick={() => setDecision("approve")} disabled={Boolean(reviewStatus)}><CheckCircle size={17} /> {reviewStatus || "Approve proposal"}</button>
+            <button className="danger-button" onClick={() => setDecision("reject")} disabled={Boolean(reviewStatus) || reviewLoading}><XCircle size={17} /> Request changes</button>
+            <button className="approve-button" onClick={() => setDecision("approve")} disabled={Boolean(reviewStatus) || reviewLoading}><CheckCircle size={17} /> {reviewStatus || "Approve proposal"}</button>
+            {isApproved && !applied && (
+              <button className="primary-button" onClick={handleApply} disabled={applyLoading}>
+                <CheckCircle size={17} /> {applyLoading ? "Applying…" : "Apply to canonical"}
+              </button>
+            )}
+            {applyError && <span className="inline-error">{applyError}</span>}
           </div>
         </div>
       </div>
@@ -1445,35 +1626,37 @@ function ProposalScreen({ navigate, params, onToast }) {
         <div className="review-main">
           <section className="proposal-summary-strip">
             <div><small>Risk classification</small><strong><WarningCircle size={16} /> {proposal.risk}</strong></div>
-            <div><small>Canonical objects</small><strong>{proposal.impactObjects} affected</strong></div>
-            <div><small>Proposed changes</small><strong>{proposal.changes} changes</strong></div>
-            <div><small>Validation</small><strong><CheckCircle size={16} /> {proposal.validationStatus}</strong></div>
+            <div><small>Canonical objects</small><strong>{(proposal.affected_objects?.length || proposal.impactObjects) || 0} affected</strong></div>
+            <div><small>Proposed changes</small><strong>{(proposal.operations?.length || proposal.changes) || 0} changes</strong></div>
+            <div><small>Validation</small><strong><CheckCircle size={16} /> {capitalize(proposal.validation_status || proposal.validationStatus)}</strong></div>
           </section>
           <div className="review-tabs">
             {["Changes", "Impact", "Validation", "Activity"].map((item) => <button className={tab === item ? "is-active" : ""} key={item} onClick={() => setTab(item)}>{item}</button>)}
           </div>
-          {tab === "Changes" && <ProposalChanges />}
-          {tab === "Impact" && <ProposalImpact navigate={navigate} proposal={proposal} />}
-          {tab === "Validation" && <ProposalValidation proposal={proposal} />}
-          {tab === "Activity" && <ProposalActivity />}
+          {tab === "Changes" && <ProposalChanges proposal={proposal} />}
+          {tab === "Impact" && <ProposalImpact navigate={navigate} proposal={proposal} dryRunResult={dryRunResult} dryRunLoading={dryRunLoading} />}
+          {tab === "Validation" && <ProposalValidation proposal={proposal} validateResult={validateResult} validateLoading={validateLoading} />}
+          {tab === "Activity" && <ProposalActivity proposalId={pid} />}
         </div>
         <aside className="review-sidebar">
           <section className="surface">
             <div className="section-title"><div><h2>Review context</h2><p>Why this change exists</p></div></div>
             <p className="review-context">
-              {proposal.linkedGap} is driving this proposal. The change adds or modifies canonical
+              {linkedGapText || "Assessment evidence"} is driving this proposal. The change adds or modifies canonical
               endpoints with deterministic transform evidence.
             </p>
-            <button className="linked-gap" onClick={() => navigate("gaps", { gap: proposal.linkedGapId })}>
-              <WarningCircle size={18} />
-              <span><small>Linked gap</small><strong>{proposal.linkedGap}</strong></span>
-              <CaretRight size={15} />
-            </button>
+            {linkedGapId && (
+              <button className="linked-gap" onClick={() => navigate("gaps", { gap: linkedGapId })}>
+                <WarningCircle size={18} />
+                <span><small>Linked gap</small><strong>{linkedGapText || "Linked finding"}</strong></span>
+                <CaretRight size={15} />
+              </button>
+            )}
           </section>
           <section className="surface">
-            <div className="section-title"><div><h2>Reviewers</h2><p>1 of 2 approvals received</p></div></div>
+            <div className="section-title"><div><h2>Reviewers</h2><p>{proposal.riskAssessment?.requires_approval ? "Requires approved ChangeRequest" : "No approval required"}</p></div></div>
             <div className="reviewer-row"><span className="avatar avatar-soft">PN</span><span><strong>Priya Nair</strong><small>Data steward</small></span><CheckCircle size={18} weight="fill" /></div>
-            <div className="reviewer-row"><span className="avatar avatar-soft">AC</span><span><strong>Alex Chen</strong><small>Your review</small></span><Badge>Pending</Badge></div>
+            <div className="reviewer-row"><span className="avatar avatar-soft">AC</span><span><strong>Alex Chen</strong><small>Your review</small></span><Badge>{reviewStatus || "Pending"}</Badge></div>
           </section>
           <section className="surface comment-box">
             <div className="section-title"><div><h2>Review note</h2><p>Visible to proposal reviewers</p></div></div>
@@ -1488,126 +1671,138 @@ function ProposalScreen({ navigate, params, onToast }) {
       {decision && (
         <DecisionDialog
           type={decision}
-          proposalId={proposal.id}
+          proposalId={pid}
           onClose={() => setDecision(null)}
-          onConfirm={() => {
-            const nextStatus = decision === "approve" ? "Approved" : "Changes requested";
-            setReviewStatus(nextStatus);
-            setDecision(null);
-            onToast(`${nextStatus}: Proposal #${proposal.id}. Canonical files remain unchanged.`);
-          }}
+          onConfirm={handleConfirm}
         />
       )}
     </div>
   );
 }
 
-function ProposalChanges() {
-  const [view, setView] = useState("Side by side");
+function ProposalChanges({ proposal }) {
+  const operations = proposal.operations || [];
   return (
     <section className="change-section">
       <div className="change-section-heading">
         <div><h2>Proposed canonical changes</h2><p>Review every mutation before approval.</p></div>
-        <div className="view-toggle"><button className={view === "Side by side" ? "is-active" : ""} onClick={() => setView("Side by side")}><Columns size={16} /> Side by side</button><button className={view === "Unified" ? "is-active" : ""} onClick={() => setView("Unified")}><List size={16} /> Unified</button></div>
       </div>
-      <article className="diff-card">
-        <header>
-          <span><FileText size={18} /> model/ATTR-BP-TAX-NUMBER.md</span>
-          <Badge tone="green">New object</Badge>
-        </header>
-        <div className={`diff-body ${view === "Unified" ? "is-unified" : ""}`}>
-          {view === "Side by side" && (
-            <div className="diff-pane before">
-              <div className="diff-pane-label">Current</div>
-              <div className="diff-empty"><FileText size={23} /><span>Object does not exist</span></div>
+      {operations.length === 0 ? (
+        <div className="empty-state"><FileText size={24} /><p>No operation details available.</p></div>
+      ) : (
+        operations.map((operation, index) => (
+          <article className="diff-card" key={index}>
+            <header>
+              <span><GitDiff size={18} /> {operation.object_type} · {operation.object_id}</span>
+              <Badge tone={operation.op === "add" ? "green" : operation.op === "remove" ? "high" : "blue"}>{operation.op}</Badge>
+            </header>
+            <div className="field-diff">
+              <div><small>Object</small><strong>{operation.object_id}</strong></div>
+              {operation.target_path && (
+                <div><small>Path</small><code>{operation.target_path.join(".")}</code></div>
+              )}
             </div>
-          )}
-          <div className="diff-pane after">
-            <div className="diff-pane-label">Proposed</div>
-            <pre>{`---
-id: ATTR-BP-TAX-NUMBER
-type: Attribute
-status: draft
-name: Tax Number
-domain: DOMAIN-CUSTOMER-BP
----
-
-# Tax Number
-
-Tax identification number used for
-reporting and partner matching.`}</pre>
-          </div>
-        </div>
-      </article>
-      <article className="diff-card">
-        <header>
-          <span><GitDiff size={18} /> model/MAP-SAP-BP-TAX-NUMBER.md</span>
-          <Badge tone="blue">Modified</Badge>
-        </header>
-        <div className="field-diff">
-          <div><small>Field</small><strong>target_endpoint</strong></div>
-          <div className="removed-value"><small>Current</small><code>—</code></div>
-          <ArrowRight size={16} />
-          <div className="added-value"><small>Proposed</small><code>ATTR-BP-TAX-NUMBER</code></div>
-        </div>
-        <div className="field-diff">
-          <div><small>Field</small><strong>transform</strong></div>
-          <div className="removed-value"><small>Current</small><code>—</code></div>
-          <ArrowRight size={16} />
-          <div className="added-value"><small>Proposed</small><code>trim · uppercase · validate</code></div>
-        </div>
-      </article>
+            {(operation.before !== undefined || operation.after !== undefined) && (
+              <div className="field-diff">
+                {operation.before !== undefined && (
+                  <div className="removed-value"><small>Current</small><code>{JSON.stringify(operation.before)}</code></div>
+                )}
+                {operation.after !== undefined && (
+                  <div className="added-value"><small>Proposed</small><code>{JSON.stringify(operation.after)}</code></div>
+                )}
+              </div>
+            )}
+          </article>
+        ))
+      )}
     </section>
   );
 }
 
-function ProposalImpact({ navigate, proposal }) {
+function ProposalImpact({ navigate, proposal, dryRunResult, dryRunLoading }) {
+  const risk = proposal.riskAssessment || {};
+  const directObjects = proposal.affected_objects?.length || proposal.impactObjects || 0;
+  const downstreamObjects = risk.affected_object_count ?? directObjects;
+  const highRiskPaths = risk.risk_level === "high" ? 1 : 0;
   return (
     <section className="change-section">
       <div className="change-section-heading"><div><h2>Impact analysis</h2><p>Deterministic BFS traversal from changed objects.</p></div><button className="secondary-button" onClick={() => navigate("lineage")}><ShareNetwork size={17} /> Open lineage</button></div>
+      {dryRunLoading && <div className="empty-state"><CircleNotch className="spin" size={24} /> Running impact analysis…</div>}
       <div className="impact-grid">
-        {[["Directly changed", String(proposal.impactObjects), FileText], ["Downstream objects", String(proposal.impactObjects + 4), GitBranch], ["Source systems", "3", Database], ["High-risk paths", proposal.risk === "High" ? "1" : "0", WarningCircle]].map(([label, value, Icon]) => (
+        {[["Directly changed", String(directObjects), FileText], ["Downstream objects", String(downstreamObjects), GitBranch], ["Source systems", "3", Database], ["High-risk paths", String(highRiskPaths), WarningCircle]].map(([label, value, Icon]) => (
           <div className="surface" key={label}><Icon size={20} /><strong>{value}</strong><span>{label}</span></div>
         ))}
       </div>
-      <section className="surface impact-paths">
-        <h3>Highest-risk path</h3>
-        <div><span>SAP S/4HANA</span><ArrowRight size={15} /><span>KNVV.STCD1</span><ArrowRight size={15} /><span>Tax Number</span><ArrowRight size={15} /><span>Customer analytics</span></div>
-      </section>
+      {risk.risk_reasons?.length > 0 && (
+        <section className="surface impact-paths">
+          <h3>Risk reasons</h3>
+          <ul>
+            {risk.risk_reasons.map((reason, index) => <li key={index}><WarningCircle size={14} /> {reason}</li>)}
+          </ul>
+        </section>
+      )}
+      {dryRunResult?.changed_files && (
+        <section className="surface impact-paths">
+          <h3>Dry-run result</h3>
+          <p>{dryRunResult.changed_files.length} file(s) would change · max depth {risk.max_impact_depth ?? "—"}</p>
+        </section>
+      )}
     </section>
   );
 }
 
-function ProposalValidation({ proposal }) {
+function ProposalValidation({ proposal, validateResult, validateLoading }) {
+  const validationStatus = capitalize(proposal.validation_status || proposal.validationStatus);
+  const passed = validationStatus.toLowerCase() === "passed";
+  const results = validateResult?.validation_results || proposal.validation_results || [];
   return (
     <section className="change-section">
-      <div className="change-section-heading"><div><h2>Validation evidence</h2><p>Deterministic checks executed before review.</p></div><Badge tone={proposal.validationStatus === "Passed" ? "green" : "high"}><CheckCircle size={14} /> {proposal.validationStatus === "Passed" ? "All checks passed" : "Checks failed"}</Badge></div>
+      <div className="change-section-heading"><div><h2>Validation evidence</h2><p>Deterministic checks executed before review.</p></div><Badge tone={passed ? "green" : "high"}><CheckCircle size={14} /> {passed ? "All checks passed" : "Checks failed"}</Badge></div>
+      {validateLoading && <div className="empty-state"><CircleNotch className="spin" size={24} /> Running validation…</div>}
       <div className="validation-list">
-        {[
-          ["Schema validation", "Object structure matches the registered Attribute and Mapping schemas."],
-          ["Reference integrity", "All proposed object references resolve to valid canonical IDs."],
-          ["SAP context", "Source endpoint context matches the registered domain pack rules."],
-          ["ID uniqueness", "No duplicate stable IDs were found in the repository."],
-        ].map(([title, description]) => (
-          <div className="surface validation-row" key={title}><span className="validation-check"><Check size={16} weight="bold" /></span><span><strong>{title}</strong><small>{description}</small></span><Badge tone={proposal.validationStatus === "Passed" ? "green" : "high"}>{proposal.validationStatus}</Badge></div>
-        ))}
+        {results.length > 0 ? results.map((result, index) => (
+          <div className="surface validation-row" key={index}><span className="validation-check"><Check size={16} weight="bold" /></span><span><strong>{result.check || result.rule || `Check ${index + 1}`}</strong><small>{result.message || result.description || ""}</small></span><Badge tone={result.status === "passed" || result.status === "Passed" ? "green" : "high"}>{capitalize(result.status)}</Badge></div>
+        )) : (
+          [
+            ["Schema validation", "Object structure matches the registered Attribute and Mapping schemas."],
+            ["Reference integrity", "All proposed object references resolve to valid canonical IDs."],
+            ["SAP context", "Source endpoint context matches the registered domain pack rules."],
+            ["ID uniqueness", "No duplicate stable IDs were found in the repository."],
+          ].map(([title, description]) => (
+            <div className="surface validation-row" key={title}><span className="validation-check"><Check size={16} weight="bold" /></span><span><strong>{title}</strong><small>{description}</small></span><Badge tone={passed ? "green" : "high"}>{validationStatus || "Passed"}</Badge></div>
+          ))
+        )}
       </div>
     </section>
   );
 }
 
-function ProposalActivity() {
+function ProposalActivity({ proposalId }) {
+  const { events, loading, error, demo } = useWorkspaceActivity();
+  const activity = demo
+    ? [
+      ["Proposal generated", "Martenweave AI created patch operations from gap evidence.", "18m ago", Sparkle],
+      ["Validation completed", "All deterministic repository checks passed.", "16m ago", ShieldCheck],
+      ["Impact analysis completed", "Six downstream objects and one high-risk path detected.", "15m ago", ShareNetwork],
+      ["Priya Nair approved", "Data stewardship review completed.", "7m ago", CheckCircle],
+    ]
+    : events
+      .filter((event) => event.proposal_id === proposalId)
+      .map((event) => [
+        event.event_type.replaceAll("_", " "),
+        event.changed_object_ids?.join(", ") || event.proposal_id || "Proposal event",
+        new Date(event.timestamp).toLocaleString(),
+        CheckCircle,
+      ]);
   return (
     <section className="change-section">
       <div className="change-section-heading"><div><h2>Proposal activity</h2><p>Immutable review and validation history.</p></div></div>
+      {loading && <div className="empty-state"><CircleNotch className="spin" size={24} /> Loading activity…</div>}
+      {error && <div className="empty-state"><WarningCircle size={24} /> {error}</div>}
+      {!loading && !error && activity.length === 0 && <p className="empty-state">No activity recorded for this proposal.</p>}
       <div className="timeline">
-        {[
-          ["Proposal generated", "Martenweave AI created four patch operations from gap evidence.", "18m ago", Sparkle],
-          ["Validation completed", "All deterministic repository checks passed.", "16m ago", ShieldCheck],
-          ["Impact analysis completed", "Six downstream objects and one high-risk path detected.", "15m ago", ShareNetwork],
-          ["Priya Nair approved", "Data stewardship review completed.", "7m ago", CheckCircle],
-        ].map(([title, description, time, Icon]) => (
-          <div key={title}><span className="timeline-icon"><Icon size={16} /></span><span><strong>{title}</strong><small>{description}</small></span><time>{time}</time></div>
+        {activity.map(([title, description, time, Icon], index) => (
+          <div key={index}><span className="timeline-icon"><Icon size={16} /></span><span><strong>{title}</strong><small>{description}</small></span><time>{time}</time></div>
         ))}
       </div>
     </section>
@@ -1627,7 +1822,7 @@ function DecisionDialog({ type, proposalId, onClose, onConfirm }) {
         <label><span>{approve ? "Approval note (optional)" : "Required changes"}</span><textarea rows={3} value={reason} onChange={(event) => setReason(event.target.value)} placeholder={approve ? "Add a short review note…" : "Explain what must change…"} /></label>
         <div className="dialog-actions">
           <button className="secondary-button" onClick={onClose}>Cancel</button>
-          <button className={approve ? "approve-button" : "danger-button"} disabled={!approve && !reason.trim()} onClick={onConfirm}>{approve ? <><CheckCircle size={17} /> Approve</> : <><XCircle size={17} /> Request changes</>}</button>
+          <button className={approve ? "approve-button" : "danger-button"} disabled={!approve && !reason.trim()} onClick={() => onConfirm(type, reason)}>{approve ? <><CheckCircle size={17} /> Approve</> : <><XCircle size={17} /> Request changes</>}</button>
         </div>
       </div>
     </div>
@@ -1722,7 +1917,7 @@ export function App({ apiBaseUrl }) {
     }
     if (route === "proposal") {
       const id = params.get("id");
-      return proposals.find((item) => item.id === Number(id))?.title || "Proposal review";
+      return proposals.find((item) => String(item.id) === String(id))?.title || "Proposal review";
     }
     return ROUTE_TITLES[route] || "Workspace";
   })();

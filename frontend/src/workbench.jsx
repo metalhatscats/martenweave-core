@@ -30,7 +30,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { fields, gaps, modelObjects, proposals, recentActivity } from "./data.js";
-import { useApi, useWorkspaceActivity } from "./api.jsx";
+import { useApi, useImportPreview, useImportProfile, useWorkspaceActivity } from "./api.jsx";
 
 const LEDGER_ROWS = [
   {
@@ -730,15 +730,57 @@ function ModalFrame({ title, subtitle, onClose, children, className = "" }) {
 }
 
 function ImportDialog({ onClose, onComplete }) {
+  const { client, demo } = useApi();
   const [source, setSource] = useState("canonical");
   const [step, setStep] = useState("choose");
   const [error, setError] = useState("");
+  const [file, setFile] = useState(null);
+  const [result, setResult] = useState(null);
+  const { run: runProfile, loading: profileLoading } = useImportProfile();
+  const { run: runPreview, loading: previewLoading } = useImportPreview();
+  const loading = profileLoading || previewLoading;
 
-  const parse = () => {
+  const parse = async () => {
     setError("");
+    if (!demo && client && file) {
+      setStep("parsing");
+      try {
+        const data = source === "dataset" ? await runProfile(file) : await runPreview(file);
+        setResult(data);
+        setStep("review");
+      } catch (reason) {
+        setError(reason instanceof Error ? reason.message : String(reason));
+        setStep("choose");
+      }
+      return;
+    }
     setStep("parsing");
     window.setTimeout(() => setStep("review"), 850);
   };
+
+  const handleFileChange = (event) => {
+    const selected = event.target.files?.[0];
+    setFile(selected || null);
+    setError("");
+  };
+
+  const handleLoad = () => {
+    if (!demo && client && result) {
+      const summary = source === "dataset" && result.row_count !== undefined
+        ? `Profiled ${result.row_count} rows and ${result.column_count} columns.`
+        : result.proposal
+          ? `Previewed ${result.proposal.operations?.length || 0} proposed changes.`
+          : "Import preview complete.";
+      onComplete(summary);
+      return;
+    }
+    onComplete("Model loaded: 24 objects indexed and 5 gaps queued for review.");
+  };
+
+  const profile = result && (result.row_count !== undefined ? result : result.profile);
+  const profileResult = profile && profile.row_count !== undefined ? profile : null;
+  const previewResult = result && result.proposal ? result : null;
+
   return (
     <ModalFrame title="Load model knowledge" subtitle="Import project evidence without mutating canonical truth." onClose={onClose} className="import-modal">
       <div className="flow-steps"><span className="is-active">1 Source</span><span className={step !== "choose" ? "is-active" : ""}>2 Parse</span><span className={step === "review" ? "is-active" : ""}>3 Review</span></div>
@@ -753,12 +795,15 @@ function ImportDialog({ onClose, onComplete }) {
           </div>
           <div className="drop-zone">
             <UploadSimple size={26} />
-            <strong>Drop files here or use realistic sample input</strong>
+            <strong>Drop files here or select a file</strong>
             <p>Files remain local. Martenweave profiles and validates before anything can become canonical.</p>
-            <button className="secondary-button" onClick={() => setError("Demo mode uses the repository sample because browser file access is not persisted.")}>Choose files</button>
+            {!demo && client && ["dataset", "excel", "canonical"].includes(source) && (
+              <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFileChange} aria-label="Choose file" />
+            )}
+            {file && <p className="selected-file"><CheckCircle size={14} /> {file.name}</p>}
             {error && <span className="inline-error">{error}</span>}
           </div>
-          <footer><button className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button" onClick={parse}>Use sample files <ArrowRight size={15} /></button></footer>
+          <footer><button className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button" onClick={parse} disabled={loading}>{loading ? "Parsing…" : file ? "Profile / Preview" : "Use sample files"} <ArrowRight size={15} /></button></footer>
         </>
       )}
       {step === "parsing" && (
@@ -767,23 +812,50 @@ function ImportDialog({ onClose, onComplete }) {
       {step === "review" && (
         <>
           <div className="import-summary">
-            <div><CheckCircle size={19} /><strong>37</strong><span>Files parsed</span></div>
-            <div><Cube size={19} /><strong>24</strong><span>Objects detected</span></div>
-            <div><Warning size={19} /><strong>5</strong><span>Gaps detected</span></div>
-            <div><ShieldCheck size={19} /><strong>0</strong><span>Blocking errors</span></div>
+            {profileResult ? (
+              <>
+                <div><CheckCircle size={19} /><strong>{profileResult.row_count ?? 0}</strong><span>Rows</span></div>
+                <div><Cube size={19} /><strong>{profileResult.column_count ?? 0}</strong><span>Columns</span></div>
+                <div><Warning size={19} /><strong>{profileResult.columns?.length ?? 0}</strong><span>Fields</span></div>
+                <div><ShieldCheck size={19} /><strong>{profileResult.status?.success ? "OK" : "Issues"}</strong><span>Status</span></div>
+              </>
+            ) : previewResult ? (
+              <>
+                <div><CheckCircle size={19} /><strong>{previewResult.proposal.operations?.length ?? 0}</strong><span>Changes</span></div>
+                <div><Cube size={19} /><strong>{previewResult.proposal.affected_objects?.length ?? 0}</strong><span>Objects</span></div>
+                <div><Warning size={19} /><strong>{previewResult.warnings?.length ?? 0}</strong><span>Warnings</span></div>
+                <div><ShieldCheck size={19} /><strong>{previewResult.proposal.validation_status || "—"}</strong><span>Validation</span></div>
+              </>
+            ) : (
+              <>
+                <div><CheckCircle size={19} /><strong>37</strong><span>Files parsed</span></div>
+                <div><Cube size={19} /><strong>24</strong><span>Objects detected</span></div>
+                <div><Warning size={19} /><strong>5</strong><span>Gaps detected</span></div>
+                <div><ShieldCheck size={19} /><strong>0</strong><span>Blocking errors</span></div>
+              </>
+            )}
           </div>
           <section className="parsed-preview">
             <h3>Detected model knowledge</h3>
-            {[
-              ["Canonical objects", "24", "Ready to index"],
-              ["Field endpoints", "68", "7 new · 61 matched"],
-              ["Mapping rows", "112", "3 need review"],
-              ["Source evidence", "284", "Profiled locally"],
-              ["Gap candidates", "5", "Human review required"],
-            ].map(([name, count, status]) => <p key={name}><strong>{name}</strong><span>{count}</span><small>{status}</small></p>)}
+            {profileResult ? (
+              profileResult.columns?.map((column) => {
+                const name = typeof column === "string" ? column : column.name;
+                return <p key={name}><strong>{name}</strong><span>—</span><small>Detected</small></p>;
+              })
+            ) : previewResult ? (
+              previewResult.warnings?.map((warning, index) => <p key={index}><strong>Warning</strong><span>{warning}</span><small>Review</small></p>)
+            ) : (
+              [
+                ["Canonical objects", "24", "Ready to index"],
+                ["Field endpoints", "68", "7 new · 61 matched"],
+                ["Mapping rows", "112", "3 need review"],
+                ["Source evidence", "284", "Profiled locally"],
+                ["Gap candidates", "5", "Human review required"],
+              ].map(([name, count, status]) => <p key={name}><strong>{name}</strong><span>{count}</span><small>{status}</small></p>)
+            )}
           </section>
           <div className="import-warning"><ShieldCheck size={18} /><p><strong>No canonical files will be changed.</strong> This import updates the disposable investigation index and creates reviewable gap candidates.</p></div>
-          <footer><button className="secondary-button" onClick={() => setStep("choose")}>Back</button><button className="primary-button" onClick={() => onComplete("Model loaded: 24 objects indexed and 5 gaps queued for review.")}>Load into workspace</button></footer>
+          <footer><button className="secondary-button" onClick={() => setStep("choose")}>Back</button><button className="primary-button" onClick={handleLoad}>Load into workspace</button></footer>
         </>
       )}
     </ModalFrame>
@@ -791,14 +863,19 @@ function ImportDialog({ onClose, onComplete }) {
 }
 
 function ExportDialog({ initialType = "index", onClose, onComplete }) {
+  const { client, demo } = useApi();
   const [type, setType] = useState(EXPORT_TYPES.some(([id]) => id === initialType) ? initialType : "index");
   const [format, setFormat] = useState("CSV");
   const [success, setSuccess] = useState(false);
+  const [exportError, setExportError] = useState("");
+  const [exportMessage, setExportMessage] = useState("");
+  const [artifactUrl, setArtifactUrl] = useState(null);
+  const [loading, setLoading] = useState(false);
   const selected = EXPORT_TYPES.find(([id]) => id === type) || EXPORT_TYPES[0];
   const extension = format.toLowerCase();
   const filename = `customer-migration-${type}-2026-07-03.${extension}`;
 
-  const download = () => {
+  const downloadDemoBlob = () => {
     const content = [
       "Martenweave local export",
       `Type: ${selected[1]}`,
@@ -814,6 +891,51 @@ function ExportDialog({ initialType = "index", onClose, onComplete }) {
     anchor.click();
     URL.revokeObjectURL(url);
     onComplete(`Exported ${filename}`);
+  };
+
+  const generate = async () => {
+    setExportError("");
+    setArtifactUrl(null);
+    if (!demo && client) {
+      const lowerFormat = format.toLowerCase();
+      if (!["csv", "xlsx"].includes(lowerFormat)) {
+        setExportMessage("Connected export supports CSV and XLSX");
+        setSuccess(true);
+        return;
+      }
+      setLoading(true);
+      try {
+        await client.exportModel(lowerFormat);
+        const reportsResponse = await client.reports();
+        const artifacts = reportsResponse.artifacts || [];
+        const suffix = lowerFormat === "xlsx" ? ".xlsx" : ".csv";
+        const artifact = [...artifacts].reverse().find((item) => item.name?.toLowerCase().endsWith(suffix));
+        if (artifact) {
+          const url = client.reportDownloadUrl(artifact.artifact_id);
+          setArtifactUrl(url);
+          window.location.assign(url);
+          onComplete(`Exported ${artifact.name}`);
+        } else {
+          setExportMessage("Export generated; download the artifact from Reports.");
+        }
+        setSuccess(true);
+      } catch (reason) {
+        setExportError(reason instanceof Error ? reason.message : String(reason));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+    setSuccess(true);
+  };
+
+  const download = () => {
+    if (artifactUrl) {
+      window.location.assign(artifactUrl);
+      onComplete(`Exported ${filename}`);
+    } else {
+      downloadDemoBlob();
+    }
   };
 
   return (
@@ -833,11 +955,13 @@ function ExportDialog({ initialType = "index", onClose, onComplete }) {
             <label><span>File name</span><input value={filename} readOnly /></label>
           </div>
           <div className="export-note"><ShieldCheck size={17} /><span>Includes source IDs, validation timestamp, workspace scope, and generation metadata.</span></div>
-          <footer><button className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button" onClick={() => setSuccess(true)}>Generate export</button></footer>
+          {exportError && <span className="inline-error">{exportError}</span>}
+          <footer><button className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button" onClick={generate} disabled={loading}>{loading ? "Generating…" : "Generate export"}</button></footer>
         </>
       ) : (
         <div className="export-success">
-          <span><CheckCircle size={34} weight="fill" /></span><h3>{selected[1]} is ready</h3><p><code>{filename}</code></p>
+          <span><CheckCircle size={34} weight="fill" /></span><h3>{selected[1]} is ready</h3>
+          {exportMessage ? <p>{exportMessage}</p> : <p><code>{filename}</code></p>}
           <div><strong>Customer migration</strong><small>Generated locally · Evidence timestamp included · 0 errors</small></div>
           <button className="primary-button" onClick={download}><DownloadSimple size={17} /> Download file</button>
           <button onClick={onClose}>Close</button>

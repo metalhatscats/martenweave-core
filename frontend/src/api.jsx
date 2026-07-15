@@ -9,7 +9,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import { lineageEdges, lineageNodes, modelObjects } from "./data.js";
+import { lineageEdges, lineageNodes, modelObjects, proposals as demoProposals } from "./data.js";
 
 /**
  * @typedef {object} Capability
@@ -126,6 +126,21 @@ import { lineageEdges, lineageNodes, modelObjects } from "./data.js";
  * @property {(id: string) => Promise<ImpactResponse>} impact
  * @property {() => Promise<CapabilitiesResponse>} capabilities
  * @property {(limit?: number) => Promise<ActivityResponse>} activity
+ * @property {() => Promise<{total_count: number, proposals: ProposalResponse[]}>} proposals
+ * @property {(id: string) => Promise<ProposalResponse>} proposal
+ * @property {(id: string, body: {status: string, reviewer?: string, reviewer_notes?: string, rejection_reason?: string}) => Promise<any>} reviewProposal
+ * @property {(id: string) => Promise<any>} validateProposal
+ * @property {(id: string) => Promise<any>} dryRunProposal
+ * @property {(id: string) => Promise<any>} applyProposal
+ * @property {() => Promise<{total_count: number, change_requests: ChangeRequestResponse[]}>} changeRequests
+ * @property {(data: ChangeRequestCreateData) => Promise<ChangeRequestResponse>} createChangeRequest
+ * @property {(body: FindingReviewRequest) => Promise<any>} reviewFinding
+ * @property {(file: File, dataset_id?: string) => Promise<ProfileResponse>} importProfile
+ * @property {(file: File) => Promise<PreviewResponse>} importPreview
+ * @property {(format: string, business_review?: boolean) => Promise<ExportModelResponse>} exportModel
+ * @property {(limit?: number) => Promise<{total_count: number, artifacts: any[]}>} reports
+ * @property {(artifactId: string) => string} reportDownloadUrl
+ * @property {() => Promise<any>} findings
  */
 
 /**
@@ -146,6 +161,128 @@ import { lineageEdges, lineageNodes, modelObjects } from "./data.js";
  * @typedef {object} ActivityResponse
  * @property {number} total_count
  * @property {ActivityEvent[]} events
+ */
+
+/**
+ * @typedef {object} ProposalOperation
+ * @property {string} op
+ * @property {string} object_id
+ * @property {string} object_type
+ * @property {string[]} [target_path]
+ * @property {any} [before]
+ * @property {any} [after]
+ */
+
+/**
+ * @typedef {object} ProposalRiskAssessment
+ * @property {string} risk_level
+ * @property {string[]} risk_reasons
+ * @property {number} affected_object_count
+ * @property {number} max_impact_depth
+ * @property {boolean} requires_approval
+ */
+
+/**
+ * @typedef {object} ProposalValidationResult
+ * @property {string} check
+ * @property {string} status
+ * @property {string} [message]
+ */
+
+/**
+ * @typedef {object} ProposalResponse
+ * @property {string} id
+ * @property {string} name
+ * @property {string} title
+ * @property {string} status
+ * @property {string} risk_level
+ * @property {string} created_by
+ * @property {number} operations_count
+ * @property {number} affected_objects_count
+ * @property {string} validation_status
+ * @property {ProposalOperation[]} operations
+ * @property {ProposalRiskAssessment} risk_assessment
+ * @property {string[]} affected_objects
+ * @property {string[]} source_evidence
+ * @property {ProposalValidationResult[]} validation_results
+ */
+
+/**
+ * @typedef {object} ProposalViewModel
+ * @property {string} proposalId
+ * @property {string} id
+ * @property {string} title
+ * @property {string} summary
+ * @property {string} status
+ * @property {string} risk
+ * @property {string} author
+ * @property {string} updated
+ * @property {number} changes
+ * @property {number} impactObjects
+ * @property {string} validationStatus
+ * @property {string} [linkedGap]
+ * @property {string|number|null} [linkedGapId]
+ * @property {ProposalOperation[]} [operations]
+ * @property {ProposalRiskAssessment} [riskAssessment]
+ * @property {string[]} [affected_objects]
+ * @property {string[]} [source_evidence]
+ * @property {string} [validation_status]
+ * @property {ProposalValidationResult[]} [validation_results]
+ */
+
+/**
+ * @typedef {object} ChangeRequestCreateData
+ * @property {string} id
+ * @property {string} title
+ * @property {string} status
+ * @property {string} requester
+ * @property {string} reason
+ * @property {string} requested_change
+ * @property {string} expected_impact
+ * @property {string[]} affected_objects
+ * @property {string[]} linked_proposals
+ * @property {string[]} related_issues
+ * @property {string[]} related_decisions
+ * @property {string[]} approvers
+ * @property {string} priority
+ * @property {string[]} source_evidence
+ */
+
+/**
+ * @typedef {object} ChangeRequestResponse
+ * @property {string} id
+ * @property {string} title
+ * @property {string} status
+ */
+
+/**
+ * @typedef {object} FindingReviewRequest
+ * @property {string} assessment
+ * @property {string} finding_id
+ * @property {string} disposition
+ * @property {string} reviewer
+ * @property {string} [note]
+ */
+
+/**
+ * @typedef {object} ProfileResponse
+ * @property {number} row_count
+ * @property {number} column_count
+ * @property {string[]} columns
+ * @property {{success: boolean, messages: string[]}} status
+ */
+
+/**
+ * @typedef {object} PreviewResponse
+ * @property {ProposalResponse} proposal
+ * @property {string[]} warnings
+ */
+
+/**
+ * @typedef {object} ExportModelResponse
+ * @property {string} status
+ * @property {string} [message]
+ * @property {string} [artifact_id]
  */
 
 export const API_STATE = {
@@ -247,13 +384,32 @@ export function apiObjectToViewModel(obj) {
 export function createApiClient(baseUrl) {
   const root = baseUrl.replace(/\/$/, "");
 
-  async function fetchJson(url) {
-    const response = await fetch(url);
+  async function fetchJson(url, options) {
+    const response = options !== undefined ? await fetch(url, options) : await fetch(url);
     if (!response.ok) {
       const text = await response.text().catch(() => "Unknown error");
       throw new Error(`${response.status}: ${text}`);
     }
     return response.json();
+  }
+
+  async function postJson(url, body) {
+    return fetchJson(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
+  async function postMultipart(url, file, extra) {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (extra) {
+      Object.entries(extra).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) formData.append(key, String(value));
+      });
+    }
+    return fetchJson(url, { method: "POST", body: formData });
   }
 
   return {
@@ -282,6 +438,21 @@ export function createApiClient(baseUrl) {
       return fetchJson(`${root}/trace/${encodeURIComponent(id)}?${params.toString()}`);
     },
     impact: (id) => fetchJson(`${root}/impact/${encodeURIComponent(id)}`),
+    proposals: () => fetchJson(`${root}/proposals`),
+    proposal: (id) => fetchJson(`${root}/proposals/${encodeURIComponent(id)}`),
+    reviewProposal: (id, body) => postJson(`${root}/proposals/${encodeURIComponent(id)}/review`, body),
+    validateProposal: (id) => postJson(`${root}/proposals/${encodeURIComponent(id)}/validate`, {}),
+    dryRunProposal: (id) => postJson(`${root}/proposals/${encodeURIComponent(id)}/dry-run`, {}),
+    applyProposal: (id) => postJson(`${root}/proposals/${encodeURIComponent(id)}/apply`, {}),
+    changeRequests: () => fetchJson(`${root}/change-requests`),
+    createChangeRequest: (data) => postJson(`${root}/change-requests`, data),
+    reviewFinding: (body) => postJson(`${root}/api/v1/findings/review`, body),
+    importProfile: (file, dataset_id) => postMultipart(`${root}/api/v1/imports/profile`, file, { dataset_id }),
+    importPreview: (file) => postMultipart(`${root}/api/v1/imports/preview`, file),
+    exportModel: (format, business_review = false) => postJson(
+      `${root}/api/v1/exports?format=${encodeURIComponent(format)}&business_review=${encodeURIComponent(business_review)}`,
+      {}
+    ),
   };
 }
 
@@ -602,6 +773,328 @@ export function useAssessmentFindings() {
   return { findings, assessmentId, loading, error, demo };
 }
 
+/**
+ * Map a backend proposal status to the workbench UI label.
+ *
+ * @param {string} status
+ * @returns {string}
+ */
+function proposalStatusLabel(status) {
+  switch (status) {
+    case "pending_review":
+      return "In review";
+    case "accepted":
+      return "Approved";
+    case "rejected":
+      return "Changes requested";
+    default:
+      return status;
+  }
+}
+
+/**
+ * Capitalize the first letter of a value.
+ *
+ * @param {string} [value]
+ * @returns {string}
+ */
+function capitalize(value) {
+  if (!value) return "";
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+/**
+ * Map a backend proposal response to the workbench view model shape.
+ *
+ * @param {ProposalResponse} data
+ * @returns {ProposalViewModel}
+ */
+function mapProposalToViewModel(data) {
+  return {
+    proposalId: String(data.id),
+    id: String(data.id),
+    title: data.title || data.name || "",
+    summary: data.title || data.name || "",
+    status: proposalStatusLabel(data.status),
+    risk: capitalize(data.risk_level),
+    author: data.created_by || "Martenweave AI",
+    updated: "Live",
+    changes: data.operations_count ?? (data.operations ? data.operations.length : 0),
+    impactObjects: data.affected_objects_count ?? (data.affected_objects ? data.affected_objects.length : 0),
+    validationStatus: capitalize(data.validation_status),
+    operations: data.operations,
+    riskAssessment: data.risk_assessment,
+    affected_objects: data.affected_objects,
+    source_evidence: data.source_evidence,
+    validation_status: data.validation_status,
+    validation_results: data.validation_results,
+  };
+}
+
+/**
+ * Find a demo proposal by id, supporting both numeric and string ids.
+ *
+ * @param {string|number|null} id
+ * @returns {import("./data.js").ProposalViewModel|undefined}
+ */
+function findDemoProposal(id) {
+  if (id === null || id === undefined) return undefined;
+  return demoProposals.find((item) => String(item.id) === String(id));
+}
+
+/**
+ * List proposals through the live API, falling back to demo fixtures.
+ *
+ * @returns {{ proposals: ProposalViewModel[], loading: boolean, error: string|null, demo: boolean }}
+ */
+export function useProposals() {
+  const { client, demo } = useApi();
+  const [proposals, setProposals] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (demo || !client) {
+      setProposals(demoProposals);
+      setLoading(false);
+      setError(null);
+      return undefined;
+    }
+    let cancelled = false;
+    setLoading(true);
+    client.proposals()
+      .then((response) => {
+        if (cancelled) return;
+        const list = Array.isArray(response) ? response : response.proposals || [];
+        setProposals(list.map(mapProposalToViewModel));
+        setError(null);
+      })
+      .catch((reason) => {
+        if (!cancelled) {
+          setError(reason instanceof Error ? reason.message : String(reason));
+          setProposals([]);
+        }
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [client, demo]);
+
+  return { proposals, loading, error, demo };
+}
+
+/**
+ * Fetch a single proposal through the live API, falling back to demo fixtures.
+ *
+ * @param {string|number|null} proposalId
+ * @returns {{ proposal: ProposalViewModel|null, loading: boolean, error: string|null, demo: boolean }}
+ */
+export function useProposalDetail(proposalId) {
+  const { client, demo } = useApi();
+  const [proposal, setProposal] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!proposalId) {
+      setProposal(null);
+      setLoading(false);
+      setError(null);
+      return undefined;
+    }
+
+    if (demo || !client) {
+      const found = findDemoProposal(proposalId);
+      setProposal(found || null);
+      setLoading(false);
+      setError(null);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    client.proposal(String(proposalId))
+      .then((response) => {
+        if (cancelled) return;
+        setProposal(mapProposalToViewModel(response));
+        setError(null);
+      })
+      .catch((reason) => {
+        if (!cancelled) {
+          setError(reason instanceof Error ? reason.message : String(reason));
+          setProposal(null);
+        }
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [proposalId, demo, client]);
+
+  return { proposal, loading, error, demo };
+}
+
+/**
+ * Mutation hook for reviewing a proposal.
+ *
+ * @returns {{ reviewProposal: (id: string, body: {status: string, reviewer?: string, reviewer_notes?: string, rejection_reason?: string}) => Promise<any>, loading: boolean, error: string|null }}
+ */
+export function useProposalReview() {
+  const { client } = useApi();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const reviewProposal = useCallback(async (id, body) => {
+    if (!client) throw new Error("API client is not available");
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await client.reviewProposal(id, body);
+      return result;
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : String(reason);
+      setError(message);
+      throw reason;
+    } finally {
+      setLoading(false);
+    }
+  }, [client]);
+
+  return { reviewProposal, loading, error };
+}
+
+/**
+ * @param {(client: ApiClient, id: string) => Promise<any>} runFn
+ * @returns {{ run: (id: string) => Promise<any>, loading: boolean, error: string|null, result: any }}
+ */
+function useProposalMutation(runFn) {
+  const { client } = useApi();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [result, setResult] = useState(null);
+
+  const run = useCallback(async (id) => {
+    if (!client) throw new Error("API client is not available");
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const data = await runFn(client, id);
+      setResult(data);
+      return data;
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : String(reason);
+      setError(message);
+      throw reason;
+    } finally {
+      setLoading(false);
+    }
+  }, [client, runFn]);
+
+  return { run, loading, error, result };
+}
+
+/**
+ * Mutation hook for validating a proposal.
+ *
+ * @returns {{ run: (id: string) => Promise<any>, loading: boolean, error: string|null, result: any }}
+ */
+export function useProposalValidate() {
+  return useProposalMutation((client, id) => client.validateProposal(id));
+}
+
+/**
+ * Mutation hook for dry-running a proposal.
+ *
+ * @returns {{ run: (id: string) => Promise<any>, loading: boolean, error: string|null, result: any }}
+ */
+export function useProposalDryRun() {
+  return useProposalMutation((client, id) => client.dryRunProposal(id));
+}
+
+/**
+ * Mutation hook for applying a proposal.
+ *
+ * @returns {{ run: (id: string) => Promise<any>, loading: boolean, error: string|null, result: any }}
+ */
+export function useProposalApply() {
+  return useProposalMutation((client, id) => client.applyProposal(id));
+}
+
+/**
+ * Mutation hook for reviewing an assessment finding.
+ *
+ * @returns {{ reviewFinding: (body: FindingReviewRequest) => Promise<any>, loading: boolean, error: string|null }}
+ */
+export function useFindingReview() {
+  const { client } = useApi();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const reviewFinding = useCallback(async (body) => {
+    if (!client) throw new Error("API client is not available");
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await client.reviewFinding(body);
+      return result;
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : String(reason);
+      setError(message);
+      throw reason;
+    } finally {
+      setLoading(false);
+    }
+  }, [client]);
+
+  return { reviewFinding, loading, error };
+}
+
+/**
+ * @param {(client: ApiClient, file: File, extra?: any) => Promise<any>} runFn
+ * @returns {{ run: (file: File, extra?: any) => Promise<any>, loading: boolean, error: string|null, result: any }}
+ */
+function useImportMutation(runFn) {
+  const { client } = useApi();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [result, setResult] = useState(null);
+
+  const run = useCallback(async (file, extra) => {
+    if (!client) throw new Error("API client is not available");
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const data = await runFn(client, file, extra);
+      setResult(data);
+      return data;
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : String(reason);
+      setError(message);
+      throw reason;
+    } finally {
+      setLoading(false);
+    }
+  }, [client, runFn]);
+
+  return { run, loading, error, result };
+}
+
+/**
+ * Mutation hook for profiling a dataset file.
+ *
+ * @returns {{ run: (file: File, dataset_id?: string) => Promise<ProfileResponse>, loading: boolean, error: string|null, result: ProfileResponse|null }}
+ */
+export function useImportProfile() {
+  return useImportMutation((client, file, dataset_id) => client.importProfile(file, dataset_id));
+}
+
+/**
+ * Mutation hook for previewing a canonical/import file.
+ *
+ * @returns {{ run: (file: File) => Promise<PreviewResponse>, loading: boolean, error: string|null, result: PreviewResponse|null }}
+ */
+export function useImportPreview() {
+  return useImportMutation((client, file) => client.importPreview(file));
+}
 
 /**
  * Map a canonical object type to a lineage layer tone.

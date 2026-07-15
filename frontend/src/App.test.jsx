@@ -107,7 +107,7 @@ describe("Martenweave workbench", () => {
 
     await waitFor(() => expect(screen.getByText("FINDING-TEST")).toBeInTheDocument());
     expect(screen.getByText("Customer Group is missing a target mapping.")).toBeInTheDocument();
-    expect(screen.getByText("confirmed")).toBeInTheDocument();
+    expect(screen.getAllByText("confirmed").length).toBeGreaterThan(0);
     expect(screen.queryByText("Missing mapping for TAX_NUMBER")).not.toBeInTheDocument();
   });
 
