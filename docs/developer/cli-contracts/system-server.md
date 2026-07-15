@@ -25,6 +25,17 @@ Stable fields: `has_changes`, `base_count`, `head_count`, `added`, `removed`, `c
 
 These commands start long-running servers. Their primary contract is the HTTP/MCP protocol, not CLI JSON output.
 
+### `assessment compare`
+
+```bash
+modelops assessment compare <base-manifest.json> <head-manifest.json> --out <directory> [--json]
+```
+
+Writes `assessment-comparison.json` and `assessment-comparison.md`. Lifecycle classification is based
+only on stable typed finding IDs: `new`, `unchanged`, `resolved`, `reopened`, or `severity_changed`.
+Each change retains prior/current provenance links; malformed, incompatible, or untyped manifests fail
+instead of guessing a resolution.
+
 ### Versioned API contract (`/api/v1`)
 
 `modelops serve` exposes a stable `v1` namespace alongside the existing unversioned endpoints.

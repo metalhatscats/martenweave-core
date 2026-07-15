@@ -340,6 +340,7 @@ See [`frontend/README.md`](frontend/README.md) for development build instruction
 
 ```bash
 .venv/bin/martenweave assessment run --repo examples/customer_bp_model --out generated/assessment/customer-bp
+.venv/bin/martenweave assessment compare generated/assessment/run-a/manifest.json generated/assessment/run-b/manifest.json --out generated/assessment/comparison
 ```
 
 ## Example Models

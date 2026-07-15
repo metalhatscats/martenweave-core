@@ -32,6 +32,11 @@ from modelops_core.assessment.assessment_service import (
     generate_review_pack,
     generate_risk_report,
 )
+from modelops_core.assessment.comparison import (
+    AssessmentComparisonError,
+    compare_assessments,
+    write_assessment_comparison,
+)
 from modelops_core.bundle import create_git_bundle
 from modelops_core.change_request import (
     approve_change_request,
@@ -7311,6 +7316,44 @@ def assessment_run(
     console.print("\n[bold]Artifacts generated[/bold]")
     for a in package.artifacts:
         console.print(f"  {a.path.name} — {a.description}")
+
+
+@assessment_app.command("compare")
+def assessment_compare(
+    base_manifest: Path = typer.Argument(  # noqa: B008
+        ..., help="Earlier assessment manifest.json."
+    ),
+    head_manifest: Path = typer.Argument(  # noqa: B008
+        ..., help="Later assessment manifest.json."
+    ),
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Directory for Markdown and JSON comparison reports."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Print the comparison JSON to stdout."),
+) -> None:
+    """Compare two assessment runs using stable finding IDs and input fingerprints."""
+    try:
+        report = compare_assessments(base_manifest, head_manifest)
+        json_path, markdown_path = write_assessment_comparison(report, out)
+    except AssessmentComparisonError as exc:
+        if json_output:
+            print(json.dumps({"error": str(exc)}))
+        else:
+            console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    payload = report.to_dict()
+    payload["artifacts"] = {"json": str(json_path), "markdown": str(markdown_path)}
+    if json_output:
+        print(json.dumps(payload, indent=2))
+        return
+    counts = payload["counts"]
+    console.print(
+        f"[bold]Assessment comparison: {report.base_run_id} → {report.head_run_id}[/bold]"
+    )
+    console.print("  " + ", ".join(f"{kind}: {count}" for kind, count in sorted(counts.items())))
+    console.print(f"  JSON: {json_path}")
+    console.print(f"  Markdown: {markdown_path}")
 
 
 @assessment_app.command("sanitize")

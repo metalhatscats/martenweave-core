@@ -640,6 +640,7 @@ def generate_migration_assessment(
         "mapping": str(mapping_path),
         "dataset": str(dataset_path) if dataset_path else None,
         "evidence": [str(p) for p in evidence_paths],
+        "enabled_domain_packs": config.enabled_domain_packs if config else [],
     }
     input_fingerprint, input_checksums = _assessment_inputs_fingerprint(
         repo_root,

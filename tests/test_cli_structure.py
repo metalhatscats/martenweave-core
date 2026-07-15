@@ -136,7 +136,7 @@ EXPECTED_GROUPS = {
         "report",
         "review-bundle",
     },
-    "assessment": {"run", "sanitize"},
+    "assessment": {"compare", "run", "sanitize"},
     "diagnostics": {"export"},
     "review-pack": {"create"},
     "demo-bundle": {"build"},
