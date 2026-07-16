@@ -366,7 +366,8 @@ class TestMigrateCliJson:
         )
         obj.write_text(original, encoding="utf-8")
         monkeypatch.setattr(
-            "modelops_core.commands.migrate_audit._build_index", lambda **_: (_ for _ in ()).throw(OSError("boom"))
+            "modelops_core.commands.migrate_audit._build_index",
+            lambda **_: (_ for _ in ()).throw(OSError("boom")),
         )
 
         result = runner.invoke(app, ["migrate", "--repo", str(repo), "--apply", "--json"])
