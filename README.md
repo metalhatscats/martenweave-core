@@ -13,7 +13,7 @@ analysis, and human-approved AI patch proposals. The model registry is the sourc
 inside this pipeline, not the whole product category.
 
 SAP migration and Master Data Management are the **first domain pack** and proof case, not the
-product boundary. The source-available core also works with generic data models: domains, entities,
+product boundary. The open-source core also works with generic data models: domains, entities,
 attributes, relationships, datasets, mappings, rules, evidence, decisions, and change proposals.
 
 **Martenweave Core** is the CLI-driven, backend-first library that owns the canonical model layer.
@@ -37,11 +37,11 @@ For Workbench setup and development notes, see [`frontend/README.md`](frontend/R
 ## Naming
 
 - Product: **Martenweave**
-- Source-available core / PyPI package: `martenweave-core`
+- Open-source core / PyPI package: `martenweave-core`
 - Python module: `modelops_core`
 - CLI commands: `modelops` and `martenweave`
 
-`martenweave-core` is the backend-first source-available core package for the Martenweave product. Use
+`martenweave-core` is the backend-first open-source core package for the Martenweave product. Use
 `martenweave` for new terminal examples and documentation. The existing `modelops` command remains
 supported for backward compatibility with scripts, CI jobs, and early adopters.
 
@@ -103,7 +103,7 @@ Martenweave Core requires Python 3.11+.
 ### Install from PyPI
 
 PyPI currently serves `0.5.0`. These commands install that published version, not the current
-source-available development line. Consult the published package metadata before relying on it for
+open-source development line. Consult the published package metadata before relying on it for
 licensing or current capabilities:
 
 ```bash

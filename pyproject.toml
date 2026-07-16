@@ -16,7 +16,7 @@ keywords = [
   "model-governance-pipeline",
   "model-registry",
   "data-model-registry",
-  "source-available-model-registry",
+  "open-source-model-registry",
   "lineage",
   "impact-analysis",
   "dataset-validation",
@@ -38,7 +38,7 @@ classifiers = [
 dependencies = [
   "pydantic>=2.6",
   "pyyaml>=6.0",
-  "typer>=0.12",
+  "typer>=0.25.1,<0.26",
   "rich>=13.0",
   "openpyxl>=3.1",
   "fastapi>=0.100",

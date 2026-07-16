@@ -35,7 +35,7 @@ Do claim, when verified:
 - source availability for inspection and time-limited evaluation
 
 Do not describe current repository source or future releases as open source. Their commercial-use
-restrictions make them source-available. Previously published MIT-licensed versions remain open
+restrictions make them open source. Previously published MIT-licensed versions remain open
 source under the terms shipped with those copies.
 
 ## Repository Hygiene

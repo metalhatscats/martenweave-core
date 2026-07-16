@@ -79,7 +79,7 @@
 
 | Concern | Current State | Planned |
 |---|---|---|
-| **Source code availability** | Source-available Python; inspect everything in `src/` | Remains inspectable |
+| **Source code availability** | Apache-2.0 open-source Python; inspect everything in `src/` | Remains inspectable |
 | **Vendor lock-in** | Canonical files are plain Markdown/YAML; migrate by copying files | No proprietary format planned |
 | **Exit cost** | Zero. Your data is in text files on your disk | Stays zero |
 | **Support model** | GitHub issues + optional pilot or commercial support | Team support tier planned |
