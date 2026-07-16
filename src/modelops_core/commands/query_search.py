@@ -10,9 +10,9 @@ from rich.table import Table
 
 from modelops_core.commands._common import (
     _check_and_warn_stale_index,
+    _resolve_repo,
     app,
     console,
-    _resolve_repo,
 )
 from modelops_core.config import resolve_generated_path, resolve_model_path
 from modelops_core.diff import diff_repositories

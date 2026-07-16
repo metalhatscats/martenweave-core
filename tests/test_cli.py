@@ -700,7 +700,7 @@ def test_cli_agent_loop_json_output(sample_repo: Path, monkeypatch) -> None:
         log=[],
     )
     monkeypatch.setattr(
-        "modelops_core.cli.run_agent_loop",
+        "modelops_core.commands.standalone.run_agent_loop",
         lambda **_: expected,
     )
 
@@ -742,7 +742,7 @@ def test_cli_agent_loop_human_output(sample_repo: Path, monkeypatch) -> None:
         log=[],
     )
     monkeypatch.setattr(
-        "modelops_core.cli.run_agent_loop",
+        "modelops_core.commands.standalone.run_agent_loop",
         lambda **_: expected,
     )
 
@@ -781,7 +781,7 @@ def test_cli_agent_loop_json_exit_code_on_failure(
         log=[],
     )
     monkeypatch.setattr(
-        "modelops_core.cli.run_agent_loop",
+        "modelops_core.commands.standalone.run_agent_loop",
         lambda **_: expected,
     )
 

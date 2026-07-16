@@ -10,23 +10,23 @@ import typer
 from rich.table import Table
 
 from modelops_core import __version__
-from modelops_core.agents import ReadinessAgent, ReadinessInput
+from modelops_core.assessment.assessment_service import (
+    generate_review_pack,
+    generate_risk_report,
+)
 from modelops_core.commands._common import (
-    app,
-    console,
     _check_and_warn_stale_index,
     _resolve_repo,
+    app,
+    console,
 )
+from modelops_core.commands.assessment import _run_readiness_cli
 from modelops_core.config import (
     load_repo_config,
     resolve_generated_path,
     resolve_model_path,
 )
 from modelops_core.errors import ResourceLimitExceeded
-from modelops_core.assessment.assessment_service import (
-    generate_review_pack,
-    generate_risk_report,
-)
 from modelops_core.reports.analysis_service import generate_analysis_report
 from modelops_core.reports.gap_summary import generate_gap_summary_report
 from modelops_core.reports.health_report import generate_repository_health
@@ -43,10 +43,6 @@ from modelops_core.reports.object_card_service import (
 from modelops_core.reports.ownership_report import generate_ownership_report
 from modelops_core.reports.scorecard_service import generate_scorecard
 from modelops_core.repository import parse_file, scan_repository
-from modelops_core.run import (
-    generate_dataset_readiness_report,
-    write_readiness_report,
-)
 from modelops_core.telemetry import with_telemetry
 from modelops_core.validation import validate_objects
 

@@ -229,7 +229,7 @@ def test_cli_import_drive_csv(tmp_path: Path) -> None:
     mock_meta.display_name = "test_data.csv"
     mock_meta.mime_type = "text/csv"
 
-    with patch("modelops_core.cli.GoogleDriveConnector") as mock_conn_cls:
+    with patch("modelops_core.commands.dataset.GoogleDriveConnector") as mock_conn_cls:
         mock_conn = MagicMock()
         mock_conn.fetch_metadata.return_value = mock_meta
         mock_conn.fetch_content.return_value = csv_content
@@ -301,7 +301,7 @@ def test_cli_import_drive_xlsx(tmp_path: Path) -> None:
         status=ProfilingStatus(success=True, sampled=False),
     )
 
-    with patch("modelops_core.cli.GoogleDriveConnector") as mock_conn_cls:
+    with patch("modelops_core.commands.dataset.GoogleDriveConnector") as mock_conn_cls:
         mock_conn = MagicMock()
         mock_conn.fetch_metadata.return_value = mock_meta
         mock_conn.fetch_content.return_value = xlsx_content
@@ -312,7 +312,7 @@ def test_cli_import_drive_xlsx(tmp_path: Path) -> None:
         )
         mock_conn_cls.return_value = mock_conn
 
-        with patch("modelops_core.cli.profile_xlsx", return_value=wb_profile):
+        with patch("modelops_core.commands.dataset.profile_xlsx", return_value=wb_profile):
             result = runner.invoke(
                 app,
                 ["import-drive", "drive_file_456", "--repo", str(tmp_path)],
@@ -337,7 +337,7 @@ def test_cli_import_drive_missing_dependency(tmp_path: Path) -> None:
     runner = CliRunner()
 
     with patch(
-        "modelops_core.cli.GoogleDriveConnector",
+        "modelops_core.commands.dataset.GoogleDriveConnector",
         side_effect=RuntimeError("google-api-python-client is required"),
     ):
         result = runner.invoke(

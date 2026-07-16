@@ -8,7 +8,7 @@ import typer
 from rich.table import Table
 
 from modelops_core.ai.agent_loop import run_agent_loop
-from modelops_core.commands._common import app, console, _resolve_repo
+from modelops_core.commands._common import _resolve_repo, app, console
 from modelops_core.config import resolve_model_path
 from modelops_core.patching.patch_proposal_service import write_patch_proposal
 from modelops_core.pilot import executive_summary as executive_summary_service

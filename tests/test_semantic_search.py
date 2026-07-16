@@ -517,7 +517,7 @@ def test_cli_search_semantic_keyword_only_ranks_last(tmp_path: Path) -> None:
             ),
         ]
 
-    with patch("modelops_core.cli.semantic_search_objects", side_effect=_fake_semantic_search):
+    with patch("modelops_core.commands.query_search.semantic_search_objects", side_effect=_fake_semantic_search):
         runner = CliRunner()
         result = runner.invoke(
             app,
@@ -664,7 +664,7 @@ def test_cli_search_semantic_unexpected_error_fallback(tmp_path: Path) -> None:
     def _raise_unexpected(*_args, **_kwargs):
         raise RuntimeError("semantic engine exploded")
 
-    with patch("modelops_core.cli.semantic_search_objects", side_effect=_raise_unexpected):
+    with patch("modelops_core.commands.query_search.semantic_search_objects", side_effect=_raise_unexpected):
         runner = CliRunner()
         result = runner.invoke(
             app,

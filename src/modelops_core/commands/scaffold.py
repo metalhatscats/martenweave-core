@@ -5,7 +5,7 @@ from pathlib import Path
 
 import typer
 
-from modelops_core.commands._common import app, console, _resolve_repo
+from modelops_core.commands._common import app, console
 from modelops_core.pilot.bootstrap import BootstrapAssessmentError, bootstrap_assessment
 
 

@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
 
 import typer
 from rich.table import Table
 
 from modelops_core.bundle import create_git_bundle
-from modelops_core.commands._common import app, console, _resolve_repo
+from modelops_core.commands._common import _resolve_repo, app, console
 from modelops_core.config import (
     load_resource_limits,
     resolve_generated_path,

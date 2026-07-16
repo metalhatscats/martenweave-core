@@ -11,7 +11,7 @@ from typing import Any
 import typer
 from rich.table import Table
 
-from modelops_core.commands._common import app, console
+from modelops_core.commands._common import console
 
 ai_provider_app = typer.Typer(
     help="Inspect and verify configured AI providers.",

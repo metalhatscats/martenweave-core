@@ -7,10 +7,10 @@ import typer
 
 from modelops_core import __version__
 from modelops_core.commands._common import (
-    app,
-    console,
     _print_validation_summary,
     _resolve_repo,
+    app,
+    console,
 )
 from modelops_core.config import (
     load_repo_config,

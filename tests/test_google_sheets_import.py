@@ -206,7 +206,7 @@ def test_cli_import_sheet_success(tmp_path: Path) -> None:
 
     runner = CliRunner()
 
-    with patch("modelops_core.cli.import_google_sheet_as_proposal") as mock_import:
+    with patch("modelops_core.commands.dataset.import_google_sheet_as_proposal") as mock_import:
         mock_import.return_value = {
             "id": "PP-IMPORT-TEST",
             "type": "PatchProposal",
@@ -246,7 +246,7 @@ def test_cli_import_sheet_missing_dependency(tmp_path: Path) -> None:
     runner = CliRunner()
 
     with patch(
-        "modelops_core.cli.import_google_sheet_as_proposal",
+        "modelops_core.commands.dataset.import_google_sheet_as_proposal",
         side_effect=RuntimeError("google-api-python-client is required"),
     ):
         result = runner.invoke(

@@ -1,28 +1,24 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import Any
 
 import typer
 from rich.table import Table
 
-from modelops_core import __version__
 from modelops_core.change_request import (
     approve_change_request,
     create_change_request,
-    find_approved_cr_for_proposal,
     list_change_requests,
     load_change_request,
     reject_change_request,
     update_change_request_status,
 )
-from modelops_core.commands._common import app, console, _resolve_repo
-from modelops_core.config import resolve_generated_path, resolve_model_path
+from modelops_core.commands._common import _resolve_repo, console
+from modelops_core.config import resolve_model_path
 from modelops_core.notifications import emit_notification_event, preview_notifications
 from modelops_core.reports.audit_service import AuditEventService, create_audit_event
 from modelops_core.telemetry import with_telemetry
-
 
 cr_app = typer.Typer(
     name="change-request",

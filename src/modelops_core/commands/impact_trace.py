@@ -8,11 +8,11 @@ import typer
 from rich.table import Table
 
 from modelops_core.commands._common import (
-    app,
-    console,
     _build_impact_grouping,
     _check_and_warn_stale_index,
     _resolve_repo,
+    app,
+    console,
 )
 from modelops_core.config import resolve_generated_path
 from modelops_core.impact.impact_service import generate_impact_report

@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
-from typing import Any
 
 import typer
 from rich.table import Table
@@ -17,14 +15,13 @@ from modelops_core.agents import (
 )
 from modelops_core.assessment.assessment_service import (
     generate_assessment_package,
-    generate_risk_report,
 )
 from modelops_core.assessment.comparison import (
     AssessmentComparisonError,
     compare_assessments,
     write_assessment_comparison,
 )
-from modelops_core.commands._common import app, console, _resolve_repo
+from modelops_core.commands._common import _resolve_repo, app, console
 from modelops_core.config import load_repo_config, resolve_generated_path, resolve_model_path
 from modelops_core.errors import ResourceLimitExceeded
 from modelops_core.index import build_index as _build_index
@@ -37,14 +34,7 @@ from modelops_core.issue_draft import (
 from modelops_core.pilot import demo_bundle as demo_bundle_service
 from modelops_core.pilot import review as assessment_review_service
 from modelops_core.pilot.sanitize import sanitize_assessment
-from modelops_core.repository import parse_file, scan_repository
-from modelops_core.run import (
-    generate_dataset_readiness_report,
-    write_readiness_report,
-)
 from modelops_core.telemetry import with_telemetry
-from modelops_core.validation import validate_objects
-
 
 evidence_app = typer.Typer(
     name="evidence",

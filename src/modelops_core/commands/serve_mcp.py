@@ -4,7 +4,7 @@ from pathlib import Path
 
 import typer
 
-from modelops_core.commands._common import app, console, _resolve_repo
+from modelops_core.commands._common import _resolve_repo, app, console
 from modelops_core.config import resolve_model_path
 
 

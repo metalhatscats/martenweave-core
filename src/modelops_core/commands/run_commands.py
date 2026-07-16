@@ -2,21 +2,19 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
 
 import typer
 
-from modelops_core.commands._common import app, console, _resolve_repo
+from modelops_core.commands._common import _resolve_repo, app, console
 from modelops_core.config import resolve_model_path
 from modelops_core.errors import ResourceLimitExceeded
+from modelops_core.pilot.preflight import run_preflight
 from modelops_core.run import (
     generate_dataset_readiness_report,
     generate_migration_assessment,
     write_readiness_report,
 )
-from modelops_core.pilot.preflight import run_preflight
 from modelops_core.telemetry import with_telemetry
-
 
 run_app = typer.Typer(
     name="run",

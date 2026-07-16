@@ -292,7 +292,7 @@ def test_cli_publish_pr_dry_run(tmp_path: Path) -> None:
 
     runner = CliRunner()
 
-    with patch("modelops_core.cli.publish_pr_from_bundle") as mock_publish:
+    with patch("modelops_core.commands.exchange.publish_pr_from_bundle") as mock_publish:
         mock_publish.return_value = {
             "dry_run": True,
             "title": "feat: test",

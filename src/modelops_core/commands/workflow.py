@@ -2,24 +2,21 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from pathlib import Path
 from typing import Any
 
 import typer
 from rich.table import Table
 
 from modelops_core import __version__
-from modelops_core.commands._common import app, console, _resolve_repo
+from modelops_core.commands._common import _resolve_repo, console
 from modelops_core.config import resolve_generated_path, resolve_model_path
 from modelops_core.notifications import (
-    emit_notification_event,
     filter_notification_events,
     preview_notifications,
     read_notification_events,
 )
 from modelops_core.reports.decisions_report import generate_decisions_report
 from modelops_core.telemetry import with_telemetry
-
 
 notifications_app = typer.Typer(
     name="notifications",

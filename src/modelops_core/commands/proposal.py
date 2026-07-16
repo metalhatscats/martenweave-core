@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -11,42 +10,32 @@ from rich.table import Table
 
 from modelops_core import __version__
 from modelops_core.approval import compute_proposal_risk
-from modelops_core.bundle import create_git_bundle
 from modelops_core.change_request import (
     approve_change_request,
     create_change_request,
+    find_approved_cr_for_proposal,
 )
 from modelops_core.commands._common import (
-    app,
-    console,
-    _check_and_warn_stale_index,
     _resolve_repo,
+    console,
 )
 from modelops_core.config import resolve_generated_path, resolve_model_path
-from modelops_core.errors import ResourceLimitExceeded
-from modelops_core.guardrails.config_guard import (
-    ConfigGuardMode,
-    has_blocking_issues,
-    run_all_checks,
-)
 from modelops_core.impact.proposal_impact_service import generate_proposal_impact_report
+from modelops_core.notifications import emit_notification_event, preview_notifications
 from modelops_core.patching.apply_service import (
     apply_patch_proposal,
     dry_run_patch_proposal,
 )
 from modelops_core.patching.patch_proposal_service import (
-    render_patch_proposal_markdown,
     transition_patch_proposal_status,
-    write_patch_proposal,
 )
 from modelops_core.patching.proposal_reviewer_summary import (
     generate_reviewer_summary,
     reviewer_summary_to_dict,
 )
-from modelops_core.repository import parse_file, scan_repository
 from modelops_core.reports.audit_service import AuditEventService, create_audit_event
+from modelops_core.repository import parse_file, scan_repository
 from modelops_core.telemetry import with_telemetry
-
 
 proposal_app = typer.Typer(
     name="proposal",
@@ -83,7 +72,6 @@ def proposal_list(
         raise typer.Exit()
 
     proposals = []
-    from datetime import UTC, datetime
 
     for f in files:
         parsed = parse_file(f)
@@ -1068,7 +1056,7 @@ def proposal_report(
     ),
 ) -> None:
     """Generate a consolidated proposal lifecycle report."""
-    from datetime import UTC, datetime, timedelta
+    from datetime import timedelta
 
     repo_root = _resolve_repo(repo)
     model_path = resolve_model_path(repo_root)
@@ -1290,7 +1278,6 @@ def proposal_review_bundle(
     json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
 ) -> None:
     """Run report + impact + validate for a single PatchProposal."""
-    from datetime import UTC, datetime
 
     repo_root = _resolve_repo(repo)
     model_path = resolve_model_path(repo_root)

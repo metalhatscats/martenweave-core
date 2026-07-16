@@ -9,10 +9,10 @@ import yaml
 from rich.table import Table
 
 from modelops_core.commands._common import (
-    app,
-    console,
     _check_and_warn_stale_index,
     _resolve_repo,
+    app,
+    console,
 )
 from modelops_core.config import (
     load_resource_limits,
