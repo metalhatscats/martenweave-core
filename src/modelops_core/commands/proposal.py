@@ -41,6 +41,8 @@ proposal_app = typer.Typer(
     name="proposal",
     help="Review and apply PatchProposals.",
 )
+
+
 @proposal_app.command("list")
 def proposal_list(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),

@@ -22,6 +22,8 @@ notifications_app = typer.Typer(
     name="notifications",
     help="Preview notification recipients for workflow actions.",
 )
+
+
 @notifications_app.command("preview")
 def notifications_preview(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
@@ -130,6 +132,8 @@ decisions_app = typer.Typer(
     name="decisions",
     help="Browse and inspect Decision objects.",
 )
+
+
 @decisions_app.command("list")
 def decisions_list(
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),

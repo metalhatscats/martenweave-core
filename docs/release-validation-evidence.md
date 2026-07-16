@@ -21,12 +21,12 @@ Environment:
 |---|---|---|
 | `.venv/bin/martenweave --version` | Passed | `martenweave-core 0.6.0` |
 | `.venv/bin/python -m ruff check src tests` | Passed | `All checks passed!` |
-| `.venv/bin/python -m ruff format --check .` | Passed | `294 files already formatted` |
-| `.venv/bin/python -m pytest` | Passed | `1796 passed, 3 skipped, 7 warnings in 92.93s` |
+| `.venv/bin/python -m ruff format --check .` | Passed | `308 files already formatted` |
+| `.venv/bin/python -m pytest` | Passed | `1796 passed, 3 skipped, 7 warnings in 103.41s` |
 | `bash scripts/smoke_test.sh` | Passed | `Smoke Test Complete — All JSON contracts stable` |
 | `bash scripts/release_smoke.sh` | Passed | `Release smoke checks passed` — all bundled examples validated, indexed, checked fresh, and exercised through search, query, trace, impact, gaps, gap report, proposal dry-run, docs-build, config guard release mode, and frontend tests |
 | `.venv/bin/martenweave config-guard --repo . --mode release --json` | Passed | Reported ignored local `.env` and generated frontend findings with `file_status: "ignored"` and exited 0 |
-| `.venv/bin/python scripts/validate_doc_commands.py` | Passed | `All documented modelops commands are fresh.` |
+| `.venv/bin/python scripts/validate_doc_commands.py` | Passed | All documented CLI invocations are current. |
 | `.venv/bin/python -m build` | Passed | Produced `martenweave_core-0.6.0.tar.gz` and `martenweave_core-0.6.0-py3-none-any.whl`; wheel METADATA reports `Version: 0.6.0` |
 
 ### Frontend Validation
@@ -66,7 +66,7 @@ Environment:
 
 The core is release-clean for source/GitHub and PyPI handoff: validation, smoke tests, frontend tests, e2e tests, package build, config-guard release mode, website validation, and documentation command validation have completed.
 
-The only remaining open issue is [#416](https://github.com/metalhatscats/martenweave-core/issues/416), a maintainability refactor to split the CLI monolith into a `commands/` package. It is not a functional release blocker and is tracked for a future release.
+The CLI maintainability follow-up has since been completed in [#543](https://github.com/metalhatscats/martenweave-core/pull/543): command registration now lives in the `commands/` package rather than the former monolithic CLI module. The release evidence above remains historical evidence for the 0.6.0 validation run; repeat the listed commands before a new tag.
 
 ---
 

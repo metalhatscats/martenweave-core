@@ -237,7 +237,6 @@ def doctor(
         console.print("  [yellow]Validation skipped (no model path)[/yellow]")
 
 
-
 @app.command()
 @with_telemetry("scorecard")
 def scorecard(

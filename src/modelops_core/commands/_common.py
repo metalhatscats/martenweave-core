@@ -91,8 +91,7 @@ def _build_impact_grouping(report: Any, group_by: str) -> dict[str, Any]:
     if group_by == "type":
         return {
             obj_type: [
-                {"object_id": o.object_id, "direction": o.direction, "depth": o.depth}
-                for o in objs
+                {"object_id": o.object_id, "direction": o.direction, "depth": o.depth} for o in objs
             ]
             for obj_type, objs in report.grouped_by_type.items()
         }

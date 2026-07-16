@@ -175,7 +175,7 @@ This catalog defines the end-to-end user scenarios Martenweave supports across t
 | **Generated artifacts** | Diff report, audit log query results, changelog. |
 | **Safety boundary** | Read-only; `migrate` creates proposals when schema changes are needed. |
 | **Success metric** | User can list changed objects, trace each change to an audit event, and identify schema-version drift. |
-| **Status** | **partial** — CLI diff, audit-log, and migrate exist; Workbench Changelog screen currently shows static release notes. |
+| **Status** | **implemented** — CLI diff, audit-log, and migrate are available; the Workbench Changelog keeps product release notes separate from append-only local repository activity. |
 
 ### S12 — Produce a sanitized pilot outcome/demo bundle
 
@@ -260,7 +260,7 @@ These five cover repository load → search → trace → governance → dataset
 | `gaps` | S03, S06, S07 | Static demo; should load live findings and support disposition. |
 | `proposals` / `proposal` | S07, S08 | Static demo; proposal approval is local state only. |
 | `reports` | S09, S12 | Static demo; exports generate client-side placeholders. |
-| `changelog` | S11 | Static release notes; should surface audit/change history. |
+| `changelog` | S11 | Product release notes plus append-only local repository activity when connected to the local API. |
 | `settings` | S01 | Local-only toggles; repository paths are hard-coded demo values. |
 
 ---

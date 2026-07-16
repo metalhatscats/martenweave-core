@@ -280,8 +280,6 @@ def assessment_review_promote(
     console.print(f"  {proposal_path}")
 
 
-
-
 # ---------------------------------------------------------------------------
 # Demo bundle subcommands
 

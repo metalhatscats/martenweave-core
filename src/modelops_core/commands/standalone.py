@@ -246,8 +246,6 @@ def agent_loop(
         raise typer.Exit(code=1)
 
 
-
-
 @app.command("executive-summary")
 def executive_summary(
     assessment: Path = typer.Option(  # noqa: B008

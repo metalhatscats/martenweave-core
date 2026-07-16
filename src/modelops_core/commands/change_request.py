@@ -24,6 +24,8 @@ cr_app = typer.Typer(
     name="change-request",
     help="Create and manage ChangeRequests.",
 )
+
+
 @cr_app.command("create")
 @with_telemetry("cr-create")
 def cr_create(

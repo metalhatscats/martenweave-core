@@ -20,6 +20,8 @@ run_app = typer.Typer(
     name="run",
     help="Run end-to-end model governance workflows.",
 )
+
+
 @run_app.command("dataset-readiness")
 @with_telemetry("run_dataset_readiness")
 def dataset_readiness(
