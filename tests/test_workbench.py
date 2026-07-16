@@ -59,7 +59,7 @@ def test_workbench_spa_fallback(sample_repo: Path) -> None:
 
 
 def test_workbench_cli_help() -> None:
-    """The workbench command is registered and renders help without environment-specific Rich output."""
+    """The workbench command is registered without relying on Rich's rendered option table."""
     result = runner.invoke(cli_app, ["workbench", "--help"])
     assert result.exit_code == 0
     assert "Launch the local Martenweave Workbench" in result.output
