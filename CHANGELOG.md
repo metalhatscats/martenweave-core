@@ -4,10 +4,12 @@ All notable changes to Martenweave Core.
 
 ## [Unreleased]
 
+## [0.6.1] — 2026-07-17
+
 ### Fixed
 
-- **Release-quality checks**: restored Ruff formatting for the split CLI command modules and
-  corrected published-package and Workbench activity documentation.
+- **Release-quality checks**: restored Ruff formatting for the split CLI command modules,
+  corrected published-package guidance, and aligned the Workbench activity documentation.
 
 ## [0.6.0] — 2026-07-15
 

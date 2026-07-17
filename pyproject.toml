@@ -1,6 +1,6 @@
 [project]
 name = "martenweave-core"
-version = "0.6.0"
+version = "0.6.1"
 description = "Open-source model governance and evidence layer for SAP migration, MDM, data governance, and AMS."
 readme = "README.md"
 requires-python = ">=3.11"

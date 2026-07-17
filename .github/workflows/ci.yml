@@ -21,6 +21,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
       - name: Cache pip dependencies
         uses: actions/cache@v4
         with:
@@ -70,6 +77,11 @@ jobs:
 
       - name: Release smoke checks
         run: bash scripts/release_smoke.sh
+
+      - name: Build packaged Workbench assets
+        run: |
+          npm --prefix frontend ci
+          bash scripts/build_workbench_assets.sh
 
       - name: Docs command-snippet freshness
         run: python scripts/validate_doc_commands.py

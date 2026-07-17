@@ -62,7 +62,7 @@ reporting in the Local API.
 ├── .env.example                # Environment variables example
 ├── src/modelops_core/          # Main Python package
 │   ├── __init__.py             # Exports __version__
-│   ├── __version__.py          # "0.5.0"
+│   ├── __version__.py          # "0.6.1"
 │   ├── cli.py                  # Typer CLI entry point (all commands)
 │   ├── config.py               # RepoConfig, Settings, path resolution
 │   ├── errors.py               # Custom exceptions

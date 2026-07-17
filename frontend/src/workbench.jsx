@@ -1000,7 +1000,7 @@ export function ChangelogScreen({ navigate, refreshKey = 0 }) {
   const releases = [
     {
       date: "July 14, 2026",
-      label: "0.5.0",
+      label: "0.6.0",
       title: "Model Ledger workbench",
       summary:
         "A backend-first model registry now has a focused local workbench for investigating canonical knowledge and governing changes.",
