@@ -223,3 +223,109 @@ def test_lfm1_requires_vendor_purchasing_org() -> None:
     )
     summary = validate_objects([ctx, fep], enabled_domain_packs=["sap"])
     assert summary.is_valid
+
+
+def test_mara_requires_material_general() -> None:
+    ctx = ParsedObject(
+        source_path="ctx.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "CTX-MATERIAL-GENERAL",
+            "type": "EntityContext",
+            "status": "draft",
+            "context_category": "material_general",
+        },
+        body=None,
+        parser_error=None,
+    )
+    fep = ParsedObject(
+        source_path="fep.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "FEP-S4-MARA-MTART",
+            "type": "FieldEndpoint",
+            "status": "draft",
+            "endpoint_type": "sap_table_field",
+            "sap_table": "MARA",
+            "entity_context": "CTX-MATERIAL-GENERAL",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([ctx, fep], enabled_domain_packs=["sap"])
+    assert summary.is_valid
+
+
+def test_mara_wrong_context_category() -> None:
+    ctx = ParsedObject(
+        source_path="ctx.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "CTX-WRONG",
+            "type": "EntityContext",
+            "status": "draft",
+            "context_category": "material_plant",  # Wrong for MARA
+        },
+        body=None,
+        parser_error=None,
+    )
+    fep = ParsedObject(
+        source_path="fep.md",
+        content_hash="abc",
+        frontmatter={
+            "id": "FEP-S4-MARA-MTART",
+            "type": "FieldEndpoint",
+            "status": "draft",
+            "endpoint_type": "sap_table_field",
+            "sap_table": "MARA",
+            "entity_context": "CTX-WRONG",
+        },
+        body=None,
+        parser_error=None,
+    )
+    summary = validate_objects([ctx, fep], enabled_domain_packs=["sap"])
+    assert not summary.is_valid
+    assert any(r.code == "SAP_CONTEXT_MARA_REQUIRES_MATERIAL_GENERAL" for r in summary.results)
+
+
+def test_extended_table_rules_accept_matching_contexts() -> None:
+    cases = [
+        ("MARC", "material_plant"),
+        ("VBAK", "sales_order_header"),
+        ("VBAP", "sales_order_item"),
+        ("EKKO", "purchase_order_header"),
+        ("EKPO", "purchase_order_item"),
+        ("LIKP", "delivery_header"),
+        ("LIPS", "delivery_item"),
+        ("BKPF", "accounting_document_header"),
+        ("BSEG", "accounting_document_item"),
+    ]
+    for sap_table, context_category in cases:
+        ctx = ParsedObject(
+            source_path="ctx.md",
+            content_hash="abc",
+            frontmatter={
+                "id": f"CTX-{context_category.upper().replace('_', '-')}",
+                "type": "EntityContext",
+                "status": "draft",
+                "context_category": context_category,
+            },
+            body=None,
+            parser_error=None,
+        )
+        fep = ParsedObject(
+            source_path="fep.md",
+            content_hash="abc",
+            frontmatter={
+                "id": f"FEP-S4-{sap_table}-FIELD",
+                "type": "FieldEndpoint",
+                "status": "draft",
+                "endpoint_type": "sap_table_field",
+                "sap_table": sap_table,
+                "entity_context": ctx.frontmatter["id"],
+            },
+            body=None,
+            parser_error=None,
+        )
+        summary = validate_objects([ctx, fep], enabled_domain_packs=["sap"])
+        assert summary.is_valid, f"{sap_table} with {context_category} should be valid"

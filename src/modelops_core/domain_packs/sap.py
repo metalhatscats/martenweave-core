@@ -31,6 +31,26 @@ _SAP_CONTEXT_RULES: tuple[SAPContextRule, ...] = (
     SAPContextRule(
         "LFM1", "vendor_purchasing_org", "SAP_CONTEXT_LFM1_REQUIRES_VENDOR_PURCHASING_ORG"
     ),
+    SAPContextRule("MARA", "material_general", "SAP_CONTEXT_MARA_REQUIRES_MATERIAL_GENERAL"),
+    SAPContextRule("MARC", "material_plant", "SAP_CONTEXT_MARC_REQUIRES_MATERIAL_PLANT"),
+    SAPContextRule("VBAK", "sales_order_header", "SAP_CONTEXT_VBAK_REQUIRES_SALES_ORDER_HEADER"),
+    SAPContextRule("VBAP", "sales_order_item", "SAP_CONTEXT_VBAP_REQUIRES_SALES_ORDER_ITEM"),
+    SAPContextRule(
+        "EKKO", "purchase_order_header", "SAP_CONTEXT_EKKO_REQUIRES_PURCHASE_ORDER_HEADER"
+    ),
+    SAPContextRule("EKPO", "purchase_order_item", "SAP_CONTEXT_EKPO_REQUIRES_PURCHASE_ORDER_ITEM"),
+    SAPContextRule("LIKP", "delivery_header", "SAP_CONTEXT_LIKP_REQUIRES_DELIVERY_HEADER"),
+    SAPContextRule("LIPS", "delivery_item", "SAP_CONTEXT_LIPS_REQUIRES_DELIVERY_ITEM"),
+    SAPContextRule(
+        "BKPF",
+        "accounting_document_header",
+        "SAP_CONTEXT_BKPF_REQUIRES_ACCOUNTING_DOCUMENT_HEADER",
+    ),
+    SAPContextRule(
+        "BSEG",
+        "accounting_document_item",
+        "SAP_CONTEXT_BSEG_REQUIRES_ACCOUNTING_DOCUMENT_ITEM",
+    ),
 )
 
 
