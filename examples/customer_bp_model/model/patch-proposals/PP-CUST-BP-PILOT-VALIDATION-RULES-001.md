@@ -57,6 +57,13 @@ reviewer: product-owner
 reviewed_at: '2026-07-18T09:16:11Z'
 reviewer_notes: User-authorized pilot-reference improvement; reviewed deterministic
   validation, affected attributes, and country/cutover assumptions.
+application_status: applied
+applied_at: '2026-07-18T09:29:43Z'
+applied_by: system
+applied_changed_files:
+- /Users/dzmitryikharlanau/Developments/martenweave/examples/customer_bp_model/model/validations/VAL-BP-CUSTOMER-TAX-NUMBER-FORMAT.md
+- /Users/dzmitryikharlanau/Developments/martenweave/examples/customer_bp_model/model/validations/VAL-BP-CENTRAL-FOUNDATION-DATE-VALID.md
+applied_audit_event_id: audit-59238972300f
 ---
 
 # Customer BP pilot validation coverage
