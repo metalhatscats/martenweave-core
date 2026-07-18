@@ -412,8 +412,19 @@ export function mutationBlockReason(api) {
 
 const EXPECTED_API_VERSION = "v1";
 
-const DEFAULT_API_BASE_URL =
-  import.meta.env?.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+export function resolveDefaultApiBaseUrl({ configured, development, origin }) {
+  if (configured) return configured;
+  if (development) return "http://127.0.0.1:8000";
+  return origin || "http://127.0.0.1:8000";
+}
+
+export function defaultApiBaseUrl() {
+  return resolveDefaultApiBaseUrl({
+    configured: import.meta.env?.VITE_API_BASE_URL,
+    development: import.meta.env?.DEV,
+    origin: globalThis.location?.origin,
+  });
+}
 
 /**
  * Map a canonical object type to the short label used by the workbench UI.
@@ -618,7 +629,7 @@ export const ApiContext = createContext({
  *
  * @param {{ children: React.ReactNode, baseUrl?: string }} props
  */
-export function ApiProvider({ children, baseUrl = DEFAULT_API_BASE_URL }) {
+export function ApiProvider({ children, baseUrl = defaultApiBaseUrl() }) {
   const client = useMemo(() => createApiClient(baseUrl), [baseUrl]);
   const [value, setValue] = useState(() => ({
     state: API_STATE.UNKNOWN,

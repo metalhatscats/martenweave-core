@@ -8,6 +8,7 @@ import {
   apiObjectToViewModel,
   createApiClient,
   objectTypeToTone,
+  resolveDefaultApiBaseUrl,
   traceResponseToFlowEdges,
   traceResponseToFlowNodes,
   useApi,
@@ -107,6 +108,16 @@ function Probe() {
 }
 
 describe("createApiClient", () => {
+  it("uses the current origin for packaged Workbench builds", () => {
+    expect(
+      resolveDefaultApiBaseUrl({
+        configured: undefined,
+        development: false,
+        origin: "http://127.0.0.1:8765",
+      }),
+    ).toBe("http://127.0.0.1:8765");
+  });
+
   it("fetches capabilities", async () => {
     mockFetch({ api_version: "v1", version: "0.6.0", indexed: true });
     const client = createApiClient("http://localhost:8000");
