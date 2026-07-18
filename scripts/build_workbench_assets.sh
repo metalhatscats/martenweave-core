@@ -13,3 +13,6 @@ npm --prefix "$frontend_dir" run build
 rm -rf "$package_dir"
 mkdir -p "$package_dir"
 cp -R "$frontend_dir/dist/." "$package_dir/"
+# Design-QA reference screenshots are development artifacts; never ship them in
+# the packaged workbench assets (they bloat the wheel by several MB).
+rm -rf "$package_dir/qa"

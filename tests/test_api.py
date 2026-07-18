@@ -950,6 +950,8 @@ def test_api_objects_include_source_state(sample_repo: Path) -> None:
     for obj in data:
         if obj["type"] == "Evidence":
             assert obj["source_state"] == "evidence"
+        elif obj["type"] in ("PatchProposal", "ChangeRequest"):
+            assert obj["source_state"] == "proposal"
         else:
             assert obj["source_state"] == "canonical"
 

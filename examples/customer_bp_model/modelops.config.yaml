@@ -1,5 +1,5 @@
 schema_version: "1.0"
 workspace_name: Customer BP Example
-description: TODO placeholder for TASK-0010 example repository.
+description: Example repository modeling an SAP Business Partner to Customer migration slice (KNVV, KNB1, KNVP, BUT000) with governed patch proposals.
 enabled_domain_packs:
   - sap

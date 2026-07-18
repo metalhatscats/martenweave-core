@@ -77,7 +77,7 @@ All data lives in [`src/data.js`](src/data.js). It is hand-crafted demo data tha
 | Proposals | `#/proposals` | `App.jsx` |
 | Proposal review | `#/proposal` | `App.jsx` |
 
-Navigation is route-based via URL hash so the prototype works from a simple static file server.
+Navigation is route-based via URL hash so the Workbench also works from a simple static file server.
 
 ## Relationship to Martenweave Core
 
@@ -96,7 +96,7 @@ truth independently of the `model/` files.
 
 ## Known limitations
 
-- This build uses static demo data in `src/data.js`; the live API connection is implemented in later issues.
+- When the local API is unreachable, the UI falls back to a small bundled offline sample in `src/data.js`; connect `martenweave serve` or `martenweave workbench` for live canonical data.
 - No client-side persistence: refreshes reset the UI state.
 - No authentication or multi-tenant support.
 - No direct SAP connectivity or write-back.

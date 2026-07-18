@@ -65,8 +65,11 @@ def workbench(
         raise typer.Exit(code=1)
 
     # Prefer the in-tree frontend/dist during development; fall back to the
-    # packaged workbench_static directory shipped inside the wheel.
-    static_dir = Path("frontend/dist").resolve()
+    # packaged workbench_static directory shipped inside the wheel. Resolve the
+    # dev path against the repository root (derived from this file) so the
+    # command works from any current working directory.
+    repo_root_guess = Path(__file__).resolve().parents[3]
+    static_dir = repo_root_guess / "frontend" / "dist"
     if not static_dir.is_dir():
         static_dir = Path(str(importlib.resources.files("modelops_core") / "workbench_static"))
 
