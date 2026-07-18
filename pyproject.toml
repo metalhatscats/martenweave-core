@@ -60,6 +60,7 @@ dev = [
   "ruff>=0.4",
   "build>=1.0",
   "httpx>=0.24",
+  "requests>=2.31",
 ]
 google_adk = [
   "google-adk>=0.1.0",

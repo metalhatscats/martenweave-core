@@ -1,0 +1,19 @@
+# Local configuration and credentials
+.env
+.env.*
+*.pem
+*.key
+id_rsa
+id_ed25519
+
+# Disposable outputs
+generated/dataset_profiles/
+generated/assessment/
+generated/reports/
+generated/exports/
+
+# Local tooling
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.DS_Store
