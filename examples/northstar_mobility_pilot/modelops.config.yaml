@@ -1,0 +1,14 @@
+schema_version: "1.0"
+name: "Northstar Mobility Group — Synthetic Pilot"
+description: >
+  Fictional, fully synthetic multi-domain SAP S/4HANA transformation pilot for the
+  invented company "Northstar Mobility Group" (vehicle leasing and mobility services).
+  Every person, system, company name, identifier, and data row in this repository is
+  fictional; all email addresses use the reserved example.com domain. The pilot is used
+  to demonstrate validation, indexing, gap detection, ownership/readiness reporting,
+  and cross-domain impact analysis across seven connected domains.
+model_path: "model"
+generated_path: "generated"
+data_path: "data"
+enabled_domain_packs:
+  - sap
