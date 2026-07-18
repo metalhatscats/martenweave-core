@@ -69,7 +69,11 @@ for repo in \
     examples/simple_product_model \
     examples/customer_bp_model \
     examples/supplier_vendor_model \
-    examples/generic_product_model
+    examples/generic_product_model \
+    examples/sap_bp_customer_vendor_reference \
+    examples/synthetic_customer_migration_demo \
+    examples/synthetic_enterprise_portfolio_demo \
+    examples/northstar_mobility_pilot
 do
     repo_name="$(basename "${repo}")"
 
@@ -179,6 +183,9 @@ run_step "config-guard release mode"
 "${MODELOPS}" config-guard --repo . --mode release --json \
     >"${SMOKE_DIR}/config-guard-release.json"
 assert_jq "${SMOKE_DIR}/config-guard-release.json" 'type == "object"'
+
+run_step "northstar synthetic pilot reproduction"
+bash "${SCRIPT_DIR}/demo_northstar_pilot.sh"
 
 run_step "frontend tests"
 cd "${REPO_ROOT}/frontend"

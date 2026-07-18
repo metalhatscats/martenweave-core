@@ -48,32 +48,38 @@ jobs:
       - name: Format check
         run: ruff format --check src tests
 
-      - name: Build index for customer_bp_model example
-        run: modelops build-index --repo examples/customer_bp_model --jsonl
-
-      - name: Build index for supplier_vendor_model example
-        run: modelops build-index --repo examples/supplier_vendor_model --jsonl
-
-      - name: Build index for simple_product_model example
-        run: modelops build-index --repo examples/simple_product_model --jsonl
-
-      - name: Build index for generic_product_model example
-        run: modelops build-index --repo examples/generic_product_model --jsonl
+      - name: Build indexes for all bundled examples
+        run: |
+          for repo in \
+            examples/customer_bp_model \
+            examples/supplier_vendor_model \
+            examples/simple_product_model \
+            examples/generic_product_model \
+            examples/sap_bp_customer_vendor_reference \
+            examples/synthetic_customer_migration_demo \
+            examples/synthetic_enterprise_portfolio_demo \
+            examples/northstar_mobility_pilot; do
+            echo "== build-index ${repo}"
+            modelops build-index --repo "${repo}" --jsonl
+          done
 
       - name: Test with coverage
         run: python -m pytest --cov=modelops_core --cov-report=term-missing --cov-fail-under=70
 
-      - name: Validate customer_bp_model example
-        run: modelops validate --repo examples/customer_bp_model
-
-      - name: Validate supplier_vendor_model example
-        run: modelops validate --repo examples/supplier_vendor_model
-
-      - name: Validate simple_product_model example
-        run: modelops validate --repo examples/simple_product_model
-
-      - name: Validate generic_product_model example
-        run: modelops validate --repo examples/generic_product_model
+      - name: Validate all bundled examples
+        run: |
+          for repo in \
+            examples/customer_bp_model \
+            examples/supplier_vendor_model \
+            examples/simple_product_model \
+            examples/generic_product_model \
+            examples/sap_bp_customer_vendor_reference \
+            examples/synthetic_customer_migration_demo \
+            examples/synthetic_enterprise_portfolio_demo \
+            examples/northstar_mobility_pilot; do
+            echo "== validate ${repo}"
+            modelops validate --repo "${repo}"
+          done
 
       - name: Release smoke checks
         run: bash scripts/release_smoke.sh
