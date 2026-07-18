@@ -14,4 +14,3 @@ description: Customer tax numbers must satisfy the country-specific format agree
 ---
 
 # Customer Tax Number Format
-

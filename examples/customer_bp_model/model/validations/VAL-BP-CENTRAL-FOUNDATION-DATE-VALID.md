@@ -14,4 +14,3 @@ description: Foundation dates must be valid dates and cannot be later than the m
 ---
 
 # Foundation Date Validity
-
