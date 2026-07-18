@@ -1,0 +1,7 @@
+schema_version: "1.0"
+name: Synthetic Customer Migration Demo
+description: >
+  A fully synthetic, isolated customer-master migration demo spanning CRM,
+  commerce, accounts receivable, a controlled migration hub, and SAP S/4HANA.
+enabled_domain_packs:
+  - sap

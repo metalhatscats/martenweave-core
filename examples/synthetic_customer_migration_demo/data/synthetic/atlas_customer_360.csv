@@ -1,0 +1,4 @@
+source_customer_id,golden_name,normalized_customer_group,target_customer_group
+NIM-1001,Northstar Atelier GmbH,TIER_1,A17
+NIM-1002,Blue Harbor Foods AG,TIER_2,B02
+NIM-1003,Cedar Works BV,TIER_3,C11
