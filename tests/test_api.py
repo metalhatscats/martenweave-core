@@ -53,6 +53,33 @@ def test_bound_api_requires_token_for_mutation(temp_model_dir: Path) -> None:
         clear_workspace()
 
 
+def test_workspace_api_switches_between_independent_model_repositories(
+    sample_repo: Path, supplier_repo: Path
+) -> None:
+    """Workbench can deliberately switch the active repository without mixing models."""
+    configure_workspace(sample_repo, mutation_token="switch-token")
+    headers = {"X-Martenweave-Token": "switch-token"}
+    try:
+        opened = client.post(
+            "/api/v1/workspace/open", json={"path": str(supplier_repo)}, headers=headers
+        )
+        assert opened.status_code == 200
+        assert opened.json()["valid"] is True
+
+        supplier_objects = client.get("/objects")
+        assert supplier_objects.status_code == 200
+        assert any(item["id"] == "DOMAIN-SUPPLIER-VENDOR" for item in supplier_objects.json())
+        assert not any(item["id"] == "DOMAIN-CUSTOMER-BP" for item in supplier_objects.json())
+
+        switched_back = client.post(
+            "/api/v1/workspace/open", json={"path": str(sample_repo)}, headers=headers
+        )
+        assert switched_back.status_code == 200
+        assert any(item["id"] == "DOMAIN-CUSTOMER-BP" for item in client.get("/objects").json())
+    finally:
+        clear_workspace()
+
+
 def test_bound_api_rejects_external_and_symlinked_dataset(
     sample_repo: Path, tmp_path: Path
 ) -> None:

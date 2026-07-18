@@ -9,6 +9,10 @@ from modelops_core.fixtures.fixture_generator import (
     generate_fixture_repo,
 )
 from modelops_core.index import build_index
+from modelops_core.reports.audit_service import AuditEventService
+from modelops_core.reports.ownership_report import generate_ownership_report
+from modelops_core.repository import parse_file, scan_repository
+from modelops_core.validation import validate_objects
 
 
 def test_generate_small_fixture(tmp_path: Path) -> None:
@@ -81,3 +85,26 @@ def test_fixture_no_real_data(tmp_path: Path) -> None:
         assert "real customer" not in text.lower()
         assert "password" not in text.lower()
         assert "ssn" not in text.lower()
+
+
+def test_generate_enterprise_fixture_has_multiple_domains_owners_and_activity(
+    tmp_path: Path,
+) -> None:
+    """The Workbench demo profile is a valid, governed multi-domain portfolio."""
+    result = generate_fixture_repo(tmp_path, profile="enterprise")
+
+    assert result["counts"]["domain"] == 3
+    assert result["counts"]["attribute"] == 18
+    assert result["counts"]["audit_event"] == 3
+
+    validation = validate_objects(
+        [parse_file(path) for path in scan_repository(tmp_path / "model")]
+    )
+    assert validation.is_valid
+
+    db_path = tmp_path / "generated" / "modelops.db"
+    build_index(repo_root=tmp_path, db_path=db_path)
+    ownership = generate_ownership_report(db_path, tmp_path)
+    assert ownership.coverage_percent == 100.0
+    assert not ownership.orphaned_objects
+    assert len(AuditEventService(tmp_path).read_events()) == 3
