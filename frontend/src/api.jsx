@@ -497,6 +497,7 @@ export function apiObjectToViewModel(obj) {
     technicalSteward: obj.technical_owner || "—",
     lifecycle: obj.status || "Draft",
     lastValidated: "—",
+    domain: obj.domain || null,
     tags,
     health: obj.health || 0,
     systems,

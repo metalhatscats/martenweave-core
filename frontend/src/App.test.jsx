@@ -52,6 +52,40 @@ describe("Martenweave workbench", () => {
     expect(screen.getByRole("button", { name: /Export — This local workspace is read-only/ })).toBeDisabled();
   });
 
+  it("uses live canonical objects instead of the sample ledger when connected", async () => {
+    window.location.hash = "#/home";
+    vi.stubGlobal("fetch", vi.fn((url) => {
+      const address = String(url);
+      const payload = address.includes("/api/v1/search")
+        ? {
+          total_count: 1,
+          results: [{
+            object_id: "DOMAIN-NORTHSTAR",
+            object_type: "MasterDataDomain",
+            status: "active",
+            name: "Northstar Mobility Group",
+            title: null,
+            domain: "DOMAIN-NORTHSTAR",
+            description: "Fictional pilot domain",
+            source_file: "model/DOMAIN-NORTHSTAR.md",
+            score: 1,
+            matched_fields: ["name"],
+          }],
+        }
+        : address.includes("/api/v1/proposals")
+          ? { total_count: 0, proposals: [] }
+          : address.includes("/api/v1/findings")
+            ? { total_count: 0, findings: [] }
+            : { api_version: "v1", version: "0.6.1", indexed: true, canonical_files: 187, read_only: true };
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(payload), text: () => Promise.resolve("") });
+    }));
+    render(<App />);
+
+    await waitFor(() => expect(screen.getAllByText("Northstar Mobility Group").length).toBeGreaterThan(0));
+    expect(screen.getByText(/187 objects/)).toBeInTheDocument();
+    expect(screen.getByText("Ledger entries loaded")).toBeInTheDocument();
+  });
+
   it("loads generated report metadata from the local API", async () => {
     window.location.hash = "#/reports";
     vi.stubGlobal("fetch", vi.fn((url) => {

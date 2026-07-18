@@ -32,7 +32,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { fields, gaps, modelObjects, proposals, recentActivity } from "./data.js";
-import { useApi, hasCapability, mutationBlockReason, useHomeAssistant, useImportPreview, useImportProfile, useImportPropose, useImportValidate, useReportGenerate, useRepositoryDiff, useWorkspaceActivity } from "./api.jsx";
+import { useApi, hasCapability, mutationBlockReason, useAssessmentFindings, useHomeAssistant, useImportPreview, useImportProfile, useImportPropose, useImportValidate, useObjectSearch, useProposals, useReportGenerate, useRepositoryDiff, useWorkspaceActivity } from "./api.jsx";
 
 const LEDGER_ROWS = [
   {
@@ -365,6 +365,67 @@ function LedgerDetail({ row, tab, onTab, navigate }) {
   );
 }
 
+function LiveLedgerDetail({ row, navigate }) {
+  const Icon = TYPE_ICONS[row.type] || Database;
+  return (
+    <section className="ledger-detail" aria-label={`${row.name} details`}>
+      <header>
+        <span className={`ledger-type-icon tone-${row.tone}`}><Icon size={17} weight="duotone" /></span>
+        <span><strong>{row.id}</strong><small>{row.name}</small></span>
+        <button className="secondary-button" onClick={() => navigate("object", { id: row.id })}>
+          Open canonical object <ArrowRight size={14} />
+        </button>
+      </header>
+      <div className="ledger-detail-content">
+        <div>
+          <small>Canonical status</small>
+          <dl>
+            <dt>Type</dt><dd>{row.type}</dd>
+            <dt>Status</dt><dd>{row.validation}</dd>
+            <dt>Domain</dt><dd>{row.domain || "Not assigned"}</dd>
+            <dt>Source</dt><dd>{row.source}</dd>
+          </dl>
+        </div>
+        <div>
+          <small>Ownership</small>
+          <dl>
+            <dt>Business</dt><dd>{row.businessOwner || "Not assigned"}</dd>
+            <dt>Technical</dt><dd>{row.technicalSteward || "Not assigned"}</dd>
+            <dt>Coverage</dt><dd>{row.owner}</dd>
+          </dl>
+        </div>
+        <div>
+          <small>Evidence and relationships</small>
+          <p className="ledger-check"><CheckCircle size={14} /> Canonical definition<strong>Available</strong></p>
+          <p className="ledger-check"><Database size={14} /> Systems<strong>{row.systems.length}</strong></p>
+          <button onClick={() => navigate("lineage", { id: row.id })}>Trace lineage and impact</button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function liveLedgerRow(item) {
+  const owner = item.owners > 0 ? `${item.owners} assigned` : "Unassigned";
+  return {
+    id: item.id,
+    name: item.name,
+    type: item.label,
+    source: item.domain || "Canonical",
+    validation: item.status === "active" ? "Validated" : item.status || "Draft",
+    evidence: "—",
+    impact: "Review",
+    owner,
+    initials: item.owners > 0 ? "OK" : "—",
+    updated: "Live",
+    tone: ({ Domain: "blue", Entity: "cyan", Attribute: "violet", Mapping: "orange", Endpoint: "green" })[item.label] || "blue",
+    domain: item.domain,
+    businessOwner: item.businessOwner,
+    technicalSteward: item.technicalSteward,
+    systems: item.systems || [],
+  };
+}
+
 const SUGGESTED_QUESTIONS = [
   "Find Business Partner",
   "Show open high-risk gaps",
@@ -539,24 +600,42 @@ export function HomeAssistant({ navigate }) {
 }
 
 export function WorkspaceScreen({ navigate, onImport, onExport, onCommands, onShortcuts, refreshKey = 0 }) {
+  const { capabilities, demo } = useApi();
+  const { results: liveObjects, loading: liveObjectsLoading } = useObjectSearch("", "All", [], [], "Name");
+  const { proposals: liveProposals } = useProposals(refreshKey);
+  const { findings: liveFindings } = useAssessmentFindings();
   const [query, setQuery] = useState("");
   const [type, setType] = useState("All types");
   const [domain, setDomain] = useState("All domains");
   const [view, setView] = useState("rows");
-  const [selectedId, setSelectedId] = useState("ATTR-BP-TAX-NUMBER");
+  const [selectedId, setSelectedId] = useState("");
   const [detailTab, setDetailTab] = useState("Summary");
+  const sourceRows = demo ? LEDGER_ROWS : liveObjects.map(liveLedgerRow);
+  const findingCount = Array.isArray(liveFindings) ? liveFindings.length : 0;
+  const pendingProposalCount = Array.isArray(liveProposals)
+    ? liveProposals.filter((item) => item.status === "In review").length
+    : 0;
+  const domains = useMemo(
+    () => [...new Set(sourceRows.map((row) => row.domain || row.source).filter(Boolean))].sort(),
+    [sourceRows],
+  );
 
   const rows = useMemo(
     () =>
-      LEDGER_ROWS.filter((row) => {
+      sourceRows.filter((row) => {
         const matchesQuery = `${row.id} ${row.name} ${row.type} ${row.source}`
           .toLowerCase()
           .includes(query.toLowerCase());
-        return matchesQuery && (type === "All types" || row.type === type);
+        const matchesDomain = domain === "All domains" || row.domain === domain || row.source === domain;
+        return matchesQuery && matchesDomain && (type === "All types" || row.type === type);
       }),
-    [query, type],
+    [query, type, domain, sourceRows],
   );
-  const selected = LEDGER_ROWS.find((row) => row.id === selectedId) || LEDGER_ROWS[0];
+  const selected = sourceRows.find((row) => row.id === selectedId) || rows[0] || sourceRows[0];
+
+  useEffect(() => {
+    if (selected && selected.id !== selectedId) setSelectedId(selected.id);
+  }, [selected, selectedId]);
   const openRow = (row) =>
     navigate(
       row.type === "Gap" ? "gaps" : row.type === "Proposal" ? "proposal" : "object",
@@ -564,9 +643,9 @@ export function WorkspaceScreen({ navigate, onImport, onExport, onCommands, onSh
         ? { gap: 1 }
         : row.type === "Proposal"
           ? { id: 27 }
-          : { id: row.id === "ATTR-BP-TAX-NUMBER" ? "DOMAIN-CUSTOMER-BP" : row.id },
+          : { id: row.id },
     );
-  const openSelected = () => openRow(selected);
+  const openSelected = () => selected && openRow(selected);
 
   useEffect(() => {
     const onKey = (event) => {
@@ -591,13 +670,14 @@ export function WorkspaceScreen({ navigate, onImport, onExport, onCommands, onSh
         <HomeAssistant navigate={navigate} />
         <header className="ledger-heading">
           <div>
-            <span className="eyebrow">Customer migration / canonical model</span>
+            <span className="eyebrow">{demo ? "Sample data / canonical model" : "Local repository / canonical model"}</span>
             <h1>Canonical model ledger</h1>
-            <p><CheckCircle size={14} weight="fill" /> Validation complete <i /> Index updated 2m ago <i /> 24 objects</p>
+            <p><CheckCircle size={14} weight="fill" /> {demo ? "Sample validation complete" : "Indexed canonical objects"} <i /> {capabilities?.canonical_files ?? sourceRows.length} objects</p>
           </div>
           <div className="ledger-heading-actions">
             <select value={domain} onChange={(event) => setDomain(event.target.value)} aria-label="Domain">
-              <option>All domains</option><option>Customer</option><option>Sales</option>
+              <option>All domains</option>
+              {demo ? <><option>Customer</option><option>Sales</option></> : domains.map((item) => <option key={item}>{item}</option>)}
             </select>
             <button className="secondary-button" onClick={() => setType(type === "All types" ? "Attribute" : "All types")}>
               <Funnel size={16} /> Filters
@@ -624,7 +704,8 @@ export function WorkspaceScreen({ navigate, onImport, onExport, onCommands, onSh
             <span>ID / name</span><span>Type</span><span>Source</span><span>Validation</span>
             <span>Evidence</span><span>Impact</span><span>Owner</span><span>Updated</span>
           </div>
-          {rows.length ? rows.map((row) => {
+          {liveObjectsLoading && !demo && <div className="ledger-empty"><CircleNotch className="spin" size={24} /><strong>Loading canonical objects</strong></div>}
+          {!liveObjectsLoading && rows.length ? rows.map((row) => {
             const Icon = TYPE_ICONS[row.type] || Database;
             return (
               <button
@@ -643,16 +724,16 @@ export function WorkspaceScreen({ navigate, onImport, onExport, onCommands, onSh
             <div className="ledger-empty"><MagnifyingGlass size={24} /><strong>No ledger entries match</strong><button onClick={() => { setQuery(""); setType("All types"); }}>Clear filters</button></div>
           )}
         </section>
-        <LedgerDetail row={selected} tab={detailTab} onTab={setDetailTab} navigate={navigate} />
+        {selected && (demo ? <LedgerDetail row={selected} tab={detailTab} onTab={setDetailTab} navigate={navigate} /> : <LiveLedgerDetail row={selected} navigate={navigate} />)}
       </div>
       <aside className="ledger-rail">
         <section>
           <div className="rail-heading"><h2>Import status</h2><button onClick={onImport}>Open</button></div>
           {[
-            ["37 files parsed", "37/37", "ok"],
-            ["24 objects detected", "24", "ok"],
-            ["5 gaps identified", "5", "warn"],
-            ["Validation complete", "", "ok"],
+            [demo ? "37 files parsed" : "Canonical files", demo ? "37/37" : String(capabilities?.canonical_files ?? "—"), "ok"],
+            [demo ? "24 objects detected" : "Ledger entries loaded", demo ? "24" : String(sourceRows.length), "ok"],
+            [demo ? "5 gaps identified" : "Assessment findings", demo ? "5" : String(findingCount), findingCount ? "warn" : "ok"],
+            [demo ? "Validation complete" : "Pending proposals", demo ? "" : String(pendingProposalCount), pendingProposalCount ? "warn" : "ok"],
           ].map(([label, value, tone]) => (
             <p className={`import-stat ${tone}`} key={label}><CheckCircle size={15} /><span>{label}</span><strong>{value}</strong></p>
           ))}
