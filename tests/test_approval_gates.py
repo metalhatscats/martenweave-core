@@ -100,6 +100,32 @@ def test_risk_for_ownership_field_change(tmp_path: Path) -> None:
     assert any("governance field" in r for r in risk.risk_reasons)
 
 
+def test_create_with_owner_does_not_report_missing_owner(tmp_path: Path) -> None:
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+
+    operations = [
+        {
+            "op": "create_object",
+            "object_id": "VAL-OWNED",
+            "object_type": "ValidationRule",
+            "after": {
+                "id": "VAL-OWNED",
+                "type": "ValidationRule",
+                "status": "active",
+                "name": "Owned validation rule",
+                "business_owner": "PERSON-OWNER",
+            },
+        }
+    ]
+
+    risk = compute_proposal_risk(operations, model_dir)
+
+    assert risk.risk_level == "high"
+    assert "missing_owner" not in risk.triggering_rules
+    assert not any("no assigned owner" in reason for reason in risk.risk_reasons)
+
+
 def test_risk_for_many_affected_objects(tmp_path: Path) -> None:
     model_dir = tmp_path / "model"
     model_dir.mkdir()

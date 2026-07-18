@@ -82,6 +82,24 @@ def _has_owner(registry: dict[str, dict[str, Any]], object_id: str) -> bool:
     )
 
 
+def _operation_has_owner(
+    operation: dict[str, Any], registry: dict[str, dict[str, Any]], object_id: str
+) -> bool:
+    """Return the owner state after an operation without treating new objects as ownerless."""
+    after = operation.get("after")
+    if isinstance(after, dict):
+        return any(
+            after.get(field)
+            for field in ("business_owner", "technical_owner", "data_steward", "owner")
+        )
+
+    target_path = operation.get("target_path")
+    if target_path in {"business_owner", "technical_owner", "data_steward", "owner"}:
+        return bool(after)
+
+    return _has_owner(registry, object_id)
+
+
 def compute_proposal_risk(
     operations: list[dict[str, Any]],
     model_path: Path,
@@ -138,7 +156,7 @@ def compute_proposal_risk(
             rules.append("governance_field_changed")
 
         # Rule: object without owner (only for types expected to have owners)
-        if obj_type in _OWNER_EXPECTED_TYPES and not _has_owner(registry, obj_id):
+        if obj_type in _OWNER_EXPECTED_TYPES and not _operation_has_owner(op, registry, obj_id):
             reasons.append(f"Object '{obj_id}' has no assigned owner")
             rules.append("missing_owner")
 
