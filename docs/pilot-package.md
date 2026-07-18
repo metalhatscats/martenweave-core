@@ -137,9 +137,14 @@ Do not promise these in the pilot:
 ### Go (expand to team or program)
 
 - Scorecard shows >60% ownership coverage
+- `martenweave readiness --repo ./pilot-model --profile pilot` reports no blocking gates
 - Team can trace a field in under 60 seconds
 - At least one ChangeRequest was created and reviewed
 - Business owner can read and comment on the exported workbook
+
+The readiness command is an exit criterion, not a shortcut around review. Resolve any blocker
+through the normal PatchProposal and ChangeRequest path; high-risk changes retain their required
+human approvals.
 
 ### No-Go (archive or revisit in 6 months)
 

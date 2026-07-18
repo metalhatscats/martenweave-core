@@ -148,6 +148,18 @@ input is still safe to process.
    measured metrics from unavailable inputs, and recommends the next safe
    action based on deterministic readiness gates.
 
+7. **Confirm the pilot exit criterion**
+
+   Before calling the model ready for a wider team, run the deterministic pilot profile:
+
+   ```bash
+   .venv/bin/martenweave readiness --repo ./pilot-repo --profile pilot --json
+   ```
+
+   A failing gate is a review input, not permission to lower a threshold or apply a shortcut.
+   Resolve the finding through a PatchProposal and the required human ChangeRequest approvals,
+   then rerun the same command and keep the JSON output with the pilot evidence pack.
+
 ---
 
 ## Synthetic Pilot Fixture
