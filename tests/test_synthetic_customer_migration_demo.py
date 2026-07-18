@@ -14,9 +14,7 @@ runner = CliRunner()
 
 def test_synthetic_customer_migration_demo_is_valid_and_traceable(tmp_path: Path) -> None:
     """The fictional source-to-target scenario remains runnable without production data."""
-    repo = (
-        Path(__file__).resolve().parent.parent / "examples" / "synthetic_customer_migration_demo"
-    )
+    repo = Path(__file__).resolve().parent.parent / "examples" / "synthetic_customer_migration_demo"
 
     validation = runner.invoke(app, ["validate", "--repo", str(repo), "--json"])
     assert validation.exit_code == 0, validation.output
