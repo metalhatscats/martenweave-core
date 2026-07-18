@@ -33,6 +33,14 @@ class TestConsoleScripts:
         assert scripts["modelops"] == "modelops_core.cli:app"
 
 
+class TestRuntimeDependencies:
+    def test_workbench_upload_routes_include_multipart_runtime(self) -> None:
+        pyproject = Path(__file__).resolve().parent.parent / "pyproject.toml"
+        dependencies = tomllib.loads(pyproject.read_text())["project"]["dependencies"]
+
+        assert any(dependency.startswith("python-multipart") for dependency in dependencies)
+
+
 class TestBuild:
     @pytest.mark.slow
     def test_package_builds(self, tmp_path: Path) -> None:
