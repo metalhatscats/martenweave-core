@@ -5,7 +5,7 @@
 > the responsible agent and verified by the Security & Critical Review agent.
 > All commands run from the Core repository root with the repo-local venv
 > (`.venv/bin/...`) unless noted. This file is the human-readable contract;
-> `factory validate` (see `../README.md`) executes G4–G9, and
+> `factory validate` (see `../README.md`) executes G3–G10, and
 > `factory release-check` adds G11.
 
 ## Gate map

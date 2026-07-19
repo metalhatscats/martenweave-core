@@ -1,6 +1,10 @@
 # Commercial Packaging and Pricing Hypotheses
 
 > How Martenweave can pair public source and low-friction pilots with sustainable commercial terms.
+>
+> **Internal strategy document.** No pricing is published or finalized. Every figure in this
+> document is an unvalidated internal hypothesis to be tested with design partners, not a
+> published price.
 
 ---
 
@@ -130,7 +134,7 @@ use. They may also include:
 
 ## Recommended Sequence
 
-1. **Now**: Free time-limited evaluation + no-cost design-partner pilots by written agreement
+1. **Now**: Free self-service evaluation under the Apache-2.0 license + no-cost design-partner pilots by written agreement
 2. **After 5–10 pilots**: Standardize commercial licenses and paid facilitation ($2K–$5K)
 3. **After 10+ team adoptions**: Design Team Workspace web UI; price at $500–$2K/month
 4. **After Team Workspace revenue**: Build Enterprise edition with SSO, RBAC, SOC-2

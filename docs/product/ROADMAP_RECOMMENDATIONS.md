@@ -1,5 +1,7 @@
 # Roadmap Recommendations — Product Explorer Audit
 
+> Note: dated point-in-time record (2026-07-07); the audit targeted `0.4.1`, the current release is `0.6.1`.
+
 > Source: `docs/product/PRODUCT_EXPLORER_AUDIT.md`
 > Date: 2026-07-07
 > Version audited: `martenweave-core 0.4.1`

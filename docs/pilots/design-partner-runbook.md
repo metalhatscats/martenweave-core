@@ -2,7 +2,7 @@
 
 > A repeatable 1–2 week pilot process for SAP migration teams using Martenweave.
 > Companion to `docs/product/ROADMAP_PILOT.md`.
-> Version: 0.4.1
+> Version: 0.6.1
 
 ---
 

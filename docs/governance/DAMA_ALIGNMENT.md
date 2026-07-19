@@ -1,7 +1,7 @@
 # Martenweave DAMA-DMBOK Alignment Guide
 
 Version: 0.2
-Status: Aligned with v0.5.0 implementation
+Status: Aligned with v0.6.1 implementation
 Scope: How Martenweave aligns with DAMA-DMBOK knowledge areas for data governance, MDM, and SAP migration teams
 
 ---

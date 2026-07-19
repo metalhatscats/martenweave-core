@@ -170,9 +170,11 @@ At the end of the pilot, the prospect receives:
 
 ## Pricing Hypothesis for Pilot
 
-- **Evaluation**: Self-service for less than 32 consecutive days under the repository license
-- **Pilot**: May be offered at no license fee under a written pilot agreement; optional paid
-  facilitation ($2K–$5K) if we run it together
+- **Evaluation**: Free to use, including for commercial work, under the Apache-2.0 license;
+  there is no evaluation time limit
+- **Pilot**: May be offered at no license fee under a written pilot agreement; a facilitated
+  pilot is a services engagement, not a license condition. Commercial terms are agreed per
+  engagement; pricing is not yet standardized and will be set after the first completed pilots
 - **Post-pilot team offering**: TBD based on team needs; likely support, templates, assessment
   packs, or future hosted workspace functionality; the Core remains Apache-licensed
 - **Enterprise**: TBD; only discussed after team-level success is proven

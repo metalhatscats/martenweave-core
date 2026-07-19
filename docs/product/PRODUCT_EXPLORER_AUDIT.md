@@ -1,5 +1,7 @@
 # Product Explorer Audit — Martenweave Core v0.4.1
 
+> Note: this is a dated point-in-time audit (2026-07-07) of version `0.4.1`; the current release is `0.6.1`.
+
 > Role: first-time SAP/MDM Product Owner evaluating the open-source core.
 > Date: 2026-07-07
 > Repository: `metalhatscats/martenweave-core`

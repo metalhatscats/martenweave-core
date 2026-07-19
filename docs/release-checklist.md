@@ -26,7 +26,11 @@ for repo in \
   examples/simple_product_model \
   examples/customer_bp_model \
   examples/supplier_vendor_model \
-  examples/generic_product_model
+  examples/generic_product_model \
+  examples/sap_bp_customer_vendor_reference \
+  examples/synthetic_customer_migration_demo \
+  examples/synthetic_enterprise_portfolio_demo \
+  examples/northstar_mobility_pilot
 do
   .venv/bin/martenweave validate --repo "$repo"
   .venv/bin/martenweave build-index --repo "$repo" --jsonl
@@ -83,10 +87,16 @@ Do not release if:
 
 ## Tagging Decision
 
-`v0.6.0` is the planned Apache-licensed release. Push the tag only after local
-validation passes and the PyPI trusted-publisher setup is confirmed:
+`v0.6.0` and `v0.6.1` are both published on PyPI and as GitHub Releases. The next
+version number is decided at release time per [release.md](release.md). Push the
+tag only after local validation passes and the PyPI trusted-publisher setup is
+confirmed:
 
 ```bash
-git tag -a v0.6.0 -m "Release v0.6.0"
-git push origin v0.6.0
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
 ```
+
+The tag must point at the exact commit that passed validation, the tag version must
+match the package version in `pyproject.toml`, and the release workflow
+(`.github/workflows/release.yml`) performs the PyPI publish and GitHub Release.

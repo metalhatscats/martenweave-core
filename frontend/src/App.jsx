@@ -686,9 +686,13 @@ function ObjectScreen({ navigate, params, onExport, onDraft }) {
   const [copied, setCopied] = useState(false);
   const tabs = ["Overview", "Fields", "Evidence", "Relationships", "Impact", "Governance"];
   const objectId = params.get("id");
+  const { demo } = useApi();
   const { object: liveObject, loading, error } = useObjectDetail(objectId);
-  const object = liveObject || modelObjects[0];
+  // Only a settled demo workspace may substitute the sample object; a live or
+  // pending workspace shows loading, error, or not-found states — never fiction.
+  const object = liveObject || (demo ? modelObjects[0] : null);
   const copyId = async () => {
+    if (!object) return;
     await navigator.clipboard?.writeText(object.id);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1200);
@@ -701,6 +705,10 @@ function ObjectScreen({ navigate, params, onExport, onDraft }) {
       </button>
       {loading && <div className="empty-state"><CircleNotch className="spin" size={24} /> Loading object…</div>}
       {error && <div className="empty-state"><WarningCircle size={24} /> {error}</div>}
+      {!loading && !error && !object && (
+        <div className="empty-state"><WarningCircle size={24} /> Object not found in this workspace.</div>
+      )}
+      {object && (<>
       <div className="object-hero">
         <div className="object-identity">
           <IconTile type={object.label} size={58} />
@@ -743,6 +751,7 @@ function ObjectScreen({ navigate, params, onExport, onDraft }) {
       {tab === "Relationships" && <Relationships navigate={navigate} />}
       {tab === "Impact" && <ObjectImpactPanel navigate={navigate} />}
       {tab === "Governance" && <GovernancePanel />}
+      </>)}
     </div>
   );
 }
@@ -1646,7 +1655,7 @@ function ProposalScreen({ navigate, params, onToast, onRefreshProposals, refresh
     loading,
     error,
   } = useProposalDetail(proposalId, refreshKey);
-  const proposal = liveProposal || (proposalId ? proposals.find((item) => String(item.id) === String(proposalId)) : proposals[0]);
+  const proposal = liveProposal || (demo ? (proposalId ? proposals.find((item) => String(item.id) === String(proposalId)) : proposals[0]) : null);
   const { reviewProposal, loading: reviewLoading } = useProposalReview();
   const { run: runValidate, loading: validateLoading, result: validateResult } = useProposalValidate();
   const { run: runDryRun, loading: dryRunLoading, result: dryRunResult } = useProposalDryRun();

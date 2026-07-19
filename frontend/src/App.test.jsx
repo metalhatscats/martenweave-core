@@ -10,12 +10,23 @@ afterEach(() => {
 });
 
 describe("Martenweave workbench", () => {
-  it("renders the canonical model ledger by default", () => {
+  it("renders the canonical model ledger by default", async () => {
     window.location.hash = "#/";
     render(<App />);
     expect(screen.getByRole("heading", { name: "Canonical model ledger" })).toBeInTheDocument();
-    expect(screen.getAllByText("ATTR-BP-TAX-NUMBER").length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.getAllByText("ATTR-BP-TAX-NUMBER").length).toBeGreaterThan(0));
     expect(screen.getByText("AI proposes. Validators verify. Humans approve.")).toBeInTheDocument();
+  });
+
+  it("shows a connecting state instead of sample data while the API probe is pending", () => {
+    window.location.hash = "#/home";
+    vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));
+    render(<App />);
+    expect(screen.getByText(/Connecting to local Martenweave API/)).toBeInTheDocument();
+    expect(screen.getByText("Loading canonical objects")).toBeInTheDocument();
+    expect(screen.queryByText("ATTR-BP-TAX-NUMBER")).not.toBeInTheDocument();
+    expect(screen.queryByText("Demo workspace")).not.toBeInTheDocument();
+    expect(screen.queryByText("Demo mode")).not.toBeInTheDocument();
   });
 
   it("labels an unavailable local backend as demo data without fictional identity", async () => {
@@ -46,8 +57,8 @@ describe("Martenweave workbench", () => {
     }));
     render(<App />);
 
-    await waitFor(() => expect(screen.getAllByText("Local workspace").length).toBeGreaterThan(0));
-    expect(screen.getByText("Read-only")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("Read-only")).toBeInTheDocument());
+    expect(screen.getAllByText("Local workspace").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /Import — This local workspace is read-only/ })).toBeDisabled();
     expect(screen.getByRole("button", { name: /Export — This local workspace is read-only/ })).toBeDisabled();
   });
@@ -183,7 +194,8 @@ describe("Martenweave workbench", () => {
   it("generates a model export", async () => {
     window.location.hash = "#/home";
     render(<App />);
-    fireEvent.click(screen.getByText("Export ledger"));
+    await waitFor(() => expect(screen.getAllByText("Demo workspace").length).toBeGreaterThan(0));
+    fireEvent.click(await screen.findByText("Export ledger"));
     fireEvent.click(screen.getByText("Generate export"));
     await waitFor(() => expect(screen.getByText("Model index is ready")).toBeInTheDocument());
     expect(screen.getByText("customer-migration-index-2026-07-03.csv")).toBeInTheDocument();
@@ -208,6 +220,7 @@ describe("Martenweave workbench", () => {
     expect(screen.getByLabelText("Search model")).toHaveFocus();
     fireEvent.keyDown(screen.getByLabelText("Search model"), { key: "Escape" });
     screen.getByLabelText("Search model").blur();
+    await waitFor(() => expect(screen.getAllByText("ATTR-BP-TAX-NUMBER").length).toBeGreaterThan(0));
     fireEvent.keyDown(window, { key: "Enter" });
     await waitFor(() => expect(screen.getByRole("heading", { name: "Business Partner" })).toBeInTheDocument());
     fireEvent.keyDown(window, { key: "g" });
@@ -218,7 +231,8 @@ describe("Martenweave workbench", () => {
   it("opens proposal decision dialog and records approval", async () => {
     window.location.hash = "#/proposal?id=27";
     render(<App />);
-    fireEvent.click(screen.getByText(/Approve proposal/));
+    await waitFor(() => expect(screen.getAllByText("Demo workspace").length).toBeGreaterThan(0));
+    fireEvent.click(await screen.findByText(/Approve proposal/));
     await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "Approve" }));
     await waitFor(() => expect(screen.getByText(/Approved: Proposal #27/)).toBeInTheDocument());
@@ -227,7 +241,8 @@ describe("Martenweave workbench", () => {
   it("returns an approved proposal to draft", async () => {
     window.location.hash = "#/proposal?id=27";
     render(<App />);
-    fireEvent.click(screen.getByText(/Approve proposal/));
+    await waitFor(() => expect(screen.getAllByText("Demo workspace").length).toBeGreaterThan(0));
+    fireEvent.click(await screen.findByText(/Approve proposal/));
     await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "Approve" }));
     await waitFor(() => expect(screen.getByText(/Approved: Proposal #27/)).toBeInTheDocument());

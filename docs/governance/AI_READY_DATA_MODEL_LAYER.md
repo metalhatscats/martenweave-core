@@ -1,7 +1,7 @@
 # Martenweave AI-Ready Data Model Layer
 
 Version: 0.2
-Status: Aligned with v0.5.0 implementation
+Status: Aligned with v0.6.1 implementation
 Scope: Why Martenweave creates an AI-ready model layer without becoming a generic AI chatbot
 
 ---
@@ -398,7 +398,7 @@ modelops impact VLIST-S4-CUST-GROUP --repo ./my-model
 
 ## Current State vs Target State
 
-| Capability | Current State (v0.4) | Target State |
+| Capability | Current State (v0.6.1) | Target State |
 |---|---|---|
 | AI provider adapters | `NoProviderAdapter` (deterministic scaffold) and `KimiAdapter` (OpenAI-compatible) implemented | `GoogleADKAdapter`, `OllamaAdapter` |
 | Structured output validation | `ProviderOutputValidator` checks schema and allow-lists | Full JSON Schema enforcement with retry logic |

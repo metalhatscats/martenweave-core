@@ -1,7 +1,7 @@
 # Martenweave Data Governance Operating Model
 
 Version: 0.2
-Status: Aligned with v0.5.0 implementation
+Status: Aligned with v0.6.1 implementation
 Scope: Practical operating model for using Martenweave in data governance, SAP migration, MDM, and AMS work
 
 ---

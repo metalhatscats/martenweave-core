@@ -32,11 +32,11 @@ Do claim, when verified:
 - search/query/trace/impact workflows
 - proposal-first AI governance
 - local-first architecture
-- source availability for inspection and time-limited evaluation
+- source availability for inspection and evaluation
 
-Do not describe current repository source or future releases as open source. Their commercial-use
-restrictions make them open source. Previously published MIT-licensed versions remain open
-source under the terms shipped with those copies.
+Describe the current repository source and releases as open source under Apache License 2.0
+(`0.5.0` and later). Earlier versions up to and including `0.4.1` were published under the MIT
+license and remain open source under the terms shipped with those copies.
 
 ## Repository Hygiene
 

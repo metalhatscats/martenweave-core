@@ -7,7 +7,7 @@
  * surface the connection state visibly.
  */
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import { gaps as demoGaps, lineageEdges, lineageNodes, modelObjects, proposals as demoProposals, recentActivity as demoActivity } from "./data.js";
 
@@ -616,7 +616,7 @@ export function createApiClient(baseUrl) {
  */
 export const ApiContext = createContext({
   state: API_STATE.UNKNOWN,
-  demo: true,
+  demo: false,
   client: null,
   error: null,
   capabilities: null,
@@ -634,7 +634,7 @@ export function ApiProvider({ children, baseUrl = defaultApiBaseUrl() }) {
   const client = useMemo(() => createApiClient(baseUrl), [baseUrl]);
   const [value, setValue] = useState(() => ({
     state: API_STATE.UNKNOWN,
-    demo: true,
+    demo: false,
     client,
     error: null,
     capabilities: null,
@@ -790,6 +790,15 @@ export function useObjectSearch(query, activeTab, selectedTypes, selectedStatuse
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (state === API_STATE.UNKNOWN) {
+      // Capabilities probe still in flight: stay in a neutral loading state
+      // instead of painting demo fixtures or firing a premature request.
+      setResults([]);
+      setLoading(true);
+      setError(null);
+      return;
+    }
+
     if (demo || !client) {
       setResults(
         filterDemoObjects(query, modelObjects, activeTab, selectedTypes, selectedStatuses)
@@ -840,7 +849,7 @@ export function useObjectSearch(query, activeTab, selectedTypes, selectedStatuse
     return () => {
       cancelled = true;
     };
-  }, [query, activeTab, selectedTypes.join(","), selectedStatuses.join(","), sort, demo, client]);
+  }, [query, activeTab, selectedTypes.join(","), selectedStatuses.join(","), sort, state, demo, client]);
 
   const sortedResults = useMemo(() => {
     const list = [...results];
@@ -874,7 +883,7 @@ export function useObjectSearch(query, activeTab, selectedTypes, selectedStatuse
  * @returns {{ object: import("./data.js").ModelObject|null, loading: boolean, error: string|null }}
  */
 export function useObjectDetail(objectId) {
-  const { client, demo } = useApi();
+  const { client, demo, state } = useApi();
   const [object, setObject] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -882,6 +891,15 @@ export function useObjectDetail(objectId) {
   useEffect(() => {
     if (!objectId) {
       setObject(null);
+      return;
+    }
+
+    if (state === API_STATE.UNKNOWN) {
+      // Capabilities probe still in flight: stay in a neutral loading state
+      // instead of painting demo fixtures or firing a premature request.
+      setObject(null);
+      setLoading(true);
+      setError(null);
       return;
     }
 
@@ -914,7 +932,7 @@ export function useObjectDetail(objectId) {
     return () => {
       cancelled = true;
     };
-  }, [objectId, demo, client]);
+  }, [objectId, state, demo, client]);
 
   return { object, loading, error };
 }
@@ -925,12 +943,20 @@ export function useObjectDetail(objectId) {
  * @returns {{ events: ActivityEvent[], loading: boolean, error: string|null, demo: boolean }}
  */
 export function useWorkspaceActivity(refreshKey = 0) {
-  const { client, demo } = useApi();
+  const { client, demo, state } = useApi();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (state === API_STATE.UNKNOWN) {
+      // Capabilities probe still in flight: stay in a neutral loading state
+      // instead of painting demo fixtures or firing a premature request.
+      setEvents([]);
+      setLoading(true);
+      setError(null);
+      return undefined;
+    }
     if (demo || !client) {
       setEvents([]);
       setLoading(false);
@@ -956,20 +982,29 @@ export function useWorkspaceActivity(refreshKey = 0) {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [client, demo, refreshKey]);
+  }, [client, demo, state, refreshKey]);
 
   return { events, loading, error, demo };
 }
 
 /** Read typed assessment findings with review state from the active local workspace. */
 export function useAssessmentFindings() {
-  const { client, demo } = useApi();
+  const { client, demo, state } = useApi();
   const [findings, setFindings] = useState([]);
   const [assessmentId, setAssessmentId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (state === API_STATE.UNKNOWN) {
+      // Capabilities probe still in flight: stay in a neutral loading state
+      // instead of painting demo fixtures or firing a premature request.
+      setFindings([]);
+      setAssessmentId(null);
+      setLoading(true);
+      setError(null);
+      return undefined;
+    }
     if (demo || !client) {
       setFindings([]);
       setAssessmentId(null);
@@ -992,7 +1027,7 @@ export function useAssessmentFindings() {
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [client, demo]);
+  }, [client, demo, state]);
 
   return { findings, assessmentId, loading, error, demo };
 }
@@ -1445,7 +1480,7 @@ async function executeHomeImpact(client, term, demo) {
  * }}
  */
 export function useHomeAssistant() {
-  const { client, demo } = useApi();
+  const { client, demo, state: apiState } = useApi();
   const [state, setState] = useState({
     query: "",
     intent: null,
@@ -1453,11 +1488,13 @@ export function useHomeAssistant() {
     loading: false,
     error: null,
   });
+  const pendingQueryRef = useRef(null);
 
   const run = useCallback(
     async (query) => {
       const trimmed = query.trim();
       if (!trimmed) {
+        pendingQueryRef.current = null;
         setState({ query: "", intent: null, results: [], loading: false, error: null });
         return;
       }
@@ -1470,6 +1507,14 @@ export function useHomeAssistant() {
       }));
       try {
         const { intent, term } = classifyHomeIntent(trimmed);
+        if (apiState === API_STATE.UNKNOWN && intent !== "unsupported") {
+          // Capabilities probe still in flight: hold the query in a neutral
+          // loading state and run it once the probe settles, instead of
+          // painting demo fixtures or firing a premature request.
+          pendingQueryRef.current = trimmed;
+          setState({ query: trimmed, intent: null, results: [], loading: true, error: null });
+          return;
+        }
         let results = [];
         switch (intent) {
           case "search":
@@ -1504,10 +1549,19 @@ export function useHomeAssistant() {
         });
       }
     },
-    [client, demo]
+    [client, demo, apiState]
   );
 
+  useEffect(() => {
+    if (apiState === API_STATE.UNKNOWN) return;
+    const pending = pendingQueryRef.current;
+    if (!pending) return;
+    pendingQueryRef.current = null;
+    run(pending);
+  }, [apiState, run]);
+
   const reset = useCallback(() => {
+    pendingQueryRef.current = null;
     setState({ query: "", intent: null, results: [], loading: false, error: null });
   }, []);
 
@@ -1568,12 +1622,20 @@ export function useRepositoryDiff(basePath, headPath) {
  * @returns {{ proposals: ProposalViewModel[], loading: boolean, error: string|null, demo: boolean }}
  */
 export function useProposals(refreshKey = 0) {
-  const { client, demo } = useApi();
+  const { client, demo, state } = useApi();
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (state === API_STATE.UNKNOWN) {
+      // Capabilities probe still in flight: stay in a neutral loading state
+      // instead of painting demo fixtures or firing a premature request.
+      setProposals([]);
+      setLoading(true);
+      setError(null);
+      return undefined;
+    }
     if (demo || !client) {
       setProposals(demoProposals);
       setLoading(false);
@@ -1597,7 +1659,7 @@ export function useProposals(refreshKey = 0) {
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [client, demo, refreshKey]);
+  }, [client, demo, state, refreshKey]);
 
   return { proposals, loading, error, demo };
 }
@@ -1609,7 +1671,7 @@ export function useProposals(refreshKey = 0) {
  * @returns {{ proposal: ProposalViewModel|null, loading: boolean, error: string|null, demo: boolean }}
  */
 export function useProposalDetail(proposalId, refreshKey = 0) {
-  const { client, demo } = useApi();
+  const { client, demo, state } = useApi();
   const [proposal, setProposal] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -1618,6 +1680,15 @@ export function useProposalDetail(proposalId, refreshKey = 0) {
     if (!proposalId) {
       setProposal(null);
       setLoading(false);
+      setError(null);
+      return undefined;
+    }
+
+    if (state === API_STATE.UNKNOWN) {
+      // Capabilities probe still in flight: stay in a neutral loading state
+      // instead of painting demo fixtures or firing a premature request.
+      setProposal(null);
+      setLoading(true);
       setError(null);
       return undefined;
     }
@@ -1646,7 +1717,7 @@ export function useProposalDetail(proposalId, refreshKey = 0) {
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [proposalId, demo, client, refreshKey]);
+  }, [proposalId, state, demo, client, refreshKey]);
 
   return { proposal, loading, error, demo };
 }
@@ -2015,7 +2086,7 @@ export function traceResponseToFlowEdges(trace) {
  * }}
  */
 export function useLineage(objectId, direction, maxDepth) {
-  const { client, demo } = useApi();
+  const { client, demo, state } = useApi();
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [upstream, setUpstream] = useState([]);
@@ -2028,6 +2099,19 @@ export function useLineage(objectId, direction, maxDepth) {
     if (!objectId) {
       setNodes([]);
       setEdges([]);
+      return;
+    }
+
+    if (state === API_STATE.UNKNOWN) {
+      // Capabilities probe still in flight: stay in a neutral loading state
+      // instead of painting demo fixtures or firing a premature request.
+      setNodes([]);
+      setEdges([]);
+      setUpstream([]);
+      setDownstream([]);
+      setImpact(null);
+      setLoading(true);
+      setError(null);
       return;
     }
 
@@ -2078,7 +2162,7 @@ export function useLineage(objectId, direction, maxDepth) {
     return () => {
       cancelled = true;
     };
-  }, [objectId, direction, maxDepth, demo, client]);
+  }, [objectId, direction, maxDepth, state, demo, client]);
 
   return { nodes, edges, upstream, downstream, impact, loading, error };
 }

@@ -27,13 +27,6 @@
 
 ## Verified technical limitations (candidates for future L2/L3 work)
 
-- **Ledger table overflows horizontally at 1280px** — the last columns (Owner,
-  Updated) clip in the Workbench ledger at common laptop widths. Verified
-  2026-07-19 via browser smoke screenshot. **Tracked: issue #549.**
-- **Workbench initial paint shows "Demo mode" briefly** before the capabilities
-  probe resolves; snapshots taken immediately after load can capture the wrong
-  state. Cosmetic race; connected state replaces it within ~1s. Verified 2026-07-19.
-  **Tracked: issue #550.**
 - **Owner names resolve in the Workbench ledger but not in CLI reports** — the
   `owners` CLI report still prints raw `PERSON-*` IDs (the Workbench ledger
   resolves display names since `6ae5a36`). Cosmetic; resolve in the report layer

@@ -305,6 +305,13 @@ describe("ApiProvider", () => {
     await waitFor(() => expect(screen.getByTestId("state").textContent).toBe(API_STATE.INCOMPATIBLE));
     expect(screen.getByTestId("demo").textContent).toBe("demo");
   });
+
+  it("reports a neutral pending state while the capabilities probe is in flight", () => {
+    globalThis.fetch = vi.fn().mockReturnValue(new Promise(() => {}));
+    render(<Probe />, { wrapper: TestWrapper });
+    expect(screen.getByTestId("state").textContent).toBe(API_STATE.UNKNOWN);
+    expect(screen.getByTestId("demo").textContent).toBe("live");
+  });
 });
 
 function SearchProbe() {
@@ -365,6 +372,14 @@ describe("useObjectSearch", () => {
     render(<SearchProbe />, { wrapper: TestWrapper });
     await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("ready"));
     expect(screen.queryAllByTestId("result").length).toBeGreaterThan(0);
+  });
+
+  it("stays in a loading state without demo fixtures while the probe is pending", () => {
+    globalThis.fetch = vi.fn().mockReturnValue(new Promise(() => {}));
+    render(<SearchProbe />, { wrapper: TestWrapper });
+    expect(screen.getByTestId("loading").textContent).toBe("loading");
+    expect(screen.getByTestId("count").textContent).toBe("0");
+    expect(screen.queryAllByTestId("result").length).toBe(0);
   });
 });
 

@@ -1,6 +1,6 @@
 # Agent Modeling Guide
 
-Version: 0.5.0
+Version: 0.6.1
 Status: Draft  
 Scope: Rules for AI agents creating and updating Martenweave canonical models  
 Audience: Codex, Kimi, and LLM agents working in Martenweave repositories  

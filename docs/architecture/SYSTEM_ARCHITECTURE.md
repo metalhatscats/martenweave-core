@@ -2,7 +2,7 @@
 
 # Martenweave — System Architecture
 
-Version: 0.5.0
+Version: 0.6.1
 Document type: Product/system architecture  
 Initial product focus: General agentic data model registry, with SAP Business Partner migration as the first domain pack  
 Architecture style: Local-first, file-based, AI-ready, domain-aware model workspace  

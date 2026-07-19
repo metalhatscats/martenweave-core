@@ -16,6 +16,8 @@
 | [docs/local-static-viewer.md](local-static-viewer.md) | Generate and inspect the local static read-only viewer |
 | [docs/martenweave-data-model-book.md](martenweave-data-model-book.md) | How to create, maintain, and govern models correctly |
 | [docs/pilot-package.md](pilot-package.md) | 1–2 week pilot workflow for new teams |
+| [docs/pilots/design-partner-runbook.md](pilots/design-partner-runbook.md) | Repeatable design-partner pilot runbook |
+| [docs/pilot-kit/](pilot-kit/) | Pilot engagement collateral: assessment template, delivery checklist, demo script, stakeholder interview questions |
 
 ---
 
@@ -71,6 +73,8 @@
 | [docs/commercial-packaging.md](commercial-packaging.md) | Packaging options and pricing hypotheses |
 | [docs/licensing-and-commercial-use.md](licensing-and-commercial-use.md) | Apache 2.0 rights, contribution terms, and optional commercial services |
 | [docs/pilot-package.md](pilot-package.md) | Pilot workflow and success metrics |
+| [docs/pilots/design-partner-runbook.md](pilots/design-partner-runbook.md) | Repeatable design-partner pilot runbook |
+| [docs/pilot-kit/](pilot-kit/) | Pilot engagement collateral: assessment template, delivery checklist, demo script, stakeholder interview questions |
 | [docs/product-discovery-interviews.md](product-discovery-interviews.md) | Interview guide for target teams |
 | [docs/team-collaboration-model.md](team-collaboration-model.md) | Roles, workflows, and collaboration patterns |
 | [docs/security-procurement-checklist.md](security-procurement-checklist.md) | Security and procurement readiness |
