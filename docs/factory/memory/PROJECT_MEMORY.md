@@ -61,5 +61,6 @@ Planner conventions (verified by dogfooding): maintainer `priority:*` labels
 dominate ranking; classes order correctness → docs-drift → test-ci → ux-clarity;
 issues declaring L3 (`(L3` in title or `Autonomy: L3` body line) are listed but
 never recommended. Loop runs completed with gate evidence: #553, #546, #554,
-#547 (`355440f`), #548 (`6ae5a36`). Open: #549, #550 (L2 UX), #551, #552 (L3,
-awaiting maintainer).
+#547 (`355440f`), #548 (`6ae5a36`), #552 (`866d453` website repo — factory
+guide live at /docs/ai-factory.html, maintainer-approved). Open: #549, #550
+(L2 UX), #551 (L3 CI proposal, awaiting maintainer).
