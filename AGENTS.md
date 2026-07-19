@@ -210,6 +210,7 @@ martenweave import-model-sheet ./edits.xlsx --repo ./my-model
 martenweave assessment --repo ./my-model
 martenweave assessment-review --repo ./my-model
 martenweave run dataset-readiness --repo ./my-model
+martenweave run migration-assessment --mapping ./workbook.xlsx --out ./out --repo ./my-model
 martenweave issue-draft --repo ./my-model
 martenweave publish-issue --draft ID-123 --repo ./my-model
 martenweave publish-pr --bundle ./bundle --repo ./my-model
@@ -229,7 +230,8 @@ martenweave pilot-preflight --repo ./my-model
 martenweave demo-bundle --repo ./my-model
 martenweave review-pack --repo ./my-model
 martenweave ai-provider --repo ./my-model
-martenweave agent --repo ./my-model
+martenweave agent product-owner ./note.md --repo ./my-model
+martenweave agent readiness --profile pilot --repo ./my-model
 martenweave notifications --repo ./my-model
 ```
 
