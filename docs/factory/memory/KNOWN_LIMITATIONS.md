@@ -27,10 +27,6 @@
 
 ## Verified technical limitations (candidates for future L2/L3 work)
 
-- **Workbench ledger shows owner IDs, not display names** — `PERSON-CUSTOMER-STEWARD`
-  is shown where "Sam Delgado" would read better. Person name resolution would need
-  an index join. Verified 2026-07-19 after the ownership fix (`8d96d25`).
-  **Tracked: issue #548.**
 - **Ledger table overflows horizontally at 1280px** — the last columns (Owner,
   Updated) clip in the Workbench ledger at common laptop widths. Verified
   2026-07-19 via browser smoke screenshot. **Tracked: issue #549.**
@@ -38,6 +34,10 @@
   probe resolves; snapshots taken immediately after load can capture the wrong
   state. Cosmetic race; connected state replaces it within ~1s. Verified 2026-07-19.
   **Tracked: issue #550.**
+- **Owner names resolve in the Workbench ledger but not in CLI reports** — the
+  `owners` CLI report still prints raw `PERSON-*` IDs (the Workbench ledger
+  resolves display names since `6ae5a36`). Cosmetic; resolve in the report layer
+  if users ask. Verified 2026-07-19.
 - **Very large models warn above a configurable threshold** — `build-index` is a
   full rebuild by design; huge repos may need a higher limit or a split.
   Source: `README.md` Core Principles.

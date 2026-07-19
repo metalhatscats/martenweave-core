@@ -60,5 +60,6 @@ backlog seeded from verified audit findings (first issues #546–#554).
 Planner conventions (verified by dogfooding): maintainer `priority:*` labels
 dominate ranking; classes order correctness → docs-drift → test-ci → ux-clarity;
 issues declaring L3 (`(L3` in title or `Autonomy: L3` body line) are listed but
-never recommended. First loop runs completed: #553, #546, #554 closed with gate
-evidence.
+never recommended. Loop runs completed with gate evidence: #553, #546, #554,
+#547 (`355440f`), #548 (`6ae5a36`). Open: #549, #550 (L2 UX), #551, #552 (L3,
+awaiting maintainer).
