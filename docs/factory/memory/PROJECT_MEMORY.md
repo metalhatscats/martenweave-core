@@ -50,7 +50,15 @@
 
 ## Current factory build status
 
-Factory skeleton created 2026-07-19: north star, policies (autonomy, gates,
-preventions), workflows, this memory layer. Agent definitions, 13 skills, the
-`./factory` harness, and the seeded backlog follow in the same build-out; check
-`docs/factory/README.md` layout against disk before assuming a file exists.
+Factory build-out completed 2026-07-19 (commits `19730d0`, `13cabe0`, `16168d5`,
+`cb29c1a`): north star, policies (autonomy L0–L3, gates G1–G11, preventions
+P1–P10), workflows, 7 agent definitions, 5 memory docs, 13 factory skills (23
+skills total, all structurally validated), the stdlib `./factory` harness
+(audit/plan/run-next/review/validate/release-check, 12 tests), and a live GitHub
+backlog seeded from verified audit findings (first issues #546–#554).
+
+Planner conventions (verified by dogfooding): maintainer `priority:*` labels
+dominate ranking; classes order correctness → docs-drift → test-ci → ux-clarity;
+issues declaring L3 (`(L3` in title or `Autonomy: L3` body line) are listed but
+never recommended. First loop runs completed: #553, #546, #554 closed with gate
+evidence.

@@ -439,6 +439,40 @@ def test_cli_doctor_json_missing_model_path(tmp_path: Path) -> None:
     assert data["validation"]["ran"] is False
 
 
+def test_cli_doctor_json_reports_host_tools(sample_repo: Path) -> None:
+    result = runner.invoke(app, ["doctor", "--repo", str(sample_repo), "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert "host_tools" in data
+    for tool in ("jq", "node", "npm"):
+        assert tool in data["host_tools"]
+        entry = data["host_tools"][tool]
+        assert "available" in entry
+        assert "purpose" in entry
+        if entry["available"]:
+            assert entry["path"]
+        else:
+            assert entry["path"] is None
+
+
+def test_cli_doctor_human_reports_host_tools(sample_repo: Path) -> None:
+    result = runner.invoke(app, ["doctor", "--repo", str(sample_repo)])
+    assert result.exit_code == 0
+    assert "Host tools" in result.output
+    for tool in ("jq", "node", "npm"):
+        assert tool in result.output
+
+
+def test_host_tools_marks_missing_tools() -> None:
+    from modelops_core.commands.health_reports import _host_tools
+
+    tools = _host_tools(which=lambda name: None)
+    for entry in tools.values():
+        assert entry["available"] is False
+        assert entry["path"] is None
+        assert entry["purpose"]
+
+
 # ---------------------------------------------------------------------------
 # ai-provider
 # ---------------------------------------------------------------------------

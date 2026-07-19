@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -158,6 +160,28 @@ def health(
         console.print(table)
 
 
+_HOST_TOOLS: dict[str, str] = {
+    "jq": "required by scripts/demo_northstar_pilot.sh (Northstar demo)",
+    "node": "required for Workbench development builds (frontend/)",
+    "npm": "required for Workbench development builds (frontend/)",
+}
+
+
+def _host_tools(
+    which: Callable[[str], str | None] = shutil.which,
+) -> dict[str, dict[str, Any]]:
+    """Report availability of optional host tools used by demo/dev flows.
+
+    Missing tools are informational warnings, never hard errors: core CLI
+    flows do not depend on them.
+    """
+    tools: dict[str, dict[str, Any]] = {}
+    for name, purpose in _HOST_TOOLS.items():
+        path = which(name)
+        tools[name] = {"available": path is not None, "path": path, "purpose": purpose}
+    return tools
+
+
 @app.command("doctor")
 @with_telemetry("doctor")
 def doctor(
@@ -180,6 +204,8 @@ def doctor(
     freshness = check_index_freshness(repo_root)
     index_fresh = freshness.fresh if index_exists else None
     index_stale_reason = freshness.reason if index_exists else None
+
+    host_tools = _host_tools()
 
     validation_summary: dict[str, Any] = {
         "ran": False,
@@ -210,6 +236,7 @@ def doctor(
             "index_fresh": index_fresh,
             "index_stale_reason": index_stale_reason,
             "validation": validation_summary,
+            "host_tools": host_tools,
         }
         print(json.dumps(result, indent=2, default=str))
         raise typer.Exit()
@@ -235,6 +262,12 @@ def doctor(
         console.print(f"  Warnings:            {validation_summary['warning_count']}")
     else:
         console.print("  [yellow]Validation skipped (no model path)[/yellow]")
+    console.print("  Host tools:")
+    for tool_name, tool in host_tools.items():
+        if tool["available"]:
+            console.print(f"    {tool_name:<8} [green]available[/green]")
+        else:
+            console.print(f"    {tool_name:<8} [yellow]missing[/yellow] — {tool['purpose']}")
 
 
 @app.command()

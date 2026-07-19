@@ -3,6 +3,33 @@
 > Dated, durable lessons from completed work — newest first. Record what a future
 > agent would otherwise have to rediscover. One entry per lesson, with evidence.
 
+## 2026-07-19 — Dogfood the planner immediately; ranking rules drift from reality fast
+
+The factory planner's first live run exposed two ranking gaps within minutes:
+`type:*` labels unmapped to classes, and L3-blocked issues recommended as next
+work. Both were invisible in fixture tests and obvious against the real backlog.
+**Lesson: after building any queue/ranking tool, run it against the live backlog
+before trusting it; fixture data never has the awkward cases (an issue whose body
+discusses L3 triggered the naive L3 marker — declarations must be explicit:
+`(L3` in title or `Autonomy: L3` line).**
+
+## 2026-07-19 — Maintainer priority labels are the steering wheel
+
+The planner originally ranked purely by work class, ignoring `priority:*` labels
+— so a `priority:low` cosmetic bug outranked a `priority:high` doc-drift task.
+**Lesson: in an autonomous queue, the maintainer's explicit signals (priority
+labels, L3 declarations) must dominate every default heuristic; that is what
+"minimal maintainer involvement" means — rare interventions, always honored.**
+
+## 2026-07-19 — Never quote gate counts you did not observe
+
+A gate run piped through `tail -4` kept only the summary; a commit message then
+quoted an inferred pytest count. It was almost certainly right (1815 + 2 new
+tests) but was not observed — a P9 violation in spirit. Caught and amended before
+push. **Lesson: capture gate output fully (the harness `--json` keeps tails per
+gate), and quote only numbers visible in the log; "green" is a fine claim when
+the count is not at hand.**
+
 ## 2026-07-19 — Verify before building: most of the "pilot readiness" goal already existed
 
 A prior-session audit would have been enough: the Northstar pilot, demo script,

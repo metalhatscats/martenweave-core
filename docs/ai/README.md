@@ -4,6 +4,8 @@ This directory defines how AI coding agents work in Martenweave Core.
 
 Start here:
 
+0. `../factory/README.md` for the Development AI Factory (agents, skills, gates,
+   autonomy, project memory) — the current operating layer for autonomous work.
 1. `AI_DEVELOPMENT_OPERATING_SYSTEM.md` for the overall repo operating model.
 2. `AGENT_CONTEXT_LOADING.md` for what to read before changing files.
 3. `VALIDATION_LADDER.md` for exact commands.
