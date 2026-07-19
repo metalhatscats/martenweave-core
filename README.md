@@ -402,7 +402,22 @@ The `examples/supplier_vendor_model/` directory contains a second domain pack fo
 Supplier -> Vendor Central -> LFA1/KTOKK, LFB1/ZTERM, LFM1/SPERR
 ```
 
-Run validation against either:
+### Northstar Mobility Group — Synthetic Pilot (multi-domain)
+
+The `examples/northstar_mobility_pilot/` directory contains a fully fictional, reproducible
+multi-domain SAP S/4HANA transformation pilot: seven connected domains (Business Partner &
+Customer, Supplier, Material, Sales, Procurement, Logistics, Finance), 187 canonical objects,
+deterministic synthetic CSV/XLSX extracts with intentional data problems, fictional
+`example.com` participants, and a pending high-risk PatchProposal. The canonical model stays
+valid; the problems surface through gap, readiness, and proposal workflows.
+
+```bash
+bash scripts/demo_northstar_pilot.sh   # self-verifying 11-step pilot run
+```
+
+See `examples/northstar_mobility_pilot/README.md` for the full walkthrough.
+
+Run validation against any of them:
 
 ```bash
 .venv/bin/martenweave validate --repo examples/customer_bp_model
