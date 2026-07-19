@@ -84,6 +84,38 @@ def test_plan_ranks_correctness_first(issues_file: Path) -> None:
     assert "Recommended next task: #12" in payload["data"]["summary"]
 
 
+def test_plan_priority_labels_dominate_class(tmp_path: Path) -> None:
+    issues = [
+        {
+            "number": 549,
+            "title": "Cosmetic bug",
+            "labels": ["bug", "priority:low", "agent-ready"],
+            "createdAt": "2026-07-19T08:00:00Z",
+        },
+        {
+            "number": 546,
+            "title": "Important doc drift",
+            "labels": ["type:docs", "priority:high", "agent-ready"],
+            "createdAt": "2026-07-19T08:01:00Z",
+        },
+        {
+            "number": 551,
+            "title": "Medium CI task",
+            "labels": ["type:tests", "priority:medium", "agent-ready"],
+            "createdAt": "2026-07-19T08:02:00Z",
+        },
+    ]
+    path = tmp_path / "issues.json"
+    path.write_text(json.dumps(issues), encoding="utf-8")
+    proc = run_factory("plan", "--issues-json", str(path), "--json")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    payload = json.loads(proc.stdout)
+    ranked = payload["data"]["ranked"]
+    # priority:high dominates the correctness class of a priority:low bug.
+    assert [i["number"] for i in ranked] == [546, 551, 549]
+    assert "Recommended next task: #546" in payload["data"]["summary"]
+
+
 def test_plan_empty_backlog(tmp_path: Path) -> None:
     empty = tmp_path / "empty.json"
     empty.write_text("[]", encoding="utf-8")

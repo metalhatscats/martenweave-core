@@ -79,10 +79,18 @@ AGENT_FILES = {
 # Ranking classes per docs/factory/WORKFLOWS.md stage 5.
 RANK_CLASSES = [
     ("correctness", ("bug", "correctness", "regression", "security")),
-    ("docs-drift", ("documentation", "docs", "website")),
-    ("test-ci", ("tests", "ci", "testing")),
+    ("docs-drift", ("documentation", "docs", "type:docs", "website")),
+    ("test-ci", ("tests", "ci", "testing", "type:tests")),
     ("ux-clarity", ("ux", "workbench", "ui", "clarity")),
 ]
+
+# Maintainer priority labels dominate class ranking (issue #553).
+PRIORITY_RANK = {
+    "priority:critical": 0,
+    "priority:high": 1,
+    "priority:medium": 2,
+    "priority:low": 3,
+}
 
 LABEL_AGENT_MAP = {
     "bug": "core",
@@ -90,16 +98,22 @@ LABEL_AGENT_MAP = {
     "regression": "testing",
     "documentation": "docs",
     "docs": "docs",
+    "type:docs": "docs",
     "website": "docs",
     "tests": "testing",
     "ci": "testing",
     "testing": "testing",
+    "type:tests": "testing",
     "domain": "domain",
     "sap": "domain",
     "ai": "ai",
     "mcp": "ai",
     "security": "security",
     "factory": "product",
+    "type:cli": "core",
+    "type:validation": "core",
+    "type:architecture": "product",
+    "type:skills": "product",
 }
 
 
@@ -311,10 +325,20 @@ def rank_class(labels: list[str]) -> tuple[int, str]:
     return len(RANK_CLASSES), "other"
 
 
+def priority_rank(labels: list[str]) -> int:
+    """Lower sorts first; issues without a priority label sort last."""
+    for lbl in labels:
+        rank = PRIORITY_RANK.get(lbl.lower())
+        if rank is not None:
+            return rank
+    return len(PRIORITY_RANK)
+
+
 def rank_issues(issues: list[dict]) -> list[dict]:
     def key(issue: dict) -> tuple:
-        cls, _ = rank_class(issue.get("labels", []))
-        return (cls, issue.get("createdAt", ""), issue.get("number", 0))
+        labels = issue.get("labels", [])
+        cls, _ = rank_class(labels)
+        return (priority_rank(labels), cls, issue.get("createdAt", ""), issue.get("number", 0))
 
     ranked = sorted(issues, key=key)
     for issue in ranked:
@@ -408,11 +432,11 @@ def cmd_run_next(args: argparse.Namespace) -> Report:
 def skills_for(labels: list[str]) -> list[str]:
     base = ["implementation-planning", "patch-generation", "code-architecture-review"]
     lowered = {lbl.lower() for lbl in labels}
-    if lowered & {"documentation", "docs"}:
+    if lowered & {"documentation", "docs", "type:docs"}:
         base.insert(0, "documentation-synchronization")
     if lowered & {"website"}:
         base.insert(0, "website-claim-verification")
-    if lowered & {"tests", "ci", "testing"}:
+    if lowered & {"tests", "ci", "testing", "type:tests"}:
         base.insert(0, "test-ci-repair")
     if lowered & {"domain", "sap"}:
         base.insert(0, "domain-pack-improvement")

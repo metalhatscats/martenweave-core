@@ -30,9 +30,12 @@ Stage by stage:
    scope and Safety notes. Check for duplicates first (`gh issue list`, search
    terms). Update existing issues rather than opening near-duplicates.
 5. **Select the smallest valuable task** (`factory plan` → `factory run-next`).
-   Ranking: (a) correctness/trust bugs in shipped behavior, (b) doc/claim drift,
-   (c) test/CI health, (d) small UX clarity wins, (e) everything else. Within a
-   class, smallest first. Never skip the queue to work on something unfiled.
+   Ranking: **maintainer priority labels dominate** — `priority:critical` >
+   `priority:high` > `priority:medium` > `priority:low` > unset. Within a priority,
+   rank by class: (a) correctness/trust bugs in shipped behavior, (b) doc/claim
+   drift, (c) test/CI health, (d) small UX clarity wins, (e) everything else.
+   Within a class, oldest first, then smallest. Never skip the queue to work on
+   something unfiled.
 6. **Produce a patch.** Follow the responsible agent definition + skills. TDD for
    behavior changes: failing test → minimal implementation → green. Keep the diff
    scoped to the issue (P10).
