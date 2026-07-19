@@ -30,6 +30,18 @@ push. **Lesson: capture gate output fully (the harness `--json` keeps tails per
 gate), and quote only numbers visible in the log; "green" is a fine claim when
 the count is not at hand.**
 
+## 2026-07-19 — Commit the complete generated set; globs lie by omission
+
+The website "Validate site" CI job failed on `866d453` because
+`git add docs/*.html` missed `docs/search-index.json` and `docs/use-cases/*.html`
+— the docs-currency check compares committed generated files against sources.
+The Pages deploy succeeded anyway, so the failure was only visible in CI.
+**Lesson: after any build that regenerates artifacts, `git status` is the add
+list — never a hand-written glob. For the website repo that means all of
+`docs/**` (including subdirectories and `search-index.json`) plus `sitemap.xml`;
+then run `npm run validate` locally before pushing, because it is exactly what
+the workflow runs.**
+
 ## 2026-07-19 — Verify before building: most of the "pilot readiness" goal already existed
 
 A prior-session audit would have been enough: the Northstar pilot, demo script,
