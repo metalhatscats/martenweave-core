@@ -126,6 +126,47 @@ describe("createApiClient", () => {
     expect(globalThis.fetch).toHaveBeenCalledWith("http://localhost:8000/api/v1/capabilities");
   });
 
+  it("never embeds raw HTML error pages in failure messages", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: "File not found",
+      headers: { get: () => "text/html; charset=utf-8" },
+      text: () =>
+        Promise.resolve(
+          '<!DOCTYPE HTML> <html lang="en"> <head><title>Error response</title></head> <body> <h1>Error response</h1> <p>Error code: 404</p> </body> </html>',
+        ),
+    });
+    const client = createApiClient("http://localhost:8000");
+    const error = await client.capabilities().catch((reason) => reason);
+    expect(error.message).toBe("HTTP 404 File not found");
+    expect(error.message).not.toContain("<!DOCTYPE");
+    expect(error.message).not.toContain("<html");
+  });
+
+  it("keeps short text error details and truncates long ones", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: "Not Found",
+      text: () => Promise.resolve("Proposal not found"),
+    });
+    const client = createApiClient("http://localhost:8000");
+    await expect(client.capabilities()).rejects.toThrow("404: Proposal not found");
+
+    const longBody = `line one\n${"x".repeat(300)}`;
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      text: () => Promise.resolve(longBody),
+    });
+    const error = await client.capabilities().catch((reason) => reason);
+    expect(error.message.startsWith("500: line one ")).toBe(true);
+    expect(error.message.length).toBeLessThan(180);
+    expect(error.message).not.toContain("\n");
+  });
+
   it("fetches append-only workspace activity", async () => {
     mockFetch({ total_count: 0, events: [] });
     const client = createApiClient("http://localhost:8000");

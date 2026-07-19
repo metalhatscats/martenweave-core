@@ -510,14 +510,34 @@ export function apiObjectToViewModel(obj) {
  * @param {string} baseUrl
  * @returns {ApiClient}
  */
+/**
+ * Build a short, UI-safe message for a failed HTTP response. Error pages from
+ * non-API servers (static hosts, proxies) are HTML documents; raw markup must
+ * never reach banners or toasts.
+ *
+ * @param {Response} response
+ * @param {string} bodyText
+ * @returns {string}
+ */
+function summarizeHttpError(response, bodyText) {
+  const status = `HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ""}`;
+  const contentType = response.headers?.get?.("content-type") || "";
+  const trimmed = (bodyText || "").trim();
+  if (contentType.includes("text/html") || trimmed.startsWith("<")) return status;
+  const collapsed = trimmed.replace(/\s+/g, " ");
+  if (!collapsed) return status;
+  const detail = collapsed.length > 160 ? `${collapsed.slice(0, 160)}…` : collapsed;
+  return `${response.status}: ${detail}`;
+}
+
 export function createApiClient(baseUrl) {
   const root = baseUrl.replace(/\/$/, "");
 
   async function fetchJson(url, options) {
     const response = options !== undefined ? await fetch(url, options) : await fetch(url);
     if (!response.ok) {
-      const text = await response.text().catch(() => "Unknown error");
-      throw new Error(`${response.status}: ${text}`);
+      const text = await response.text().catch(() => "");
+      throw new Error(summarizeHttpError(response, text));
     }
     return response.json();
   }
