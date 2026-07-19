@@ -81,3 +81,33 @@ The Northstar CSV/XLSX generator (fixed seed, pinned XLSX zip dates) regenerates
 byte-identical files, so `git status` after regeneration is a valid regression
 check. **Lesson: any new synthetic fixture must be byte-deterministic and checked
 exactly this way.**
+
+## 2026-07-19 — The probe-race lesson graduated from known limitation to fix
+
+The "Demo mode paint is a probe race" entry above was first recorded as a known
+limitation; it is fixed in `02206ce9` (#550, plus the 1280px ledger clip #549):
+the provider starts non-demo, every read hook short-circuits the pending state to
+a neutral loading state, and a Playwright viewport spec + a never-resolving-probe
+unit test lock the behaviour. **Lesson: known limitations need a re-check date —
+pilot-facing cosmetic races become credibility bugs the moment a real user demo is
+scheduled.**
+
+## 2026-07-19 — Validators must not enshrine the claims they check
+
+`validate-site.mjs` pinned the homepage proof string
+`ATTR-BP-CENTRAL-FOUNDATION-DATE` — when the example model changed, both the copy
+and the validator were stale together, and CI stayed green. It also checked
+version strings only in the AI discovery files, so `docs/*.md`, blog HTML, and
+JSON-LD drifted to 0.5.0 while llms.txt/ai.json were correct. **Lesson: required
+strings in validators age exactly like the copy they guard — re-derive them from
+verified command output, and extend claim checks to every surface that carries
+the claim (docs, blog, structured data).**
+
+## 2026-07-19 — Some CLI commands intentionally write into the example repo
+
+`martenweave agent readiness` persists readiness blockers as
+`model/issues/ISS-READINESS-*` objects — running it (directly or via
+`scripts/validate_doc_commands.py`) leaves untracked files in
+`examples/*/model/`. **Lesson: after local validation runs, check `git status`
+for untracked example artifacts and clean them before committing; never commit
+generated readiness issues into the checked-in examples.**
