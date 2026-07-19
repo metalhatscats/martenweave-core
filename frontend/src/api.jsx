@@ -815,6 +815,9 @@ export function useObjectSearch(query, activeTab, selectedTypes, selectedStatuse
             title: r.title,
             description: r.description,
             domain: r.domain,
+            business_owner: r.business_owner,
+            technical_owner: r.technical_owner,
+            data_steward: r.data_steward,
           })
         );
         setResults(

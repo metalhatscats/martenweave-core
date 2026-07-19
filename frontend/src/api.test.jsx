@@ -319,6 +319,9 @@ function SearchProbe() {
       {mounted && results.map((r) => (
         <span key={r.id} data-testid="result">{r.name}</span>
       ))}
+      {mounted && results.map((r) => (
+        <span key={`${r.id}-owner`} data-testid="owner">{r.businessOwner}</span>
+      ))}
     </div>
   );
 }
@@ -333,6 +336,17 @@ describe("useObjectSearch", () => {
     await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("ready"));
     await waitFor(() => expect(screen.getByTestId("count").textContent).toBe("1"));
     expect(screen.getByTestId("result").textContent).toBe("Live Domain");
+  });
+
+  it("maps live search ownership fields into the view model", async () => {
+    mockFetchSequence(
+      { api_version: "v1", version: "0.6.0", indexed: true, canonical_files: 1 },
+      { total_count: 1, results: [{ object_id: "ATTR-LIVE", object_type: "Attribute", status: "active", name: "Live Attribute", title: null, domain: null, description: "Live", source_file: "x.md", score: 1, matched_fields: [], business_owner: "PERSON-BUSINESS-OWNER", technical_owner: null, data_steward: "PERSON-DATA-STEWARD" }] }
+    );
+    render(<SearchProbe />, { wrapper: TestWrapper });
+    await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("ready"));
+    await waitFor(() => expect(screen.getByTestId("count").textContent).toBe("1"));
+    expect(screen.getByTestId("owner").textContent).toBe("PERSON-BUSINESS-OWNER");
   });
 
   it("falls back to demo data when the API is unavailable", async () => {

@@ -887,6 +887,9 @@ def search(
             source_file=r.source_file,
             score=r.score,
             matched_fields=r.matched_fields,
+            business_owner=r.business_owner,
+            technical_owner=r.technical_owner,
+            data_steward=r.data_steward,
         )
         for r in result.results
     ]

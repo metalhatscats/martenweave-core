@@ -92,6 +92,25 @@ def test_api_v1_search_missing_query(sample_repo: Path) -> None:
     assert data["total_count"] > 0
 
 
+def test_api_v1_search_results_include_ownership(sample_repo: Path) -> None:
+    response = client.get(
+        "/api/v1/search", params={"repo": str(sample_repo), "type": "Attribute"}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["results"], "expected attribute results in the sample repo"
+
+    first = data["results"][0]
+    assert "business_owner" in first
+    assert "technical_owner" in first
+    assert "data_steward" in first
+
+    owned = {r["object_id"]: r for r in data["results"] if r["business_owner"]}
+    assert owned, "expected at least one result with a business owner"
+    assert owned["ATTR-BP-CENTRAL-NAME"]["business_owner"] == "PERSON-BUSINESS-OWNER"
+    assert owned["ATTR-BP-CENTRAL-NAME"]["data_steward"] == "PERSON-DATA-STEWARD"
+
+
 def test_api_v1_search_missing_index(temp_model_dir: Path) -> None:
     repo = str(temp_model_dir.parent)
     response = client.get("/api/v1/search", params={"repo": repo, "q": "test"})

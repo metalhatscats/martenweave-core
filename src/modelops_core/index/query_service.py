@@ -27,6 +27,9 @@ class SearchResult:
     source_file: str
     score: float = 0.0
     matched_fields: list[str] = field(default_factory=list)
+    business_owner: str | None = None
+    technical_owner: str | None = None
+    data_steward: str | None = None
 
 
 @dataclass
@@ -53,7 +56,18 @@ class PaginatedResult:
         return NotImplemented
 
 
+def _owner_display(value: Any) -> str | None:
+    """Normalize an owner frontmatter field (string or list) for display."""
+    if isinstance(value, list):
+        joined = ", ".join(str(v) for v in value if v)
+        return joined or None
+    if value:
+        return str(value)
+    return None
+
+
 def _row_to_result(row: sqlite3.Row) -> SearchResult:
+    frontmatter = json.loads(row["frontmatter_json"] or "{}")
     return SearchResult(
         object_id=row["id"],
         object_type=row["type"],
@@ -63,6 +77,9 @@ def _row_to_result(row: sqlite3.Row) -> SearchResult:
         domain=row["domain"],
         description=row["description"],
         source_file=row["source_file"],
+        business_owner=_owner_display(frontmatter.get("business_owner")),
+        technical_owner=_owner_display(frontmatter.get("technical_owner")),
+        data_steward=_owner_display(frontmatter.get("data_steward")),
     )
 
 

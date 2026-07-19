@@ -369,6 +369,9 @@ class SearchResultItem(BaseModel):
     source_file: str
     score: float
     matched_fields: list[str]
+    business_owner: str | None = None
+    technical_owner: str | None = None
+    data_steward: str | None = None
 
 
 class PaginatedSearchResponse(BaseModel):
