@@ -125,6 +125,60 @@ def test_plan_empty_backlog(tmp_path: Path) -> None:
     assert "No open agent-ready issues" in payload["data"]["summary"]
 
 
+def test_plan_type_cli_ranks_as_correctness(tmp_path: Path) -> None:
+    issues = [
+        {
+            "number": 551,
+            "title": "CI chore",
+            "labels": ["type:tests", "priority:medium", "agent-ready"],
+            "createdAt": "2026-07-19T08:00:00Z",
+        },
+        {
+            "number": 547,
+            "title": "CLI gap",
+            "labels": ["type:cli", "priority:medium", "agent-ready"],
+            "createdAt": "2026-07-19T08:01:00Z",
+        },
+    ]
+    path = tmp_path / "issues.json"
+    path.write_text(json.dumps(issues), encoding="utf-8")
+    proc = run_factory("plan", "--issues-json", str(path), "--json")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    ranked = json.loads(proc.stdout)["data"]["ranked"]
+    assert [i["number"] for i in ranked] == [547, 551]
+    assert ranked[0]["rank_class"] == "correctness"
+
+
+def test_plan_skips_l3_blocked_issues(tmp_path: Path) -> None:
+    issues = [
+        {
+            "number": 551,
+            "title": "[Agent] Wire factory harness gates into CI (L3 proposal)",
+            "labels": ["type:tests", "priority:high", "agent-ready"],
+            "createdAt": "2026-07-19T08:00:00Z",
+            "body": "Scope — PROPOSAL ONLY. See autonomy declaration.\nAutonomy: L3",
+        },
+        {
+            "number": 547,
+            "title": "CLI gap",
+            "labels": ["type:cli", "priority:medium", "agent-ready"],
+            "createdAt": "2026-07-19T08:01:00Z",
+            "body": "Ordinary L2 task.",
+        },
+    ]
+    path = tmp_path / "issues.json"
+    path.write_text(json.dumps(issues), encoding="utf-8")
+    proc = run_factory("plan", "--issues-json", str(path), "--json")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    payload = json.loads(proc.stdout)
+    ranked = payload["data"]["ranked"]
+    assert ranked[0]["number"] == 551  # higher priority, still listed first by rank
+    assert ranked[0]["needs_human_approval"] is True
+    assert ranked[1]["needs_human_approval"] is False
+    # but the recommendation skips the blocked issue
+    assert "Recommended next task: #547" in payload["data"]["summary"]
+
+
 def test_run_next_brief_assigns_agent(issues_file: Path) -> None:
     proc = run_factory("run-next", "--issues-json", str(issues_file), "--json")
     assert proc.returncode == 0, proc.stdout + proc.stderr

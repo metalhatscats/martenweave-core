@@ -78,7 +78,8 @@ AGENT_FILES = {
 
 # Ranking classes per docs/factory/WORKFLOWS.md stage 5.
 RANK_CLASSES = [
-    ("correctness", ("bug", "correctness", "regression", "security")),
+    ("correctness", ("bug", "correctness", "regression", "security",
+                     "type:validation", "type:cli")),
     ("docs-drift", ("documentation", "docs", "type:docs", "website")),
     ("test-ci", ("tests", "ci", "testing", "type:tests")),
     ("ux-clarity", ("ux", "workbench", "ui", "clarity")),
@@ -302,7 +303,7 @@ def load_issues(args: argparse.Namespace) -> tuple[list[dict], str]:
             "--label", "agent-ready",
             "--state", "open",
             "--limit", "50",
-            "--json", "number,title,labels,createdAt",
+            "--json", "number,title,body,labels,createdAt",
         ],
         cwd=REPO_ROOT,
         capture_output=True,
@@ -325,6 +326,21 @@ def rank_class(labels: list[str]) -> tuple[int, str]:
     return len(RANK_CLASSES), "other"
 
 
+L3_TITLE_RE = re.compile(r"\(L3[): \-]")
+L3_BODY_RE = re.compile(r"^autonomy:\s*l3\b", re.IGNORECASE | re.MULTILINE)
+
+
+def needs_human_approval(issue: dict) -> bool:
+    """Declared-L3 detection: `(L3…)` in the title or a standalone
+    `Autonomy: L3` line in the body. Documented in docs/factory/WORKFLOWS.md
+    stage 5 so issue authors mark guarded work explicitly; prose that merely
+    discusses L3 does not match.
+    """
+    title = issue.get("title", "") or ""
+    body = issue.get("body", "") or ""
+    return bool(L3_TITLE_RE.search(title) or L3_BODY_RE.search(body))
+
+
 def priority_rank(labels: list[str]) -> int:
     """Lower sorts first; issues without a priority label sort last."""
     for lbl in labels:
@@ -343,7 +359,16 @@ def rank_issues(issues: list[dict]) -> list[dict]:
     ranked = sorted(issues, key=key)
     for issue in ranked:
         _, issue["rank_class"] = rank_class(issue.get("labels", []))
+        issue["needs_human_approval"] = needs_human_approval(issue)
     return ranked
+
+
+def next_executable(ranked: list[dict]) -> dict | None:
+    """First ranked issue an agent may execute without maintainer approval."""
+    for issue in ranked:
+        if not issue.get("needs_human_approval"):
+            return issue
+    return None
 
 
 def agent_for(labels: list[str]) -> str:
@@ -366,6 +391,7 @@ def cmd_plan(args: argparse.Namespace) -> Report:
             "title": i.get("title"),
             "labels": i.get("labels", []),
             "rank_class": i.get("rank_class"),
+            "needs_human_approval": i.get("needs_human_approval", False),
         }
         for i in ranked
     ]
@@ -375,10 +401,18 @@ def cmd_plan(args: argparse.Namespace) -> Report:
             "-> issue-triage to seed the backlog."
         )
         return report
-    top = ranked[0]
+    top = next_executable(ranked)
+    if top is None:
+        report.data["summary"] = (
+            f"{len(ranked)} open issue(s), all blocked on maintainer approval (L3). "
+            "Escalate to the maintainer; do not start blocked work."
+        )
+        return report
+    blocked = sum(1 for i in ranked if i["needs_human_approval"])
+    suffix = f" ({blocked} L3-blocked issue(s) skipped)" if blocked else ""
     report.data["summary"] = (
         f"Recommended next task: #{top.get('number')} {top.get('title')} "
-        f"[{top.get('rank_class')}]. Run: ./factory run-next"
+        f"[{top.get('rank_class')}]{suffix}. Run: ./factory run-next"
     )
     report.results.append(CmdResult("backlog", ["<gh>"], 0, "", note=note))
     return report
@@ -393,7 +427,13 @@ def cmd_run_next(args: argparse.Namespace) -> Report:
         report.results.append(CmdResult("backlog", ["<gh>"], 1, "empty backlog"))
         return report
 
-    top = ranked[0]
+    top = next_executable(ranked)
+    if top is None:
+        report.data["summary"] = (
+            "All open issues are blocked on maintainer approval (L3). Escalate; do not start."
+        )
+        report.results.append(CmdResult("backlog", ["<gh>"], 1, "all issues L3-blocked"))
+        return report
     agent_file = agent_for(top.get("labels", []))
     brief = {
         "issue": top.get("number"),

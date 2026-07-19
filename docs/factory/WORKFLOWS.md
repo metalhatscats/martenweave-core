@@ -36,6 +36,12 @@ Stage by stage:
    drift, (c) test/CI health, (d) small UX clarity wins, (e) everything else.
    Within a class, oldest first, then smallest. Never skip the queue to work on
    something unfiled.
+   **L3 skip.** The planner never recommends issues blocked on maintainer
+   approval. Guarded work must declare itself: put `(L3…)` in the issue title or
+   a standalone `Autonomy: L3` line in the body. Declared-L3 issues stay in the
+   ranked list marked `needs_human_approval: true`; the recommendation goes to
+   the next executable issue. Prose that merely discusses L3 does not trigger
+   the marker.
 6. **Produce a patch.** Follow the responsible agent definition + skills. TDD for
    behavior changes: failing test → minimal implementation → green. Keep the diff
    scoped to the issue (P10).
