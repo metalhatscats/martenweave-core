@@ -1,0 +1,700 @@
+#!/usr/bin/env python3
+"""Martenweave Development AI Factory harness.
+
+Stdlib-only command harness for the factory documented in docs/factory/.
+It orchestrates existing commands (pytest, ruff, martenweave, demo scripts, npm,
+gh) and never implements product logic, never writes code or canonical data, and
+never mutates GitHub state. See docs/factory/README.md for the loop and
+docs/factory/policies/QUALITY_GATES.md for the gate definitions.
+
+Commands:
+    audit          L0 inspection: repo freshness, structure, doc/skill validators
+    plan           Rank open agent-ready issues into a recommended next task
+    run-next       Print the execution brief for the top-ranked issue
+    review         Diff hygiene checks + critical-review checklist for current work
+    validate       Run deterministic gates G3-G10
+    release-check  Gather G11 release evidence (read-only)
+
+Every command supports --json for machine-readable output.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+from dataclasses import dataclass, field
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent
+VENV_BIN = REPO_ROOT / ".venv" / "bin"
+
+EXAMPLES = [
+    "customer_bp_model",
+    "supplier_vendor_model",
+    "generic_product_model",
+    "simple_product_model",
+    "sap_bp_customer_vendor_reference",
+    "synthetic_customer_migration_demo",
+    "synthetic_enterprise_portfolio_demo",
+    "northstar_mobility_pilot",
+]
+
+PROTECTED_PATHS = (
+    ".github/workflows/",
+    "LICENSE",
+    "NOTICE",
+    ".env",
+    "generated/",
+)
+
+FACTORY_DOCS = [
+    "docs/factory/README.md",
+    "docs/factory/NORTH_STAR.md",
+    "docs/factory/WORKFLOWS.md",
+    "docs/factory/policies/AUTONOMY_LEVELS.md",
+    "docs/factory/policies/QUALITY_GATES.md",
+    "docs/factory/policies/AGENT_PREVENTIONS.md",
+    "docs/factory/memory/PROJECT_MEMORY.md",
+    "docs/factory/memory/KNOWN_LIMITATIONS.md",
+    "docs/factory/memory/REJECTED_IDEAS.md",
+    "docs/factory/memory/LESSONS_LEARNED.md",
+    "docs/factory/memory/VALIDATION_COMMANDS.md",
+]
+
+AGENT_FILES = {
+    "core": "docs/factory/agents/core-development.md",
+    "docs": "docs/factory/agents/documentation-website.md",
+    "testing": "docs/factory/agents/testing-release.md",
+    "domain": "docs/factory/agents/sap-mdm-domain-quality.md",
+    "ai": "docs/factory/agents/ai-mcp.md",
+    "security": "docs/factory/agents/security-critical-review.md",
+    "product": "docs/factory/agents/product-architecture.md",
+}
+
+# Ranking classes per docs/factory/WORKFLOWS.md stage 5.
+RANK_CLASSES = [
+    ("correctness", ("bug", "correctness", "regression", "security")),
+    ("docs-drift", ("documentation", "docs", "website")),
+    ("test-ci", ("tests", "ci", "testing")),
+    ("ux-clarity", ("ux", "workbench", "ui", "clarity")),
+]
+
+LABEL_AGENT_MAP = {
+    "bug": "core",
+    "correctness": "core",
+    "regression": "testing",
+    "documentation": "docs",
+    "docs": "docs",
+    "website": "docs",
+    "tests": "testing",
+    "ci": "testing",
+    "testing": "testing",
+    "domain": "domain",
+    "sap": "domain",
+    "ai": "ai",
+    "mcp": "ai",
+    "security": "security",
+    "factory": "product",
+}
+
+
+@dataclass
+class CmdResult:
+    name: str
+    command: list[str]
+    returncode: int
+    output: str
+    skipped: bool = False
+    note: str = ""
+
+    @property
+    def ok(self) -> bool:
+        return self.skipped or self.returncode == 0
+
+
+@dataclass
+class Report:
+    command: str
+    results: list[CmdResult] = field(default_factory=list)
+    data: dict = field(default_factory=dict)
+
+    @property
+    def ok(self) -> bool:
+        return all(r.ok for r in self.results)
+
+    def emit(self, as_json: bool) -> None:
+        if as_json:
+            payload = {
+                "command": self.command,
+                "ok": self.ok,
+                "results": [
+                    {
+                        "name": r.name,
+                        "command": " ".join(r.command),
+                        "returncode": r.returncode,
+                        "skipped": r.skipped,
+                        "note": r.note,
+                        "tail": r.output.strip().splitlines()[-3:],
+                    }
+                    for r in self.results
+                ],
+                "data": self.data,
+            }
+            print(json.dumps(payload, indent=2))
+            return
+        width = max((len(r.name) for r in self.results), default=10)
+        for r in self.results:
+            if r.skipped:
+                status = "SKIP"
+            elif r.returncode == 0:
+                status = "PASS"
+            else:
+                status = "FAIL"
+            print(f"{status}  {r.name:<{width}}  {r.note}")
+            if not r.ok and r.output:
+                tail = r.output.strip().splitlines()[-15:]
+                for line in tail:
+                    print(f"     | {line}")
+        if self.data.get("summary"):
+            print(self.data["summary"])
+
+
+def venv_tool(name: str) -> list[str]:
+    candidate = VENV_BIN / name
+    if candidate.is_file() and os.access(candidate, os.X_OK):
+        return [str(candidate)]
+    if name == "python":
+        for alt in ("python3", "python"):
+            found = shutil.which(alt)
+            if found:
+                return [found]
+        return [sys.executable]
+    found = shutil.which(name)
+    return [found] if found else []
+
+
+def run_cmd(name: str, command: list[str], timeout: int = 600, note: str = "") -> CmdResult:
+    if not command or not command[0]:
+        return CmdResult(name, command or ["<missing>"], 0, "", skipped=True,
+                         note="tool not found; install it and re-run")
+    try:
+        proc = subprocess.run(
+            command,
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        return CmdResult(name, command, 1, f"TIMEOUT after {timeout}s", note=note)
+    output = (proc.stdout or "") + (proc.stderr or "")
+    return CmdResult(name, command, proc.returncode, output, note=note)
+
+
+def pytest_count(output: str) -> str:
+    match = re.search(r"(\d+ passed.*?)(?:\s+in\s+[\d.]+s|$)", output)
+    return match.group(1) if match else ""
+
+
+# ---------------------------------------------------------------------------
+# audit
+# ---------------------------------------------------------------------------
+
+
+def cmd_audit(args: argparse.Namespace) -> Report:
+    report = Report(command="audit")
+
+    git = run_cmd("git status", ["git", "status", "--short", "--branch"], note="working tree")
+    report.results.append(git)
+    dirty = [ln for ln in git.output.splitlines() if ln and not ln.startswith("##")]
+    report.data["working_tree"] = "clean" if not dirty else f"{len(dirty)} uncommitted path(s)"
+
+    missing_docs = [p for p in FACTORY_DOCS if not (REPO_ROOT / p).is_file()]
+    report.results.append(
+        CmdResult(
+            "factory docs",
+            ["<fs>"],
+            1 if missing_docs else 0,
+            "\n".join(missing_docs),
+            note="all present" if not missing_docs else f"{len(missing_docs)} missing",
+        )
+    )
+
+    if args.quick:
+        report.results.append(
+            CmdResult("gates", ["<skipped>"], 0, "", skipped=True, note="--quick: gate commands skipped")
+        )
+        return report
+
+    ruff = venv_tool("ruff")
+    report.results.append(run_cmd("ruff", ruff + ["check", "."], note="lint"))
+    pytest = venv_tool("python") + ["-m", "pytest", "--collect-only", "-q"]
+    collect = run_cmd("pytest collect", pytest, timeout=300)
+    count = re.search(r"(\d+) tests? collected", collect.output)
+    collect.note = count.group(0) if count else "collection"
+    report.results.append(collect)
+
+    martenweave = venv_tool("martenweave")
+    for example in EXAMPLES:
+        repo = f"examples/{example}"
+        if not (REPO_ROOT / repo).is_dir():
+            report.results.append(
+                CmdResult(f"validate {example}", ["<fs>"], 1, "example directory missing")
+            )
+            continue
+        result = run_cmd(
+            f"validate {example}",
+            martenweave + ["validate", "--repo", repo],
+            timeout=300,
+        )
+        match = re.search(r"(\d+) errors?, (\d+) warnings?", result.output)
+        result.note = match.group(0) if match else ""
+        report.results.append(result)
+
+    python = venv_tool("python")
+    report.results.append(
+        run_cmd("doc commands", python + ["scripts/validate_doc_commands.py"], timeout=120)
+    )
+    report.results.append(
+        run_cmd("skills structure", python + ["scripts/validate_skills.py"], timeout=120)
+    )
+    return report
+
+
+# ---------------------------------------------------------------------------
+# plan / run-next
+# ---------------------------------------------------------------------------
+
+
+def load_issues(args: argparse.Namespace) -> tuple[list[dict], str]:
+    """Return (issues, note). Reads from --issues-json file or `gh`."""
+    if getattr(args, "issues_json", None):
+        path = Path(args.issues_json)
+        if not path.is_file():
+            return [], f"issues file not found: {path}"
+        return json.loads(path.read_text(encoding="utf-8")), f"read from {path}"
+
+    gh = shutil.which("gh")
+    if not gh:
+        return [], "gh CLI not found; install gh or pass --issues-json <file>"
+    proc = subprocess.run(
+        [
+            gh, "issue", "list",
+            "--label", "agent-ready",
+            "--state", "open",
+            "--limit", "50",
+            "--json", "number,title,labels,createdAt",
+        ],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    if proc.returncode != 0:
+        return [], f"gh issue list failed: {proc.stderr.strip()[:200]}"
+    issues = json.loads(proc.stdout or "[]")
+    for issue in issues:
+        issue["labels"] = [lbl["name"] for lbl in issue.get("labels", [])]
+    return issues, "gh issue list --label agent-ready"
+
+
+def rank_class(labels: list[str]) -> tuple[int, str]:
+    lowered = {lbl.lower() for lbl in labels}
+    for idx, (name, keys) in enumerate(RANK_CLASSES):
+        if lowered & set(keys):
+            return idx, name
+    return len(RANK_CLASSES), "other"
+
+
+def rank_issues(issues: list[dict]) -> list[dict]:
+    def key(issue: dict) -> tuple:
+        cls, _ = rank_class(issue.get("labels", []))
+        return (cls, issue.get("createdAt", ""), issue.get("number", 0))
+
+    ranked = sorted(issues, key=key)
+    for issue in ranked:
+        _, issue["rank_class"] = rank_class(issue.get("labels", []))
+    return ranked
+
+
+def agent_for(labels: list[str]) -> str:
+    for lbl in labels:
+        key = LABEL_AGENT_MAP.get(lbl.lower())
+        if key:
+            return AGENT_FILES[key]
+    return AGENT_FILES["product"]
+
+
+def cmd_plan(args: argparse.Namespace) -> Report:
+    report = Report(command="plan")
+    issues, note = load_issues(args)
+    ranked = rank_issues(issues)
+    report.data["source"] = note
+    report.data["open_agent_ready"] = len(ranked)
+    report.data["ranked"] = [
+        {
+            "number": i.get("number"),
+            "title": i.get("title"),
+            "labels": i.get("labels", []),
+            "rank_class": i.get("rank_class"),
+        }
+        for i in ranked
+    ]
+    if not ranked:
+        report.data["summary"] = (
+            f"No open agent-ready issues ({note}). Run the loop: audit -> gap-regression-detection "
+            "-> issue-triage to seed the backlog."
+        )
+        return report
+    top = ranked[0]
+    report.data["summary"] = (
+        f"Recommended next task: #{top.get('number')} {top.get('title')} "
+        f"[{top.get('rank_class')}]. Run: ./factory run-next"
+    )
+    report.results.append(CmdResult("backlog", ["<gh>"], 0, "", note=note))
+    return report
+
+
+def cmd_run_next(args: argparse.Namespace) -> Report:
+    report = Report(command="run-next")
+    issues, note = load_issues(args)
+    ranked = rank_issues(issues)
+    if not ranked:
+        report.data["summary"] = f"No open agent-ready issues ({note})."
+        report.results.append(CmdResult("backlog", ["<gh>"], 1, "empty backlog"))
+        return report
+
+    top = ranked[0]
+    agent_file = agent_for(top.get("labels", []))
+    brief = {
+        "issue": top.get("number"),
+        "title": top.get("title"),
+        "rank_class": top.get("rank_class"),
+        "responsible_agent": agent_file,
+        "read_first": [
+            "docs/factory/memory/PROJECT_MEMORY.md",
+            "docs/factory/NORTH_STAR.md",
+            "docs/factory/policies/AGENT_PREVENTIONS.md",
+            agent_file,
+        ],
+        "skills_to_load": skills_for(top.get("labels", [])),
+        "gates": "per docs/factory/policies/QUALITY_GATES.md rule 1; run ./factory validate before commit",
+        "first_step": (
+            f"Comment on issue #{top.get('number')} that you are taking it, then follow "
+            "skills/implementation-planning/SKILL.md."
+        ),
+    }
+    report.data["brief"] = brief
+    report.data["source"] = note
+    if not args.json:
+        print(f"Issue #{brief['issue']}: {brief['title']}  [{brief['rank_class']}]")
+        print(f"Responsible agent: {agent_file}")
+        print("Read first:")
+        for doc in brief["read_first"]:
+            print(f"  - {doc}")
+        print("Skills to load:")
+        for skill in brief["skills_to_load"]:
+            print(f"  - skills/{skill}/SKILL.md")
+        print(f"Gates: {brief['gates']}")
+        print(f"First step: {brief['first_step']}")
+    return report
+
+
+def skills_for(labels: list[str]) -> list[str]:
+    base = ["implementation-planning", "patch-generation", "code-architecture-review"]
+    lowered = {lbl.lower() for lbl in labels}
+    if lowered & {"documentation", "docs"}:
+        base.insert(0, "documentation-synchronization")
+    if lowered & {"website"}:
+        base.insert(0, "website-claim-verification")
+    if lowered & {"tests", "ci", "testing"}:
+        base.insert(0, "test-ci-repair")
+    if lowered & {"domain", "sap"}:
+        base.insert(0, "domain-pack-improvement")
+    if lowered & {"ai", "mcp"}:
+        base.insert(0, "ai-evaluation")
+    return base
+
+
+# ---------------------------------------------------------------------------
+# review
+# ---------------------------------------------------------------------------
+
+
+def cmd_review(args: argparse.Namespace) -> Report:
+    report = Report(command="review")
+    diff = run_cmd(
+        "git diff",
+        ["git", "diff", "--name-only", args.base],
+        note=f"changed files vs {args.base}",
+    )
+    staged = run_cmd("git diff staged", ["git", "diff", "--name-only", "--cached"])
+    untracked = run_cmd("git untracked", ["git", "ls-files", "--others", "--exclude-standard"])
+    changed = sorted(
+        {
+            *diff.output.split(),
+            *staged.output.split(),
+            *untracked.output.split(),
+        }
+    )
+    report.data["changed_files"] = changed
+
+    violations: list[str] = []
+    for path in changed:
+        for protected in PROTECTED_PATHS:
+            if path == protected or path.startswith(protected):
+                violations.append(path)
+        if re.search(r"(^|/)model/[^/]+\.(md|yaml|yml)$", path):
+            violations.append(f"{path} (canonical model data — P6, needs L3 + PatchProposal path)")
+    report.results.append(
+        CmdResult(
+            "protected paths",
+            ["<diff>"],
+            1 if violations else 0,
+            "\n".join(violations),
+            note="none touched" if not violations else f"{len(violations)} violation(s)",
+        )
+    )
+
+    checklist = [
+        "G1 product scope: change traces to docs/factory/NORTH_STAR.md and its issue (P3)",
+        "G2 architecture: consistent with docs/architecture/ARCHITECTURE_DECISIONS.md; no duplication (P2)",
+        "G3 security/privacy: no secrets, no new network calls, no PII in fixtures",
+        "P1 tests strengthened, never weakened (no deleted/skipped/loosened tests)",
+        "P4 north star and factory policies untouched",
+        "P5 no forbidden shapes (chatbot, workflow engine, SaaS, auth, SAP write-back)",
+        "P6 no canonical model/ edits (enforced above)",
+        "P7 no tags, version bumps, or release publishing",
+        "P8 protected paths untouched (enforced above)",
+        "P9 every claim in commit/issue matches a command actually run",
+        "P10 diff contains only in-scope files",
+    ]
+    report.data["critical_review_checklist"] = checklist
+    report.results.append(
+        CmdResult(
+            "review checklist",
+            ["<manual>"],
+            0,
+            "",
+            note=f"{len(checklist)} items to answer honestly (see --json or docs/factory/policies)",
+        )
+    )
+    if not args.json:
+        print("Critical-review checklist (answer each before committing):")
+        for item in checklist:
+            print(f"  [ ] {item}")
+    return report
+
+
+# ---------------------------------------------------------------------------
+# validate
+# ---------------------------------------------------------------------------
+
+
+def gate_commands(selection: set[str], include_website: bool, website_path: str) -> list[tuple[str, list[str], int]]:
+    """Return (gate_name, command, timeout) tuples for the selected gates."""
+    python = venv_tool("python")
+    ruff = venv_tool("ruff")
+    martenweave = venv_tool("martenweave")
+    npm = [shutil.which("npm") or ""]
+
+    gates: list[tuple[str, list[str], int]] = []
+    if "lint" in selection:
+        gates.append(("G6 ruff check", ruff + ["check", "."], 300))
+        gates.append(("G6 ruff format", ruff + ["format", "--check", "src", "tests"], 300))
+    if "tests" in selection:
+        gates.append(("G5 pytest", python + ["-m", "pytest", "-q"], 1800))
+    if "build" in selection:
+        gates.append(("G6 package build", python + ["-m", "build"], 600))
+    if "contracts" in selection:
+        gates.append((
+            "G7 api/mcp contracts",
+            python + ["-m", "pytest", "tests/test_api_contract.py", "tests/test_api.py",
+                      "tests/test_mcp_server.py", "-q"],
+            900,
+        ))
+    if "examples" in selection:
+        for example in EXAMPLES:
+            gates.append((
+                f"G4 validate {example}",
+                martenweave + ["validate", "--repo", f"examples/{example}"],
+                300,
+            ))
+    if "security" in selection:
+        gates.append((
+            "G3 secret guardrails",
+            python + ["-m", "pytest", "tests/test_secret_guardrails.py", "-q"],
+            300,
+        ))
+    if "docs" in selection:
+        gates.append(("G10 doc commands", python + ["scripts/validate_doc_commands.py"], 120))
+        gates.append(("G10 skills structure", python + ["scripts/validate_skills.py"], 120))
+    if "northstar" in selection:
+        gates.append(("G8 northstar demo", ["bash", "scripts/demo_northstar_pilot.sh"], 900))
+    if "workbench" in selection:
+        gates.append(("G9 npm ci", npm + ["--prefix", "frontend", "ci"], 900))
+        gates.append(("G9 workbench build", npm + ["--prefix", "frontend", "run", "build"], 600))
+        gates.append(("G9 workbench tests", npm + ["--prefix", "frontend", "test"], 600))
+    if include_website and "website" in selection:
+        site = website_path
+        gates.append(("G10 website build", npm + ["--prefix", site, "ci"], 900))
+        gates.append(("G10 website build+validate", npm + ["--prefix", site, "run", "build"], 600))
+        gates.append(("G10 website render smoke", npm + ["--prefix", site, "run", "test:render"], 600))
+    return gates
+
+
+ALL_GATES = {
+    "lint", "tests", "build", "contracts", "examples",
+    "security", "docs", "northstar", "workbench", "website",
+}
+
+
+def cmd_validate(args: argparse.Namespace) -> Report:
+    report = Report(command="validate")
+    selection = set(args.gates.split(",")) if args.gates else set(ALL_GATES)
+    unknown = selection - ALL_GATES
+    if unknown:
+        report.results.append(
+            CmdResult("gate selection", ["<args>"], 1, f"unknown gates: {sorted(unknown)}")
+        )
+        return report
+    if not args.website:
+        selection.discard("website")
+
+    website_path = args.website_path
+    for name, command, timeout in gate_commands(selection, args.website, website_path):
+        result = run_cmd(name, command, timeout=timeout)
+        if name.startswith("G5 pytest"):
+            result.note = pytest_count(result.output)
+        report.results.append(result)
+        if not result.ok and args.fail_fast:
+            report.results.append(
+                CmdResult("fail-fast", ["<stop>"], 0, "", skipped=True,
+                          note="stopping after first failure")
+            )
+            break
+    passed = sum(1 for r in report.results if r.returncode == 0 and not r.skipped)
+    failed = sum(1 for r in report.results if r.returncode != 0)
+    report.data["summary"] = f"gates: {passed} passed, {failed} failed"
+    return report
+
+
+# ---------------------------------------------------------------------------
+# release-check
+# ---------------------------------------------------------------------------
+
+
+def cmd_release_check(args: argparse.Namespace) -> Report:
+    report = Report(command="release-check")
+    python = venv_tool("python")
+
+    version_py = (REPO_ROOT / "src/modelops_core/__version__.py").read_text(encoding="utf-8")
+    match = re.search(r'"(\d+\.\d+\.\d+)"', version_py)
+    source_version = match.group(1) if match else "unknown"
+    pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    py_match = re.search(r'^version\s*=\s*"(\d+\.\d+\.\d+)"', pyproject, re.MULTILINE)
+    py_version = py_match.group(1) if py_match else "unknown"
+    consistent = source_version == py_version
+    report.results.append(
+        CmdResult(
+            "version consistency",
+            ["<fs>"],
+            0 if consistent else 1,
+            "",
+            note=f"__version__.py={source_version} pyproject={py_version}",
+        )
+    )
+
+    report.results.append(
+        run_cmd("G11 release smoke", ["bash", "scripts/release_smoke.sh"], timeout=1800)
+    )
+    if args.tag:
+        report.results.append(
+            run_cmd("G11 release preflight", python + ["scripts/release_preflight.py", "--tag", args.tag], timeout=300)
+        )
+    report.data["summary"] = (
+        "Evidence only. Releases require a maintainer-pushed v* tag (P7); "
+        "this command never tags, bumps, or publishes."
+    )
+    return report
+
+
+# ---------------------------------------------------------------------------
+# entry point
+# ---------------------------------------------------------------------------
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="factory",
+        description="Martenweave Development AI Factory harness (docs/factory/).",
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    def add_json(p: argparse.ArgumentParser) -> None:
+        p.add_argument("--json", action="store_true", help="machine-readable output")
+
+    p_audit = sub.add_parser("audit", help="L0 repo/doc/backlog inspection")
+    add_json(p_audit)
+    p_audit.add_argument("--quick", action="store_true", help="skip gate commands")
+    p_audit.set_defaults(func=cmd_audit)
+
+    p_plan = sub.add_parser("plan", help="rank open agent-ready issues")
+    add_json(p_plan)
+    p_plan.add_argument("--issues-json", help="read issues from a JSON file instead of gh")
+    p_plan.set_defaults(func=cmd_plan)
+
+    p_next = sub.add_parser("run-next", help="execution brief for the top issue")
+    add_json(p_next)
+    p_next.add_argument("--issues-json", help="read issues from a JSON file instead of gh")
+    p_next.set_defaults(func=cmd_run_next)
+
+    p_review = sub.add_parser("review", help="diff hygiene + critical-review checklist")
+    add_json(p_review)
+    p_review.add_argument("--base", default="HEAD", help="git base for the diff (default: HEAD)")
+    p_review.set_defaults(func=cmd_review)
+
+    p_validate = sub.add_parser("validate", help="run deterministic gates G3-G10")
+    add_json(p_validate)
+    p_validate.add_argument(
+        "--gates",
+        help=f"comma-separated subset of: {', '.join(sorted(ALL_GATES))}",
+    )
+    p_validate.add_argument("--fail-fast", action="store_true", help="stop at first failure")
+    p_validate.add_argument("--website", action="store_true", help="include website gates")
+    p_validate.add_argument(
+        "--website-path",
+        default=str(REPO_ROOT.parent / "martenweave.github.io"),
+        help="path to the website repo (default: sibling checkout)",
+    )
+    p_validate.set_defaults(func=cmd_validate)
+
+    p_release = sub.add_parser("release-check", help="G11 release evidence (read-only)")
+    add_json(p_release)
+    p_release.add_argument("--tag", help="candidate tag for release_preflight, e.g. v0.7.0")
+    p_release.set_defaults(func=cmd_release_check)
+
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    report: Report = args.func(args)
+    if args.command not in {"run-next", "review"} or args.json:
+        report.emit(args.json)
+    elif args.command == "review":
+        report.emit(args.json)
+    ok = report.ok
+    if args.command in {"plan", "run-next"}:
+        ok = True if args.command == "plan" else report.ok
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -20,6 +20,23 @@ REQUIRED_SKILLS = [
     "dataset-gap-analysis",
     "impact-analysis",
     "patch-proposal",
+    "architecture-decision",
+    "documentation-discipline",
+    "domain-pack-handling",
+    # Factory skills (docs/factory/)
+    "repository-product-audit",
+    "gap-regression-detection",
+    "issue-triage",
+    "implementation-planning",
+    "patch-generation",
+    "code-architecture-review",
+    "test-ci-repair",
+    "synthetic-pilot-validation",
+    "ai-evaluation",
+    "domain-pack-improvement",
+    "documentation-synchronization",
+    "website-claim-verification",
+    "release-preparation",
 ]
 REQUIRED_SECTIONS = [
     "When to use",

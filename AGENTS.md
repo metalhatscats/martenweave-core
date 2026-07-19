@@ -290,7 +290,7 @@ Quick reference:
 | `test_assessment_package.py` / `test_readiness_agent.py` | Assessment and readiness workflows |
 | `test_audit_log.py` / `test_telemetry.py` / `test_usage_report.py` | Audit and telemetry |
 | `test_repository_parser.py` | Frontmatter parsing |
-| `test_guardrails.py` / `test_secret_guardrails.py` | Safety and secret guardrails |
+| `test_secret_guardrails.py` | Safety and secret guardrails |
 | `test_docs_build.py` / `test_static_viewer.py` | Documentation and viewer generation |
 | `test_mcp_server.py` / `test_api.py` | API and MCP surfaces |
 
@@ -427,14 +427,19 @@ For deeper context, refer to the `docs/` directory:
 | `docs/developer/CODE_STYLE.md` | Code style conventions (mostly TODO) |
 | `docs/product/ACCEPTANCE_CRITERIA.md` | Product acceptance criteria |
 | `docs/product/MVP_SCOPE.md` | MVP boundary and scope |
+| `docs/factory/README.md` | Development AI Factory: agents, skills, gates, autonomy, memory |
+| `docs/factory/NORTH_STAR.md` | Product north star agents must not drift from |
+| `skills/README.md` | Operational skill cards for agents (validated by `scripts/validate_skills.py`) |
 
 ---
 
 ## Quick Reference for Agents
 
+- **Work autonomously on the product?** Start with the Development AI Factory: read `docs/factory/memory/PROJECT_MEMORY.md`, then `docs/factory/README.md`, then run `./factory plan` for the next task.
 - **Add a new canonical object type?** Update `src/modelops_core/schemas/common.py` (add to `ObjectType`) and `src/modelops_core/schemas/registry.py` (add `ObjectTypeEntry` with reference fields).
 - **Add a new CLI command?** Add a new `@app.command()` function in `src/modelops_core/cli.py`.
 - **Add a new validation rule?** Extend `src/modelops_core/validation/pipeline.py` and add tests in `tests/test_*.py`.
 - **Change the generated index schema?** Update `src/modelops_core/index/sqlite_builder.py`.
 - **Add a new SAP context rule?** Add to `_SAP_CONTEXT_RULES` in `src/modelops_core/domain_packs/sap.py`.
+- **Add a new agent skill?** Create `skills/<name>/SKILL.md` (sections: When to use, Inputs, Read first, Do not do, Procedure, Validation, Output format), register it in `scripts/validate_skills.py` (`REQUIRED_SKILLS`) and `skills/README.md`, then run `python3 scripts/validate_skills.py`.
 - **Never** edit files in `generated/` directly — they are rebuilt by `martenweave build-index`.

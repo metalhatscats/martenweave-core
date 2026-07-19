@@ -93,9 +93,7 @@ def test_api_v1_search_missing_query(sample_repo: Path) -> None:
 
 
 def test_api_v1_search_results_include_ownership(sample_repo: Path) -> None:
-    response = client.get(
-        "/api/v1/search", params={"repo": str(sample_repo), "type": "Attribute"}
-    )
+    response = client.get("/api/v1/search", params={"repo": str(sample_repo), "type": "Attribute"})
     assert response.status_code == 200
     data = response.json()
     assert data["results"], "expected attribute results in the sample repo"
