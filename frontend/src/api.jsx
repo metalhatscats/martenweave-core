@@ -493,8 +493,8 @@ export function apiObjectToViewModel(obj) {
     status: obj.status || "Draft",
     owners: ownerCount,
     updated: "Live",
-    businessOwner: obj.business_owner || "—",
-    technicalSteward: obj.technical_owner || "—",
+    businessOwner: obj.business_owner_name || obj.business_owner || "—",
+    technicalSteward: obj.technical_owner_name || obj.technical_owner || "—",
     lifecycle: obj.status || "Draft",
     lastValidated: "—",
     domain: obj.domain || null,
@@ -818,6 +818,9 @@ export function useObjectSearch(query, activeTab, selectedTypes, selectedStatuse
             business_owner: r.business_owner,
             technical_owner: r.technical_owner,
             data_steward: r.data_steward,
+            business_owner_name: r.business_owner_name,
+            technical_owner_name: r.technical_owner_name,
+            data_steward_name: r.data_steward_name,
           })
         );
         setResults(

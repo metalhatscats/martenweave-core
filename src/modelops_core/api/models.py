@@ -372,6 +372,9 @@ class SearchResultItem(BaseModel):
     business_owner: str | None = None
     technical_owner: str | None = None
     data_steward: str | None = None
+    business_owner_name: str | None = None
+    technical_owner_name: str | None = None
+    data_steward_name: str | None = None
 
 
 class PaginatedSearchResponse(BaseModel):

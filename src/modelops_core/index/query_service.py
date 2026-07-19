@@ -265,6 +265,30 @@ def query_objects(
     )
 
 
+def resolve_owner_names(db_path: Path, owner_ids: list[str]) -> dict[str, str]:
+    """Resolve owner IDs (e.g. ``PERSON-CUSTOMER-STEWARD``) to display names.
+
+    Looks up each ID in the index and returns ``{id: name}`` for the IDs that
+    resolve to a named object (typically ``Person`` objects). Unresolvable IDs
+    are omitted so callers can fall back to the raw ID. Resolution happens at
+    query time — canonical data is never modified.
+    """
+    unique_ids = sorted({oid for oid in owner_ids if oid})
+    if not unique_ids or not db_path.exists():
+        return {}
+
+    placeholders = ", ".join("?" for _ in unique_ids)
+    conn = sqlite3.connect(str(db_path))
+    try:
+        rows = conn.execute(
+            f"SELECT id, name FROM objects WHERE id IN ({placeholders})",
+            unique_ids,
+        ).fetchall()
+    finally:
+        conn.close()
+    return {row[0]: row[1] for row in rows if row[1]}
+
+
 def get_object_by_id(db_path: Path, object_id: str) -> dict[str, Any] | None:
     """Fetch a single object from the index by ID.
 

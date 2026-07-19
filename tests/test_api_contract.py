@@ -109,6 +109,24 @@ def test_api_v1_search_results_include_ownership(sample_repo: Path) -> None:
     assert owned["ATTR-BP-CENTRAL-NAME"]["data_steward"] == "PERSON-DATA-STEWARD"
 
 
+def test_api_v1_search_results_resolve_owner_names(sample_repo: Path) -> None:
+    response = client.get("/api/v1/search", params={"repo": str(sample_repo), "type": "Attribute"})
+    assert response.status_code == 200
+    data = response.json()
+    results = {r["object_id"]: r for r in data["results"]}
+
+    central_name = results["ATTR-BP-CENTRAL-NAME"]
+    assert central_name["business_owner"] == "PERSON-BUSINESS-OWNER"
+    assert central_name["business_owner_name"] == "Business Owner"
+    assert central_name["data_steward"] == "PERSON-DATA-STEWARD"
+    assert central_name["data_steward_name"] == "Alex Data Steward"
+
+    # Fields are present (null) even when no owner is assigned.
+    first = data["results"][0]
+    assert "business_owner_name" in first
+    assert "technical_owner_name" in first
+
+
 def test_api_v1_search_missing_index(temp_model_dir: Path) -> None:
     repo = str(temp_model_dir.parent)
     response = client.get("/api/v1/search", params={"repo": repo, "q": "test"})

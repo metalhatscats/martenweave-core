@@ -349,6 +349,17 @@ describe("useObjectSearch", () => {
     expect(screen.getByTestId("owner").textContent).toBe("PERSON-BUSINESS-OWNER");
   });
 
+  it("prefers resolved owner display names over raw ids", async () => {
+    mockFetchSequence(
+      { api_version: "v1", version: "0.6.0", indexed: true, canonical_files: 1 },
+      { total_count: 1, results: [{ object_id: "ATTR-LIVE", object_type: "Attribute", status: "active", name: "Live Attribute", title: null, domain: null, description: "Live", source_file: "x.md", score: 1, matched_fields: [], business_owner: "PERSON-BUSINESS-OWNER", business_owner_name: "Sam Delgado", technical_owner: null, technical_owner_name: null, data_steward: null, data_steward_name: null }] }
+    );
+    render(<SearchProbe />, { wrapper: TestWrapper });
+    await waitFor(() => expect(screen.getByTestId("loading").textContent).toBe("ready"));
+    await waitFor(() => expect(screen.getByTestId("count").textContent).toBe("1"));
+    expect(screen.getByTestId("owner").textContent).toBe("Sam Delgado");
+  });
+
   it("falls back to demo data when the API is unavailable", async () => {
     globalThis.fetch = vi.fn().mockRejectedValue(new Error("Connection refused"));
     render(<SearchProbe />, { wrapper: TestWrapper });

@@ -87,6 +87,7 @@ from modelops_core.index import build_index
 from modelops_core.index.query_service import (
     get_object_by_id,
     list_related_objects,
+    resolve_owner_names,
     search_objects,
 )
 from modelops_core.patching.patch_proposal_service import write_patch_proposal
@@ -875,6 +876,17 @@ def search(
         offset=offset,
     )
 
+    owner_ids = [
+        oid
+        for r in result.results
+        for oid in (r.business_owner, r.technical_owner, r.data_steward)
+        if oid
+    ]
+    owner_names = resolve_owner_names(db_path, owner_ids)
+
+    def _resolve(owner: str | None) -> str | None:
+        return owner_names.get(owner) if owner else None
+
     items = [
         SearchResultItem(
             object_id=r.object_id,
@@ -890,6 +902,9 @@ def search(
             business_owner=r.business_owner,
             technical_owner=r.technical_owner,
             data_steward=r.data_steward,
+            business_owner_name=_resolve(r.business_owner),
+            technical_owner_name=_resolve(r.technical_owner),
+            data_steward_name=_resolve(r.data_steward),
         )
         for r in result.results
     ]

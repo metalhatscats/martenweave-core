@@ -12,6 +12,7 @@ from modelops_core.index.query_service import (
     get_object_by_id,
     list_related_objects,
     query_objects,
+    resolve_owner_names,
     search_objects,
 )
 
@@ -630,3 +631,40 @@ class TestFilterCombinations:
             sap_table="NONEXISTENT",
         )
         assert results == []
+
+
+def test_resolve_owner_names_resolves_person_objects(tmp_path: Path) -> None:
+    import sqlite3
+
+    db = tmp_path / "modelops.db"
+    _build_index(db)
+    conn = sqlite3.connect(str(db))
+    conn.execute(
+        "INSERT INTO objects VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            "PERSON-001",
+            "Person",
+            "active",
+            "Sam Delgado",
+            None,
+            None,
+            None,
+            "model/PERSON-001.md",
+            "ghi",
+            '{"id": "PERSON-001", "type": "Person", "name": "Sam Delgado"}',
+            "",
+            None,
+            None,
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    names = resolve_owner_names(db, ["PERSON-001", "PERSON-MISSING"])
+    assert names == {"PERSON-001": "Sam Delgado"}
+
+
+def test_resolve_owner_names_empty_input(tmp_path: Path) -> None:
+    db = tmp_path / "modelops.db"
+    _build_index(db)
+    assert resolve_owner_names(db, []) == {}
