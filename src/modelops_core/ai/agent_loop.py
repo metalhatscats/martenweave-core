@@ -21,6 +21,7 @@ from modelops_core.config import (
 from modelops_core.impact.proposal_impact_service import generate_proposal_impact_report
 from modelops_core.patching.apply_service import dry_run_patch_proposal
 from modelops_core.patching.patch_proposal_service import write_patch_proposal
+from modelops_core.pilot.preflight import inspect_file
 from modelops_core.reports.audit_service import (
     AuditEventService,
     create_audit_event,
@@ -74,6 +75,7 @@ class AgentLoopResult:
     human_checks: list[str] = field(default_factory=list)
     log: list[IterationLogEntry] = field(default_factory=list)
     operations_preview: list[dict[str, Any]] = field(default_factory=list)
+    mapping_evidence: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -88,6 +90,7 @@ class AgentLoopResult:
             "human_checks": self.human_checks,
             "log": [entry.to_dict() for entry in self.log],
             "operations_preview": self.operations_preview,
+            "mapping_evidence": self.mapping_evidence,
         }
 
 
@@ -158,6 +161,54 @@ def _change_request_guidance(proposal_id: str) -> str:
         f"with `martenweave change-request create --proposal {proposal_id}` linking "
         f"proposal {proposal_id}."
     )
+
+
+def _proposal_review_guidance(proposal_id: str) -> str:
+    """Return the explicit human-review step for an agent-loop proposal."""
+    return (
+        "The proposal remains pending human review. Review it in the Workbench or run "
+        f"`martenweave proposal review --proposal {proposal_id}` before creating or approving "
+        "a ChangeRequest. The agent loop never applies canonical model changes."
+    )
+
+
+def _mapping_evidence_context(mapping_path: Path) -> tuple[dict[str, Any], str]:
+    """Inspect a mapping workbook and produce a metadata-only proposal context.
+
+    Workbook cell values are intentionally excluded. The AI provider receives only
+    sheet/column structure, warnings, and declared assumptions so the workbook
+    remains evidence rather than inferred canonical model truth.
+    """
+    inspection = inspect_file(mapping_path)
+    status = inspection.get("status", "blocked")
+    if status == "blocked":
+        reason = inspection.get("reason", "Mapping workbook preflight blocked the input.")
+        raise ValueError(f"Mapping workbook preflight blocked '{mapping_path.name}': {reason}")
+
+    lines = [
+        "Mapping workbook evidence (metadata-only; do not treat this as canonical model truth):",
+        f"- File: {mapping_path.name}",
+        f"- Preflight status: {status}",
+    ]
+    for sheet in inspection.get("sheets", []):
+        name = sheet.get("name", "Unnamed worksheet")
+        columns = ", ".join(sheet.get("columns", [])) or "No detected columns"
+        if sheet.get("included", True):
+            lines.append(f"- Included sheet '{name}': {columns}")
+        else:
+            reason = sheet.get("exclusion_reason", "Excluded from initial interpretation.")
+            lines.append(f"- Excluded sheet '{name}': {reason}")
+    for warning in inspection.get("warnings", []):
+        lines.append(f"- Reviewer warning: {warning}")
+    for assumption in inspection.get("assumptions", []):
+        lines.append(f"- Evidence assumption: {assumption}")
+    lines.extend(
+        [
+            "- Keep proposed changes minimal and traceable to this evidence.",
+            "- Do not apply changes or invent unresolved source/target mappings.",
+        ]
+    )
+    return inspection, "\n".join(lines)
 
 
 def _run_baseline_validation(repo_root: Path) -> dict[str, Any]:
@@ -267,6 +318,7 @@ def run_agent_loop(
     goal: str,
     max_iterations: int = 5,
     dry_run: bool = False,
+    mapping_path: Path | None = None,
 ) -> AgentLoopResult:
     """Run a closed propose-validate-refine loop for a modeling goal.
 
@@ -311,6 +363,37 @@ def run_agent_loop(
         return result
 
     current_note = goal
+    if mapping_path is not None:
+        try:
+            inspection, evidence_context = _mapping_evidence_context(mapping_path)
+        except (OSError, ValueError, RuntimeError) as exc:
+            result.final_status = AgentLoopStatus.FAILED
+            result.validation_status = "blocked"
+            result.human_checks = [str(exc)]
+            result.log = log
+            _emit_iteration_audit(
+                repo_root=repo_root,
+                iteration=0,
+                proposal_id=None,
+                action="mapping_preflight",
+                validation_status="blocked",
+                errors=[{"code": "MAPPING_PREFLIGHT_BLOCKED", "message": str(exc)}],
+                dry_run=dry_run,
+                status="failed",
+            )
+            return result
+        result.mapping_evidence = inspection
+        current_note = f"{goal}\n\n{evidence_context}"
+        _emit_iteration_audit(
+            repo_root=repo_root,
+            iteration=0,
+            proposal_id=None,
+            action="mapping_preflight",
+            validation_status=str(inspection.get("status", "allowed")),
+            errors=[],
+            dry_run=dry_run,
+            status="success",
+        )
     previous_errors: list[dict[str, Any]] | None = None
     final_proposal: dict[str, Any] | None = None
     final_proposal_path: Path | None = None
@@ -542,6 +625,7 @@ def run_agent_loop(
             result.human_checks.append(f"Operations preview could not be generated: {exc}")
 
     result.proposal_id = final_proposal.get("id")
+    result.human_checks.append(_proposal_review_guidance(result.proposal_id or "unknown"))
 
     if is_high_risk:
         result.final_status = AgentLoopStatus.HIGH_RISK

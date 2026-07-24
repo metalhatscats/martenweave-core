@@ -155,6 +155,11 @@ def propose_patch(
 def agent_loop(
     goal: str = typer.Option(..., "--goal", help="Free-text modeling goal."),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
+    mapping: Path | None = typer.Option(  # noqa: B008
+        None,
+        "--mapping",
+        help="Optional XLSX mapping workbook used as metadata-only evidence.",
+    ),
     max_iterations: int = typer.Option(
         5, "--max-iterations", help="Maximum refinement iterations."
     ),
@@ -170,12 +175,16 @@ def agent_loop(
     if not model_path.exists():
         console.print(f"[red]Model path does not exist: {model_path}[/red]")
         raise typer.Exit(code=1)
+    if mapping is not None and not mapping.exists():
+        console.print(f"[red]Mapping workbook not found: {mapping}[/red]")
+        raise typer.Exit(code=1)
 
     result = run_agent_loop(
         repo_root=repo_root,
         goal=goal,
         max_iterations=max_iterations,
         dry_run=dry_run,
+        mapping_path=mapping,
     )
 
     if json_output:
@@ -201,6 +210,12 @@ def agent_loop(
         console.print(f"Proposal:   {result.proposal_id}")
     if result.proposal_path:
         console.print(f"Path:       {result.proposal_path}")
+    if result.mapping_evidence:
+        console.print(
+            "Mapping evidence: "
+            f"{Path(result.mapping_evidence.get('path', 'workbook')).name} "
+            f"({result.mapping_evidence.get('status', 'unknown')})"
+        )
     if result.validation_status:
         console.print(f"Validation: {result.validation_status}")
     if result.impact:

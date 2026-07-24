@@ -4,6 +4,13 @@ All notable changes to Martenweave Core.
 
 ## [Unreleased]
 
+### Added
+
+- **Evidence-backed agent loop:** `martenweave agent-loop --mapping <workbook.xlsx>` now passes
+  preflighted sheet and column metadata, exclusions, warnings, and assumptions into the existing
+  propose → validate → refine loop. Workbook values remain evidence-only, blocked inputs never
+  reach the provider, and every resulting proposal remains pending explicit human review.
+
 ## [0.6.2] — 2026-07-24
 
 ### Added

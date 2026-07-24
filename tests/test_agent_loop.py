@@ -144,6 +144,93 @@ def test_agent_loop_valid_goal(
     assert result.proposal_path is not None
 
 
+@patch("modelops_core.ai.agent_loop.inspect_file")
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+@patch("modelops_core.ai.agent_loop.generate_proposal_impact_report")
+@patch("modelops_core.ai.agent_loop.compute_proposal_risk")
+def test_agent_loop_uses_mapping_metadata_as_evidence_only(
+    mock_risk,
+    mock_impact,
+    mock_build,
+    mock_inspect,
+    sample_repo: Path,
+) -> None:
+    proposal = _valid_proposal()
+    mock_inspect.return_value = {
+        "path": "/private/customer-mapping.xlsx",
+        "file_type": "xlsx",
+        "status": "warning",
+        "sheets": [
+            {
+                "name": "Customer Mapping",
+                "columns": ["Legacy field", "S/4 field", "Rule"],
+                "included": True,
+            },
+            {
+                "name": "Obsolete",
+                "columns": ["Legacy field"],
+                "included": False,
+                "exclusion_reason": "Hidden worksheet; retained as evidence.",
+            },
+        ],
+        "warnings": ["1 formula cell(s) present."],
+        "assumptions": ["Only visible worksheets are initially interpreted."],
+    }
+    mock_build.return_value = _make_result(proposal)
+    mock_impact.return_value = ProposalImpactReport(
+        proposal_id=proposal["id"],
+        operation_reports=[],
+        high_risk=False,
+    )
+    mock_risk.return_value = RiskAssessment(
+        requires_approval=False,
+        risk_level="low",
+        risk_reasons=[],
+        affected_object_count=0,
+        max_impact_depth=0,
+    )
+
+    result = run_agent_loop(
+        sample_repo,
+        "Propose the smallest safe mapping clarification.",
+        mapping_path=Path("customer-mapping.xlsx"),
+    )
+
+    note = mock_build.call_args.args[0]
+    assert "Mapping workbook evidence (metadata-only" in note
+    assert "Included sheet 'Customer Mapping': Legacy field, S/4 field, Rule" in note
+    assert "Excluded sheet 'Obsolete'" in note
+    assert "/private/customer-mapping.xlsx" not in note
+    assert result.mapping_evidence["status"] == "warning"
+    assert any("pending human review" in check for check in result.human_checks)
+
+
+@patch("modelops_core.ai.agent_loop.inspect_file")
+@patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
+def test_agent_loop_blocks_unsafe_mapping_before_proposal_generation(
+    mock_build,
+    mock_inspect,
+    sample_repo: Path,
+) -> None:
+    mock_inspect.return_value = {
+        "path": "unsafe.xlsm",
+        "file_type": "xlsm",
+        "status": "blocked",
+        "reason": "Unsupported file type for pilot preflight.",
+    }
+
+    result = run_agent_loop(
+        sample_repo,
+        "Propose a mapping clarification.",
+        mapping_path=Path("unsafe.xlsm"),
+    )
+
+    assert result.final_status == AgentLoopStatus.FAILED
+    assert result.validation_status == "blocked"
+    assert "preflight blocked" in result.human_checks[0]
+    mock_build.assert_not_called()
+
+
 @patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
 @patch("modelops_core.ai.agent_loop.generate_proposal_impact_report")
 @patch("modelops_core.ai.agent_loop.compute_proposal_risk")

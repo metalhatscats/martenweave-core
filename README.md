@@ -384,6 +384,23 @@ Turn a local Markdown note or CSV/XLSX validation report into a deterministic, r
   --proposal /tmp/evidence-proposal.md
 ```
 
+### Evidence-Backed Agent Loop
+
+Use a preflighted mapping workbook as structural evidence for a narrowly scoped proposal. The loop
+passes sheet names, detected columns, exclusions, warnings, and assumptions to the proposer; it
+does not send workbook values as canonical truth, apply changes, or approve the proposal.
+
+```bash
+.venv/bin/martenweave agent-loop \
+  --repo examples/customer_bp_model \
+  --mapping ./sap-customer-mapping.xlsx \
+  --goal "Clarify the Customer Group mapping; keep the change reviewable." \
+  --dry-run
+```
+
+Review the resulting `PatchProposal` in the Workbench or with `martenweave proposal review` before
+creating or approving a ChangeRequest.
+
 ## Example Models
 
 Both example directories contain a working `modelops.config.yaml` and can be run without `init`.
