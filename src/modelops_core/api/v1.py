@@ -29,6 +29,7 @@ from modelops_core.api.models import (
     FindingResponse,
     FindingReviewRequest,
     FindingReviewResponse,
+    ImportInspectResponse,
     ImportPreviewResponse,
     ImportProfileResponse,
     ImportProposeResponse,
@@ -92,6 +93,7 @@ from modelops_core.index.query_service import (
 )
 from modelops_core.patching.patch_proposal_service import write_patch_proposal
 from modelops_core.pilot.outcome import generate_pilot_outcome, write_pilot_outcome
+from modelops_core.pilot.preflight import inspect_file
 from modelops_core.pilot.review import promote_finding, set_review
 from modelops_core.reports.audit_service import AuditEventService
 from modelops_core.reports.gap_summary import generate_gap_summary_report
@@ -371,6 +373,14 @@ def capabilities(
             method="POST",
             href="/api/v1/findings/review",
             description="Record a human disposition for an assessment finding.",
+        ),
+        CapabilityEntry(
+            name="import_inspect",
+            method="POST",
+            href="/api/v1/imports/inspect",
+            description=(
+                "Inspect uploaded evidence and interpret sheets and columns without model mutation."
+            ),
         ),
         CapabilityEntry(
             name="import_profile",
@@ -1040,8 +1050,32 @@ def _safe_upload_filename(filename: str | None) -> str:
 
 
 @router.post(
+    "/imports/inspect",
+    response_model=ImportInspectResponse,
+)
+def import_inspect(
+    file: Annotated[UploadFile, File(..., description="Local evidence file to inspect")],
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Return safe worksheet and column metadata before an import workflow runs."""
+    repo_root = _resolve_repo(repo)
+    uploads_dir = resolve_generated_path(repo_root) / "uploads"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    safe_name = _safe_upload_filename(file.filename)
+    upload_path = uploads_dir / safe_name
+    upload_path.write_bytes(file.file.read())
+    try:
+        inspection = inspect_file(upload_path)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not inspect '{safe_name}': {exc}",
+        ) from exc
+    return {"inspection": inspection}
+
+
+@router.post(
     "/imports/profile",
-    dependencies=[Depends(require_mutation_token)],
     response_model=ImportProfileResponse,
 )
 def import_profile(
@@ -1086,7 +1120,6 @@ def import_profile(
 
 @router.post(
     "/imports/preview",
-    dependencies=[Depends(require_mutation_token)],
     response_model=ImportPreviewResponse,
 )
 def import_preview(
@@ -1184,7 +1217,6 @@ def _validate_review_workbook(upload_path: Path, model_path: Path) -> dict[str, 
 
 @router.post(
     "/imports/validate",
-    dependencies=[Depends(require_mutation_token)],
     response_model=ImportValidateResponse,
 )
 def import_validate(

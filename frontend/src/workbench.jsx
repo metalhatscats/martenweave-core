@@ -32,7 +32,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { fields, gaps, modelObjects, proposals, recentActivity } from "./data.js";
-import { useApi, hasCapability, mutationBlockReason, useAssessmentFindings, useHomeAssistant, useImportPreview, useImportProfile, useImportPropose, useImportValidate, useObjectSearch, useProposals, useReportGenerate, useRepositoryDiff, useWorkspaceActivity } from "./api.jsx";
+import { useApi, hasCapability, mutationBlockReason, useAssessmentFindings, useHomeAssistant, useImportInspect, useImportPreview, useImportProfile, useImportPropose, useImportValidate, useObjectSearch, useProposals, useReportGenerate, useRepositoryDiff, useWorkspaceActivity } from "./api.jsx";
 
 const LEDGER_ROWS = [
   {
@@ -1232,17 +1232,24 @@ function ImportDialog({ onClose, onComplete }) {
   const [error, setError] = useState("");
   const [file, setFile] = useState(null);
   const [result, setResult] = useState(null);
+  const [inspection, setInspection] = useState(null);
   const { run: runProfile, loading: profileLoading } = useImportProfile();
+  const { run: runInspect, loading: inspectLoading } = useImportInspect();
   const { run: runPreview, loading: previewLoading } = useImportPreview();
-  const loading = profileLoading || previewLoading;
+  const loading = profileLoading || inspectLoading || previewLoading;
 
   const parse = async () => {
     setError("");
     if (!demo && client && file) {
       setStep("parsing");
       try {
-        const data = source === "dataset" ? await runProfile(file) : await runPreview(file);
-        setResult(data);
+        const inspected = await runInspect(file);
+        setInspection(inspected.inspection);
+        if (inspected.inspection.status === "blocked") {
+          setError(inspected.inspection.reason || "This file cannot be safely interpreted.");
+          setStep("choose");
+          return;
+        }
         setStep("review");
       } catch (reason) {
         setError(reason instanceof Error ? reason.message : String(reason));
@@ -1254,10 +1261,22 @@ function ImportDialog({ onClose, onComplete }) {
     window.setTimeout(() => setStep("review"), 850);
   };
 
+  const executePreview = async () => {
+    if (!client || !file) return;
+    setError("");
+    try {
+      const data = source === "dataset" ? await runProfile(file) : await runPreview(file);
+      setResult(data);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    }
+  };
+
   const handleFileChange = (event) => {
     const selected = event.target.files?.[0];
     setFile(selected || null);
     setError("");
+    setInspection(null);
   };
 
   const handleLoad = () => {
@@ -1322,6 +1341,13 @@ function ImportDialog({ onClose, onComplete }) {
                 <div><Warning size={19} /><strong>{previewResult.warnings?.length ?? 0}</strong><span>Warnings</span></div>
                 <div><ShieldCheck size={19} /><strong>{previewResult.proposal.validation_status || "—"}</strong><span>Validation</span></div>
               </>
+            ) : inspection ? (
+              <>
+                <div><CheckCircle size={19} /><strong>{inspection.sheets?.length ?? 0}</strong><span>Sheets</span></div>
+                <div><Cube size={19} /><strong>{inspection.sheets?.filter((sheet) => sheet.included !== false).length ?? 0}</strong><span>Included</span></div>
+                <div><Warning size={19} /><strong>{inspection.warnings?.length ?? 0}</strong><span>Warnings</span></div>
+                <div><ShieldCheck size={19} /><strong>{inspection.status || "—"}</strong><span>Preflight</span></div>
+              </>
             ) : (
               <>
                 <div><CheckCircle size={19} /><strong>37</strong><span>Files parsed</span></div>
@@ -1332,6 +1358,12 @@ function ImportDialog({ onClose, onComplete }) {
             )}
           </div>
           <section className="parsed-preview">
+            {inspection && <>
+              <h3>Workbook interpretation</h3>
+              {(inspection.sheets || []).map((sheet) => <p key={sheet.name}><strong>{sheet.name}</strong><span>{sheet.columns?.join(", ") || "No columns detected"}</span><small>{sheet.included === false ? "Excluded" : "Included"}</small></p>)}
+              {(inspection.warnings || []).map((warning, index) => <p key={`inspection-${index}`}><strong>Warning</strong><span>{warning}</span><small>Review</small></p>)}
+              {(inspection.assumptions || []).map((assumption, index) => <p key={`assumption-${index}`}><strong>Assumption</strong><span>{assumption}</span><small>Evidence only</small></p>)}
+            </>}
             <h3>Detected model knowledge</h3>
             {profileResult ? (
               profileResult.columns?.map((column) => {
@@ -1340,6 +1372,8 @@ function ImportDialog({ onClose, onComplete }) {
               })
             ) : previewResult ? (
               previewResult.warnings?.map((warning, index) => <p key={index}><strong>Warning</strong><span>{warning}</span><small>Review</small></p>)
+            ) : inspection ? (
+              <p><strong>Next step</strong><span>Confirm the interpretation, then run a proposal-only preview.</span><small>No canonical changes</small></p>
             ) : (
               [
                 ["Canonical objects", "24", "Ready to index"],
@@ -1351,7 +1385,8 @@ function ImportDialog({ onClose, onComplete }) {
             )}
           </section>
           <div className="import-warning"><ShieldCheck size={18} /><p><strong>No canonical files will be changed.</strong> This import updates the disposable investigation index and creates reviewable gap candidates.</p></div>
-          <footer><button className="secondary-button" onClick={() => setStep("choose")}>Back</button><button className="primary-button" onClick={handleLoad}>Load into workspace</button></footer>
+          {error && <span className="inline-error">{error}</span>}
+          <footer><button className="secondary-button" onClick={() => setStep("choose")}>Back</button><button className="primary-button" onClick={result || demo ? handleLoad : executePreview} disabled={loading}>{loading ? "Running…" : result || demo ? "Load into workspace" : source === "dataset" ? "Run dataset profile" : "Run proposal preview"}</button></footer>
         </>
       )}
     </ModalFrame>

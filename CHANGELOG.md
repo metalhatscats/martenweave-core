@@ -4,6 +4,22 @@ All notable changes to Martenweave Core.
 
 ## [Unreleased]
 
+## [0.6.2] — 2026-07-24
+
+### Added
+
+- **Inspect-before-import Workbench flow:** uploaded CSV/XLSX evidence now receives a metadata-only
+  interpretation before profiling or proposal preview. Visible sheets, columns, exclusions,
+  assumptions, formulas, comments, merged ranges, and external-link warnings are shown without
+  treating workbook contents as canonical truth.
+- **Scenario laboratory coverage matrix:** documents the reusable SAP migration/MDM input cases and
+  their CLI, API, Workbench, fixture, and regression-test coverage.
+
+### Changed
+
+- **Package ownership metadata:** PyPI metadata now names Dzmitryi Kharlanau as author and
+  maintainer and includes the confirmed public author profile alongside the existing project links.
+
 ## [0.6.1] — 2026-07-17
 
 ### Fixed

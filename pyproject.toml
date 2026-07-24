@@ -1,11 +1,13 @@
 [project]
 name = "martenweave-core"
-version = "0.6.1"
+version = "0.6.2"
 description = "Open-source model governance and evidence layer for SAP migration, MDM, data governance, and AMS."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Dzmitryi Kharlanau" }]
+maintainers = [{ name = "Dzmitryi Kharlanau" }]
 keywords = [
   "data-governance",
   "data-quality",
@@ -52,6 +54,7 @@ Repository = "https://github.com/metalhatscats/martenweave-core"
 Documentation = "https://martenweave.github.io/docs.html"
 Issues = "https://github.com/metalhatscats/martenweave-core/issues"
 Changelog = "https://github.com/metalhatscats/martenweave-core/blob/main/CHANGELOG.md"
+Author = "https://github.com/dkharlanau"
 
 [project.optional-dependencies]
 dev = [

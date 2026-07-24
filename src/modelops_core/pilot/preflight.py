@@ -110,9 +110,23 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
             "reason": profile.status.reason,
         }
 
-    wb_meta = load_workbook(path, data_only=True, read_only=True)
+    # Read/write mode is required for merged ranges and cell comments.  This
+    # metadata pass never persists or changes the workbook.
+    wb_meta = load_workbook(path, data_only=True, read_only=False, keep_links=True)
     sheet_names = list(wb_meta.sheetnames)
     hidden_sheets = [name for name in sheet_names if wb_meta[name].sheet_state != "visible"]
+    merged_ranges = {
+        name: [str(item) for item in wb_meta[name].merged_cells.ranges]
+        for name in sheet_names
+        if wb_meta[name].merged_cells.ranges
+    }
+    comment_count = sum(
+        1
+        for name in sheet_names
+        for row in wb_meta[name].iter_rows()
+        for cell in row
+        if cell.comment is not None
+    )
     external_links: list[str] = []
     for link in getattr(wb_meta, "external_links", []) or []:
         target = getattr(link, "Target", None) or str(link)
@@ -125,6 +139,14 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
         warnings.append(f"Hidden sheet(s): {', '.join(hidden_sheets)}.")
     if external_links:
         warnings.append(f"External link(s): {', '.join(external_links)}.")
+    if merged_ranges:
+        warnings.append(
+            "Merged cell range(s) present: "
+            + "; ".join(f"{name} ({len(ranges)})" for name, ranges in merged_ranges.items())
+            + "."
+        )
+    if comment_count:
+        warnings.append(f"{comment_count} cell comment(s) present for reviewer context.")
 
     all_columns: list[str] = []
     sheet_metadata: list[dict[str, Any]] = []
@@ -137,6 +159,12 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
                 "row_count": sheet.row_count,
                 "column_count": sheet.column_count,
                 "columns": cols,
+                "included": sheet.sheet_name not in hidden_sheets,
+                "exclusion_reason": (
+                    "Hidden worksheet; retained as evidence but excluded from interpretation."
+                    if sheet.sheet_name in hidden_sheets
+                    else None
+                ),
             }
         )
     warnings.extend(_sensitive_column_warnings(all_columns))
@@ -196,8 +224,21 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
         "sheet_names": sheet_names,
         "sheets": sheet_metadata,
         "hidden_sheets": hidden_sheets,
+        "merged_ranges": merged_ranges,
+        "comment_count": comment_count,
         "external_links": external_links,
         "formula_count": formula_count,
+        "assumptions": [
+            "Only visible worksheets are included in the initial interpretation.",
+            (
+                "Merged cells and comments are reported for human review, not converted into "
+                "model data."
+            ),
+            (
+                "External links and formulas remain source evidence and are never executed by "
+                "Martenweave."
+            ),
+        ],
     }
 
 

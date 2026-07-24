@@ -9,6 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from modelops_core.api.app import app
+from modelops_core.api.workspace import clear_workspace, configure_workspace
 
 client = TestClient(app)
 
@@ -91,6 +92,68 @@ def test_api_v1_import_profile_rejects_unknown_format(tmp_path: Path) -> None:
         files={"file": ("customers.txt", BytesIO(b"id\n1\n"), "text/plain")},
     )
     assert response.status_code == 400
+
+
+def test_api_v1_import_inspect_interprets_workbook_without_model_mutation(tmp_path: Path) -> None:
+    openpyxl = pytest.importorskip("openpyxl")
+    repo = _build_repo(tmp_path)
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "BP mapping"
+    ws.append(["Legacy field", "S/4 target", "Rule"])
+    ws.append(["BUT000.PARTNER", "KNA1.KUNNR", '=CONCAT(A2, "-BP")'])
+    ws.merge_cells("A4:C4")
+    ws["A2"].comment = openpyxl.comments.Comment("Confirm with data steward", "reviewer")
+    hidden = wb.create_sheet("Reference values")
+    hidden.sheet_state = "hidden"
+    hidden.append(["Code"])
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    before = sorted(path.relative_to(repo).as_posix() for path in (repo / "model").rglob("*"))
+    response = client.post(
+        "/api/v1/imports/inspect",
+        params={"repo": str(repo)},
+        files={
+            "file": (
+                "bp-mapping.xlsx",
+                buffer,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    inspection = response.json()["inspection"]
+    assert inspection["status"] == "warning"
+    assert inspection["formula_count"] == 1
+    assert inspection["comment_count"] == 1
+    assert inspection["hidden_sheets"] == ["Reference values"]
+    assert inspection["merged_ranges"] == {"BP mapping": ["A4:C4"]}
+    assert inspection["sheets"][1]["included"] is False
+    assert inspection["sheets"][1]["exclusion_reason"]
+    assert any("never executed" in item for item in inspection["assumptions"])
+    after = sorted(path.relative_to(repo).as_posix() for path in (repo / "model").rglob("*"))
+    assert after == before
+
+
+def test_api_v1_evidence_import_paths_work_when_canonical_mutations_are_disabled(
+    tmp_path: Path,
+) -> None:
+    """The Workbench may inspect/profile evidence in its default read-only mode."""
+    repo = _build_repo(tmp_path)
+    configure_workspace(repo)
+    try:
+        response = client.post(
+            "/api/v1/imports/profile",
+            files={"file": ("customers.csv", BytesIO(b"id,name\n1,Alice\n"), "text/csv")},
+        )
+    finally:
+        clear_workspace()
+
+    assert response.status_code == 200
+    assert response.json()["profile"]["row_count"] == 1
 
 
 def test_api_v1_import_preview_xlsx(tmp_path: Path) -> None:

@@ -102,6 +102,12 @@ class ImportProfileResponse(BaseModel):
     profile: dict[str, Any]
 
 
+class ImportInspectResponse(BaseModel):
+    """Metadata-only interpretation of an uploaded evidence file."""
+
+    inspection: dict[str, Any]
+
+
 class ImportPreviewResponse(BaseModel):
     """Response body for an XLSX import preview."""
 

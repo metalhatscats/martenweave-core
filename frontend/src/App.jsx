@@ -307,7 +307,9 @@ function Topbar({ route, navigate, title, onMenu, actions }) {
               ? "Local API"
               : "Connecting";
   const blockReason = mutationBlockReason({ demo, state, capabilities });
-  const canImport = !blockReason && hasCapability(capabilities, "import_profile");
+  // Evidence inspection/profile/preview never write canonical files. Keep this
+  // safety-first path available even when governed canonical mutations are off.
+  const canImport = !demo && state === API_STATE.CONNECTED && hasCapability(capabilities, "import_inspect");
   const canExport = !blockReason && hasCapability(capabilities, "export_model");
 
   useEffect(() => {

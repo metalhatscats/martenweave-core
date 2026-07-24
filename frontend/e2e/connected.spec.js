@@ -202,6 +202,9 @@ test.describe("connected workbench", () => {
     await page.click('button:has-text("Profile / Preview")');
 
     await page.waitForSelector(".import-summary", { timeout: 20000 });
+    await expect(page.locator(".import-summary")).toContainText("Sheets");
+    await expect(page.locator(".parsed-preview")).toContainText("Workbook interpretation");
+    await page.click('button:has-text("Run dataset profile")');
     await expect(page.locator(".import-summary")).toContainText("Rows");
 
     // The review step has "Back" and "Load into workspace"; return to the

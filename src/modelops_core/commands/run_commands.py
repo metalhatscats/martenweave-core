@@ -25,8 +25,11 @@ run_app = typer.Typer(
 @run_app.command("dataset-readiness")
 @with_telemetry("run_dataset_readiness")
 def dataset_readiness(
-    dataset: Path = typer.Argument(  # noqa: B008
-        ..., help="Path to CSV or XLSX dataset file."
+    dataset: Path | None = typer.Argument(  # noqa: B008
+        None, help="Path to CSV or XLSX dataset file (or use --dataset)."
+    ),
+    dataset_option: Path | None = typer.Option(  # noqa: B008
+        None, "--dataset", help="Named alias for the dataset path."
     ),
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     out: Path = typer.Option(  # noqa: B008
@@ -51,6 +54,14 @@ def dataset_readiness(
     ),
 ) -> None:
     """Run a dataset readiness workflow: validate, index, profile, gaps, report."""
+    if dataset is not None and dataset_option is not None:
+        console.print("[red]Specify the dataset once: positional path or --dataset.[/red]")
+        raise typer.Exit(code=1)
+    dataset = dataset_option or dataset
+    if dataset is None:
+        console.print("[red]Dataset is required: provide a path or --dataset <path>.[/red]")
+        raise typer.Exit(code=1)
+
     repo_root = _resolve_repo(repo)
     model_path = resolve_model_path(repo_root)
 

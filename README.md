@@ -1,5 +1,7 @@
 # martenweave-core
 
+Martenweave Core is maintained by [Dzmitryi Kharlanau](https://github.com/dkharlanau).
+
 [![CI](https://github.com/metalhatscats/martenweave-core/actions/workflows/ci.yml/badge.svg)](https://github.com/metalhatscats/martenweave-core/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
@@ -28,9 +30,9 @@ For Workbench setup and development notes, see [`frontend/README.md`](frontend/R
 
 ## Status
 
-- Current source version: `0.6.1`
+- Current source version: `0.6.2`
 - Package / PyPI name: `martenweave-core`
-- Latest published release: `0.6.1`.
+- Latest published release: `0.6.2`.
 - Source install remains available for contributors and local development.
 - Public site and docs: <https://martenweave.github.io/>
 
@@ -102,7 +104,7 @@ Martenweave Core requires Python 3.11+.
 
 ### Install from PyPI
 
-The latest published release is `0.6.1`. Install it with:
+The latest published release is `0.6.2`. Install it with:
 
 ```bash
 python -m pip install martenweave-core

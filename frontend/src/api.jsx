@@ -150,6 +150,7 @@ import { gaps as demoGaps, lineageEdges, lineageNodes, modelObjects, proposals a
  * @property {(body: {assessment: string, finding_id: string, created_by?: string}) => Promise<{finding_id: string, proposal_id: string, proposal_path: string}>} promoteFinding
  * @property {(basePath: string, headPath: string) => Promise<DiffResultResponse>} diffRepositories
  * @property {(file: File, dataset_id?: string) => Promise<ProfileResponse>} importProfile
+ * @property {(file: File) => Promise<{inspection: Record<string, any>}>} importInspect
  * @property {(file: File) => Promise<PreviewResponse>} importPreview
  * @property {(file: File) => Promise<ImportValidateResponse>} importValidate
  * @property {(file: File) => Promise<ImportProposeResponse>} importPropose
@@ -601,6 +602,7 @@ export function createApiClient(baseUrl) {
     reviewFinding: (body) => postJson(`${root}/api/v1/findings/review`, body),
     promoteFinding: (body) => postJson(`${root}/api/v1/findings/promote`, body),
     importProfile: (file, dataset_id) => postMultipart(`${root}/api/v1/imports/profile`, file, { dataset_id }),
+    importInspect: (file) => postMultipart(`${root}/api/v1/imports/inspect`, file),
     importPreview: (file) => postMultipart(`${root}/api/v1/imports/preview`, file),
     importValidate: (file) => postMultipart(`${root}/api/v1/imports/validate`, file),
     importPropose: (file) => postMultipart(`${root}/api/v1/imports/propose`, file),
@@ -1934,6 +1936,11 @@ function useImportMutation(runFn) {
  */
 export function useImportProfile() {
   return useImportMutation((client, file, dataset_id) => client.importProfile(file, dataset_id));
+}
+
+/** Metadata-only inspection before profiling or proposal preview. */
+export function useImportInspect() {
+  return useImportMutation((client, file) => client.importInspect(file));
 }
 
 /**

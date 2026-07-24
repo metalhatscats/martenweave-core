@@ -83,6 +83,35 @@ def test_cli_dataset_readiness_happy_path(tmp_path: Path) -> None:
     assert data["coverage"]["matched_columns"] == 1
 
 
+def test_cli_dataset_readiness_accepts_named_dataset_option(tmp_path: Path) -> None:
+    """The documented --dataset form is equivalent to the positional argument."""
+    repo = tmp_path / "repo"
+    model_dir = repo / "model"
+    model_dir.mkdir(parents=True)
+    (model_dir / "DOMAIN-TEST.md").write_text(
+        "---\nid: DOMAIN-TEST\ntype: MasterDataDomain\nstatus: draft\nname: Test Domain\n---\n",
+        encoding="utf-8",
+    )
+    dataset = tmp_path / "customers.csv"
+    _write_csv(dataset, ["customer_id"], [["1"]])
+
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "dataset-readiness",
+            "--dataset",
+            str(dataset),
+            "--repo",
+            str(repo),
+            "--out",
+            str(tmp_path / "out"),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+
+
 def test_cli_dataset_readiness_blocked_when_no_matches(tmp_path: Path) -> None:
     """A dataset with no matching columns is blocked."""
     repo = tmp_path / "repo"
