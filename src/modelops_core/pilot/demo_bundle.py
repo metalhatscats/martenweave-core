@@ -44,6 +44,7 @@ _REQUIRED_ARTIFACTS: frozenset[str] = frozenset(
     {
         "executive-summary.md",
         "executive-summary.json",
+        "executive-summary.html",
         "finding-review-summary.json",
         "pilot-outcome.md",
         "pilot-outcome.json",
@@ -60,6 +61,10 @@ _BOUNDARY_NOTES: str = (
 
 _GENERATION_COMMAND: str = (
     "martenweave demo-bundle build --repo <repo> --mapping <mapping> --out <out>"
+)
+
+_BUNDLE_MANIFEST_ARTIFACT_EXCLUSIONS: frozenset[str] = frozenset(
+    {"bundle-manifest.json", "evidence-manifest.json", "manifest.json"}
 )
 
 
@@ -140,6 +145,39 @@ def _collect_artifact_manifest(bundle_dir: Path) -> list[dict[str, Any]]:
                 }
             )
     return artifacts
+
+
+def _write_public_evidence_manifest(
+    bundle_dir: Path,
+    *,
+    input_checksums: dict[str, str],
+) -> None:
+    """Write deterministic evidence for the sanitized public bundle.
+
+    Assessment output can contain XLSX zip metadata with non-deterministic
+    timestamps.  The public bundle intentionally omits those files, so its
+    evidence must be rebuilt from the shareable files rather than copying
+    hashes from the private assessment workspace.
+    """
+    artifacts = [
+        artifact
+        for artifact in _collect_artifact_manifest(bundle_dir)
+        if artifact["path"] not in {"bundle-manifest.json", "evidence-manifest.json"}
+    ]
+    (bundle_dir / "evidence-manifest.json").write_text(
+        json.dumps(
+            {
+                "input_checksums": input_checksums,
+                "artifacts": artifacts,
+                "canonical_files_changed": False,
+                "sanitized_for_external_sharing": True,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
 
 def build_demo_bundle(
@@ -228,19 +266,13 @@ def build_demo_bundle(
         shutil.copy2(review_summary_src, bundle_dir / "finding-review-summary.json")
 
     # Drop non-deterministic binary workbooks from the public bundle and
-    # remove their entries from the copied assessment manifest.
+    # rebuild provenance for only the shareable files.  This keeps the golden
+    # benchmark reproducible without weakening evidence for a real assessment.
     assessment_manifest_path = bundle_dir / "manifest.json"
     if assessment_manifest_path.exists():
         assessment_manifest = json.loads(assessment_manifest_path.read_text(encoding="utf-8"))
-        assessment_manifest["generated_artifacts"] = [
-            a
-            for a in assessment_manifest.get("generated_artifacts", [])
-            if a["path"] != "manifest.json" and not a["path"].lower().endswith(".xlsx")
-        ]
-        assessment_manifest_path.write_text(
-            json.dumps(assessment_manifest, indent=2, sort_keys=True),
-            encoding="utf-8",
-        )
+    else:
+        assessment_manifest = {}
     for path in list(bundle_dir.rglob("*.xlsx")):
         path.unlink()
 
@@ -258,10 +290,29 @@ def build_demo_bundle(
             encoding="utf-8",
         )
 
-    # Remove the build directory; only sanitized bundle artifacts remain.
+    # The private assessment workspace must not leak into public evidence
+    # collection.  Remove it before deriving the shareable artifact inventory.
     build_dir = out_dir / ".demo-build"
     if build_dir.exists():
         shutil.rmtree(build_dir)
+
+    if assessment_manifest_path.exists():
+        public_artifacts = [
+            artifact
+            for artifact in _collect_artifact_manifest(bundle_dir)
+            if artifact["path"] not in _BUNDLE_MANIFEST_ARTIFACT_EXCLUSIONS
+        ]
+        assessment_manifest["generated_artifacts"] = [
+            {"path": artifact["path"], "size": artifact["size"]} for artifact in public_artifacts
+        ]
+        assessment_manifest_path.write_text(
+            json.dumps(assessment_manifest, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        _write_public_evidence_manifest(
+            bundle_dir,
+            input_checksums=assessment_manifest.get("input_checksums", {}),
+        )
 
     # Write bundle manifest (exclude the manifest from its own artifact list).
     artifacts = [

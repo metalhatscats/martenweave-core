@@ -63,6 +63,7 @@ def test_build_demo_bundle_creates_manifest_and_artifacts(demo_bundle) -> None:
     required_files = {
         "executive-summary.md",
         "executive-summary.json",
+        "executive-summary.html",
         "finding-review-summary.json",
         "pilot-outcome.md",
         "pilot-outcome.json",
@@ -80,11 +81,12 @@ def test_demo_bundle_excludes_raw_datasets_and_binary_files(demo_bundle) -> None
 
     assert not any("dataset_readiness" in a["path"] for a in manifest["artifacts"])
     assert not any(
-        Path(a["path"]).suffix not in {".md", ".json", ".xlsx"} for a in manifest["artifacts"]
+        Path(a["path"]).suffix not in {".html", ".md", ".json", ".xlsx"}
+        for a in manifest["artifacts"]
     )
 
     for path in bundle_dir.rglob("*"):
-        if path.is_file() and path.suffix.lower() not in {".md", ".json", ".xlsx"}:
+        if path.is_file() and path.suffix.lower() not in {".html", ".md", ".json", ".xlsx"}:
             raise AssertionError(f"Unexpected file type in bundle: {path.relative_to(bundle_dir)}")
 
 

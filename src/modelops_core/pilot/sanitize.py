@@ -16,8 +16,8 @@ from typing import Any
 
 from modelops_core import __version__
 
-_ALLOWED_SUFFIXES: frozenset[str] = frozenset({".md", ".json", ".xlsx"})
-_TEXT_SUFFIXES: frozenset[str] = frozenset({".md", ".json"})
+_ALLOWED_SUFFIXES: frozenset[str] = frozenset({".html", ".md", ".json", ".xlsx"})
+_TEXT_SUFFIXES: frozenset[str] = frozenset({".html", ".md", ".json"})
 
 # Absolute paths: Unix (/...) or Windows (C:\...).
 _UNIX_PATH_RE = re.compile(r"(/[A-Za-z0-9_\-.]+(?:/[A-Za-z0-9_\-.]+)+)")
