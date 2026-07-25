@@ -115,9 +115,12 @@ comment on #586). CHANGELOG `[Unreleased]` completed for the whole landing
 (`0373f48`).
 **Maintainer actions executed 2026-07-25 on explicit user instruction:**
 website PR #10 squash-merged (`647e3ad`, closes website #9; pages deploy +
-site validation green, live content verified); **v0.7.0 released** (`5d8d9f4`
-chore(release), tag pushed, release.yml running at write time); #551
-implemented (`8af263a` — `./factory validate --gates lint,docs --json` step
-added to ci.yml test-and-lint; closes on green CI of the merge commit).
+site validation green, live content verified); **v0.7.0 released and live on
+PyPI** (`5d8d9f4` chore(release), tag `v0.7.0`, release.yml run 30149605407
+success, PyPI confirms 0.7.0); #586 closed. #551 implemented and closed
+(`8af263a` — `./factory validate --gates lint,docs --json` step in ci.yml;
+CI on the merge commit green). **Both repos have zero open agent-blocked
+items as of 2026-07-25; website #8 (inbox history purge) remains a
+maintainer decision.**
 Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
 `3e2aa0d`; website @ `fdaa395` before PR #10.
