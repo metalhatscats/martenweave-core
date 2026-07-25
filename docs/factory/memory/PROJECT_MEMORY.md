@@ -139,6 +139,11 @@ reference example now carries a synthetic WSDL + imported interface slice
 schema nodes; validate 0 errors; 181 warnings are expected draft-stewardship
 signals). **#588 completed and closed 2026-07-25 (`83824e6`)**: Workbench
 import preview + proposal detail group create-heavy proposals by type
-(64 vitest + 9 e2e green). Queue empty again.
+(64 vitest + 9 e2e green). Queue empty again. CI green on all of
+bbbbc99..168268e. Follow-up dogfood (same realistic-fixture class as the
+WSDL bug hunt): OpenAPI with shared component schemas (34 ops, 3 ops/refs)
+and EDMX with repeated property names across entity types (22 ops) both
+import clean end-to-end — no duplicates, apply+trace green; the dedup fix
+holds across formats. No new findings.
 Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
 `3e2aa0d`; website @ `fdaa395` before PR #10.
