@@ -106,6 +106,10 @@ Format gate fixed (`9461cf1` + lesson: ruff check ≠ format gate);
 reconcile lineage doc §10 with 44 implemented registry edge labels — 32
 verified missing) — completed and closed 2026-07-25 in `50cfb61` (§10
 reconciled, new interface/message/flow family, §9 example fixed); and #586
-(release 0.6.2 evidence pack, L3 maintainer checklist; dist/ still holds
-0.6.1 artifacts). Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
+(release evidence pack, L3 maintainer checklist) — **corrected 2026-07-25:
+v0.6.2 is already tagged on origin (→ 3e2aa0d) with dist/ artifacts; the
+pending release is 0.7.0** covering b769b8a..20436c3 (schema-import family,
+domain-pack CLI, workbook suggestions, #583-#585 docs, format fix).
+Clean-clone + fresh-venv `release_smoke.sh` green at `20436c3` (evidence
+comment on #586). Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
 `3e2aa0d`; website @ `fdaa395` before PR #10.
