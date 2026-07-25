@@ -122,5 +122,13 @@ success, PyPI confirms 0.7.0); #586 closed. #551 implemented and closed
 CI on the merge commit green). **Both repos have zero open agent-blocked
 items as of 2026-07-25; website #8 (inbox history purge) remains a
 maintainer decision.**
+Post-release 2026-07-25: website version claims synced to 0.7.0
+(`a086fdd`, live ai.json verified 0.7.0; validator/script hardcoded
+expectations updated too — same lesson as the 0.5.0 drift). Backlog
+re-seeded from dogfooding: #587 (agent-ready, core-feature, medium —
+schema-import interface lineage is in zero shipped examples; SAP BP pack
+has 434 objects, none interface-family) and #588 (agent-ready, medium —
+Workbench proposal preview caps a flat list at 10 operations, unreviewable
+for create-heavy schema imports). `factory plan` recommends #587 next.
 Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
 `3e2aa0d`; website @ `fdaa395` before PR #10.
