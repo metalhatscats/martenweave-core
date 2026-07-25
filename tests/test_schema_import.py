@@ -1038,3 +1038,59 @@ def test_schema_import_proposal_apply_builds_traceable_interface_lineage(
     assert "MessageType" in node_types
     assert "SchemaNode" in node_types
     assert "FieldEndpoint" in node_types
+
+
+def test_wsdl_import_deduplicates_repeated_element_names(tmp_path: Path) -> None:
+    schema_path = tmp_path / "bp-service.wsdl"
+    schema_path.write_text(
+        """
+<wsdl:definitions name="BPService"
+    targetNamespace="urn:bp:service"
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:tns="urn:bp:service">
+  <wsdl:types>
+    <xs:schema targetNamespace="urn:bp:service">
+      <xs:element name="CreateRequest">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="BusinessPartner" type="xs:string" minOccurs="1" />
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="ReadResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="BusinessPartner" type="xs:string" minOccurs="1" />
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:schema>
+  </wsdl:types>
+  <wsdl:message name="CreateInput">
+    <wsdl:part name="parameters" element="tns:CreateRequest" />
+  </wsdl:message>
+  <wsdl:message name="ReadOutput">
+    <wsdl:part name="parameters" element="tns:ReadResponse" />
+  </wsdl:message>
+  <wsdl:portType name="BPPortType">
+    <wsdl:operation name="Create">
+      <wsdl:input message="tns:CreateInput" />
+      <wsdl:output message="tns:ReadOutput" />
+    </wsdl:operation>
+  </wsdl:portType>
+</wsdl:definitions>
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = inspect_to_proposal(schema_path)
+
+    create_ids = [
+        op["object_id"] for op in result.proposal["operations"] if op["op"] == "create_object"
+    ]
+    assert len(create_ids) == len(set(create_ids)), (
+        f"duplicate create_object ids: {sorted({i for i in create_ids if create_ids.count(i) > 1})}"
+    )
+    assert result.proposal["validation_status"] == "valid"

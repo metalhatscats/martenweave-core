@@ -148,6 +148,7 @@ def validate_patch_proposal(
             )
         )
     elif isinstance(operations, list):
+        seen_create_ids: set[str] = set()
         for idx, op in enumerate(operations):
             if not isinstance(op, dict):
                 continue
@@ -227,6 +228,22 @@ def validate_patch_proposal(
                     )
 
             elif canonical_op == "create_object":
+                if isinstance(object_id, str) and object_id in seen_create_ids:
+                    results.append(
+                        ValidationResult(
+                            severity=ValidationSeverity.ERROR,
+                            code="PATCH_DUPLICATE_CREATE_OBJECT",
+                            message=(
+                                f"create_object for '{object_id}' appears more than once "
+                                "in the same proposal; apply would fail part-way."
+                            ),
+                            object_id=str(proposal_id) if proposal_id else None,
+                            field_path=f"operations[{idx}].object_id",
+                            suggested_fix="Deduplicate create_object operations by object_id.",
+                        )
+                    )
+                elif isinstance(object_id, str):
+                    seen_create_ids.add(object_id)
                 if repo_model_path and registered_types and object_type not in registered_types:
                     results.append(
                         ValidationResult(

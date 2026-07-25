@@ -330,3 +330,23 @@ def test_affected_objects_not_found(temp_model_dir: Path) -> None:
     proposal["affected_objects"] = ["MISSING-OBJECT"]
     results = validate_patch_proposal(proposal, repo_model_path=temp_model_dir)
     assert any(r.code == "PATCH_AFFECTED_OBJECT_NOT_FOUND" for r in results)
+
+
+def test_duplicate_create_object_operations_flagged() -> None:
+    ops = [
+        PatchOperation(
+            op="create_object",
+            object_id="ATTR-DUP",
+            object_type="Attribute",
+            after={"id": "ATTR-DUP", "type": "Attribute", "status": "draft", "name": "A"},
+        ),
+        PatchOperation(
+            op="create_object",
+            object_id="ATTR-DUP",
+            object_type="Attribute",
+            after={"id": "ATTR-DUP", "type": "Attribute", "status": "draft", "name": "A"},
+        ),
+    ]
+    proposal = _proposal_with_ops(*ops)
+    results = validate_patch_proposal(proposal)
+    assert any(r.code == "PATCH_DUPLICATE_CREATE_OBJECT" for r in results)

@@ -185,11 +185,18 @@ def _entity_operations(document: NormalizedSchemaDocument) -> list[PatchOperatio
 def _field_operations(document: NormalizedSchemaDocument) -> list[PatchOperation]:
     operations: list[PatchOperation] = []
     created_value_lists: set[str] = set()
+    seen_object_ids: set[str] = set()
     for field in document.fields:
         entity_name = field.entity_name or document.source_identity
         entity_id = _entity_id(document, entity_name)
         attr_id = _attribute_id(document, field)
         fep_id = _field_endpoint_id(document, field)
+        # Repeated element names across message structures map to the same
+        # generated IDs; emit each object once so apply cannot fail part-way.
+        if attr_id in seen_object_ids or fep_id in seen_object_ids:
+            continue
+        seen_object_ids.add(attr_id)
+        seen_object_ids.add(fep_id)
 
         operations.append(
             PatchOperation(
@@ -427,9 +434,15 @@ def _message_type_operations(document: NormalizedSchemaDocument) -> list[PatchOp
 def _schema_node_operations(document: NormalizedSchemaDocument) -> list[PatchOperation]:
     operations: list[PatchOperation] = []
     created_value_lists: set[str] = set()
+    seen_node_ids: set[str] = set()
     for field in document.fields:
         entity_name = field.entity_name or document.source_identity
         node_id = _schema_node_id(document, field.field_path)
+        # Repeated element names across message structures map to the same
+        # generated node ID; emit each node once so apply cannot fail part-way.
+        if node_id in seen_node_ids:
+            continue
+        seen_node_ids.add(node_id)
         parent_node_id = _schema_node_id(document, field.parent_path) if field.parent_path else None
         attr_id = _attribute_id(document, field)
         fep_id = _field_endpoint_id(document, field)

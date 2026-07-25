@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions name="BusinessPartnerService"
+    targetNamespace="urn:martenweave:example:bp:service"
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:tns="urn:martenweave:example:bp:service">
+  <wsdl:documentation>
+    Synthetic example contract for the Martenweave SAP BP reference model.
+    Not an SAP product artifact; written for schema-import dogfooding (#587).
+  </wsdl:documentation>
+  <wsdl:types>
+    <xs:schema targetNamespace="urn:martenweave:example:bp:service">
+      <xs:element name="BusinessPartnerCreateRequest">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="BusinessPartnerCategory" type="xs:string" minOccurs="1" />
+            <xs:element name="AccountGroup" type="xs:string" minOccurs="1" />
+            <xs:element name="FirstName" type="xs:string" minOccurs="0" />
+            <xs:element name="LastName" type="xs:string" minOccurs="0" />
+            <xs:element name="OrganizationName" type="xs:string" minOccurs="0" />
+            <xs:element name="Country" type="xs:string" minOccurs="1" />
+            <xs:element name="City" type="xs:string" minOccurs="0" />
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="BusinessPartnerCreateResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="BusinessPartner" type="xs:string" minOccurs="1" />
+            <xs:element name="ProcessingStatus" minOccurs="1">
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:enumeration value="created" />
+                  <xs:enumeration value="rejected" />
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:element>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="BusinessPartnerReadRequest">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="BusinessPartner" type="xs:string" minOccurs="1" />
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="BusinessPartnerReadResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="BusinessPartner" type="xs:string" minOccurs="1" />
+            <xs:element name="BusinessPartnerCategory" type="xs:string" minOccurs="1" />
+            <xs:element name="FullName" type="xs:string" minOccurs="0" />
+            <xs:element name="Country" type="xs:string" minOccurs="0" />
+            <xs:element name="City" type="xs:string" minOccurs="0" />
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:schema>
+  </wsdl:types>
+  <wsdl:message name="BusinessPartnerCreateInput">
+    <wsdl:part name="parameters" element="tns:BusinessPartnerCreateRequest" />
+  </wsdl:message>
+  <wsdl:message name="BusinessPartnerCreateOutput">
+    <wsdl:part name="parameters" element="tns:BusinessPartnerCreateResponse" />
+  </wsdl:message>
+  <wsdl:message name="BusinessPartnerReadInput">
+    <wsdl:part name="parameters" element="tns:BusinessPartnerReadRequest" />
+  </wsdl:message>
+  <wsdl:message name="BusinessPartnerReadOutput">
+    <wsdl:part name="parameters" element="tns:BusinessPartnerReadResponse" />
+  </wsdl:message>
+  <wsdl:portType name="BusinessPartnerPortType">
+    <wsdl:operation name="BusinessPartnerCreate">
+      <wsdl:input message="tns:BusinessPartnerCreateInput" />
+      <wsdl:output message="tns:BusinessPartnerCreateOutput" />
+    </wsdl:operation>
+    <wsdl:operation name="BusinessPartnerRead">
+      <wsdl:input message="tns:BusinessPartnerReadInput" />
+      <wsdl:output message="tns:BusinessPartnerReadOutput" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="BusinessPartnerBinding" type="tns:BusinessPartnerPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="BusinessPartnerCreate">
+      <soap:operation soapAction="urn:martenweave:example:bp:service/BusinessPartnerCreate" />
+      <wsdl:input><soap:body use="literal" /></wsdl:input>
+      <wsdl:output><soap:body use="literal" /></wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="BusinessPartnerRead">
+      <soap:operation soapAction="urn:martenweave:example:bp:service/BusinessPartnerRead" />
+      <wsdl:input><soap:body use="literal" /></wsdl:input>
+      <wsdl:output><soap:body use="literal" /></wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="BusinessPartnerService">
+    <wsdl:port name="BusinessPartnerPort" binding="tns:BusinessPartnerBinding">
+      <soap:address location="https://example.invalid/sap/bc/srt/rfc/bp" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

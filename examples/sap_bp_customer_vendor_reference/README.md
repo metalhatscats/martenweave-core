@@ -25,6 +25,25 @@ martenweave health --repo examples/sap_bp_customer_vendor_reference
 martenweave gap-report --repo examples/sap_bp_customer_vendor_reference
 ```
 
+## Imported interface contract slice
+
+`data/contracts/business-partner-service.wsdl` is a synthetic WSDL contract (not an SAP artifact)
+used to dogfood the schema-import workflow. It was imported with:
+
+```bash
+martenweave schema inspect examples/sap_bp_customer_vendor_reference/data/contracts/business-partner-service.wsdl
+martenweave schema import examples/sap_bp_customer_vendor_reference/data/contracts/business-partner-service.wsdl \
+  --repo examples/sap_bp_customer_vendor_reference --as-proposal
+martenweave proposal validate PP-SCHEMA-9EDF23919A5B701D --repo examples/sap_bp_customer_vendor_reference
+martenweave trace IFACE-SCHEMA-BUSINESSPARTNERSERVICE --repo examples/sap_bp_customer_vendor_reference
+```
+
+The applied proposal created the `IFACE-SCHEMA-BUSINESSPARTNERSERVICE` interface with two
+`InterfaceEndpoint` operations, eight `MessageType` objects, and `SchemaNode` field structures
+linked to imported attributes and field endpoints. These imported objects are intentionally in
+`draft` status: their ownership and stewardship warnings (`OWNERSHIP_MISSING`,
+`ATTRIBUTE_MISSING_CONTEXT`) are the expected next review step, not import defects.
+
 The expected outcome is a valid canonical model with reproducible index, lineage, impact, health,
 and model-side gap outputs. Review the `ISS-*`, `EVI-*`, and `DEC-*` objects to follow the evidence
 and decision trail. Use `martenweave docs-build` to generate a local read-only viewer; it never

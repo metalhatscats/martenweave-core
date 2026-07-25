@@ -1,0 +1,19 @@
+---
+id: SNODE-SCHEMA-BUSINESSPARTNERSERVICE-PARAMETERS-PROCESSINGSTATUS
+type: SchemaNode
+status: draft
+name: ProcessingStatus
+message_type: MSG-SCHEMA-BUSINESSPARTNERSERVICE-BUSINESSPARTNERCREATEOUTPUT
+parent_node: SNODE-SCHEMA-BUSINESSPARTNERSERVICE-PARAMETERS
+business_attribute: ATTR-SCHEMA-BUSINESSPARTNERSERVICE-PARAMETERS-PROCESSINGSTATUS
+field_endpoint: FEP-SCHEMA-BUSINESSPARTNERSERVICE-PARAMETERS-PROCESSINGSTATUS
+value_list: VLIST-SCHEMA-BUSINESSPARTNERSERVICE-PARAMETERS-PROCESSINGSTATUS
+technical_name: parameters.ProcessingStatus
+data_type: string
+required: true
+cardinality: 1..1
+description: Imported schema node for parameters.ProcessingStatus.
+---
+
+# ProcessingStatus
+
