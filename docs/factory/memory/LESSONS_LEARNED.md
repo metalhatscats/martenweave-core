@@ -120,3 +120,12 @@ day later nothing existed upstream. **Lesson: the close-out step is commit →
 push → then close the issue with the commit hash as evidence. Never close an
 issue whose patch exists only in a working tree, and check `git status` /
 `git log origin/main..HEAD` at session start for stranded work.**
+
+## 2026-07-25 — `ruff check` is not the format gate
+
+The #571–#582 landing passed `ruff check .` and was committed/pushed, but
+`./factory validate`'s format gate failed on all 12 touched files — lint-clean
+is not format-clean. **Lesson: before pushing feature work, run
+`ruff format --check .` (or full `./factory validate` for large landings), not
+just `ruff check .`; fix with `ruff format .` and re-run the focused tests of
+the touched areas.**
