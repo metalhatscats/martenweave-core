@@ -378,7 +378,7 @@ Recommended edge structure:
 ```json
 {
   "from_object_id": "ATTR-CUST-SALES-CUSTOMER-GROUP",
-  "relationship_type": "represented_by",
+  "relationship_type": "represents_attribute",
   "to_object_id": "FEP-S4-KNVV-KDGRP",
   "source_object_id": "USE-CUST-SALES-CUSTOMER-GROUP-S4",
   "source_file": "model/attribute-usages/USE-CUST-SALES-CUSTOMER-GROUP-S4.md",
@@ -427,91 +427,96 @@ AI-suggested relationships must not be treated as canonical until approved.
 
 ## 10. Core relationship types
 
+The labels below are the implemented relationship labels. The source of truth
+is the type registry (`src/modelops_core/schemas/registry.py`); where an
+earlier conceptual name from this document differs, it is shown in
+parentheses as shorthand.
+
 ### 10.1 Scope relationships
 
 ```text
 belongs_to_domain
-part_of_migration_object
-has_entity
-has_context
-uses_context
+belongs_to_entity (has_entity)
+part_of_entity
+part_of_migration (part_of_migration_object)
+used_in_context (uses_context)
+part_of_mapping_set (uses_mapping_set)
+part_of_value_list
 ```
 
 ### 10.2 Semantic relationships
 
 ```text
-defines_attribute
-uses_attribute
-used_in_context
-has_usage
-represented_by
-physical_representation_of
+has_attribute (defines_attribute)
+represents_attribute (represented_by / physical_representation_of)
+implemented_by_field
+has_allowed_values
 ```
 
-### 10.3 Physical relationships
+### 10.3 Physical / landscape relationships
 
 ```text
 located_in_system
-located_in_environment
-uses_sap_object
-has_field_endpoint
-used_in_interface
-used_in_dataset
-used_in_report
+used_by_application
 ```
 
-### 10.4 Mapping relationships
+### 10.4 Interface, message, and flow relationships
+
+Interface lineage connects interfaces, their endpoints, message types, and
+schema nodes, and places integration flows between systems:
+
+```text
+part_of_interface (used_in_interface)
+flows_from
+flows_to
+part_of_flow
+accepts_message_type
+returns_message_type
+part_of_message_type
+child_of_schema_node
+```
+
+### 10.5 Mapping and value relationships
 
 ```text
 mapped_from
-mapped_to
-maps_source_to_target
+mapped_to (maps_source_to_target)
 uses_mapping
-uses_mapping_set
 uses_value_mapping
-uses_value_list
-uses_logic
-transformed_by
-defaulted_by
-derived_by
+maps_from_values
+maps_to_values
 ```
 
-### 10.5 Validation relationships
+### 10.6 Transformation and flow-step relationships
 
 ```text
-has_business_rule
-validates
-checked_by
-uses_data_quality_check
-has_validation_result
-failed_by
-passed_by
+reads_from
+writes_to
+applies_transformation (transformed_by)
+preceded_by
+followed_by
 ```
 
-### 10.6 Governance relationships
+### 10.7 Validation relationships
 
 ```text
-owned_by
+validated_by (validates)
+```
+
+### 10.8 Governance relationships
+
+```text
+owned_by_business (owned_by)
+owned_by_technical (owned_by)
+stewarded_by
 accountable_to
-responsible_for
-affected_by
+affected_by_issue (affected_by)
 affects
-explained_by
-supported_by
-changed_by
+explained_by_decision (explained_by)
+supported_by_evidence (supported_by)
 proposed_by
 approved_by
-superseded_by
-```
-
-### 10.7 Report relationships
-
-```text
-included_in_report
-included_in_handover
-included_in_readiness_summary
-included_in_gap_report
-included_in_impact_report
+related_to
 ```
 
 ---
