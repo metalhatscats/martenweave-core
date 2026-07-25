@@ -2,13 +2,15 @@
 
 > Read this first every factory session. It is the map to durable project context.
 > Update it whenever the underlying truth changes (same patch as the change).
-> Last verified: 2026-07-25 against Core `main` (v0.7.1, live on PyPI) and website @ ed69a2f.
+> Last verified: 2026-07-25 against Core `main` (v0.8.0, live on PyPI) and website claim sync PR #11.
 
 ## Product state
 
-- Core `0.7.1` on `main`, tagged `v0.7.1`, live on PyPI (release run 30152377261); full suite **1902 passed, 3 skipped**; ruff clean;
-  wheel builds; `scripts/release_smoke.sh` green (also from a clean clone +
-  fresh venv on 2026-07-19).
+- Core `0.8.0` on `main`, tagged `v0.8.0`, live on PyPI (release run 30175456383);
+  full suite **1915 passed, 3 skipped**; ruff clean; wheel builds; factory
+  gates 20/20; release smoke and Northstar 11/11 green. A fresh Python 3.11
+  virtual environment installed `martenweave-core==0.8.0` from PyPI and exposed
+  the workbook-comparison CLI.
 - Northstar synthetic pilot is the regression benchmark: 200 canonical objects (187 + 13
   freight-status interface slice added 2026-07-25; NORTH_STAR.md still says 187 —
   maintainer-owned per P4, flagged),
@@ -159,3 +161,13 @@ Releases executed by the agent on standing maintainer instruction (0.7.0,
 0.7.1) — P7 instruction was given explicitly both times.
 Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
 `3e2aa0d`; website @ `fdaa395` before PR #10.
+
+**Pilot Proof release 2026-07-25:** #590 (irregular workbook corpus), #591
+(semantic mapping-workbook comparison), #592 (client-ready assessment package),
+and #594 (release claims) completed and closed. PR #593 merged as `8e47923`;
+`v0.8.0` was published through release run 30175456383. The release provides the
+documented preflight → proposal-only bootstrap → deterministic assessment → review
+→ PatchProposal workflow, standalone executive HTML, findings workbook, evidence
+manifest, review pack, Workbench workspace descriptor, and deterministic JSON/HTML/XLSX
+workbook comparison. Website sync PR #11 merged as `400a301` after static validation,
+Core-version copy verification, and rendered smoke checks.
