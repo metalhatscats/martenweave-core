@@ -129,6 +129,14 @@ re-seeded from dogfooding: #587 (agent-ready, core-feature, medium —
 schema-import interface lineage is in zero shipped examples; SAP BP pack
 has 434 objects, none interface-family) and #588 (agent-ready, medium —
 Workbench proposal preview caps a flat list at 10 operations, unreviewable
-for create-heavy schema imports). `factory plan` recommends #587 next.
+for create-heavy schema imports). **#587 completed and closed 2026-07-25
+(`bbbbc99`)**: dogfooding surfaced a real apply-breaking bug — repeated
+element names across messages produced duplicate create_object ops
+(27 dup IDs / 123 ops, FileExistsError mid-apply); fixed with generator
+dedup + new `PATCH_DUPLICATE_CREATE_OBJECT` validator error. The BP
+reference example now carries a synthetic WSDL + imported interface slice
+(IFACE-SCHEMA-BUSINESSPARTNERSERVICE: 2 endpoints, 8 message types, 21
+schema nodes; validate 0 errors; 181 warnings are expected draft-stewardship
+signals). #588 is next.
 Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
 `3e2aa0d`; website @ `fdaa395` before PR #10.
