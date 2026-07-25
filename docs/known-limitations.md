@@ -12,6 +12,10 @@ Martenweave Core is useful today, but it is still an early backend-first project
 - SAP migration and MDM examples are starter scenarios, not an official SAP partnership or SAP-certified product claim.
 - Generated indexes and generated viewer files are local artifacts, not a shared production database
   service.
+- Colour-only workbook statuses are preserved as structural evidence but never interpreted as a
+  business disposition. Hidden worksheets are recorded and excluded from initial interpretation.
+- Workbook comparison is deterministic evidence, not a matching engine for unresolved duplicate or
+  split-row mappings; reviewers must confirm conclusions before proposal promotion.
 
 ## AI and Automation
 

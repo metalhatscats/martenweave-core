@@ -16,21 +16,29 @@ from typing import Any
 SCANNER_VERSION = "1.0"
 MAX_COLUMNS = 50
 MAX_TITLE_ROWS = 2
-MAX_SCAN_ROWS_PER_SHEET = 5_000
+MAX_SCAN_ROWS_PER_SHEET = 50_000
 
 _ROLE_PATTERNS: dict[str, tuple[str, ...]] = {
-    "source_field": ("source_field", "source field", "legacy field", "old field", "source"),
-    "target_table": ("target_table", "target table", "sap table"),
-    "target_field": ("target_field", "target field", "new field", "target"),
-    "owner": ("owner", "steward", "responsible"),
-    "status": ("status", "state", "disposition"),
+    "source_field": (
+        "source_field",
+        "source field",
+        "legacy field",
+        "old field",
+        "source",
+        "поле источника",
+        "исходное поле",
+    ),
+    "target_table": ("target_table", "target table", "sap table", "таблица цели"),
+    "target_field": ("target_field", "target field", "new field", "target", "поле цели"),
+    "owner": ("owner", "steward", "responsible", "владелец"),
+    "status": ("status", "state", "disposition", "статус"),
     "rule": ("rule", "transform", "transformation", "mapping type"),
     "comment": ("comment", "note", "remarks", "reviewer comment"),
     "decision": ("decision", "topic", "approval"),
-    "source_system": ("source system", "source_system", "legacy system"),
+    "source_system": ("source system", "source_system", "legacy system", "система источника"),
     "target_system": ("target system", "target_system", "sap system"),
     "description": ("description", "label", "business name"),
-    "data_type": ("data type", "datatype", "type", "format"),
+    "data_type": ("data type", "datatype", "type", "format", "тип данных"),
 }
 
 _MAPPING_KEYWORDS = {

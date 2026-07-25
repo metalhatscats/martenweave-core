@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import re
+import unicodedata
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -40,6 +42,7 @@ class DatasetProfile:
     columns: list[ColumnProfile] = field(default_factory=list)
     status: ProfilingStatus = field(default_factory=ProfilingStatus)
     sheet_name: str | None = None
+    header_row: int = 1
 
 
 @dataclass
@@ -56,6 +59,25 @@ MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB
 MAX_ROWS = 500_000
 MAX_COLUMNS = 1_000
 SAMPLE_SIZE = 5
+MAX_HEADER_SCAN_ROWS = 25
+
+_HEADER_HINTS = (
+    "source",
+    "target",
+    "legacy",
+    "sap",
+    "owner",
+    "steward",
+    "responsible",
+    "status",
+    "state",
+    "field",
+    "table",
+    "поле",
+    "таблица",
+    "владелец",
+    "статус",
+)
 
 
 def _compute_file_hash(path: Path) -> str:
@@ -97,6 +119,35 @@ def _infer_type(values: list[str]) -> str:
     if {"integer", "decimal"} <= types_seen:
         return "decimal"
     return "mixed"
+
+
+def _header_candidate_score(values: tuple[object, ...]) -> int:
+    """Score a likely Excel header row without treating title rows as headers."""
+    labels = [str(value).strip() for value in values if value is not None and str(value).strip()]
+    if len(labels) < 2:
+        return 0
+    normalized = [unicodedata.normalize("NFKC", label).casefold() for label in labels]
+    unique = len(set(normalized)) == len(normalized)
+    keyword_hits = sum(
+        any(re.search(rf"\b{re.escape(hint)}", label) for hint in _HEADER_HINTS)
+        for label in normalized
+    )
+    return (2 if unique else 0) + keyword_hits
+
+
+def _find_header_row(ws: object) -> tuple[int, tuple[object, ...]]:
+    """Return the most plausible header from the first bounded worksheet rows."""
+    best_row = 1
+    best_values: tuple[object, ...] = ()
+    best_score = -1
+    for row_index, row in enumerate(
+        ws.iter_rows(min_row=1, max_row=MAX_HEADER_SCAN_ROWS, values_only=True), start=1
+    ):
+        values = tuple(row)
+        score = _header_candidate_score(values)
+        if score > best_score:
+            best_row, best_values, best_score = row_index, values, score
+    return best_row, best_values
 
 
 def profile_csv(
@@ -263,9 +314,10 @@ def profile_xlsx(
 
     for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
-        headers: list[str] = []
-        first_row = next(ws.iter_rows(values_only=False), None)
-        if first_row is None:
+        if ws.sheet_state != "visible":
+            continue
+        header_row, header_values = _find_header_row(ws)
+        if not header_values:
             sheet_profiles.append(
                 DatasetProfile(
                     dataset_id=dataset_id,
@@ -282,7 +334,7 @@ def profile_xlsx(
             )
             continue
 
-        headers = [str(cell.value) if cell.value is not None else "" for cell in first_row]
+        headers = [str(value) if value is not None else "" for value in header_values]
 
         if len(headers) > max_columns:
             sheet_profiles.append(
@@ -309,7 +361,7 @@ def profile_xlsx(
         distinct_sets: list[set[str]] = [set() for _ in headers]
         sampled = sample_interval is not None and sample_interval > 1
 
-        for row in ws.iter_rows(min_row=2, values_only=True):
+        for row in ws.iter_rows(min_row=header_row + 1, values_only=True):
             if row_count >= max_rows:
                 break
             row_count += 1
@@ -352,6 +404,7 @@ def profile_xlsx(
                 file_path=str(xlsx_path),
                 file_hash=file_hash,
                 sheet_name=sheet_name,
+                header_row=header_row,
                 row_count=row_count,
                 column_count=len(columns),
                 columns=columns,

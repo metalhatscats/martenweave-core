@@ -130,15 +130,18 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
     }
     comment_count = 0
     hyperlink_count = 0
+    coloured_cell_count = 0
     hyperlink_cells: dict[str, list[str]] = {}
     hidden_rows: dict[str, list[int]] = {}
     hidden_columns: dict[str, list[str]] = {}
     hidden_row_counts: dict[str, int] = {}
     hidden_column_counts: dict[str, int] = {}
     hyperlink_counts: dict[str, int] = {}
+    sheet_dimensions: dict[str, tuple[int, int]] = {}
     excel_tables: list[dict[str, str]] = []
     for name in sheet_names:
         ws = wb_meta[name]
+        sheet_dimensions[name] = (ws.max_row or 0, ws.max_column or 0)
         sheet_hidden_rows = [
             index
             for index, dimension in ws.row_dimensions.items()
@@ -167,6 +170,8 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
                     hyperlink_cells.setdefault(name, [])
                     if len(hyperlink_cells[name]) < MAX_STRUCTURAL_SAMPLE:
                         hyperlink_cells[name].append(cell.coordinate)
+                if cell.fill.fill_type and cell.fill.fill_type != "none":
+                    coloured_cell_count += 1
     external_links: list[str] = []
     for link in getattr(wb_meta, "external_links", []) or []:
         target = getattr(link, "Target", None) or str(link)
@@ -205,6 +210,11 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
         warnings.append(f"{comment_count} cell comment(s) present for reviewer context.")
     if hyperlink_count:
         warnings.append(f"{hyperlink_count} hyperlink cell(s) present.")
+    if coloured_cell_count:
+        warnings.append(
+            f"{coloured_cell_count} colour-filled cell(s) present; colour-only statuses are "
+            "evidence for human review and are not interpreted as data."
+        )
     if defined_names:
         warnings.append(f"{len(defined_names)} defined name(s) present.")
     if excel_tables:
@@ -212,26 +222,28 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
 
     all_columns: list[str] = []
     sheet_metadata: list[dict[str, Any]] = []
-    for sheet in profile.sheets:
-        cols = [c.name for c in sheet.columns]
+    profiles_by_sheet = {sheet.sheet_name: sheet for sheet in profile.sheets}
+    for sheet_name in sheet_names:
+        sheet = profiles_by_sheet.get(sheet_name)
+        cols = [c.name for c in sheet.columns] if sheet else []
         all_columns.extend(cols)
         sheet_metadata.append(
             {
-                "name": sheet.sheet_name,
-                "row_count": sheet.row_count,
-                "column_count": sheet.column_count,
+                "name": sheet_name,
+                "row_count": sheet.row_count if sheet else sheet_dimensions[sheet_name][0],
+                "column_count": sheet.column_count if sheet else sheet_dimensions[sheet_name][1],
                 "columns": cols,
-                "hidden_row_count": hidden_row_counts.get(sheet.sheet_name, 0),
-                "hidden_rows": hidden_rows.get(sheet.sheet_name, []),
-                "hidden_column_count": hidden_column_counts.get(sheet.sheet_name, 0),
-                "hidden_columns": hidden_columns.get(sheet.sheet_name, []),
-                "hyperlink_count": hyperlink_counts.get(sheet.sheet_name, 0),
-                "hyperlink_cells": hyperlink_cells.get(sheet.sheet_name, []),
-                "tables": [table for table in excel_tables if table["sheet"] == sheet.sheet_name],
-                "included": sheet.sheet_name not in hidden_sheets,
+                "hidden_row_count": hidden_row_counts.get(sheet_name, 0),
+                "hidden_rows": hidden_rows.get(sheet_name, []),
+                "hidden_column_count": hidden_column_counts.get(sheet_name, 0),
+                "hidden_columns": hidden_columns.get(sheet_name, []),
+                "hyperlink_count": hyperlink_counts.get(sheet_name, 0),
+                "hyperlink_cells": hyperlink_cells.get(sheet_name, []),
+                "tables": [table for table in excel_tables if table["sheet"] == sheet_name],
+                "included": sheet_name not in hidden_sheets,
                 "exclusion_reason": (
                     "Hidden worksheet; retained as evidence but excluded from interpretation."
-                    if sheet.sheet_name in hidden_sheets
+                    if sheet_name in hidden_sheets
                     else None
                 ),
             }
@@ -296,6 +308,7 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
         "merged_ranges": merged_ranges,
         "comment_count": comment_count,
         "hyperlink_count": hyperlink_count,
+        "coloured_cell_count": coloured_cell_count,
         "hyperlink_cells": hyperlink_cells,
         "external_links": external_links,
         "hidden_rows": hidden_rows,

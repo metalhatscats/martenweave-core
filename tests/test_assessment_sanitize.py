@@ -42,6 +42,11 @@ def _build_assessment_input(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
 
+    # The client-ready executive report is a shareable text artifact too.
+    (src / "executive-summary.html").write_text(
+        "<h1>Executive Summary</h1><p>Contact: alice@example.com</p>", encoding="utf-8"
+    )
+
     # Raw dataset must be excluded by default
     raw_dir = src / "dataset_readiness"
     raw_dir.mkdir()
@@ -94,6 +99,10 @@ def test_sanitize_redacts_absolute_paths_and_emails(tmp_path: Path) -> None:
     assert "/Users/alice/client/project" not in scorecard
     assert "alice@example.com" not in scorecard
     assert "<redacted-path>" in scorecard or "<redacted-email>" in scorecard
+
+    executive_html = (out / "executive-summary.html").read_text(encoding="utf-8")
+    assert "alice@example.com" not in executive_html
+    assert "<redacted-email>" in executive_html
 
 
 def test_sanitize_excludes_raw_datasets(tmp_path: Path) -> None:

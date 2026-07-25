@@ -8,6 +8,7 @@ artifact or finding ID.
 
 from __future__ import annotations
 
+import html
 import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -520,6 +521,39 @@ def render_executive_summary_markdown(summary: ExecutiveSummary) -> str:
     return "\n".join(lines)
 
 
+def render_executive_summary_html(summary: ExecutiveSummary) -> str:
+    """Render a standalone, client-readable executive assessment report."""
+    metrics = "".join(
+        f"<tr><th>{html.escape(name.replace('_', ' ').title())}</th>"
+        f"<td>{html.escape(str(value))}</td></tr>"
+        for name, value in summary.key_metrics.items()
+    )
+    blockers = (
+        "".join(
+            f"<li><strong>{html.escape(item['severity'].upper())}</strong> — "
+            f"{html.escape(item['description'])}</li>"
+            for item in summary.top_blockers
+        )
+        or "<li>No confirmed blocker is currently recorded.</li>"
+    )
+    return (
+        "<!doctype html><html><head><meta charset='utf-8'><title>Executive Migration "
+        "Readiness Summary</title><style>body{font:16px/1.5 Arial,sans-serif;max-width:920px;"
+        "margin:40px auto;color:#172033}table{border-collapse:collapse;width:100%}th,td{padding:"
+        "9px;border-bottom:1px solid #dce3ee;text-align:left}h1{margin-bottom:0}.verdict{display:"
+        "inline-block;padding:5px 10px;background:#fff3df;color:#8a4c00;font-weight:bold}</style>"
+        "</head><body><h1>Executive Migration Readiness Summary</h1>"
+        f"<p>{html.escape(summary.repo_name)} · {html.escape(summary.generated_at)}</p>"
+        f"<p class='verdict'>{html.escape(summary.readiness_verdict.upper())}</p>"
+        "<h2>Key metrics</h2><table>"
+        f"{metrics}</table><h2>Top blockers</h2><ul>{blockers}</ul><h2>Recommended next action</h2>"
+        f"<p>{html.escape(summary.recommended_next_action)}</p>"
+        "<p><strong>Control boundary:</strong> "
+        "This report is evidence only. Human review is required; only an approved PatchProposal "
+        "may lead to a canonical model change.</p></body></html>"
+    )
+
+
 def write_executive_summary(
     summary: ExecutiveSummary,
     out_path: Path,
@@ -535,10 +569,12 @@ def write_executive_summary(
         out_path.mkdir(parents=True, exist_ok=True)
         md_path = out_path / "executive-summary.md"
         json_path = out_path / "executive-summary.json"
+        html_path = out_path / "executive-summary.html"
     else:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         md_path = out_path.with_suffix(".md")
         json_path = out_path.with_suffix(".json")
+        html_path = out_path.with_suffix(".html")
 
     md_path.write_text(render_executive_summary_markdown(summary), encoding="utf-8")
     json_path.write_text(
@@ -550,3 +586,4 @@ def write_executive_summary(
         ),
         encoding="utf-8",
     )
+    html_path.write_text(render_executive_summary_html(summary), encoding="utf-8")

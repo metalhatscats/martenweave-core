@@ -4,7 +4,18 @@ All notable changes to Martenweave Core.
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-07-25
+
 ### Added
+
+- **Pilot Proof workflow:** `assessment compare-workbooks` produces deterministic JSON, HTML, and
+  XLSX comparison evidence for two SAP mapping workbook versions, including changed source/target
+  fields, conditions, transformations, ownership, statuses, validation rules, decisions, and
+  matched canonical endpoint impact. The migration assessment package now includes a standalone
+  executive HTML report, evidence manifest, and disposable Workbench workspace descriptor.
+- **Irregular workbook regression corpus:** ten synthetic end-to-end scenarios cover shifted and
+  merged headers, hidden sheets, formulas, repeated tables, multilingual and inconsistent headers,
+  colour-only status, large sheets, and source/target sheets split across a workbook.
 
 - **Northstar pilot interface slice:** the regression benchmark now includes a freight-status
   interface lineage slice (Interface, InterfaceEndpoint operations, MessageType, SchemaNode)
