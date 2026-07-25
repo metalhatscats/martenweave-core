@@ -103,7 +103,7 @@ change request, mirroring the upstream example structure).
 
 ```
 modelops.config.yaml          # Repository configuration (sap domain pack enabled)
-model/                        # 187 canonical objects (Markdown + YAML frontmatter)
+model/                        # 200 canonical objects (Markdown + YAML frontmatter)
   patch-proposals/            # PP-NORTHSTAR-NET-VALUE-VALIDATION-001 (pending_review)
   change-requests/            # CR-PP-NORTHSTAR-NET-VALUE-VALIDATION-001 (approved)
 data/

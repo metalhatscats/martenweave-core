@@ -9,7 +9,9 @@
 - Core `0.7.1` on `main`, tagged `v0.7.1`, live on PyPI (release run 30152377261); full suite **1902 passed, 3 skipped**; ruff clean;
   wheel builds; `scripts/release_smoke.sh` green (also from a clean clone +
   fresh venv on 2026-07-19).
-- Northstar synthetic pilot is the regression benchmark: 187 canonical objects,
+- Northstar synthetic pilot is the regression benchmark: 200 canonical objects (187 + 13
+  freight-status interface slice added 2026-07-25; NORTH_STAR.md still says 187 —
+  maintainer-owned per P4, flagged),
   7 domains, 13 intentional warnings, 61 gaps, readiness not ready
   (`active_object_missing_owner`, `high_risk_unapproved_proposal`), impact counts
   71 (shared payment terms) / 55 (shared credit limit). Reproduce:
