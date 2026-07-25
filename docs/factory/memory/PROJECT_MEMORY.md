@@ -82,4 +82,9 @@ build/validate/diff CLI; governed workbook suggestion artifacts + protected
 review roundtrip in pilot preflight/bootstrap/migration-assessment. Note: the
 issues were closed on GitHub a day before the code was committed — land code
 first in future loops.
-Open: #551 (L3 CI proposal, awaiting maintainer).
+Open: #551 (L3 CI proposal, awaiting maintainer). Website repo:
+Martenweave/martenweave.github.io#9 (agent-ready docs-drift: cover schema
+import, domain-pack CLI, workbook suggestion review on site docs) — seeded
+2026-07-25 after a green `factory audit` (14/14 PASS) and Northstar 11/11
+re-verification at `ed2e284`; created `agent-ready` + `priority:medium`
+labels in the website repo to match the core standard.
