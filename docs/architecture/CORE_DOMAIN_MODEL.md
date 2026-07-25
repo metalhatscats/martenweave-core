@@ -10,8 +10,8 @@ Martenweave Core represents data model knowledge in a domain-neutral way. It mod
 |---|---|
 | Scope | `MasterDataDomain`, `MigrationObject`, `BusinessEntity`, `EntityContext` |
 | Meaning | `Attribute`, `AttributeUsage`, `BusinessRule` |
-| Representation | `System`, `SystemEnvironment`, `FieldEndpoint`, `Interface`, `Dataset` |
-| Movement | `MappingSet`, `Mapping`, `ValueList`, `ValueMapping`, `TransformationLogic` |
+| Representation | `System`, `SystemEnvironment`, `Application`, `FieldEndpoint`, `Interface`, `InterfaceEndpoint`, `MessageType`, `SchemaNode`, `Dataset`, `SAPObject` |
+| Movement | `MappingSet`, `Mapping`, `ValueList`, `ValueMapping`, `TransformationLogic`, `TransformationRule`, `IntegrationFlow`, `DataFlowStep` |
 | Quality | `ValidationRule`, `DataQualityCheck` |
 | Governance | `OwnershipRole`, `Person`, `Team`, `Issue`, `Risk`, `Decision`, `ChangeRequest`, `Evidence` |
 | AI-safe change | `PatchProposal` |
