@@ -2,6 +2,22 @@
 
 All notable changes to Martenweave Core.
 
+## [Unreleased]
+
+### Fixed
+
+- **Schema import duplicate creates:** repeated element names across message structures no longer
+  produce duplicate `create_object` operations that failed proposal apply part-way. The generator
+  deduplicates by object ID and proposal validation reports `PATCH_DUPLICATE_CREATE_OBJECT`
+  (#587).
+
+### Added
+
+- **Reference example interface slice:** `examples/sap_bp_customer_vendor_reference` now ships a
+  synthetic `BusinessPartnerService` WSDL contract and its imported interface lineage
+  (Interface, InterfaceEndpoint operations, MessageType, SchemaNode) produced by the documented
+  schema-import flow (#587).
+
 ## [0.7.0] — 2026-07-25
 
 ### Added
