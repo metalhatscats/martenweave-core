@@ -159,6 +159,21 @@ def _render_markdown(frontmatter: dict[str, Any], body: str | None = None) -> st
     return "\n".join(lines) + "\n"
 
 
+def _objects_for_prewrite_validation(objects: list[ParsedObject]) -> list[ParsedObject]:
+    """Exclude governance artifacts from intermediate candidate validation.
+
+    Accepted proposals and change requests may reference objects created later in
+    the same apply transaction, so validating them against each intermediate
+    state produces false broken-reference errors. Final validation still runs on
+    the full post-apply object set.
+    """
+    return [
+        obj
+        for obj in objects
+        if (obj.frontmatter or {}).get("type") not in {"PatchProposal", "ChangeRequest"}
+    ]
+
+
 def _build_candidate_update_object(op: Any, repo_model_path: Path) -> ParsedObject:
     object_id = op.object_id
     if not object_id:
@@ -793,7 +808,10 @@ def apply_patch_proposal(
                 continue  # unreachable due to check above
 
             candidate_objects = _integrate_candidate(current_objects, candidate)
-            pre_summary = validate_objects(candidate_objects, enabled_packs)
+            pre_summary = validate_objects(
+                _objects_for_prewrite_validation(candidate_objects),
+                enabled_packs,
+            )
 
             if not pre_summary.is_valid:
                 error_details = "; ".join(

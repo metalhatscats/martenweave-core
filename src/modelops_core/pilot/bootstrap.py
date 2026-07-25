@@ -14,6 +14,14 @@ from modelops_core.config import RepoConfig
 from modelops_core.imports.dataset_profiler import profile_csv, profile_xlsx
 from modelops_core.imports.model_inference_service import infer_model_from_profile
 from modelops_core.patching.patch_proposal_service import write_patch_proposal
+from modelops_core.pilot.structural_scan import scan_workbook_structure
+from modelops_core.pilot.workbook_suggestion_review import write_workbook_suggestion_review_xlsx
+from modelops_core.pilot.workbook_suggestions import (
+    generate_workbook_suggestions,
+    summarize_workbook_suggestions,
+    write_workbook_suggestions_json,
+    write_workbook_suggestions_markdown,
+)
 
 
 class BootstrapAssessmentError(ValueError):
@@ -81,6 +89,25 @@ def bootstrap_assessment(
         if not mapping_profile.status.success or not mapping_profile.sheets:
             reason = mapping_profile.status.reason or "no readable sheets"
             raise BootstrapAssessmentError(f"Unsupported workbook layout: {reason}")
+        workbook_manifest = scan_workbook_structure(mapping_path)
+        workbook_manifest_path = report_dir / "workbook_manifest.json"
+        workbook_manifest_path.write_text(
+            json.dumps(workbook_manifest.to_dict(), indent=2, default=str) + "\n",
+            encoding="utf-8",
+        )
+        workbook_suggestions = generate_workbook_suggestions(workbook_manifest)
+        workbook_suggestions_json_path = write_workbook_suggestions_json(
+            workbook_suggestions,
+            report_dir / "workbook_suggestions.json",
+        )
+        workbook_suggestions_markdown_path = write_workbook_suggestions_markdown(
+            workbook_suggestions,
+            report_dir / "workbook_suggestions.md",
+        )
+        workbook_suggestion_review_path = write_workbook_suggestion_review_xlsx(
+            workbook_suggestions,
+            report_dir / "workbook_suggestion_review.xlsx",
+        )
         proposal = infer_model_from_profile(
             _profile_to_dict(mapping_profile), dataset_id=dataset_id
         )
@@ -127,6 +154,14 @@ def bootstrap_assessment(
                 for sheet in _profile_to_dict(mapping_profile)["sheets"]
                 if sheet["status"]["reason"]
             ],
+            "workbook_manifest_path": str(workbook_manifest_path),
+            "workbook_suggestions_json_path": str(workbook_suggestions_json_path),
+            "workbook_suggestions_markdown_path": str(workbook_suggestions_markdown_path),
+            "workbook_suggestion_review_path": str(workbook_suggestion_review_path),
+            "workbook_suggestion_count": len(workbook_suggestions.suggestions),
+            "workbook_suggestion_summary": summarize_workbook_suggestions(
+                workbook_suggestions,
+            ),
             "dataset_profile": dataset_profile,
             "next_commands": [
                 f"martenweave validate --repo {out_repo}",
@@ -150,6 +185,12 @@ def bootstrap_assessment(
         "# Workbook bootstrap\n\n"
         f"Draft proposal: `{proposal['id']}`\n\n"
         "No inferred canonical object has been applied. Review the proposal before any change.\n\n"
+        "## Governed workbook artifacts\n\n"
+        f"- `workbook_manifest.json`\n"
+        f"- `workbook_suggestions.json`\n"
+        f"- `workbook_suggestions.md`\n"
+        f"- `workbook_suggestion_review.xlsx`\n\n"
+        f"Deterministic workbook suggestions: {len(workbook_suggestions.suggestions)}\n\n"
         "## Next commands\n\n"
         + "\n".join(f"- `{command}`" for command in report["next_commands"])
         + "\n",

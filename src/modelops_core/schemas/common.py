@@ -22,6 +22,8 @@ class ObjectType(StrEnum):
     FIELD_ENDPOINT = "FieldEndpoint"
     INTERFACE = "Interface"
     INTERFACE_ENDPOINT = "InterfaceEndpoint"
+    MESSAGE_TYPE = "MessageType"
+    SCHEMA_NODE = "SchemaNode"
     DATASET = "Dataset"
     APPLICATION = "Application"
     INTEGRATION_FLOW = "IntegrationFlow"

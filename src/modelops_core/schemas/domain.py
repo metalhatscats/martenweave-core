@@ -221,6 +221,34 @@ class InterfaceEndpoint(BaseObject):
     application: str | None = Field(default=None)
     endpoint_type: str | None = Field(default=None)
     protocol: str | None = Field(default=None)
+    method: str | None = Field(default=None)
+    path: str | None = Field(default=None)
+    request_message_type: str | None = Field(default=None)
+    response_message_types: list[str] | None = Field(default=None)
+    parameters: list[str] | None = Field(default=None)
+    message_exchange_pattern: str | None = Field(default=None)
+
+
+class MessageType(BaseObject):
+    """A request, response, payload, or schema message representation."""
+
+    interface: str | None = Field(default=None)
+    protocol: str | None = Field(default=None)
+    message_role: str | None = Field(default=None)
+
+
+class SchemaNode(BaseObject):
+    """A node in a governed message/schema hierarchy."""
+
+    message_type: str | None = Field(default=None)
+    parent_node: str | None = Field(default=None)
+    business_attribute: str | None = Field(default=None)
+    field_endpoint: str | None = Field(default=None)
+    value_list: str | None = Field(default=None)
+    technical_name: str | None = Field(default=None)
+    data_type: str | None = Field(default=None)
+    required: bool | None = Field(default=None)
+    cardinality: str | None = Field(default=None)
 
 
 class IntegrationFlow(BaseObject):

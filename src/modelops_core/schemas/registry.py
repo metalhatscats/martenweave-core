@@ -57,6 +57,25 @@ _APPLICATION_REF = ReferenceField("application", "used_by_application", "Applica
 _SOURCE_SYSTEM_REF = ReferenceField("source_system", "flows_from", "System", "context")
 _TARGET_SYSTEM_REF = ReferenceField("target_system", "flows_to", "System", "context")
 _INTERFACE_REF = ReferenceField("interface", "part_of_interface", "Interface", "core_dependency")
+_MESSAGE_TYPE_REF = ReferenceField(
+    "message_type", "part_of_message_type", "MessageType", "core_dependency"
+)
+_REQUEST_MESSAGE_TYPE_REF = ReferenceField(
+    "request_message_type",
+    "accepts_message_type",
+    "MessageType",
+    "core_dependency",
+)
+_RESPONSE_MESSAGE_TYPES_REF = ReferenceField(
+    "response_message_types",
+    "returns_message_type",
+    "MessageType",
+    "core_dependency",
+    is_list=True,
+)
+_PARENT_NODE_REF = ReferenceField(
+    "parent_node", "child_of_schema_node", "SchemaNode", "core_dependency"
+)
 _INTEGRATION_FLOW_REF = ReferenceField(
     "integration_flow", "part_of_flow", "IntegrationFlow", "core_dependency"
 )
@@ -152,6 +171,21 @@ _TYPE_SEARCH_EXTRAS: dict[str, tuple[str, ...]] = {
         "system",
         "attribute",
         "business_attribute",
+    ),
+    "MessageType": ("message_role", "protocol", "interface"),
+    "SchemaNode": (
+        "message_type",
+        "parent_node",
+        "technical_name",
+        "data_type",
+        "cardinality",
+    ),
+    "InterfaceEndpoint": (
+        "method",
+        "path",
+        "request_message_type",
+        "response_message_types",
+        "message_exchange_pattern",
     ),
     "Issue": ("priority",),
     "Decision": ("decision_category",),
@@ -283,7 +317,35 @@ _REGISTRY: dict[str, ObjectTypeEntry] = {
         type_id="InterfaceEndpoint",
         ui_label_singular="Interface Endpoint",
         ui_label_plural="Interface Endpoints",
-        reference_fields=(_DOMAIN_REF, _INTERFACE_REF, _SYSTEM_REF, _APPLICATION_REF),
+        reference_fields=(
+            _DOMAIN_REF,
+            _INTERFACE_REF,
+            _SYSTEM_REF,
+            _APPLICATION_REF,
+            _REQUEST_MESSAGE_TYPE_REF,
+            _RESPONSE_MESSAGE_TYPES_REF,
+        ),
+        search_fields=_COMMON_SEARCH_FIELDS,
+    ),
+    "MessageType": ObjectTypeEntry(
+        type_id="MessageType",
+        ui_label_singular="Message Type",
+        ui_label_plural="Message Types",
+        reference_fields=(_DOMAIN_REF, _INTERFACE_REF),
+        search_fields=_COMMON_SEARCH_FIELDS,
+    ),
+    "SchemaNode": ObjectTypeEntry(
+        type_id="SchemaNode",
+        ui_label_singular="Schema Node",
+        ui_label_plural="Schema Nodes",
+        reference_fields=(
+            _DOMAIN_REF,
+            _MESSAGE_TYPE_REF,
+            _PARENT_NODE_REF,
+            _BUSINESS_ATTRIBUTE_REF,
+            _FIELD_ENDPOINT_REF,
+            _VALUE_LIST_REF,
+        ),
         search_fields=_COMMON_SEARCH_FIELDS,
     ),
     "Application": ObjectTypeEntry(

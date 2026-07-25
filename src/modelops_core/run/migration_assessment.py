@@ -27,6 +27,13 @@ from modelops_core.config import (
     resolve_model_path,
 )
 from modelops_core.index import build_index as _build_index
+from modelops_core.pilot.structural_scan import scan_workbook_structure
+from modelops_core.pilot.workbook_suggestion_review import write_workbook_suggestion_review_xlsx
+from modelops_core.pilot.workbook_suggestions import (
+    generate_workbook_suggestions,
+    write_workbook_suggestions_json,
+    write_workbook_suggestions_markdown,
+)
 from modelops_core.repository import parse_file, scan_repository
 from modelops_core.run.dataset_readiness import (
     generate_dataset_readiness_report,
@@ -718,6 +725,57 @@ def generate_migration_assessment(
         _stage("index", statuses, "success")
     except Exception as exc:  # pragma: no cover - defensive
         _stage("index", statuses, "failed", message=str(exc))
+
+    # Stage: workbook structural scan
+    workbook_manifest = None
+    try:
+        workbook_manifest = scan_workbook_structure(mapping_path)
+        workbook_manifest_path = out_dir / "workbook_manifest.json"
+        workbook_manifest_path.write_text(
+            json.dumps(workbook_manifest.to_dict(), indent=2, default=str) + "\n",
+            encoding="utf-8",
+        )
+        detected_tables = sum(len(sheet.tables) for sheet in workbook_manifest.sheets)
+        _stage(
+            "structural_scan",
+            statuses,
+            "success",
+            message=f"{len(workbook_manifest.sheets)} sheets, {detected_tables} table section(s)",
+        )
+    except Exception as exc:
+        _stage("structural_scan", statuses, "failed", message=str(exc))
+
+    # Stage: governed workbook suggestions
+    if workbook_manifest is not None:
+        try:
+            workbook_suggestions = generate_workbook_suggestions(workbook_manifest)
+            write_workbook_suggestions_json(
+                workbook_suggestions,
+                out_dir / "workbook_suggestions.json",
+            )
+            write_workbook_suggestions_markdown(
+                workbook_suggestions,
+                out_dir / "workbook_suggestions.md",
+            )
+            write_workbook_suggestion_review_xlsx(
+                workbook_suggestions,
+                out_dir / "workbook_suggestion_review.xlsx",
+            )
+            _stage(
+                "workbook_suggestions",
+                statuses,
+                "success",
+                message=f"{len(workbook_suggestions.suggestions)} suggestion(s)",
+            )
+        except Exception as exc:
+            _stage("workbook_suggestions", statuses, "failed", message=str(exc))
+    else:
+        _stage(
+            "workbook_suggestions",
+            statuses,
+            "skipped",
+            message="Structural scan did not complete",
+        )
 
     # Stage: mapping workbook profile
     mapping_profile: MappingWorkbookProfile | None = None

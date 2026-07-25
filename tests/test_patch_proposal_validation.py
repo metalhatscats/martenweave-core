@@ -89,6 +89,83 @@ def test_create_object_registered_type_passes(temp_model_dir: Path) -> None:
     assert not any(r.severity == "ERROR" for r in results)
 
 
+def test_create_object_reference_to_same_proposal_target_passes() -> None:
+    proposal = _proposal_with_ops(
+        PatchOperation(
+            op="create_object",
+            object_id="IFACE-TEST",
+            object_type="Interface",
+            after={"id": "IFACE-TEST", "type": "Interface", "status": "draft"},
+        ),
+        PatchOperation(
+            op="create_object",
+            object_id="MSG-TEST",
+            object_type="MessageType",
+            after={"id": "MSG-TEST", "type": "MessageType", "status": "draft"},
+        ),
+        PatchOperation(
+            op="create_object",
+            object_id="IEP-TEST",
+            object_type="InterfaceEndpoint",
+            after={
+                "id": "IEP-TEST",
+                "type": "InterfaceEndpoint",
+                "status": "draft",
+                "interface": "IFACE-TEST",
+                "request_message_type": "MSG-TEST",
+                "response_message_types": ["MSG-TEST"],
+            },
+        ),
+        proposal_id="PP-INTRA-REF",
+    )
+    results = validate_patch_proposal(proposal)
+    assert not any(r.severity == "ERROR" for r in results)
+
+
+def test_create_object_reference_not_found_errors() -> None:
+    proposal = _proposal_with_ops(
+        PatchOperation(
+            op="create_object",
+            object_id="IEP-TEST",
+            object_type="InterfaceEndpoint",
+            after={
+                "id": "IEP-TEST",
+                "type": "InterfaceEndpoint",
+                "status": "draft",
+                "interface": "IFACE-MISSING",
+            },
+        ),
+        proposal_id="PP-DANGLING-REF",
+    )
+    results = validate_patch_proposal(proposal)
+    assert any(r.code == "PATCH_REFERENCE_OBJECT_NOT_FOUND" for r in results)
+
+
+def test_create_object_reference_target_type_mismatch_errors() -> None:
+    proposal = _proposal_with_ops(
+        PatchOperation(
+            op="create_object",
+            object_id="IFACE-TEST",
+            object_type="Interface",
+            after={"id": "IFACE-TEST", "type": "Interface", "status": "draft"},
+        ),
+        PatchOperation(
+            op="create_object",
+            object_id="IEP-TEST",
+            object_type="InterfaceEndpoint",
+            after={
+                "id": "IEP-TEST",
+                "type": "InterfaceEndpoint",
+                "status": "draft",
+                "request_message_type": "IFACE-TEST",
+            },
+        ),
+        proposal_id="PP-REF-TYPE-MISMATCH",
+    )
+    results = validate_patch_proposal(proposal)
+    assert any(r.code == "PATCH_REFERENCE_TARGET_TYPE_MISMATCH" for r in results)
+
+
 def test_target_path_traversal_dotdot() -> None:
     op = PatchOperation(
         op="update_object",
@@ -219,6 +296,19 @@ def test_affected_objects_valid_list_passes(temp_model_dir: Path) -> None:
     proposal = build_patch_proposal("PP-AFFECTED-OK", [op])
     proposal["affected_objects"] = ["DOMAIN-TEST"]
     results = validate_patch_proposal(proposal, repo_model_path=temp_model_dir)
+    assert not any(r.severity == "ERROR" for r in results)
+
+
+def test_affected_objects_created_in_same_proposal_pass(temp_model_dir: Path) -> None:
+    op = PatchOperation(
+        op="create_object",
+        object_id="SYS-NEW",
+        object_type="System",
+        after={"id": "SYS-NEW", "type": "System", "status": "draft", "name": "New System"},
+    )
+    proposal = build_patch_proposal("PP-AFFECTED-CREATED", [op], affected_objects=["SYS-NEW"])
+    results = validate_patch_proposal(proposal, repo_model_path=temp_model_dir)
+    assert not any(r.code == "PATCH_AFFECTED_OBJECT_NOT_FOUND" for r in results)
     assert not any(r.severity == "ERROR" for r in results)
 
 

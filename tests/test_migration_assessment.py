@@ -183,6 +183,10 @@ def test_generate_migration_assessment_happy_path(sample_repo: Path, tmp_path: P
     assert manifest.repo_name
     assert manifest.repo_path == str(sample_repo)
     assert (out / "manifest.json").exists()
+    assert (out / "workbook_manifest.json").exists()
+    assert (out / "workbook_suggestions.json").exists()
+    assert (out / "workbook_suggestions.md").exists()
+    assert (out / "workbook_suggestion_review.xlsx").exists()
     assert (out / "mapping_profile.json").exists()
     assert (out / "01_readiness_scorecard.md").exists()
     assert (out / "02_gap_report.md").exists()
@@ -195,6 +199,8 @@ def test_generate_migration_assessment_happy_path(sample_repo: Path, tmp_path: P
     status_names = {s.name: s.status for s in manifest.stage_statuses}
     assert status_names["validation"] == "success"
     assert status_names["index"] == "success"
+    assert status_names["structural_scan"] == "success"
+    assert status_names["workbook_suggestions"] == "success"
     assert status_names["mapping_profile"] == "success"
     assert status_names["dataset_readiness"] == "skipped"
     assert status_names["assessment_package"] == "success"
@@ -206,6 +212,16 @@ def test_generate_migration_assessment_happy_path(sample_repo: Path, tmp_path: P
     assert manifest_data["inputs"]["dataset"] is None
     assert manifest_data["inputs"]["evidence"] == []
     assert any(a["path"] == "manifest.json" for a in manifest_data["generated_artifacts"])
+    assert any(a["path"] == "workbook_manifest.json" for a in manifest_data["generated_artifacts"])
+    assert any(
+        a["path"] == "workbook_suggestions.json"
+        for a in manifest_data["generated_artifacts"]
+    )
+    assert any(a["path"] == "workbook_suggestions.md" for a in manifest_data["generated_artifacts"])
+    assert any(
+        a["path"] == "workbook_suggestion_review.xlsx"
+        for a in manifest_data["generated_artifacts"]
+    )
 
 
 def test_generate_migration_assessment_with_dataset(sample_repo: Path, tmp_path: Path) -> None:
@@ -277,6 +293,7 @@ def test_cli_migration_assessment_json_output(sample_repo: Path, tmp_path: Path)
     assert data["repo_name"]
     assert data["inputs"]["mapping"] == str(mapping)
     assert any(s["name"] == "assessment_package" for s in data["stage_statuses"])
+    assert any(s["name"] == "workbook_suggestions" for s in data["stage_statuses"])
 
 
 def test_cli_migration_assessment_missing_mapping_fails(sample_repo: Path, tmp_path: Path) -> None:

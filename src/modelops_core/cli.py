@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from modelops_core.commands import (  # noqa: F401
     dataset,
+    domain_pack_commands,
     exchange,
     health_reports,
     impact_trace,
@@ -11,6 +12,7 @@ from modelops_core.commands import (  # noqa: F401
     query_search,
     run_commands,
     scaffold,
+    schema_commands,
     serve_mcp,
     standalone,
     validate_index,
@@ -26,12 +28,16 @@ from modelops_core.commands.assessment import (
     evidence_app,
 )
 from modelops_core.commands.change_request import cr_app
+from modelops_core.commands.domain_pack_commands import domain_pack_app
 from modelops_core.commands.health_reports import review_pack_app
 from modelops_core.commands.proposal import proposal_app
 from modelops_core.commands.run_commands import run_app
+from modelops_core.commands.schema_commands import schema_app
 from modelops_core.commands.workflow import decisions_app, notifications_app
 
 app.add_typer(ai_provider_app, name="ai-provider")
+app.add_typer(domain_pack_app, name="domain-pack")
+app.add_typer(schema_app, name="schema")
 app.add_typer(review_pack_app, name="review-pack")
 app.add_typer(proposal_app, name="proposal")
 app.add_typer(cr_app, name="change-request")

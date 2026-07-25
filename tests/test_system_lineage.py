@@ -47,6 +47,8 @@ def test_system_lineage_types_registered(type_name: str) -> None:
         ("TransformationRule", "target_field_endpoint", "writes_to", "FieldEndpoint"),
         ("InterfaceEndpoint", "interface", "part_of_interface", "Interface"),
         ("InterfaceEndpoint", "application", "used_by_application", "Application"),
+        ("InterfaceEndpoint", "request_message_type", "accepts_message_type", "MessageType"),
+        ("InterfaceEndpoint", "response_message_types", "returns_message_type", "MessageType"),
         ("Application", "system", "located_in_system", "System"),
     ],
 )

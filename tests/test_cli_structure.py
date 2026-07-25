@@ -83,8 +83,11 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
     "serve",
     "workbench",
     "mcp",
+    "domain-pack",
+    "schema",
     "import-model-sheet",
     "import-excel-review",
+    "import-workbook-suggestion-review",
     "export-model",
     "export-schema",
     "export-sheets",
@@ -121,7 +124,9 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
 
 EXPECTED_GROUPS = {
     "agent": {"product-owner", "readiness"},
+    "domain-pack": {"build", "validate", "diff"},
     "run": {"dataset-readiness", "migration-assessment"},
+    "schema": {"inspect", "import"},
     "issue-draft": {"create"},
     "change-request": {"create", "list", "show", "update-status", "approve", "reject"},
     "notifications": {"preview", "list"},

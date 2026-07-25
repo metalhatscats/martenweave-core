@@ -16,6 +16,12 @@ from modelops_core.ai.provider_adapter import AIProviderError
 from modelops_core.approval.risk_service import RiskAssessment
 from modelops_core.impact.proposal_impact_service import ProposalImpactReport
 from modelops_core.patching.apply_service import DryRunResult
+from modelops_core.pilot.structural_scan import scan_workbook_structure
+from modelops_core.pilot.workbook_suggestions import (
+    WorkbookSuggestion,
+    WorkbookSuggestionSet,
+    generate_workbook_suggestions,
+)
 
 
 def _valid_proposal(proposal_id: str = "PP-TEST-001") -> dict:
@@ -80,6 +86,22 @@ def _make_result(proposal: dict | None, **overrides) -> dict:
     return result
 
 
+def _write_agent_loop_mapping_workbook(path: Path) -> None:
+    try:
+        from openpyxl import Workbook
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError("openpyxl not installed") from exc
+
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Customer Mapping"
+    sheet.append(["Customer mapping section"])
+    sheet.append(["Source Field", "Target Table", "Target Field", "Rule"])
+    sheet.append(["KUNNR", "KNVV", "KUNNR", "Direct"])
+    workbook.save(path)
+    workbook.close()
+
+
 def test_errors_unchanged_true() -> None:
     errors = [
         {"code": "A", "message": "msg", "object_id": "O1"},
@@ -109,6 +131,24 @@ def test_build_refined_note_includes_goal_and_errors() -> None:
     assert "Previous proposal PP-TEST-001 had these validation errors:" in note
     assert "update_object targets non-existent object 'ATTR-TEST'." in note
     assert "object: PP-TEST-001, code: PATCH_UPDATE_OBJECT_NOT_FOUND" in note
+
+
+def test_generate_workbook_suggestions_is_deterministic(tmp_path: Path) -> None:
+    workbook = tmp_path / "mapping.xlsx"
+    _write_agent_loop_mapping_workbook(workbook)
+
+    first = generate_workbook_suggestions(scan_workbook_structure(workbook)).to_dict()
+    second = generate_workbook_suggestions(scan_workbook_structure(workbook)).to_dict()
+
+    assert first == second
+    assert first["generator"] == "deterministic_rules"
+    assert first["suggestions"]
+    first_suggestion = first["suggestions"][0]
+    assert first_suggestion["suggestion_id"].startswith("WSUG-")
+    assert first_suggestion["status"] == "unresolved"
+    assert first_suggestion["input_fingerprint"]
+    assert "deterministic_context" in first_suggestion
+    assert "evidence" in first_suggestion
 
 
 @patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
@@ -145,6 +185,8 @@ def test_agent_loop_valid_goal(
 
 
 @patch("modelops_core.ai.agent_loop.inspect_file")
+@patch("modelops_core.ai.agent_loop.scan_workbook_structure")
+@patch("modelops_core.ai.agent_loop.generate_workbook_suggestions")
 @patch("modelops_core.ai.agent_loop.build_patch_proposal_from_note")
 @patch("modelops_core.ai.agent_loop.generate_proposal_impact_report")
 @patch("modelops_core.ai.agent_loop.compute_proposal_risk")
@@ -152,6 +194,8 @@ def test_agent_loop_uses_mapping_metadata_as_evidence_only(
     mock_risk,
     mock_impact,
     mock_build,
+    mock_generate_suggestions,
+    mock_scan,
     mock_inspect,
     sample_repo: Path,
 ) -> None:
@@ -176,6 +220,50 @@ def test_agent_loop_uses_mapping_metadata_as_evidence_only(
         "warnings": ["1 formula cell(s) present."],
         "assumptions": ["Only visible worksheets are initially interpreted."],
     }
+    mock_scan.return_value = type(
+        "Manifest",
+        (),
+        {
+            "file_hash": "abc123" * 10 + "abcd",
+            "scanner_version": "1.0",
+            "to_dict": lambda self: {
+                "file_hash": "abc123" * 10 + "abcd",
+                "scanner_version": "1.0",
+            },
+        },
+    )()
+    mock_generate_suggestions.return_value = WorkbookSuggestionSet(
+        generator="deterministic_rules",
+        input_fingerprint="fingerprint-1",
+        suggestions=[
+            WorkbookSuggestion(
+                suggestion_id="WSUG-0000000000000001",
+                suggestion_type="sheet_role",
+                suggestion_value="mapping",
+                confidence_label="high",
+                confidence_score=0.92,
+                evidence={"sheet": "Customer Mapping", "probable_header_rows": [2]},
+                explanation="Sheet looks like a mapping section.",
+                deterministic_context={"scanner_version": "1.0"},
+                input_fingerprint="fingerprint-1",
+            ),
+            WorkbookSuggestion(
+                suggestion_id="WSUG-0000000000000002",
+                suggestion_type="column_role",
+                suggestion_value="source_field",
+                confidence_label="high",
+                confidence_score=0.92,
+                evidence={
+                    "sheet": "Customer Mapping",
+                    "table_id": "Customer Mapping:2",
+                    "column_name": "Legacy field",
+                },
+                explanation="Legacy field header matches source field heuristics.",
+                deterministic_context={"scanner_version": "1.0"},
+                input_fingerprint="fingerprint-1",
+            ),
+        ],
+    )
     mock_build.return_value = _make_result(proposal)
     mock_impact.return_value = ProposalImpactReport(
         proposal_id=proposal["id"],
@@ -200,8 +288,12 @@ def test_agent_loop_uses_mapping_metadata_as_evidence_only(
     assert "Mapping workbook evidence (metadata-only" in note
     assert "Included sheet 'Customer Mapping': Legacy field, S/4 field, Rule" in note
     assert "Excluded sheet 'Obsolete'" in note
+    assert "Governed workbook suggestions" in note
+    assert "WSUG-0000000000000001" in note
+    assert "WSUG-0000000000000002" in note
     assert "/private/customer-mapping.xlsx" not in note
     assert result.mapping_evidence["status"] == "warning"
+    assert result.mapping_evidence["workbook_suggestions"]["generator"] == "deterministic_rules"
     assert any("pending human review" in check for check in result.human_checks)
 
 

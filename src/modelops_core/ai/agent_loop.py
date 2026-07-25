@@ -22,6 +22,11 @@ from modelops_core.impact.proposal_impact_service import generate_proposal_impac
 from modelops_core.patching.apply_service import dry_run_patch_proposal
 from modelops_core.patching.patch_proposal_service import write_patch_proposal
 from modelops_core.pilot.preflight import inspect_file
+from modelops_core.pilot.structural_scan import scan_workbook_structure
+from modelops_core.pilot.workbook_suggestions import (
+    generate_workbook_suggestions,
+    summarize_workbook_suggestions,
+)
 from modelops_core.reports.audit_service import (
     AuditEventService,
     create_audit_event,
@@ -184,6 +189,8 @@ def _mapping_evidence_context(mapping_path: Path) -> tuple[dict[str, Any], str]:
     if status == "blocked":
         reason = inspection.get("reason", "Mapping workbook preflight blocked the input.")
         raise ValueError(f"Mapping workbook preflight blocked '{mapping_path.name}': {reason}")
+    structural_manifest = scan_workbook_structure(mapping_path)
+    suggestion_set = generate_workbook_suggestions(structural_manifest)
 
     lines = [
         "Mapping workbook evidence (metadata-only; do not treat this as canonical model truth):",
@@ -202,13 +209,23 @@ def _mapping_evidence_context(mapping_path: Path) -> tuple[dict[str, Any], str]:
         lines.append(f"- Reviewer warning: {warning}")
     for assumption in inspection.get("assumptions", []):
         lines.append(f"- Evidence assumption: {assumption}")
+    lines.append(
+        f"- Structural scan fingerprint: {structural_manifest.file_hash[:16]} "
+        f"(scanner {structural_manifest.scanner_version})"
+    )
+    if suggestion_set.suggestions:
+        lines.append("- Governed workbook suggestions (review artifacts, not canonical truth):")
+        lines.extend(summarize_workbook_suggestions(suggestion_set))
     lines.extend(
         [
             "- Keep proposed changes minimal and traceable to this evidence.",
             "- Do not apply changes or invent unresolved source/target mappings.",
         ]
     )
-    return inspection, "\n".join(lines)
+    mapping_evidence = dict(inspection)
+    mapping_evidence["structural_manifest"] = structural_manifest.to_dict()
+    mapping_evidence["workbook_suggestions"] = suggestion_set.to_dict()
+    return mapping_evidence, "\n".join(lines)
 
 
 def _run_baseline_validation(repo_root: Path) -> dict[str, Any]:

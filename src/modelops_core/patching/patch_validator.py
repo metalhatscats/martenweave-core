@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from modelops_core.patching.patch_model import _ALLOWED_OPERATIONS
-from modelops_core.schemas.registry import get_all_types
+from modelops_core.schemas.registry import get_all_types, get_entry
 from modelops_core.validation.result import ValidationResult, ValidationSeverity
 
 _ID_PATTERN = re.compile(r"^[A-Z][A-Z0-9]*(-[A-Z0-9]+)*$")
@@ -21,21 +21,25 @@ def _normalize_operation_name(op: str) -> str:
     return op
 
 
-def _load_existing_object_ids(repo_model_path: Path | None) -> set[str]:
-    """Return the set of canonical object IDs in the repository."""
+def _load_existing_objects(repo_model_path: Path | None) -> dict[str, str | None]:
+    """Return canonical object IDs mapped to their object type."""
     if repo_model_path is None or not repo_model_path.exists():
-        return set()
+        return {}
     from modelops_core.repository import parse_file, scan_repository
 
-    ids: set[str] = set()
+    objects: dict[str, str | None] = {}
     for file_path in scan_repository(repo_model_path):
         try:
             parsed = parse_file(file_path)
             if parsed.frontmatter and parsed.frontmatter.get("id"):
-                ids.add(str(parsed.frontmatter["id"]))
+                objects[str(parsed.frontmatter["id"])] = (
+                    str(parsed.frontmatter["type"])
+                    if parsed.frontmatter.get("type") is not None
+                    else None
+                )
         except Exception:
             continue
-    return ids
+    return objects
 
 
 def _is_path_traversal(value: str | None) -> bool:
@@ -47,6 +51,15 @@ def _is_path_traversal(value: str | None) -> bool:
     if value.startswith("/") or value.startswith("\\"):
         return True
     return False
+
+
+def _iter_reference_values(value: Any, *, is_list: bool) -> list[tuple[str, Any]]:
+    """Yield normalized reference values for a reference field."""
+    if value in (None, ""):
+        return []
+    if is_list and isinstance(value, list):
+        return [(f"[{idx}]", item) for idx, item in enumerate(value)]
+    return [("", value)]
 
 
 def validate_patch_proposal(
@@ -101,10 +114,29 @@ def validate_patch_proposal(
             )
         )
 
-    existing_ids = _load_existing_object_ids(repo_model_path)
+    existing_objects = _load_existing_objects(repo_model_path)
+    existing_ids = set(existing_objects)
     registered_types = set(get_all_types())
+    created_object_types: dict[str, str | None] = {}
 
     operations = proposal.get("operations", [])
+    if isinstance(operations, list):
+        for op in operations:
+            if not isinstance(op, dict):
+                continue
+            op_type = op.get("op")
+            if _normalize_operation_name(op_type) != "create_object":
+                continue
+            object_id = op.get("object_id")
+            object_type = op.get("object_type")
+            if (
+                isinstance(object_id, str)
+                and _ID_PATTERN.match(object_id)
+                and isinstance(object_type, str)
+                and object_type
+            ):
+                created_object_types[object_id] = object_type
+
     if not operations:
         results.append(
             ValidationResult(
@@ -210,6 +242,80 @@ def validate_patch_proposal(
                             ),
                         )
                     )
+                if isinstance(after, dict) and isinstance(object_type, str):
+                    entry = get_entry(object_type)
+                    if entry is not None:
+                        for ref_field in entry.reference_fields:
+                            for suffix, ref in _iter_reference_values(
+                                after.get(ref_field.name),
+                                is_list=ref_field.is_list,
+                            ):
+                                field_path = f"operations[{idx}].after.{ref_field.name}{suffix}"
+                                if not isinstance(ref, str) or not _ID_PATTERN.match(ref):
+                                    results.append(
+                                        ValidationResult(
+                                            severity=ValidationSeverity.ERROR,
+                                            code="PATCH_REFERENCE_ID_INVALID",
+                                            message=(
+                                                f"{object_type}.{ref_field.name} references "
+                                                f"invalid object ID '{ref}'."
+                                            ),
+                                            object_id=str(proposal_id)
+                                            if proposal_id
+                                            else None,
+                                            field_path=field_path,
+                                            suggested_fix="Use a valid canonical object ID.",
+                                        )
+                                    )
+                                    continue
+
+                                target_type = (
+                                    created_object_types.get(ref) or existing_objects.get(ref)
+                                )
+                                if target_type is None:
+                                    results.append(
+                                        ValidationResult(
+                                            severity=ValidationSeverity.ERROR,
+                                            code="PATCH_REFERENCE_OBJECT_NOT_FOUND",
+                                            message=(
+                                                f"{object_type}.{ref_field.name} references "
+                                                f"non-existent object '{ref}'."
+                                            ),
+                                            object_id=str(proposal_id)
+                                            if proposal_id
+                                            else None,
+                                            field_path=field_path,
+                                            suggested_fix=(
+                                                "Reference an existing canonical object ID or "
+                                                "create the target object in the same proposal."
+                                            ),
+                                        )
+                                    )
+                                    continue
+
+                                if (
+                                    ref_field.expected_target_type
+                                    and target_type != ref_field.expected_target_type
+                                ):
+                                    results.append(
+                                        ValidationResult(
+                                            severity=ValidationSeverity.ERROR,
+                                            code="PATCH_REFERENCE_TARGET_TYPE_MISMATCH",
+                                            message=(
+                                                f"{object_type}.{ref_field.name} references "
+                                                f"'{ref}' of type '{target_type}', expected "
+                                                f"'{ref_field.expected_target_type}'."
+                                            ),
+                                            object_id=str(proposal_id)
+                                            if proposal_id
+                                            else None,
+                                            field_path=field_path,
+                                            suggested_fix=(
+                                                f"Reference a "
+                                                f"{ref_field.expected_target_type} object."
+                                            ),
+                                        )
+                                    )
 
     affected_objects = proposal.get("affected_objects")
     if affected_objects is not None:
@@ -237,18 +343,23 @@ def validate_patch_proposal(
                         )
                     )
                 elif existing_ids and ref not in existing_ids:
-                    results.append(
-                        ValidationResult(
-                            severity=ValidationSeverity.ERROR,
-                            code="PATCH_AFFECTED_OBJECT_NOT_FOUND",
-                            message=(
-                                f"affected_objects[{idx}] references non-existent object '{ref}'."
-                            ),
-                            object_id=str(proposal_id) if proposal_id else None,
-                            field_path=f"affected_objects[{idx}]",
-                            suggested_fix="Reference an existing canonical object ID.",
+                    if ref not in created_object_types:
+                        results.append(
+                            ValidationResult(
+                                severity=ValidationSeverity.ERROR,
+                                code="PATCH_AFFECTED_OBJECT_NOT_FOUND",
+                                message=(
+                                    f"affected_objects[{idx}] references non-existent object "
+                                    f"'{ref}'."
+                                ),
+                                object_id=str(proposal_id) if proposal_id else None,
+                                field_path=f"affected_objects[{idx}]",
+                                suggested_fix=(
+                                    "Reference an existing canonical object ID or create the "
+                                    "target object in the same proposal."
+                                ),
+                            )
                         )
-                    )
 
     expires_at = proposal.get("expires_at")
     if expires_at:

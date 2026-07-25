@@ -27,6 +27,12 @@ from modelops_core.imports.model_sheet_import_service import (
     import_model_sheet_xlsx,
 )
 from modelops_core.patching.patch_proposal_service import render_patch_proposal_markdown
+from modelops_core.pilot.workbook_suggestion_review import (
+    WorkbookSuggestionReviewError,
+    import_workbook_suggestion_review_xlsx,
+    write_workbook_suggestion_feedback_json,
+    write_workbook_suggestion_feedback_markdown,
+)
 from modelops_core.reports.audit_service import AuditEventService, create_audit_event
 from modelops_core.reports.source_registry_service import (
     SourceRegistryService,
@@ -151,6 +157,53 @@ def import_excel_review(
     console.print(f"[green]PatchProposal written:[/green] {output}")
     console.print(f"  ID: {proposal['id']}")
     console.print(f"  Operations: {len(proposal['operations'])}")
+    console.print("  Canonical model files were not changed.")
+
+
+@app.command("import-workbook-suggestion-review")
+def import_workbook_suggestion_review(
+    input_path: Path = typer.Option(  # noqa: B008
+        ..., "--from", help="Reviewed workbook suggestion XLSX workbook to import."
+    ),
+    out: Path = typer.Option(  # noqa: B008
+        ..., "--out", help="Directory where normalized feedback artifacts will be written."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON."),
+) -> None:
+    """Normalize reviewed workbook-suggestion decisions into explicit feedback artifacts."""
+    if not input_path.is_file() or input_path.suffix.lower() != ".xlsx":
+        console.print("[red]--from must point to an existing .xlsx workbook.[/red]")
+        raise typer.Exit(code=1)
+
+    try:
+        feedback = import_workbook_suggestion_review_xlsx(input_path)
+    except WorkbookSuggestionReviewError as exc:
+        console.print(f"[red]Suggestion review import rejected: {exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    out.mkdir(parents=True, exist_ok=True)
+    json_path = write_workbook_suggestion_feedback_json(
+        feedback,
+        out / "workbook_suggestion_feedback.json",
+    )
+    markdown_path = write_workbook_suggestion_feedback_markdown(
+        feedback,
+        out / "workbook_suggestion_feedback.md",
+    )
+
+    if json_output:
+        print(json.dumps(feedback.to_dict(), indent=2, default=str))
+        return
+
+    console.print(f"[green]Workbook suggestion feedback written:[/green] {json_path}")
+    console.print(f"  Markdown: {markdown_path}")
+    console.print(f"  Reviewed suggestions: {len(feedback.feedback_records)}")
+    console.print(
+        "  Decisions: "
+        + ", ".join(
+            f"{decision}={count}" for decision, count in feedback.decision_counts().items()
+        )
+    )
     console.print("  Canonical model files were not changed.")
 
 

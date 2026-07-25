@@ -15,8 +15,16 @@ from typing import Any
 
 from modelops_core.guardrails.secrets import scan_file, scan_text
 from modelops_core.imports.dataset_profiler import profile_csv, profile_xlsx
+from modelops_core.pilot.structural_scan import scan_workbook_structure
+from modelops_core.pilot.workbook_suggestion_review import write_workbook_suggestion_review_xlsx
+from modelops_core.pilot.workbook_suggestions import (
+    generate_workbook_suggestions,
+    write_workbook_suggestions_json,
+    write_workbook_suggestions_markdown,
+)
 
 MAX_SCAN_CELLS = 5_000
+MAX_STRUCTURAL_SAMPLE = 25
 
 SENSITIVE_COLUMN_TERMS = {
     "account",
@@ -120,18 +128,54 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
         for name in sheet_names
         if wb_meta[name].merged_cells.ranges
     }
-    comment_count = sum(
-        1
-        for name in sheet_names
-        for row in wb_meta[name].iter_rows()
-        for cell in row
-        if cell.comment is not None
-    )
+    comment_count = 0
+    hyperlink_count = 0
+    hyperlink_cells: dict[str, list[str]] = {}
+    hidden_rows: dict[str, list[int]] = {}
+    hidden_columns: dict[str, list[str]] = {}
+    hidden_row_counts: dict[str, int] = {}
+    hidden_column_counts: dict[str, int] = {}
+    hyperlink_counts: dict[str, int] = {}
+    excel_tables: list[dict[str, str]] = []
+    for name in sheet_names:
+        ws = wb_meta[name]
+        sheet_hidden_rows = [
+            index
+            for index, dimension in ws.row_dimensions.items()
+            if getattr(dimension, "hidden", False)
+        ]
+        hidden_row_counts[name] = len(sheet_hidden_rows)
+        if sheet_hidden_rows:
+            hidden_rows[name] = sheet_hidden_rows[:MAX_STRUCTURAL_SAMPLE]
+        sheet_hidden_columns = [
+            str(index)
+            for index, dimension in ws.column_dimensions.items()
+            if getattr(dimension, "hidden", False)
+        ]
+        hidden_column_counts[name] = len(sheet_hidden_columns)
+        if sheet_hidden_columns:
+            hidden_columns[name] = sheet_hidden_columns[:MAX_STRUCTURAL_SAMPLE]
+        for table in ws.tables.values():
+            excel_tables.append({"sheet": name, "name": table.name, "ref": table.ref})
+        for row in ws.iter_rows():
+            for cell in row:
+                if cell.comment is not None:
+                    comment_count += 1
+                if cell.hyperlink is not None:
+                    hyperlink_count += 1
+                    hyperlink_counts[name] = hyperlink_counts.get(name, 0) + 1
+                    hyperlink_cells.setdefault(name, [])
+                    if len(hyperlink_cells[name]) < MAX_STRUCTURAL_SAMPLE:
+                        hyperlink_cells[name].append(cell.coordinate)
     external_links: list[str] = []
     for link in getattr(wb_meta, "external_links", []) or []:
         target = getattr(link, "Target", None) or str(link)
         if target:
             external_links.append(target)
+    defined_names: list[dict[str, str]] = []
+    for name, defined_name in wb_meta.defined_names.items():
+        target = getattr(defined_name, "attr_text", "") or ""
+        defined_names.append({"name": name, "target": target, "type": defined_name.type or ""})
     wb_meta.close()
 
     warnings: list[str] = []
@@ -145,8 +189,30 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
             + "; ".join(f"{name} ({len(ranges)})" for name, ranges in merged_ranges.items())
             + "."
         )
+    if hidden_rows:
+        warnings.append(
+            "Hidden row(s): "
+            + "; ".join(
+                f"{name} ({hidden_row_counts[name]})" for name in hidden_rows
+            )
+            + "."
+        )
+    if hidden_columns:
+        warnings.append(
+            "Hidden column(s): "
+            + "; ".join(
+                f"{name} ({hidden_column_counts[name]})" for name in hidden_columns
+            )
+            + "."
+        )
     if comment_count:
         warnings.append(f"{comment_count} cell comment(s) present for reviewer context.")
+    if hyperlink_count:
+        warnings.append(f"{hyperlink_count} hyperlink cell(s) present.")
+    if defined_names:
+        warnings.append(f"{len(defined_names)} defined name(s) present.")
+    if excel_tables:
+        warnings.append(f"{len(excel_tables)} Excel table definition(s) present.")
 
     all_columns: list[str] = []
     sheet_metadata: list[dict[str, Any]] = []
@@ -159,6 +225,15 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
                 "row_count": sheet.row_count,
                 "column_count": sheet.column_count,
                 "columns": cols,
+                "hidden_row_count": hidden_row_counts.get(sheet.sheet_name, 0),
+                "hidden_rows": hidden_rows.get(sheet.sheet_name, []),
+                "hidden_column_count": hidden_column_counts.get(sheet.sheet_name, 0),
+                "hidden_columns": hidden_columns.get(sheet.sheet_name, []),
+                "hyperlink_count": hyperlink_counts.get(sheet.sheet_name, 0),
+                "hyperlink_cells": hyperlink_cells.get(sheet.sheet_name, []),
+                "tables": [
+                    table for table in excel_tables if table["sheet"] == sheet.sheet_name
+                ],
                 "included": sheet.sheet_name not in hidden_sheets,
                 "exclusion_reason": (
                     "Hidden worksheet; retained as evidence but excluded from interpretation."
@@ -226,7 +301,13 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
         "hidden_sheets": hidden_sheets,
         "merged_ranges": merged_ranges,
         "comment_count": comment_count,
+        "hyperlink_count": hyperlink_count,
+        "hyperlink_cells": hyperlink_cells,
         "external_links": external_links,
+        "hidden_rows": hidden_rows,
+        "hidden_columns": hidden_columns,
+        "defined_names": defined_names,
+        "excel_tables": excel_tables,
         "formula_count": formula_count,
         "assumptions": [
             "Only visible worksheets are included in the initial interpretation.",
@@ -237,6 +318,10 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
             (
                 "External links and formulas remain source evidence and are never executed by "
                 "Martenweave."
+            ),
+            (
+                "Hidden rows, hidden columns, hyperlinks, named ranges, and Excel tables "
+                "remain structural evidence only."
             ),
         ],
     }
@@ -270,6 +355,7 @@ class PreflightReport:
     overall_status: str
     files: list[dict[str, Any]]
     include_raw_samples: bool
+    generated_artifacts: list[str]
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -277,6 +363,7 @@ class PreflightReport:
             "overall_status": self.overall_status,
             "include_raw_samples": self.include_raw_samples,
             "files": self.files,
+            "generated_artifacts": self.generated_artifacts,
         }
 
 
@@ -292,6 +379,7 @@ def run_preflight(
     out_dir.mkdir(parents=True, exist_ok=True)
 
     files: list[dict[str, Any]] = []
+    generated_artifacts: list[str] = []
     files.append(inspect_file(mapping_path))
     for p in dataset_paths:
         files.append(inspect_file(p))
@@ -312,7 +400,33 @@ def run_preflight(
         overall_status=overall,
         files=files,
         include_raw_samples=include_raw_samples,
+        generated_artifacts=generated_artifacts,
     )
+
+    if mapping_path.suffix.lower() == ".xlsx":
+        workbook_manifest = scan_workbook_structure(mapping_path)
+        workbook_manifest_path = out_dir / "workbook_manifest.json"
+        workbook_manifest_path.write_text(
+            json.dumps(workbook_manifest.to_dict(), indent=2, default=str),
+            encoding="utf-8",
+        )
+        workbook_suggestions = generate_workbook_suggestions(workbook_manifest)
+        workbook_suggestions_json_path = write_workbook_suggestions_json(
+            workbook_suggestions,
+            out_dir / "workbook_suggestions.json",
+        )
+        workbook_suggestions_markdown_path = write_workbook_suggestions_markdown(
+            workbook_suggestions,
+            out_dir / "workbook_suggestions.md",
+        )
+        workbook_suggestion_review_path = write_workbook_suggestion_review_xlsx(
+            workbook_suggestions,
+            out_dir / "workbook_suggestion_review.xlsx",
+        )
+        report.generated_artifacts.append(str(workbook_manifest_path))
+        report.generated_artifacts.append(str(workbook_suggestions_json_path))
+        report.generated_artifacts.append(str(workbook_suggestions_markdown_path))
+        report.generated_artifacts.append(str(workbook_suggestion_review_path))
 
     json_path = out_dir / "preflight_report.json"
     json_path.write_text(
@@ -345,6 +459,12 @@ def _render_markdown(report: PreflightReport) -> str:
     lines.append("")
     lines.append("## Details")
     lines.append("")
+    if report.generated_artifacts:
+        lines.append("## Generated artifacts")
+        lines.append("")
+        for artifact in report.generated_artifacts:
+            lines.append(f"- `{Path(artifact).name}`")
+        lines.append("")
     for f in report.files:
         lines.append(f"### {Path(f['path']).name}")
         lines.append("")
@@ -354,12 +474,47 @@ def _render_markdown(report: PreflightReport) -> str:
             lines.append(f"- **Reason**: {f['reason']}")
         if f.get("sheet_names"):
             lines.append(f"- **Sheets**: {', '.join(f['sheet_names'])}")
+        if f.get("hidden_sheets"):
+            lines.append(f"- **Hidden sheets**: {', '.join(f['hidden_sheets'])}")
         if f.get("row_count") is not None:
             lines.append(f"- **Rows**: {f['row_count']}")
         if f.get("column_count") is not None:
             lines.append(f"- **Columns**: {f['column_count']}")
         if f.get("columns"):
             lines.append(f"- **Column names**: {', '.join(f['columns'])}")
+        if f.get("hidden_rows"):
+            lines.append(
+                "- **Hidden rows**: "
+                + "; ".join(
+                    f"{sheet} ({', '.join(str(row) for row in rows)})"
+                    for sheet, rows in f["hidden_rows"].items()
+                )
+            )
+        if f.get("hidden_columns"):
+            lines.append(
+                "- **Hidden columns**: "
+                + "; ".join(
+                    f"{sheet} ({', '.join(columns)})"
+                    for sheet, columns in f["hidden_columns"].items()
+                )
+            )
+        if f.get("defined_names"):
+            lines.append(
+                "- **Defined names**: "
+                + "; ".join(
+                    f"{item['name']} -> {item['target']}" for item in f["defined_names"]
+                )
+            )
+        if f.get("excel_tables"):
+            lines.append(
+                "- **Excel tables**: "
+                + "; ".join(
+                    f"{item['sheet']}.{item['name']} ({item['ref']})"
+                    for item in f["excel_tables"]
+                )
+            )
+        if f.get("hyperlink_count"):
+            lines.append(f"- **Hyperlink cells**: {f['hyperlink_count']}")
         if f.get("warnings"):
             lines.append("- **Warnings**:")
             for w in f["warnings"]:

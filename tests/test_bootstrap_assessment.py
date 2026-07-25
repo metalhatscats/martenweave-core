@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -33,6 +34,23 @@ def test_bootstrap_assessment_creates_proposal_only_pilot_repo(tmp_path: Path) -
     assert len(proposals) == 1
     assert not list((repo / "model").glob("DOMAIN-*.md"))
     assert (repo / "generated" / "bootstrap-assessment" / "bootstrap-report.json").exists()
+    assert (repo / "generated" / "bootstrap-assessment" / "workbook_manifest.json").exists()
+    assert (repo / "generated" / "bootstrap-assessment" / "workbook_suggestions.json").exists()
+    assert (repo / "generated" / "bootstrap-assessment" / "workbook_suggestions.md").exists()
+    assert (
+        repo / "generated" / "bootstrap-assessment" / "workbook_suggestion_review.xlsx"
+    ).exists()
+
+    report = json.loads(
+        (repo / "generated" / "bootstrap-assessment" / "bootstrap-report.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert report["workbook_suggestion_count"] > 0
+    assert report["workbook_suggestions_json_path"].endswith("workbook_suggestions.json")
+    assert report["workbook_suggestions_markdown_path"].endswith("workbook_suggestions.md")
+    assert report["workbook_suggestion_review_path"].endswith("workbook_suggestion_review.xlsx")
+    assert report["workbook_manifest_path"].endswith("workbook_manifest.json")
 
     validated = runner.invoke(app, ["validate", "--repo", str(repo)])
     assert validated.exit_code == 0, validated.output
@@ -78,6 +96,7 @@ def test_bootstrap_assessment_profiles_an_optional_dataset(tmp_path: Path) -> No
     report = (repo / "generated" / "bootstrap-assessment" / "bootstrap-report.json").read_text()
     assert '"dataset_profile"' in report
     assert '"customer_sample"' in report
+    assert '"workbook_suggestion_count"' in report
 
 
 def test_bootstrap_assessment_preserves_safe_diagnostics_for_unsupported_workbook(
