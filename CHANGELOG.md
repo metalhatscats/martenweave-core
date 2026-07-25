@@ -13,6 +13,10 @@ All notable changes to Martenweave Core.
 
 ### Added
 
+- **Grouped proposal review:** the Workbench import preview and proposal detail now group
+  create-heavy proposals (such as schema imports) by object type with per-type counts, while
+  small proposals keep the flat operation list (#588).
+
 - **Reference example interface slice:** `examples/sap_bp_customer_vendor_reference` now ships a
   synthetic `BusinessPartnerService` WSDL contract and its imported interface lineage
   (Interface, InterfaceEndpoint operations, MessageType, SchemaNode) produced by the documented

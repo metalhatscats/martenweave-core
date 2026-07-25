@@ -137,6 +137,8 @@ dedup + new `PATCH_DUPLICATE_CREATE_OBJECT` validator error. The BP
 reference example now carries a synthetic WSDL + imported interface slice
 (IFACE-SCHEMA-BUSINESSPARTNERSERVICE: 2 endpoints, 8 message types, 21
 schema nodes; validate 0 errors; 181 warnings are expected draft-stewardship
-signals). #588 is next.
+signals). **#588 completed and closed 2026-07-25 (`83824e6`)**: Workbench
+import preview + proposal detail group create-heavy proposals by type
+(64 vitest + 9 e2e green). Queue empty again.
 Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
 `3e2aa0d`; website @ `fdaa395` before PR #10.
