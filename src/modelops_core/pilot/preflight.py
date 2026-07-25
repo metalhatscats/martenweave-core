@@ -192,17 +192,13 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
     if hidden_rows:
         warnings.append(
             "Hidden row(s): "
-            + "; ".join(
-                f"{name} ({hidden_row_counts[name]})" for name in hidden_rows
-            )
+            + "; ".join(f"{name} ({hidden_row_counts[name]})" for name in hidden_rows)
             + "."
         )
     if hidden_columns:
         warnings.append(
             "Hidden column(s): "
-            + "; ".join(
-                f"{name} ({hidden_column_counts[name]})" for name in hidden_columns
-            )
+            + "; ".join(f"{name} ({hidden_column_counts[name]})" for name in hidden_columns)
             + "."
         )
     if comment_count:
@@ -231,9 +227,7 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
                 "hidden_columns": hidden_columns.get(sheet.sheet_name, []),
                 "hyperlink_count": hyperlink_counts.get(sheet.sheet_name, 0),
                 "hyperlink_cells": hyperlink_cells.get(sheet.sheet_name, []),
-                "tables": [
-                    table for table in excel_tables if table["sheet"] == sheet.sheet_name
-                ],
+                "tables": [table for table in excel_tables if table["sheet"] == sheet.sheet_name],
                 "included": sheet.sheet_name not in hidden_sheets,
                 "exclusion_reason": (
                     "Hidden worksheet; retained as evidence but excluded from interpretation."
@@ -501,16 +495,13 @@ def _render_markdown(report: PreflightReport) -> str:
         if f.get("defined_names"):
             lines.append(
                 "- **Defined names**: "
-                + "; ".join(
-                    f"{item['name']} -> {item['target']}" for item in f["defined_names"]
-                )
+                + "; ".join(f"{item['name']} -> {item['target']}" for item in f["defined_names"])
             )
         if f.get("excel_tables"):
             lines.append(
                 "- **Excel tables**: "
                 + "; ".join(
-                    f"{item['sheet']}.{item['name']} ({item['ref']})"
-                    for item in f["excel_tables"]
+                    f"{item['sheet']}.{item['name']} ({item['ref']})" for item in f["excel_tables"]
                 )
             )
         if f.get("hyperlink_count"):

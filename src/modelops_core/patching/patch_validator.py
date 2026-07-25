@@ -260,17 +260,15 @@ def validate_patch_proposal(
                                                 f"{object_type}.{ref_field.name} references "
                                                 f"invalid object ID '{ref}'."
                                             ),
-                                            object_id=str(proposal_id)
-                                            if proposal_id
-                                            else None,
+                                            object_id=str(proposal_id) if proposal_id else None,
                                             field_path=field_path,
                                             suggested_fix="Use a valid canonical object ID.",
                                         )
                                     )
                                     continue
 
-                                target_type = (
-                                    created_object_types.get(ref) or existing_objects.get(ref)
+                                target_type = created_object_types.get(ref) or existing_objects.get(
+                                    ref
                                 )
                                 if target_type is None:
                                     results.append(
@@ -281,9 +279,7 @@ def validate_patch_proposal(
                                                 f"{object_type}.{ref_field.name} references "
                                                 f"non-existent object '{ref}'."
                                             ),
-                                            object_id=str(proposal_id)
-                                            if proposal_id
-                                            else None,
+                                            object_id=str(proposal_id) if proposal_id else None,
                                             field_path=field_path,
                                             suggested_fix=(
                                                 "Reference an existing canonical object ID or "
@@ -306,9 +302,7 @@ def validate_patch_proposal(
                                                 f"'{ref}' of type '{target_type}', expected "
                                                 f"'{ref_field.expected_target_type}'."
                                             ),
-                                            object_id=str(proposal_id)
-                                            if proposal_id
-                                            else None,
+                                            object_id=str(proposal_id) if proposal_id else None,
                                             field_path=field_path,
                                             suggested_fix=(
                                                 f"Reference a "

@@ -368,10 +368,11 @@ def _interface_endpoint_operations(document: NormalizedSchemaDocument) -> list[P
                     "message_exchange_pattern": (
                         "request_response"
                         if response_message_types
-                        else "one_way" if request_message_type else "notification"
+                        else "one_way"
+                        if request_message_type
+                        else "notification"
                     ),
-                    "description": operation.description
-                    or f"{operation.method} {operation.path}",
+                    "description": operation.description or f"{operation.method} {operation.path}",
                 },
                 reason=f"Interface endpoint imported from {operation.source_evidence}.",
             )
@@ -429,11 +430,7 @@ def _schema_node_operations(document: NormalizedSchemaDocument) -> list[PatchOpe
     for field in document.fields:
         entity_name = field.entity_name or document.source_identity
         node_id = _schema_node_id(document, field.field_path)
-        parent_node_id = (
-            _schema_node_id(document, field.parent_path)
-            if field.parent_path
-            else None
-        )
+        parent_node_id = _schema_node_id(document, field.parent_path) if field.parent_path else None
         attr_id = _attribute_id(document, field)
         fep_id = _field_endpoint_id(document, field)
         value_list_id = _value_list_id(document, field) if field.enumerations else None
@@ -451,8 +448,7 @@ def _schema_node_operations(document: NormalizedSchemaDocument) -> list[PatchOpe
             "data_type": field.data_type,
             "required": field.required,
             "cardinality": field.cardinality,
-            "description": field.description
-            or f"Imported schema node for {field.field_path}.",
+            "description": field.description or f"Imported schema node for {field.field_path}.",
         }
         operations.append(
             PatchOperation(

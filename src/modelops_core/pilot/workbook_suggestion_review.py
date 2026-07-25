@@ -119,9 +119,7 @@ def write_workbook_suggestion_review_xlsx(
         from openpyxl.styles import Alignment, Border, Font, PatternFill, Protection, Side
         from openpyxl.worksheet.datavalidation import DataValidation
     except ImportError as exc:  # pragma: no cover
-        raise RuntimeError(
-            "openpyxl is required for workbook suggestion review export."
-        ) from exc
+        raise RuntimeError("openpyxl is required for workbook suggestion review export.") from exc
 
     path.parent.mkdir(parents=True, exist_ok=True)
     workbook = Workbook()
@@ -228,9 +226,7 @@ def import_workbook_suggestion_review_xlsx(
     try:
         from openpyxl import load_workbook
     except ImportError as exc:  # pragma: no cover
-        raise RuntimeError(
-            "openpyxl is required for workbook suggestion review import."
-        ) from exc
+        raise RuntimeError("openpyxl is required for workbook suggestion review import.") from exc
 
     workbook = load_workbook(path, data_only=True, read_only=True)
     try:
@@ -373,9 +369,7 @@ def write_workbook_suggestion_feedback_markdown(
         lines.append(f"- Value: `{record.suggestion_value}`")
         lines.append(f"- Original status: `{record.original_status}`")
         lines.append(f"- Reviewed status: `{record.reviewed_status}`")
-        lines.append(
-            f"- Confidence: `{record.confidence_label}` ({record.confidence_score:.2f})"
-        )
+        lines.append(f"- Confidence: `{record.confidence_label}` ({record.confidence_score:.2f})")
         lines.append(f"- Explanation: {record.explanation}")
         if record.reviewer_notes:
             lines.append(f"- Reviewer notes: {record.reviewer_notes}")

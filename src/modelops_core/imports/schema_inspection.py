@@ -1148,9 +1148,7 @@ def _inspect_cds_metadata_rows(
                     required=required,
                     cardinality=cardinality,
                     length=_parse_catalog_int(_cds_metadata_value(normalized_row, "length")),
-                    precision=_parse_catalog_int(
-                        _cds_metadata_value(normalized_row, "precision")
-                    ),
+                    precision=_parse_catalog_int(_cds_metadata_value(normalized_row, "precision")),
                     scale=_parse_catalog_int(_cds_metadata_value(normalized_row, "scale")),
                     is_key=is_key,
                     enumerations=[],
@@ -1339,9 +1337,8 @@ def _inspect_mapping_sections(
             source_field = _mapping_value(normalized_row, "source_field")
             required = _parse_catalog_bool(_mapping_value(normalized_row, "required"))
             data_type = _mapping_value(normalized_row, "data_type")
-            description = (
-                _mapping_value(normalized_row, "description")
-                or _mapping_value(normalized_row, "comment")
+            description = _mapping_value(normalized_row, "description") or _mapping_value(
+                normalized_row, "comment"
             )
             fields.append(
                 NormalizedSchemaField(
@@ -1427,9 +1424,7 @@ def _inspect_migration_cockpit_rows(
 
             description = _migration_cockpit_value(normalized_row, "description")
             data_type = _migration_cockpit_value(normalized_row, "data_type")
-            required = _parse_catalog_bool(
-                _migration_cockpit_value(normalized_row, "required")
-            )
+            required = _parse_catalog_bool(_migration_cockpit_value(normalized_row, "required"))
             enumerations = _split_catalog_values(
                 _migration_cockpit_value(normalized_row, "enumerations")
             )
@@ -1443,9 +1438,7 @@ def _inspect_migration_cockpit_rows(
                     cardinality=_cardinality(required, data_type or "string")
                     if required is not None
                     else None,
-                    length=_parse_catalog_int(
-                        _migration_cockpit_value(normalized_row, "length")
-                    ),
+                    length=_parse_catalog_int(_migration_cockpit_value(normalized_row, "length")),
                     is_key=field_name.split(".")[-1].replace("[]", "").lower() == "id",
                     enumerations=enumerations,
                     annotations={
@@ -2442,10 +2435,9 @@ def inspect_we60_html(path: Path) -> NormalizedSchemaDocument:
     source_identity = _extract_basic_type_name(bundle_text) or path.stem.upper()
 
     for document_path, document in parsed_documents:
-        document_hint = (
-            _extract_segment_name(" ".join(filter(None, [document.title, *document.headings])))
-            or _extract_segment_name(document_path.stem)
-        )
+        document_hint = _extract_segment_name(
+            " ".join(filter(None, [document.title, *document.headings]))
+        ) or _extract_segment_name(document_path.stem)
         for table_index, table in enumerate(document.tables, start=1):
             if not table.headers:
                 continue
@@ -2678,9 +2670,7 @@ def inspect_integration_suite_package(path: Path) -> NormalizedSchemaDocument:
             warnings.append("Integration Suite package has no MANIFEST.MF metadata file.")
 
         source_identity = (
-            manifest.get("Bundle-SymbolicName")
-            or manifest.get("Bundle-Name")
-            or path.stem
+            manifest.get("Bundle-SymbolicName") or manifest.get("Bundle-Name") or path.stem
         )
         entities.append(
             NormalizedSchemaEntity(
@@ -2740,8 +2730,7 @@ def inspect_integration_suite_package(path: Path) -> NormalizedSchemaDocument:
                     is_key=False,
                     annotations={"resource_path": zip_path, "resource_type": resource_type},
                     description=(
-                        "Packaged Integration Suite resource "
-                        f"{PurePosixPath(zip_path).name}."
+                        f"Packaged Integration Suite resource {PurePosixPath(zip_path).name}."
                     ),
                     source_evidence=f"{path.name}:{zip_path}",
                 )
@@ -2817,7 +2806,7 @@ def inspect_openapi(path: Path, document: dict[str, Any]) -> NormalizedSchemaDoc
                 break
 
             response_schemas: list[dict[str, str]] = []
-            for status_code, response in ((operation.get("responses", {}) or {}).items()):
+            for status_code, response in (operation.get("responses", {}) or {}).items():
                 content = (response or {}).get("content", {}) or {}
                 for media in content.values():
                     schema = (media or {}).get("schema", {}) or {}
@@ -3053,9 +3042,7 @@ def _walk_xsd_container(
         if not attribute_name:
             warnings.append(f"Unnamed XSD attribute at {source_pointer} was skipped.")
             continue
-        field_path = (
-            f"{parent_path}.@{attribute_name}" if parent_path else f"@{attribute_name}"
-        )
+        field_path = f"{parent_path}.@{attribute_name}" if parent_path else f"@{attribute_name}"
         inline_simple_type = attribute.find("xs:simpleType", _XSD_NAMESPACES)
         detail = _xsd_simple_type_details(
             inline_simple_type or _xsd_named_simple_type(attribute.attrib.get("type"), simple_types)
@@ -3262,9 +3249,7 @@ def inspect_xsd(path: Path, document: ET.Element) -> NormalizedSchemaDocument:
             )
 
     for wildcard in document.findall(".//xs:any", _XSD_NAMESPACES):
-        warnings.append(
-            f"XSD wildcard at {_xml_local_name(wildcard.tag)} requires manual review."
-        )
+        warnings.append(f"XSD wildcard at {_xml_local_name(wildcard.tag)} requires manual review.")
 
     return NormalizedSchemaDocument(
         source_path=str(path),
@@ -3530,9 +3515,7 @@ def inspect_edmx(path: Path, document: ET.Element) -> NormalizedSchemaDocument:
         schema_namespace = schema.attrib.get("Namespace") or namespace or path.stem
         for entity_type in schema.findall("edm:EntityType", _EDMX_NAMESPACES):
             entity_name = entity_type.attrib.get("Name", "UnknownEntity")
-            source_pointer = (
-                f"{schema_namespace}/EntityType/{entity_name}"
-            )
+            source_pointer = f"{schema_namespace}/EntityType/{entity_name}"
             entities.append(
                 NormalizedSchemaEntity(
                     name=entity_name,

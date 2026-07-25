@@ -214,13 +214,11 @@ def test_generate_migration_assessment_happy_path(sample_repo: Path, tmp_path: P
     assert any(a["path"] == "manifest.json" for a in manifest_data["generated_artifacts"])
     assert any(a["path"] == "workbook_manifest.json" for a in manifest_data["generated_artifacts"])
     assert any(
-        a["path"] == "workbook_suggestions.json"
-        for a in manifest_data["generated_artifacts"]
+        a["path"] == "workbook_suggestions.json" for a in manifest_data["generated_artifacts"]
     )
     assert any(a["path"] == "workbook_suggestions.md" for a in manifest_data["generated_artifacts"])
     assert any(
-        a["path"] == "workbook_suggestion_review.xlsx"
-        for a in manifest_data["generated_artifacts"]
+        a["path"] == "workbook_suggestion_review.xlsx" for a in manifest_data["generated_artifacts"]
     )
 
 

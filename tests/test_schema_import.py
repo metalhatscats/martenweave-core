@@ -86,9 +86,7 @@ def _write_field_catalog_xlsx(path: Path) -> None:
     worksheet.append(
         ["Entity", "Field Path", "Description", "Data Type", "Required", "Length", "Enum"]
     )
-    worksheet.append(
-        ["Customer", "CustomerId", "Customer identifier", "string", "yes", 10, ""]
-    )
+    worksheet.append(["Customer", "CustomerId", "Customer identifier", "string", "yes", 10, ""])
     worksheet.append(
         ["Customer", "Status", "Customer status", "string", "no", "", "active|blocked"]
     )

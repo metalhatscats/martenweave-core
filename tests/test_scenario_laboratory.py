@@ -45,9 +45,7 @@ def _multi_domain_mapping(path: Path) -> None:
     reference.sheet_state = "hidden"
     reference.append(["Obsolete code", "Disposition"])
     reference.append(["Z9", "Out of scope"])
-    workbook.defined_names.add(
-        DefinedName("BP_SCOPE", attr_text="'BP mapping'!$A$1:$D$2")
-    )
+    workbook.defined_names.add(DefinedName("BP_SCOPE", attr_text="'BP mapping'!$A$1:$D$2"))
     workbook.save(path)
 
 

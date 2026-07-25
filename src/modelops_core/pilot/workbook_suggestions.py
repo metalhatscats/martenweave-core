@@ -259,8 +259,7 @@ def render_workbook_suggestions_markdown(suggestion_set: WorkbookSuggestionSet) 
         lines.append(f"- Type: `{suggestion.suggestion_type}`")
         lines.append(f"- Value: `{suggestion.suggestion_value}`")
         lines.append(
-            "- Confidence: "
-            f"`{suggestion.confidence_label}` ({suggestion.confidence_score:.2f})"
+            f"- Confidence: `{suggestion.confidence_label}` ({suggestion.confidence_score:.2f})"
         )
         lines.append(f"- Status: `{suggestion.status}`")
         lines.append(f"- Explanation: {suggestion.explanation}")

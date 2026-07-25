@@ -200,9 +200,7 @@ def import_workbook_suggestion_review(
     console.print(f"  Reviewed suggestions: {len(feedback.feedback_records)}")
     console.print(
         "  Decisions: "
-        + ", ".join(
-            f"{decision}={count}" for decision, count in feedback.decision_counts().items()
-        )
+        + ", ".join(f"{decision}={count}" for decision, count in feedback.decision_counts().items())
     )
     console.print("  Canonical model files were not changed.")
 

@@ -83,9 +83,7 @@ def _write_field_catalog_xlsx(path: Path) -> None:
     worksheet.append(
         ["Entity", "Field Path", "Description", "Data Type", "Required", "Length", "Enum"]
     )
-    worksheet.append(
-        ["Customer", "CustomerId", "Customer identifier", "string", "yes", 10, ""]
-    )
+    worksheet.append(["Customer", "CustomerId", "Customer identifier", "string", "yes", 10, ""])
     worksheet.append(
         ["Customer", "Status", "Customer status", "string", "no", "", "active|blocked"]
     )
@@ -760,9 +758,7 @@ def test_inspect_xml_payload_normalizes_nested_fields(tmp_path: Path) -> None:
     assert field_paths["SalesAreas.SalesArea"].data_type == "array"
     assert field_paths["SalesAreas.SalesArea[]"].data_type == "object"
     assert field_paths["SalesAreas.SalesArea[].SalesOrg"].data_type == "integer"
-    assert (
-        field_paths["SalesAreas.SalesArea[].DistributionChannel"].data_type == "integer"
-    )
+    assert field_paths["SalesAreas.SalesArea[].DistributionChannel"].data_type == "integer"
 
 
 def test_inspect_idoc_payload_normalizes_segments_and_fields(tmp_path: Path) -> None:
@@ -800,14 +796,11 @@ def test_inspect_cds_metadata_csv_normalizes_artifacts_and_elements(tmp_path: Pa
     assert field_map[("I_BUSINESSPARTNER", "BusinessPartner")].required is True
     assert field_map[("I_BUSINESSPARTNER", "BusinessPartner")].cardinality == "1..1"
     assert field_map[("I_BUSINESSPARTNER", "BusinessPartner")].is_key is True
+    assert field_map[("I_BUSINESSPARTNER", "to_BusinessPartnerAddress")].associations == [
+        "I_BUSINESSPARTNERADDRESS"
+    ]
     assert (
-        field_map[("I_BUSINESSPARTNER", "to_BusinessPartnerAddress")].associations
-        == ["I_BUSINESSPARTNERADDRESS"]
-    )
-    assert (
-        field_map[("I_BUSINESSPARTNER", "to_BusinessPartnerAddress")].annotations[
-            "element_kind"
-        ]
+        field_map[("I_BUSINESSPARTNER", "to_BusinessPartnerAddress")].annotations["element_kind"]
         == "ASSOCIATION"
     )
 
@@ -966,8 +959,7 @@ def test_inspect_openapi_normalizes_entities_and_operations(tmp_path: Path) -> N
     operation_ids = {operation.operation_id for operation in document.operations}
     assert operation_ids == {"listProducts", "createProduct"}
     assert any(
-        field.entity_name == "Product" and field.field_path == "price"
-        for field in document.fields
+        field.entity_name == "Product" and field.field_path == "price" for field in document.fields
     )
 
 
@@ -1191,9 +1183,7 @@ def test_inspect_wsdl_normalizes_messages_and_operations(tmp_path: Path) -> None
     assert operation.response_schemas == [
         {"status_code": "output", "schema": "CreateCustomerOutput"}
     ]
-    field_paths = {
-        (field.entity_name, field.field_path): field for field in document.fields
-    }
+    field_paths = {(field.entity_name, field.field_path): field for field in document.fields}
     assert field_paths[("CreateCustomerInput", "parameters")].associations == [
         "tns:CreateCustomerRequest"
     ]

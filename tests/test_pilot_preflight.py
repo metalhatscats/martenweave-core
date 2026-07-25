@@ -100,9 +100,7 @@ def test_pilot_preflight_produces_reports_and_detects_issues(tmp_path: Path) -> 
     suggestions = json.loads((out_dir / "workbook_suggestions.json").read_text(encoding="utf-8"))
     assert suggestions["summary"]["suggestion_count"] > 0
     assert suggestions["summary"]["counts_by_status"]["unresolved"] > 0
-    assert any(
-        item["suggestion_id"].startswith("WSUG-") for item in suggestions["suggestions"]
-    )
+    assert any(item["suggestion_id"].startswith("WSUG-") for item in suggestions["suggestions"])
     assert all(item["status"] == "unresolved" for item in suggestions["suggestions"])
 
     mapping = by_path[str(MAPPING_WORKBOOK)]
