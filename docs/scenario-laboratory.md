@@ -8,11 +8,11 @@ approval. Inputs are never silently promoted to canonical files.
 | Scenario | CLI path | Local API / Workbench path | Fixture and regression evidence |
 |---|---|---|---|
 | Clean single-sheet SAP mapping | `run migration-assessment` | Import → inspect → preview | `tests/fixtures/pilot/sap_customer_mapping.xlsx`; assessment tests |
-| BP, Customer, Supplier multi-sheet mapping | `pilot-preflight`, `run migration-assessment` | Import interpretation lists every sheet | `tests/test_scenario_laboratory.py` |
+| BP, Customer, Supplier multi-sheet mapping | `pilot-preflight`, `run migration-assessment` | Import interpretation lists every sheet, structural manifest metadata, and governed workbook suggestions | `tests/test_scenario_laboratory.py` |
 | Renamed headers, blanks, merged cells | `pilot-preflight` | Import warnings and assumptions | scenario-lab workbook test |
 | Duplicate mappings/rows and conflicting IDs | `import-excel-review`, `proposal validate` | Preview then review error state | `test_api_v1_imports.py`, model-sheet import tests |
 | Missing fields, owners, rules, decisions | `validate`, `assessment`, `gap-report` | Findings and proposal views | validation, assessment, and readiness tests |
-| Formulas, hidden sheets, comments, external links | `pilot-preflight` | Inspect endpoint, imported evidence only | scenario-lab test |
+| Formulas, hidden sheets, hidden rows/columns, comments, hyperlinks, named ranges, Excel tables, external links, repeated headers, and title/header offsets | `pilot-preflight` | Inspect endpoint, imported evidence only | scenario-lab + pilot-preflight structural scan tests |
 | Conditional mandatory fields/value mappings | `validate`, `assessment` | Findings review | SAP validation and assessment tests |
 | Obsolete/out-of-scope records | `assessment`, `gap-report` | Findings review | assessment fixture suite |
 | CSV/XLSX extracts that differ from model | `run dataset-readiness` | Dataset import profile | dataset-readiness and API import tests |

@@ -241,8 +241,11 @@ For a release-grade demo path that exercises validation, indexing, search, trace
 | `serve` | Start the optional local API server |
 | `workbench` | Launch the local Workbench (API + packaged UI) |
 | `mcp` | Start the optional MCP server for agent integration |
+| `domain-pack` | Build, validate, and diff built-in reference domain packs |
+| `schema` | Inspect external machine-readable schema evidence |
 | `import-model-sheet` | Import spreadsheet edits as a PatchProposal |
 | `import-excel-review` | Turn a reviewed XLSX workbook into a portable PatchProposal artifact |
+| `import-workbook-suggestion-review` | Normalize reviewed workbook-suggestion decisions into feedback artifacts |
 | `export-model` | Export canonical objects to CSV or XLSX |
 | `export-schema` | Export JSON Schema for canonical object types |
 | `export-sheets` | Export canonical model objects to Google Sheets |
@@ -358,8 +361,9 @@ See [`frontend/README.md`](frontend/README.md) for development build instruction
 
 Start a new local pilot from an existing SAP mapping workbook without treating inferred content as
 canonical truth. The command creates a valid repository, profiles the workbook, and writes a
-deterministic `PatchProposal` plus a bootstrap report. Review and approve the proposal before any
-model object is created.
+deterministic `PatchProposal` plus a bootstrap report, workbook structural manifest, and governed
+workbook suggestion artifacts, including a protected suggestion review workbook. Review and approve
+the proposal before any model object is created.
 
 ```bash
 .venv/bin/martenweave bootstrap-assessment \
@@ -387,8 +391,9 @@ Turn a local Markdown note or CSV/XLSX validation report into a deterministic, r
 ### Evidence-Backed Agent Loop
 
 Use a preflighted mapping workbook as structural evidence for a narrowly scoped proposal. The loop
-passes sheet names, detected columns, exclusions, warnings, and assumptions to the proposer; it
-does not send workbook values as canonical truth, apply changes, or approve the proposal.
+passes sheet names, detected columns, exclusions, warnings, assumptions, and governed workbook
+suggestions derived from the structural manifest to the proposer; it does not send workbook values
+as canonical truth, apply changes, or approve the proposal.
 
 ```bash
 .venv/bin/martenweave agent-loop \
@@ -400,6 +405,65 @@ does not send workbook values as canonical truth, apply changes, or approve the 
 
 Review the resulting `PatchProposal` in the Workbench or with `martenweave proposal review` before
 creating or approving a ChangeRequest.
+
+### Schema Inspection
+
+Inspect a local JSON Schema, sample JSON/XML/IDoc payload, CDS metadata export, CSV/XLSX field
+catalogue, SAP mapping, WE60 HTML documentation, Integration Suite `.iflw`/artifact ZIP exports,
+or Migration Cockpit workbook template, OpenAPI, OData EDMX, WSDL, or XML Schema file into a
+normalized evidence model. The command reads the file only; it does not create canonical objects
+or proposals in this slice. The corresponding schema import path can now emit interface/message
+objects including `Interface`, `InterfaceEndpoint`, `MessageType`, and `SchemaNode`, with
+operation-level request/response message links where the source contract exposes them. When writing
+a proposal artifact, `schema import` also records provenance metadata in the source registry,
+including schema version, namespace, parser version, checksum, and optional source/licensing notes.
+
+```bash
+.venv/bin/martenweave schema inspect ./product.schema.json --json
+.venv/bin/martenweave schema inspect ./customer-payload.json
+.venv/bin/martenweave schema inspect ./customer-payload.xml
+.venv/bin/martenweave schema inspect ./customer-idoc.xml
+.venv/bin/martenweave schema inspect ./cds-metadata.json
+.venv/bin/martenweave schema inspect ./DEBMAS07.html
+.venv/bin/martenweave schema inspect ./main.iflw
+.venv/bin/martenweave schema inspect ./bp-sync-package.zip
+.venv/bin/martenweave schema inspect ./customer-field-catalog.csv
+.venv/bin/martenweave schema inspect ./customer-field-catalog.xlsx
+.venv/bin/martenweave schema inspect ./sap-customer-mapping.xlsx
+.venv/bin/martenweave schema inspect ./migration-cockpit-template.xlsx
+.venv/bin/martenweave schema inspect ./product-api.yaml
+.venv/bin/martenweave schema inspect ./api_business_partner.edmx
+.venv/bin/martenweave schema inspect ./customer-service.wsdl
+.venv/bin/martenweave schema inspect ./customer.xsd
+.venv/bin/martenweave schema import ./product.schema.json --json
+.venv/bin/martenweave schema import ./customer-payload.json --repo ./my-model --as-proposal
+.venv/bin/martenweave schema import ./customer-payload.xml --repo ./my-model --as-proposal
+.venv/bin/martenweave schema import ./customer-idoc.xml --repo ./my-model --as-proposal
+.venv/bin/martenweave schema import ./cds-metadata.json --repo ./my-model --as-proposal
+.venv/bin/martenweave schema import ./DEBMAS07.html --repo ./my-model --as-proposal
+.venv/bin/martenweave schema import ./main.iflw --repo ./my-model --as-proposal
+.venv/bin/martenweave schema import ./bp-sync-package.zip --repo ./my-model --as-proposal
+.venv/bin/martenweave schema import ./customer-field-catalog.csv --repo ./my-model --as-proposal
+.venv/bin/martenweave schema import ./customer-field-catalog.xlsx --repo ./my-model --as-proposal
+.venv/bin/martenweave schema import ./sap-customer-mapping.xlsx --repo ./my-model --as-proposal
+.venv/bin/martenweave schema import ./migration-cockpit-template.xlsx --repo ./my-model --as-proposal
+.venv/bin/martenweave schema import ./product-api.yaml --repo ./my-model --as-proposal
+.venv/bin/martenweave schema import ./api_business_partner.edmx --repo ./my-model --as-proposal
+.venv/bin/martenweave schema import ./customer-service.wsdl --repo ./my-model --as-proposal
+.venv/bin/martenweave schema import ./customer.xsd --repo ./my-model --as-proposal
+.venv/bin/martenweave schema import ./product-api.yaml --repo ./my-model --as-proposal \
+  --source-url https://api.example.com/docs/product-api \
+  --license-note "Internal partner reference only." \
+  --usage-note "Imported from an approved local export."
+```
+
+### Domain Pack Commands
+
+```bash
+.venv/bin/martenweave domain-pack build sap-business-partner --out /tmp/sap-bp-pack
+.venv/bin/martenweave domain-pack validate sap-business-partner --json
+.venv/bin/martenweave domain-pack diff sap-business-partner /tmp/sap-bp-pack --json
+```
 
 ## Example Models
 

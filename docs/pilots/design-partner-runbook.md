@@ -63,12 +63,20 @@ martenweave pilot-preflight \
   --out ./outputs/preflight
 ```
 
-The preflight produces `outputs/preflight/preflight_report.json` and
-`outputs/preflight/preflight_report.md`. It inspects file metadata, sheet and
-column names, formulas, hidden sheets, external workbook links, secret-like
-patterns, and sensitive column-name indicators. Raw row values are excluded by
-default; add `--include-raw-samples` only when you explicitly need sample data
-in the report.
+The preflight produces `outputs/preflight/preflight_report.json`,
+`outputs/preflight/preflight_report.md`, `outputs/preflight/workbook_manifest.json`,
+`outputs/preflight/workbook_suggestions.json`, and
+`outputs/preflight/workbook_suggestions.md`, plus
+`outputs/preflight/workbook_suggestion_review.xlsx`.
+It inspects file metadata, sheet and column names, formulas, hidden sheets,
+hidden rows/columns, hyperlinks, named ranges, Excel tables, external workbook
+links, secret-like patterns, and sensitive column-name indicators. For XLSX
+mapping workbooks it also writes a structural manifest with detected sheet
+purposes, probable header rows, table-like sections, row ranges, exclusions,
+warnings, fingerprints, and confidence levels, plus governed deterministic
+suggestions for sheet roles, repeated sections, and column roles. Raw row
+values are excluded by default; add `--include-raw-samples` only when you
+explicitly need sample data in the report.
 
 If the preflight reports a `blocked` status, resolve the issue before running the
 assessment. If it reports `warning`, review each warning and document why the
@@ -121,6 +129,10 @@ input is still safe to process.
 
    Open:
    - `outputs/assessment/manifest.json` — inputs, stage statuses, artifact checksums.
+   - `outputs/assessment/workbook_manifest.json` — structural workbook interpretation.
+   - `outputs/assessment/workbook_suggestions.json` — machine-readable governed workbook suggestions.
+   - `outputs/assessment/workbook_suggestions.md` — human-readable workbook suggestion review artifact.
+   - `outputs/assessment/workbook_suggestion_review.xlsx` — protected reviewer-decision workbook for governed suggestions.
    - `outputs/assessment/01_readiness_scorecard.md` — overall readiness.
    - `outputs/assessment/02_gap_report.md` — consolidated gaps.
    - `outputs/assessment/03_high_risk_fields.md` — ranked risk items.

@@ -8,6 +8,7 @@ modelops export-model --repo <repo> --format xlsx --out <workbook.xlsx> --busine
 modelops export-schema --repo <repo> --type <ObjectType|all> --output <path>
 modelops import-model-sheet <path> --repo <repo> --json
 modelops import-excel-review --repo <repo> --from <workbook.xlsx> --out <proposal.md>
+modelops import-workbook-suggestion-review --from <workbook.xlsx> --out <dir>
 modelops proposal validate --repo <repo> --proposal <proposal.md>
 ```
 
@@ -27,3 +28,9 @@ Stable fields: `id`, `type`, `status`, `operations`, `warnings`
 Writes a portable PatchProposal Markdown artifact and never changes canonical model files. Every
 non-empty review row must include a stable `id`; missing IDs are rejected with the worksheet and
 row location.
+
+### `import-workbook-suggestion-review`
+
+Writes normalized `workbook_suggestion_feedback.json` and `.md` artifacts and never changes
+canonical model files. Reviewers edit only `reviewer_decision` and `reviewer_notes`; suggestion
+identity and evidence columns stay protected in the exported workbook.

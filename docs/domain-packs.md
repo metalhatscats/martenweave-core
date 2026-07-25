@@ -55,6 +55,27 @@ A `FieldEndpoint` with `endpoint_type: sap_table_field` and `sap_table: KNVV` mu
 
 If the `sap` pack is not enabled, these rules are skipped.
 
+## CLI Workflows
+
+Build the built-in synthetic SAP Business Partner reference repository:
+
+```bash
+martenweave domain-pack build sap-business-partner --out /tmp/sap-bp-pack
+```
+
+Validate a built-in or local domain-pack repository:
+
+```bash
+martenweave domain-pack validate sap-business-partner
+martenweave domain-pack validate /tmp/sap-bp-pack --json
+```
+
+Compare two domain-pack repositories deterministically:
+
+```bash
+martenweave domain-pack diff sap-business-partner /tmp/sap-bp-pack --json
+```
+
 ---
 
 ## Architecture
