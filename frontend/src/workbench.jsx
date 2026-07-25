@@ -418,7 +418,7 @@ function liveLedgerRow(item) {
     owner,
     initials: item.owners > 0 ? "OK" : "—",
     updated: "Live",
-    tone: ({ Domain: "blue", Entity: "cyan", Attribute: "violet", Mapping: "orange", Endpoint: "green" })[item.label] || "blue",
+    tone: ({ Domain: "blue", Entity: "cyan", Attribute: "violet", Mapping: "orange", Endpoint: "green", Interface: "cyan", "IF Endpoint": "green", Message: "orange", "Schema Node": "violet" })[item.label] || "blue",
     domain: item.domain,
     businessOwner: item.businessOwner,
     technicalSteward: item.technicalSteward,

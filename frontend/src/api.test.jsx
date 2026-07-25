@@ -257,6 +257,10 @@ describe("lineage helpers", () => {
     expect(objectTypeToTone("PatchProposal")).toBe("proposal");
     expect(objectTypeToTone("Decision")).toBe("decision");
     expect(objectTypeToTone("Issue")).toBe("gap");
+    expect(objectTypeToTone("Interface")).toBe("canonical");
+    expect(objectTypeToTone("InterfaceEndpoint")).toBe("canonical");
+    expect(objectTypeToTone("MessageType")).toBe("canonical");
+    expect(objectTypeToTone("SchemaNode")).toBe("canonical");
     expect(objectTypeToTone("Unknown")).toBe("target");
   });
 
@@ -313,6 +317,22 @@ describe("apiObjectToViewModel", () => {
     expect(view.label).toBe("Domain");
     expect(view.owners).toBe(2);
     expect(view.businessOwner).toBe("Customer Data Office");
+  });
+
+  it("labels interface-lineage object types distinctly", () => {
+    const cases = [
+      ["Interface", "Interface"],
+      ["InterfaceEndpoint", "IF Endpoint"],
+      ["MessageType", "Message"],
+      ["SchemaNode", "Schema Node"],
+    ];
+    for (const [type, label] of cases) {
+      const view = apiObjectToViewModel({ id: "IF-1", type, status: "active", name: "x" });
+      expect(view.label).toBe(label);
+    }
+    // FieldEndpoint keeps its own short label — no clash with IF Endpoint.
+    const field = apiObjectToViewModel({ id: "FEP-1", type: "FieldEndpoint", status: "active", name: "y" });
+    expect(field.label).toBe("Endpoint");
   });
 });
 

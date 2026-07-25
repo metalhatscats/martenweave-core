@@ -467,6 +467,10 @@ function IconTile({ type, size = 42 }) {
     Entity: [Buildings, "cyan"],
     Mapping: [ShareNetwork, "orange"],
     Proposal: [FileText, "violet"],
+    Interface: [ShareNetwork, "cyan"],
+    "IF Endpoint": [Database, "green"],
+    Message: [FileText, "orange"],
+    "Schema Node": [BracketsCurly, "violet"],
   };
   const [Icon, tone] = map[type] || [Database, "green"];
   return (
@@ -681,6 +685,10 @@ const OBJECT_TYPE_LABELS = {
   Entity: "Business entity",
   Mapping: "Mapping",
   Proposal: "Proposal",
+  Interface: "Interface",
+  "IF Endpoint": "Interface endpoint",
+  Message: "Message type",
+  "Schema Node": "Schema node",
 };
 
 function ObjectScreen({ navigate, params, onExport, onDraft }) {

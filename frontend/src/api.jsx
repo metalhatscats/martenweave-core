@@ -447,6 +447,14 @@ function typeToLabel(type) {
       return "Proposal";
     case "FieldEndpoint":
       return "Endpoint";
+    case "Interface":
+      return "Interface";
+    case "InterfaceEndpoint":
+      return "IF Endpoint";
+    case "MessageType":
+      return "Message";
+    case "SchemaNode":
+      return "Schema Node";
     case "EntityContext":
       return "Context";
     case "ValueList":
@@ -2026,6 +2034,13 @@ export function objectTypeToTone(type) {
       return "decision";
     case "Issue":
       return "gap";
+    // Interface-lineage structure is canonical model knowledge, not a source
+    // extract or a semantic target — render it on the canonical layer.
+    case "Interface":
+    case "InterfaceEndpoint":
+    case "MessageType":
+    case "SchemaNode":
+      return "canonical";
     default:
       return "target";
   }
