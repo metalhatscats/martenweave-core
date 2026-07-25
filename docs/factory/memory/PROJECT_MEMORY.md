@@ -89,5 +89,9 @@ validate-site, and core-version-copy all green at Core 0.6.2) — awaiting
 maintainer merge per the #552 publication precedent. #9 was seeded 2026-07-25
 after a green `factory audit` (14/14 PASS) and Northstar 11/11 re-verification
 at `ed2e284`; `agent-ready` + `priority:medium` labels now exist in the
-website repo. Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
+website repo. Core #583 (agent-ready, docs-drift, priority:low): sync
+`CORE_DOMAIN_MODEL.md` object groups with the 36-type `ObjectType` enum —
+verified missing `Application`, `DataFlowStep`, `IntegrationFlow`,
+`InterfaceEndpoint`, `MessageType`, `SAPObject`, `SchemaNode`,
+`TransformationRule`; `factory plan` recommends it next. Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
 `3e2aa0d`; website @ `fdaa395` before PR #10.
