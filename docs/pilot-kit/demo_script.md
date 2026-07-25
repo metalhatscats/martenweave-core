@@ -43,10 +43,16 @@ Talk through:
 - The SQLite index is disposable. You can delete `generated/` and rebuild it.
 - JSONL exports are created for search and lineage.
 
-### 4. Run the readiness assessment (3 min)
+### 4. Preflight and run the pilot assessment (3 min)
 
 ```bash
-martenweave assessment run --repo examples/customer_bp_model --out /tmp/martenweave-assessment
+martenweave pilot-preflight \
+  --mapping tests/fixtures/pilot/sap_customer_mapping.xlsx \
+  --out /tmp/martenweave-preflight
+martenweave run migration-assessment \
+  --repo examples/customer_bp_model \
+  --mapping tests/fixtures/pilot/sap_customer_mapping.xlsx \
+  --out /tmp/martenweave-assessment
 ```
 
 Talk through:
@@ -86,7 +92,28 @@ ls /tmp/martenweave-assessment
 - Executive summary and themed next steps.
 - Derived directly from scorecard gaps and risk register.
 
-### 6. Show additional commands (2 min)
+**executive-summary/executive-summary.html, evidence-manifest.json, workbench-workspace.json**
+- Client-ready readiness view, checksummed evidence inventory, and disposable local Workbench context.
+- These remain generated evidence; none authorizes a canonical model change.
+
+### 6. Compare workbook versions and promote a reviewed finding (2 min)
+
+```bash
+martenweave assessment compare-workbooks ./mapping-v1.xlsx ./mapping-v2.xlsx \
+  --repo examples/customer_bp_model --out /tmp/martenweave-comparison
+martenweave assessment-review set \
+  --assessment /tmp/martenweave-assessment/manifest.json \
+  --finding-id <finding-id> --disposition confirmed --reviewer migration-lead
+martenweave assessment-review promote \
+  --assessment /tmp/martenweave-assessment/manifest.json \
+  --finding-id <finding-id> --repo examples/customer_bp_model
+```
+
+Talk through:
+- The comparison is deterministic and evidence-only; it shows changes to mappings and matched model impact.
+- A reviewer confirms a finding before promotion; the result is a PatchProposal, not an applied change.
+
+### 7. Show additional commands (2 min)
 
 ```bash
 martenweave health --repo examples/customer_bp_model

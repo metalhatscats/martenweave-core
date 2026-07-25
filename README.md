@@ -32,7 +32,7 @@ For Workbench setup and development notes, see [`frontend/README.md`](frontend/R
 
 - Current source version: `0.7.1`
 - Package / PyPI name: `martenweave-core`
-- Latest published release: `0.6.2`.
+- Latest published release: `0.7.1`.
 - Source install remains available for contributors and local development.
 - Public site and docs: <https://martenweave.github.io/>
 
@@ -104,7 +104,7 @@ Martenweave Core requires Python 3.11+.
 
 ### Install from PyPI
 
-The latest published release is `0.6.2`. Install it with:
+The latest published release is `0.7.1`. Install it with:
 
 ```bash
 python -m pip install martenweave-core
@@ -266,11 +266,16 @@ For a release-grade demo path that exercises validation, indexing, search, trace
 | `decisions` | Browse and inspect Decision objects |
 | `proposal` | Review and apply PatchProposals |
 | `assessment` | Run migration model readiness assessment workflows |
+| `assessment compare-workbooks` | Compare two mapping-workbook versions and write JSON, HTML, XLSX, and impact evidence |
 | `executive-summary` | Generate a one-page executive readiness summary |
 | `pilot-preflight` | Metadata-only safety checks for pilot inputs |
 | `assessment-review` | Record dispositions and promote confirmed findings |
 | `bootstrap-assessment` | Initialize a proposal-only pilot from an SAP mapping workbook |
 | `evidence ingest` | Turn local notes or validation reports into a reviewable proposal |
+
+For the supported SAP migration pilot sequence—from input preflight to bootstrap, assessment,
+human finding review, proposal promotion, reports, and workbook comparison—see
+[`docs/pilots/PILOT_PROOF_RELEASE.md`](docs/pilots/PILOT_PROOF_RELEASE.md).
 
 `docs-build` produces disposable generated files such as `index.html`, `objects.html`,
 `gaps.html`, `decisions.html`, `owners.html`, object detail pages, `search-index.json`, and

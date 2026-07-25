@@ -3,7 +3,7 @@
 > **Active roadmap for martenweave-core.**
 > Replaces the feature-led `ROADMAP_V0_1.md` with a workflow-first plan built
 > around one repeatable SAP migration pilot.
-> Version: 0.6.1
+> Version: 0.8 Pilot Proof preparation (current published package: 0.7.1)
 
 ---
 
@@ -17,21 +17,21 @@ workbook and project evidence into a validated, reviewable readiness pack in
 **Primary end-to-end workflow (the pilot):**
 
 ```text
-mapping workbook + evidence
+mapping workbook + optional dataset/schema evidence
         ↓
 pilot-preflight + privacy check
         ↓
-validated Martenweave model repository
+proposal-only bootstrap or existing validated model repository
         ↓
 run migration-assessment
         ↓
 readiness verdict + gap summary + risk report + impact reports
         ↓
-business review workbook + review pack
+executive HTML + findings workbook + evidence manifest + review pack
         ↓
 human disposition of findings
         ↓
-pilot-outcome report (continue / pivot / stop)
+PatchProposal promotion → human approval → pilot-outcome report
 ```
 
 Everything outside this loop is explicitly sequenced after the first pilot
