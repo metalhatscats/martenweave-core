@@ -2,7 +2,7 @@
 
 All notable changes to Martenweave Core.
 
-## [Unreleased]
+## [0.7.1] — 2026-07-25
 
 ### Fixed
 
