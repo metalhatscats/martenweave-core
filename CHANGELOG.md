@@ -6,10 +6,36 @@ All notable changes to Martenweave Core.
 
 ### Added
 
+- **Schema inspection and import:** `martenweave schema inspect` normalizes local machine-readable
+  evidence — JSON Schema, OpenAPI, OData EDMX, WSDL, XSD, sample JSON/XML/IDoc payloads, CDS
+  metadata, WE60 HTML documentation, Integration Suite `.iflw`/artifact ZIP exports, Migration
+  Cockpit workbook templates, SAP mapping workbooks, and CSV/XLSX field catalogues — into a
+  deterministic evidence model. `martenweave schema import` turns that evidence into a reviewable
+  `PatchProposal` that can create `Interface`, `InterfaceEndpoint`, `MessageType`, and `SchemaNode`
+  objects with operation-level request/response message links. Every import records source-registry
+  provenance (schema version, namespace, parser version, checksum, retrieval time) with optional
+  `--source-url`, `--license-note`, and `--usage-note`. Nothing is applied without human approval.
+- **Domain-pack CLI:** `martenweave domain-pack build|validate|diff` builds, validates, and
+  compares built-in reference domain packs (SAP Business Partner) as disposable local artifacts.
+- **Governed workbook suggestions:** `pilot-preflight`, `bootstrap-assessment`, and
+  `run migration-assessment` now emit a structural workbook manifest and governed workbook
+  suggestion artifacts, including a protected `workbook_suggestion_review.xlsx`;
+  `import-workbook-suggestion-review` normalizes reviewer decisions back into feedback artifacts
+  without touching canonical model files.
 - **Evidence-backed agent loop:** `martenweave agent-loop --mapping <workbook.xlsx>` now passes
   preflighted sheet and column metadata, exclusions, warnings, and assumptions into the existing
   propose → validate → refine loop. Workbook values remain evidence-only, blocked inputs never
   reach the provider, and every resulting proposal remains pending explicit human review.
+- **Workbench interface lineage labels:** `Interface`, `InterfaceEndpoint`, `MessageType`, and
+  `SchemaNode` objects now get distinct short labels and canonical-layer tones in object and
+  lineage views instead of falling back to raw type names.
+
+### Changed
+
+- **Proposal validation:** `affected_objects` and other references may target objects created
+  within the same proposal, schema-import proposals populate deterministic `affected_objects`,
+  and apply-time intermediate validation no longer lets accepted governance artifacts falsely
+  block create-heavy proposal application.
 
 ## [0.6.2] — 2026-07-24
 
