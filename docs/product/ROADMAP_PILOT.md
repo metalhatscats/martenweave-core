@@ -3,7 +3,7 @@
 > **Active roadmap for martenweave-core.**
 > Replaces the feature-led `ROADMAP_V0_1.md` with a workflow-first plan built
 > around one repeatable SAP migration pilot.
-> Version: 0.8 Pilot Proof preparation (current published package: 0.7.1)
+> Version: 0.8 Pilot Proof release (current published package: 0.8.0)
 
 ---
 

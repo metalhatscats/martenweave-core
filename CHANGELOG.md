@@ -4,6 +4,8 @@ All notable changes to Martenweave Core.
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-07-25
+
 ### Added
 
 - **Pilot Proof workflow:** `assessment compare-workbooks` produces deterministic JSON, HTML, and
