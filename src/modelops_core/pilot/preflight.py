@@ -130,6 +130,7 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
     }
     comment_count = 0
     hyperlink_count = 0
+    coloured_cell_count = 0
     hyperlink_cells: dict[str, list[str]] = {}
     hidden_rows: dict[str, list[int]] = {}
     hidden_columns: dict[str, list[str]] = {}
@@ -167,6 +168,8 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
                     hyperlink_cells.setdefault(name, [])
                     if len(hyperlink_cells[name]) < MAX_STRUCTURAL_SAMPLE:
                         hyperlink_cells[name].append(cell.coordinate)
+                if cell.fill.fill_type and cell.fill.fill_type != "none":
+                    coloured_cell_count += 1
     external_links: list[str] = []
     for link in getattr(wb_meta, "external_links", []) or []:
         target = getattr(link, "Target", None) or str(link)
@@ -205,6 +208,11 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
         warnings.append(f"{comment_count} cell comment(s) present for reviewer context.")
     if hyperlink_count:
         warnings.append(f"{hyperlink_count} hyperlink cell(s) present.")
+    if coloured_cell_count:
+        warnings.append(
+            f"{coloured_cell_count} colour-filled cell(s) present; colour-only statuses are "
+            "evidence for human review and are not interpreted as data."
+        )
     if defined_names:
         warnings.append(f"{len(defined_names)} defined name(s) present.")
     if excel_tables:
@@ -296,6 +304,7 @@ def _inspect_xlsx(path: Path) -> dict[str, Any]:
         "merged_ranges": merged_ranges,
         "comment_count": comment_count,
         "hyperlink_count": hyperlink_count,
+        "coloured_cell_count": coloured_cell_count,
         "hyperlink_cells": hyperlink_cells,
         "external_links": external_links,
         "hidden_rows": hidden_rows,

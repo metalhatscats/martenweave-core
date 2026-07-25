@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
+import unicodedata
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -61,6 +63,49 @@ def _is_field_mapping_sheet(name: str) -> bool:
 def _is_decisions_sheet(name: str) -> bool:
     """Return True for decision registers."""
     return "decision" in name.lower()
+
+
+_HEADER_ALIASES: dict[str, tuple[str, ...]] = {
+    "source_field": (
+        "source_field",
+        "source field",
+        "legacy field",
+        "old field",
+        "field source",
+        "поле источника",
+        "исходное поле",
+    ),
+    "source_system": ("source_system", "source system", "legacy system", "система источника"),
+    "source_table": ("source_table", "source table", "legacy table", "таблица источника"),
+    "target_table": ("target_table", "target table", "sap table", "таблица цели"),
+    "target_field": ("target_field", "target field", "new field", "field target", "поле цели"),
+    "owner": ("owner", "steward", "responsible", "владелец"),
+    "status": ("status", "state", "disposition", "статус"),
+    "condition": ("condition", "when", "if", "условие"),
+    "validation_rule": ("validation_rule", "validation rule", "validation", "правило валидации"),
+    "topic": ("topic", "decision topic", "решение", "тема"),
+    "decision_id": ("decision_id", "decision id", "идентификатор решения"),
+    "reviewer_comment": ("reviewer_comment", "reviewer comment", "comment", "note", "remarks"),
+}
+
+
+def _normalize_header(value: str) -> str:
+    """Normalize an Excel header without discarding non-Latin letters."""
+    text = unicodedata.normalize("NFKC", value).casefold()
+    return re.sub(r"[^\w]+", "", text, flags=re.UNICODE)
+
+
+def _header_roles(headers: list[str]) -> dict[str, str]:
+    """Resolve irregular but recognizable headers to semantic mapping roles."""
+    normalized = {_normalize_header(header): header for header in headers if header}
+    resolved: dict[str, str] = {}
+    for role, aliases in _HEADER_ALIASES.items():
+        for alias in aliases:
+            header = normalized.get(_normalize_header(alias))
+            if header:
+                resolved[role] = header
+                break
+    return resolved
 
 
 _SEVERITY_BY_CATEGORY: dict[str, str] = {
@@ -318,18 +363,24 @@ def _assessment_inputs_fingerprint(
 
 
 def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
-    """Read a mapping workbook and report metadata + simple row-level checks."""
+    """Profile visible, detected workbook sections with deterministic row checks.
+
+    Mapping workbooks often have a title above the header, multiple sections on
+    one sheet, or familiar labels rather than the export's exact snake-case
+    headers.  The structural scanner is therefore the authority for boundaries;
+    this profiler only interprets detected visible sections and never infers
+    meaning from workbook cell values beyond the named columns.
+    """
     try:
         from openpyxl import load_workbook
     except ImportError as exc:
         raise RuntimeError("openpyxl is required for mapping workbook profiling.") from exc
 
     file_hash = _file_hash(mapping_path)
-
-    # Metadata pass
-    wb = load_workbook(mapping_path, data_only=True, read_only=True)
+    structural_manifest = scan_workbook_structure(mapping_path)
+    wb = load_workbook(mapping_path, data_only=False, read_only=True)
     sheet_names = list(wb.sheetnames)
-    hidden_sheets = [name for name in sheet_names if wb[name].sheet_state != "visible"]
+    hidden_sheets = [sheet.name for sheet in structural_manifest.sheets if sheet.hidden]
 
     column_names: list[str] = []
     total_rows = 0
@@ -342,187 +393,156 @@ def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
     conflicting_decisions: list[dict[str, Any]] = []
     duplicate_target_rows: list[dict[str, Any]] = []
 
-    owner_col: str | None = None
-    row_tuples: list[tuple] = []
+    row_tuples: list[tuple[str, int, tuple[str, ...]]] = []
     target_seen: dict[str, dict[tuple[str, str], tuple[str, int]]] = {}
     decision_topics: dict[str, list[dict[str, Any]]] = {}
 
-    def _find_col(*candidates: str) -> str | None:
-        for header in headers:
-            if header.lower() in candidates:
-                return header
-        return None
-
-    for sheet_name in sheet_names:
-        ws = wb[sheet_name]
-        rows = list(ws.iter_rows(values_only=True))
-        if not rows:
+    for sheet in structural_manifest.sheets:
+        if not sheet.included or not sheet.tables:
             continue
-        headers = [str(cell).strip() if cell is not None else "" for cell in rows[0]]
-        if not column_names:
-            column_names = headers
-            for h in headers:
-                if "owner" in h.lower():
-                    owner_col = h
-                    break
+        ws = wb[sheet.name]
+        for table in sheet.tables:
+            header_row = next(
+                ws.iter_rows(
+                    min_row=table.header_row,
+                    max_row=table.header_row,
+                    values_only=True,
+                ),
+                (),
+            )
+            headers = [str(cell).strip() if cell is not None else "" for cell in header_row]
+            roles = _header_roles(headers)
+            if not roles:
+                continue
+            for header in headers:
+                if header and header not in column_names:
+                    column_names.append(header)
 
-        is_mapping = _is_field_mapping_sheet(sheet_name)
-        is_decisions = _is_decisions_sheet(sheet_name)
-
-        source_field_col = _find_col("source_field")
-        source_system_col = _find_col("source_system")
-        source_table_col = _find_col("source_table")
-        target_table_col = _find_col("target_table")
-        target_field_col = _find_col("target_field")
-        status_col = _find_col("status")
-        condition_col = _find_col("condition")
-        validation_rule_col = _find_col("validation_rule")
-        topic_col = _find_col("topic")
-        decision_id_col = _find_col("decision_id")
-
-        if is_mapping:
-            target_seen.setdefault(sheet_name, {})
-
-        data_rows = rows[1:]
-        total_rows += len(data_rows)
-
-        for idx, row in enumerate(data_rows, start=2):
-            row_dict = {
-                h: (str(v) if v is not None else "") for h, v in zip(headers, row, strict=False)
-            }
-            status = row_dict.get(status_col, "").strip().lower() if status_col else ""
-
-            # Missing owner detection
-            if owner_col and not row_dict.get(owner_col, "").strip():
-                missing_owner_rows.append(
-                    {
-                        "sheet": sheet_name,
-                        "row": idx,
-                        "key_columns": {
-                            h: row_dict[h]
-                            for h in headers
-                            if h.lower() in {"source_field", "target_table", "target_field"}
-                            and row_dict.get(h)
-                        },
-                    }
-                )
-
-            # Field-mapping-specific checks
+            is_mapping = bool(
+                roles.get("source_field")
+                and (roles.get("target_table") or roles.get("target_field"))
+                and "value" not in sheet.name.casefold()
+            )
+            is_decisions = _is_decisions_sheet(sheet.name) or bool(roles.get("decision_id"))
             if is_mapping:
-                source_field = (
-                    row_dict.get(source_field_col, "").strip() if source_field_col else ""
-                )
-                target_table = (
-                    row_dict.get(target_table_col, "").strip() if target_table_col else ""
-                )
-                target_field = (
-                    row_dict.get(target_field_col, "").strip() if target_field_col else ""
-                )
+                target_seen.setdefault(sheet.name, {})
 
-                if status != "obsolete" and (not target_table or not target_field):
-                    missing_mapping_rows.append(
-                        {
-                            "sheet": sheet_name,
-                            "row": idx,
-                            "source_field": source_field,
-                            "source_system": (
-                                row_dict.get(source_system_col, "") if source_system_col else ""
-                            ),
-                            "source_table": (
-                                row_dict.get(source_table_col, "") if source_table_col else ""
-                            ),
-                            "target_table": target_table,
-                            "target_field": target_field,
-                        }
+            for idx, row in enumerate(
+                ws.iter_rows(
+                    min_row=table.header_row + 1,
+                    max_row=table.end_row,
+                    values_only=True,
+                ),
+                start=table.header_row + 1,
+            ):
+                values = ["" if value is None else str(value).strip() for value in row]
+                if not any(values):
+                    continue
+                total_rows += 1
+                row_dict = {h: value for h, value in zip(headers, values, strict=False) if h}
+                status = row_dict.get(roles.get("status", ""), "").casefold()
+
+                owner_col = roles.get("owner")
+                if owner_col and not row_dict.get(owner_col, ""):
+                    key_columns = {
+                        role: row_dict[column]
+                        for role in ("source_field", "target_table", "target_field")
+                        if (column := roles.get(role)) and row_dict.get(column)
+                    }
+                    missing_owner_rows.append(
+                        {"sheet": sheet.name, "row": idx, "key_columns": key_columns}
                     )
 
-                if status == "obsolete":
-                    obsolete_rows.append(
-                        {
-                            "sheet": sheet_name,
-                            "row": idx,
-                            "source_field": source_field,
-                            "target_table": target_table,
-                            "target_field": target_field,
-                            "reviewer_comment": row_dict.get(_find_col("reviewer_comment"), ""),
-                        }
-                    )
+                if is_mapping:
+                    source_field = row_dict.get(roles.get("source_field", ""), "")
+                    target_table = row_dict.get(roles.get("target_table", ""), "")
+                    target_field = row_dict.get(roles.get("target_field", ""), "")
 
-                condition = row_dict.get(condition_col, "").strip() if condition_col else ""
-                validation_rule = (
-                    row_dict.get(validation_rule_col, "").strip() if validation_rule_col else ""
-                )
-                if status != "obsolete" and condition and not validation_rule:
-                    validation_coverage_gaps.append(
-                        {
-                            "sheet": sheet_name,
-                            "row": idx,
-                            "source_field": source_field,
-                            "condition": condition,
-                        }
-                    )
-
-                # Exact duplicate detection: source + target identity
-                key_parts = [
-                    row_dict.get(h, "").strip()
-                    for h in headers
-                    if any(
-                        term in h.lower() for term in ("source", "target", "legacy", "sap", "field")
-                    )
-                ]
-                key = tuple(p for p in key_parts if p)
-                if key:
-                    row_tuples.append((sheet_name, idx, key, row_dict))
-
-                # Duplicate target representation: same target, different source
-                tkey = (target_table, target_field)
-                if tkey[0] or tkey[1]:
-                    sheet_target_seen = target_seen[sheet_name]
-                    if tkey in sheet_target_seen:
-                        prev_sheet, prev_idx = sheet_target_seen[tkey]
-                        duplicate_target_rows.append(
+                    if status != "obsolete" and (not target_table or not target_field):
+                        missing_mapping_rows.append(
                             {
-                                "sheet": sheet_name,
+                                "sheet": sheet.name,
                                 "row": idx,
-                                "duplicate_of": {
-                                    "sheet": prev_sheet,
-                                    "row": prev_idx,
-                                },
+                                "source_field": source_field,
+                                "source_system": row_dict.get(roles.get("source_system", ""), ""),
+                                "source_table": row_dict.get(roles.get("source_table", ""), ""),
                                 "target_table": target_table,
                                 "target_field": target_field,
                             }
                         )
-                    else:
-                        sheet_target_seen[tkey] = (sheet_name, idx)
 
-            # Pending status is treated as an unresolved decision anywhere it appears.
-            if status == "pending":
-                unresolved_decisions.append(
-                    {
-                        "sheet": sheet_name,
-                        "row": idx,
-                        "decision_id": (
-                            row_dict.get(decision_id_col, "") if decision_id_col else ""
-                        ),
-                        "topic": row_dict.get(topic_col, "") if topic_col else "",
-                    }
-                )
+                    if status == "obsolete":
+                        obsolete_rows.append(
+                            {
+                                "sheet": sheet.name,
+                                "row": idx,
+                                "source_field": source_field,
+                                "target_table": target_table,
+                                "target_field": target_field,
+                                "reviewer_comment": row_dict.get(
+                                    roles.get("reviewer_comment", ""), ""
+                                ),
+                            }
+                        )
 
-            # Collect decision topics for conflict detection.
-            if is_decisions and topic_col:
-                topic = row_dict.get(topic_col, "").strip().lower()
-                if topic:
-                    decision_topics.setdefault(topic, []).append(
+                    condition = row_dict.get(roles.get("condition", ""), "")
+                    validation_rule = row_dict.get(roles.get("validation_rule", ""), "")
+                    if status != "obsolete" and condition and not validation_rule:
+                        validation_coverage_gaps.append(
+                            {
+                                "sheet": sheet.name,
+                                "row": idx,
+                                "source_field": source_field,
+                                "condition": condition,
+                            }
+                        )
+
+                    key = tuple(
+                        value for value in (source_field, target_table, target_field) if value
+                    )
+                    if key:
+                        row_tuples.append((sheet.name, idx, key))
+
+                    tkey = (target_table, target_field)
+                    if tkey[0] or tkey[1]:
+                        sheet_target_seen = target_seen[sheet.name]
+                        if tkey in sheet_target_seen:
+                            prev_sheet, prev_idx = sheet_target_seen[tkey]
+                            duplicate_target_rows.append(
+                                {
+                                    "sheet": sheet.name,
+                                    "row": idx,
+                                    "duplicate_of": {"sheet": prev_sheet, "row": prev_idx},
+                                    "target_table": target_table,
+                                    "target_field": target_field,
+                                }
+                            )
+                        else:
+                            sheet_target_seen[tkey] = (sheet.name, idx)
+
+                if status == "pending":
+                    unresolved_decisions.append(
                         {
-                            "sheet": sheet_name,
+                            "sheet": sheet.name,
                             "row": idx,
-                            "topic": row_dict.get(topic_col, ""),
-                            "decision_id": (
-                                row_dict.get(decision_id_col, "") if decision_id_col else ""
-                            ),
-                            "status": row_dict.get(status_col, "") if status_col else "",
+                            "decision_id": row_dict.get(roles.get("decision_id", ""), ""),
+                            "topic": row_dict.get(roles.get("topic", ""), ""),
                         }
                     )
+
+                topic_col = roles.get("topic")
+                if is_decisions and topic_col:
+                    topic = row_dict.get(topic_col, "").casefold()
+                    if topic:
+                        decision_topics.setdefault(topic, []).append(
+                            {
+                                "sheet": sheet.name,
+                                "row": idx,
+                                "topic": row_dict.get(topic_col, ""),
+                                "decision_id": row_dict.get(roles.get("decision_id", ""), ""),
+                                "status": status,
+                            }
+                        )
 
     wb.close()
 
@@ -548,7 +568,7 @@ def _profile_mapping_workbook(mapping_path: Path) -> MappingWorkbookProfile:
 
     # Exact-duplicate reporting (limit to first 50 for sanity)
     seen: dict[tuple, tuple[str, int]] = {}
-    for sheet_name, idx, key, _row_dict in row_tuples:
+    for sheet_name, idx, key in row_tuples:
         if key in seen:
             prev_sheet, prev_idx = seen[key]
             duplicate_rows.append(
