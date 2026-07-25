@@ -148,5 +148,9 @@ holds across formats. Second dogfood round (Integration Suite ZIP,
 standalone .iflw, WE60/DEBMAS07 HTML, Migration Cockpit template): all
 inspect + import + accept + apply clean, no duplicate create ops. Schema
 import dogfooding now covers 7 format families end-to-end. No new findings.
+**#589 (release, priority:high, L3): 0.7.1 patch release evidence pack** —
+v0.7.0 on PyPI ships the duplicate-create apply bug fixed in bbbbc99;
+release-check PASS + clean-clone smoke green at f1cc880; changelog
+[Unreleased] already covers the contents. Maintainer: bump, retitle, tag.
 Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
 `3e2aa0d`; website @ `fdaa395` before PR #10.
