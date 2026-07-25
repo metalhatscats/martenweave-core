@@ -2208,3 +2208,28 @@ export function useLineage(objectId, direction, maxDepth) {
 
   return { nodes, edges, upstream, downstream, impact, loading, error };
 }
+
+/**
+ * Group proposal operations by object type for review of create-heavy
+ * proposals (e.g. schema imports). Group order follows first appearance;
+ * operations keep their original order within each group.
+ *
+ * @param {Array<ProposalOperation>} operations
+ * @returns {Array<{type: string, label: string, count: number, operations: Array<ProposalOperation>}>}
+ */
+export function groupOperationsByType(operations) {
+  const groups = [];
+  const byType = new Map();
+  for (const op of operations || []) {
+    const type = op.object_type || "Other";
+    let group = byType.get(type);
+    if (!group) {
+      group = { type, label: op.object_type ? typeToLabel(op.object_type) : "Other", count: 0, operations: [] };
+      byType.set(type, group);
+      groups.push(group);
+    }
+    group.count += 1;
+    group.operations.push(op);
+  }
+  return groups;
+}

@@ -7,6 +7,7 @@ import {
   ApiProvider,
   apiObjectToViewModel,
   createApiClient,
+  groupOperationsByType,
   objectTypeToTone,
   resolveDefaultApiBaseUrl,
   traceResponseToFlowEdges,
@@ -818,5 +819,34 @@ describe("useHomeAssistant", () => {
     fireEvent.click(screen.getByTestId("reset"));
     await waitFor(() => expect(screen.getByTestId("intent").textContent).toBe("none"));
     expect(screen.getByTestId("count").textContent).toBe("0");
+  });
+});
+
+describe("groupOperationsByType", () => {
+  it("groups operations by object type with labels and counts in stable order", () => {
+    const ops = [
+      { op: "create_object", object_id: "MSG-1", object_type: "MessageType" },
+      { op: "create_object", object_id: "SNODE-1", object_type: "SchemaNode" },
+      { op: "create_object", object_id: "SNODE-2", object_type: "SchemaNode" },
+      { op: "create_object", object_id: "IF-1", object_type: "Interface" },
+      { op: "update_object", object_id: "ATTR-1", object_type: "Attribute" },
+    ];
+    const groups = groupOperationsByType(ops);
+    expect(groups.map((g) => [g.type, g.label, g.count])).toEqual([
+      ["MessageType", "Message", 1],
+      ["SchemaNode", "Schema Node", 2],
+      ["Interface", "Interface", 1],
+      ["Attribute", "Attribute", 1],
+    ]);
+    expect(groups[1].operations.map((op) => op.object_id)).toEqual(["SNODE-1", "SNODE-2"]);
+    expect(groups.reduce((n, g) => n + g.count, 0)).toBe(ops.length);
+  });
+
+  it("handles empty and typeless operations", () => {
+    expect(groupOperationsByType([])).toEqual([]);
+    const groups = groupOperationsByType([{ op: "create_object", object_id: "X-1" }]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].label).toBe("Other");
+    expect(groups[0].count).toBe(1);
   });
 });

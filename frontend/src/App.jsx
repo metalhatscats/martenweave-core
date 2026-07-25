@@ -65,6 +65,7 @@ import {
   API_STATE,
   ApiProvider,
   hasCapability,
+  groupOperationsByType,
   mutationBlockReason,
   objectTypeToTone,
   useApi,
@@ -1893,6 +1894,36 @@ function ProposalChanges({ proposal }) {
       </div>
       {operations.length === 0 ? (
         <div className="empty-state"><FileText size={24} /><p>No operation details available.</p></div>
+      ) : operations.length > 10 ? (
+        groupOperationsByType(operations).map((group) => (
+          <section className="diff-group" key={group.type}>
+            <h3 className="diff-group-heading">{group.label} ×{group.count}</h3>
+            {group.operations.map((operation, index) => (
+              <article className="diff-card" key={`${group.type}-${index}`}>
+                <header>
+                  <span><GitDiff size={18} /> {operation.object_type} · {operation.object_id}</span>
+                  <Badge tone={operation.op === "add" ? "green" : operation.op === "remove" ? "high" : "blue"}>{operation.op}</Badge>
+                </header>
+                <div className="field-diff">
+                  <div><small>Object</small><strong>{operation.object_id}</strong></div>
+                  {operation.target_path && (
+                    <div><small>Path</small><code>{operation.target_path.join(".")}</code></div>
+                  )}
+                </div>
+                {(operation.before !== undefined || operation.after !== undefined) && (
+                  <div className="field-diff">
+                    {operation.before !== undefined && (
+                      <div className="removed-value"><small>Current</small><code>{JSON.stringify(operation.before)}</code></div>
+                    )}
+                    {operation.after !== undefined && (
+                      <div className="added-value"><small>Proposed</small><code>{JSON.stringify(operation.after)}</code></div>
+                    )}
+                  </div>
+                )}
+              </article>
+            ))}
+          </section>
+        ))
       ) : (
         operations.map((operation, index) => (
           <article className="diff-card" key={index}>

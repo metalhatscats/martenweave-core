@@ -32,7 +32,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { fields, gaps, modelObjects, proposals, recentActivity } from "./data.js";
-import { useApi, hasCapability, mutationBlockReason, useAssessmentFindings, useHomeAssistant, useImportInspect, useImportPreview, useImportProfile, useImportPropose, useImportValidate, useObjectSearch, useProposals, useReportGenerate, useRepositoryDiff, useWorkspaceActivity } from "./api.jsx";
+import { useApi, groupOperationsByType, hasCapability, mutationBlockReason, useAssessmentFindings, useHomeAssistant, useImportInspect, useImportPreview, useImportProfile, useImportPropose, useImportValidate, useObjectSearch, useProposals, useReportGenerate, useRepositoryDiff, useWorkspaceActivity } from "./api.jsx";
 
 const LEDGER_ROWS = [
   {
@@ -954,12 +954,26 @@ export function ReportsScreen({ navigate, onExport }) {
                   <ul>{preview.warnings.map((warn, idx) => <li key={idx}>{warn}</li>)}</ul>
                 </div>
               )}
-              {preview.operations?.length > 0 && (
+              {preview.operations?.length > 0 && preview.operations.length <= 10 && (
                 <ul className="preview-operations">
-                  {preview.operations.slice(0, 10).map((op, idx) => (
+                  {preview.operations.map((op, idx) => (
                     <li key={idx}>{op.op} <code>{op.object_id}</code>{op.target_path ? ` · ${op.target_path}` : ""}</li>
                   ))}
-                  {preview.operations.length > 10 && <li>…and {preview.operations.length - 10} more</li>}
+                </ul>
+              )}
+              {preview.operations?.length > 10 && (
+                <ul className="preview-operations">
+                  {groupOperationsByType(preview.operations).map((group) => (
+                    <li key={group.type}>
+                      <strong>{group.label} ×{group.count}</strong>
+                      <ul>
+                        {group.operations.slice(0, 3).map((op, idx) => (
+                          <li key={idx}>{op.op} <code>{op.object_id}</code>{op.target_path ? ` · ${op.target_path}` : ""}</li>
+                        ))}
+                        {group.count > 3 && <li>…and {group.count - 3} more {group.label} operations</li>}
+                      </ul>
+                    </li>
+                  ))}
                 </ul>
               )}
             </div>
