@@ -456,6 +456,40 @@ def assessment_compare(
     console.print(f"  Markdown: {markdown_path}")
 
 
+@assessment_app.command("compare-workbooks")
+def assessment_compare_workbooks(
+    base_workbook: Path = typer.Argument(..., help="Earlier XLSX mapping workbook."),  # noqa: B008
+    head_workbook: Path = typer.Argument(..., help="Later XLSX mapping workbook."),  # noqa: B008
+    out: Path = typer.Option(..., "--out", help="Directory for comparison artifacts."),  # noqa: B008
+    repo: str | None = typer.Option(None, "--repo", help="Optional model repository for impact."),
+    json_output: bool = typer.Option(False, "--json", help="Print comparison JSON."),
+) -> None:
+    """Compare two mapping workbooks semantically without changing canonical files."""
+    from modelops_core.pilot.workbook_comparison import (
+        compare_mapping_workbooks,
+        write_workbook_comparison,
+    )
+
+    if not base_workbook.is_file() or not head_workbook.is_file():
+        console.print("[red]Both mapping workbooks must exist.[/red]")
+        raise typer.Exit(code=1)
+    report = compare_mapping_workbooks(
+        base_workbook,
+        head_workbook,
+        _resolve_repo(repo) if repo else None,
+    )
+    artifacts = write_workbook_comparison(report, out)
+    payload = report.to_dict() | {
+        "artifacts": {name: str(path) for name, path in artifacts.items()}
+    }
+    if json_output:
+        print(json.dumps(payload, indent=2))
+        return
+    console.print("[bold]Mapping workbook comparison complete[/bold]")
+    console.print("  " + ", ".join(f"{name}: {count}" for name, count in payload["counts"].items()))
+    console.print(f"  Output: {out}")
+
+
 @assessment_app.command("sanitize")
 @with_telemetry("assessment_sanitize")
 def assessment_sanitize(
