@@ -151,6 +151,10 @@ for f in $REPO/data/samples/*; do .venv/bin/martenweave profile-dataset "$f" --r
 .venv/bin/martenweave impact ATTR-SHARED-PAYMENT-TERMS --repo $REPO
 .venv/bin/martenweave impact ATTR-SHARED-CUSTOMER-CREDIT-LIMIT --repo $REPO
 
+# 7b. Interface lineage: Freightlink TMS freight-status interface
+.venv/bin/martenweave trace IFACE-NORTHSTAR-FREIGHT-STATUS --repo $REPO
+.venv/bin/martenweave object-card IEP-NORTHSTAR-FREIGHT-STATUS-SHIPMENT-UPDATE --repo $REPO
+
 # 8. Readiness gates (dry-run: never writes into the example)
 .venv/bin/martenweave readiness --repo $REPO --dry-run
 
