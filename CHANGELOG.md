@@ -2,6 +2,15 @@
 
 All notable changes to Martenweave Core.
 
+## [Unreleased]
+
+### Added
+
+- **Northstar pilot interface slice:** the regression benchmark now includes a freight-status
+  interface lineage slice (Interface, InterfaceEndpoint operations, MessageType, SchemaNode)
+  between the fictional Freightlink TMS and the logistics domain. Object count 187 → 200; the 13
+  intentional warnings and 71/55 impact counts are unchanged.
+
 ## [0.7.1] — 2026-07-25
 
 ### Fixed
