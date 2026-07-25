@@ -144,6 +144,9 @@ bbbbc99..168268e. Follow-up dogfood (same realistic-fixture class as the
 WSDL bug hunt): OpenAPI with shared component schemas (34 ops, 3 ops/refs)
 and EDMX with repeated property names across entity types (22 ops) both
 import clean end-to-end — no duplicates, apply+trace green; the dedup fix
-holds across formats. No new findings.
+holds across formats. Second dogfood round (Integration Suite ZIP,
+standalone .iflw, WE60/DEBMAS07 HTML, Migration Cockpit template): all
+inspect + import + accept + apply clean, no duplicate create ops. Schema
+import dogfooding now covers 7 format families end-to-end. No new findings.
 Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
 `3e2aa0d`; website @ `fdaa395` before PR #10.
