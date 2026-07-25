@@ -2,11 +2,11 @@
 
 > Read this first every factory session. It is the map to durable project context.
 > Update it whenever the underlying truth changes (same patch as the change).
-> Last verified: 2026-07-19 against Core `main` @ 02206ce9 and website @ fddee57.
+> Last verified: 2026-07-25 against Core `main` @ 65af01c and website @ fddee57.
 
 ## Product state
 
-- Core `0.6.1` on `main`; full suite **1823 passed, 3 skipped**; ruff clean;
+- Core `0.6.1` on `main`; full suite **1900 passed, 3 skipped**; ruff clean;
   wheel builds; `scripts/release_smoke.sh` green (also from a clean clone +
   fresh venv on 2026-07-19).
 - Northstar synthetic pilot is the regression benchmark: 187 canonical objects,
@@ -75,4 +75,11 @@ never recommended. Loop runs completed with gate evidence: #553, #546, #554,
 guide live at /docs/ai-factory.html, maintainer-approved), #549 + #550
 (`02206ce9` — pilot-readiness consistency pass with website `fddee57`;
 20/20 factory gates + clean-env Northstar 11/11 + release smoke).
+Loop runs #571–#582 completed 2026-07-24, landed 2026-07-25 (`4736cc1` code +
+tests, `65af01c` docs): schema import emits MessageType/SchemaNode lineage and
+request/response message links with source-registry provenance; `domain-pack`
+build/validate/diff CLI; governed workbook suggestion artifacts + protected
+review roundtrip in pilot preflight/bootstrap/migration-assessment. Note: the
+issues were closed on GitHub a day before the code was committed — land code
+first in future loops.
 Open: #551 (L3 CI proposal, awaiting maintainer).

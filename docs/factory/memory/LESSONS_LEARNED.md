@@ -111,3 +111,12 @@ the claim (docs, blog, structured data).**
 `examples/*/model/`. **Lesson: after local validation runs, check `git status`
 for untracked example artifacts and clean them before committing; never commit
 generated readiness issues into the checked-in examples.**
+
+## 2026-07-25 — Close issues only after the code lands on main
+
+Loop runs #571–#582 were closed on GitHub on 2026-07-24 while all of the code
+(37 files, ~9.2k insertions) still sat uncommitted in a local working tree; a
+day later nothing existed upstream. **Lesson: the close-out step is commit →
+push → then close the issue with the commit hash as evidence. Never close an
+issue whose patch exists only in a working tree, and check `git status` /
+`git log origin/main..HEAD` at session start for stranded work.**
