@@ -99,5 +99,6 @@ maintainer) + website PR #10 (maintainer merge) remain human-gated.
 Core #584 (agent-ready, ux-clarity, priority:low): Workbench
 `typeToLabel`/`objectTypeToTone` in `frontend/src/api.jsx` lack cases for
 `Interface`/`InterfaceEndpoint`/`MessageType`/`SchemaNode` — verified
-fallback-only rendering; `factory plan` recommends it next. Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
+fallback-only rendering; completed and closed 2026-07-25 in `d42cfcd`
+(62 vitest + 9 Playwright e2e green, packaged assets rebuilt). Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
 `3e2aa0d`; website @ `fdaa395` before PR #10.
