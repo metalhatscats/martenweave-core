@@ -6,7 +6,7 @@
 
 ## Product state
 
-- Core `0.6.1` on `main`; full suite **1900 passed, 3 skipped**; ruff clean;
+- Core `0.6.2` on `main`; full suite **1900 passed, 3 skipped**; ruff clean;
   wheel builds; `scripts/release_smoke.sh` green (also from a clean clone +
   fresh venv on 2026-07-19).
 - Northstar synthetic pilot is the regression benchmark: 187 canonical objects,
@@ -83,8 +83,11 @@ review roundtrip in pilot preflight/bootstrap/migration-assessment. Note: the
 issues were closed on GitHub a day before the code was committed — land code
 first in future loops.
 Open: #551 (L3 CI proposal, awaiting maintainer). Website repo:
-Martenweave/martenweave.github.io#9 (agent-ready docs-drift: cover schema
-import, domain-pack CLI, workbook suggestion review on site docs) — seeded
-2026-07-25 after a green `factory audit` (14/14 PASS) and Northstar 11/11
-re-verification at `ed2e284`; created `agent-ready` + `priority:medium`
-labels in the website repo to match the core standard.
+Martenweave/martenweave.github.io#9 implemented as PR #10 (branch
+`docs/schema-domain-pack-workbook-sync-9`, commit `eaa2475`; build-docs,
+validate-site, and core-version-copy all green at Core 0.6.2) — awaiting
+maintainer merge per the #552 publication precedent. #9 was seeded 2026-07-25
+after a green `factory audit` (14/14 PASS) and Northstar 11/11 re-verification
+at `ed2e284`; `agent-ready` + `priority:medium` labels now exist in the
+website repo. Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
+`3e2aa0d`; website @ `fdaa395` before PR #10.
