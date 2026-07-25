@@ -100,5 +100,10 @@ Core #584 (agent-ready, ux-clarity, priority:low): Workbench
 `typeToLabel`/`objectTypeToTone` in `frontend/src/api.jsx` lack cases for
 `Interface`/`InterfaceEndpoint`/`MessageType`/`SchemaNode` — verified
 fallback-only rendering; completed and closed 2026-07-25 in `d42cfcd`
-(62 vitest + 9 Playwright e2e green, packaged assets rebuilt). Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
+(62 vitest + 9 Playwright e2e green, packaged assets rebuilt).
+Format gate fixed (`9461cf1` + lesson: ruff check ≠ format gate);
+`release-check` fully green at `205b1ee`. Seeded #585 (agent-ready, docs:
+reconcile lineage doc §10 with 44 implemented registry edge labels — 32
+verified missing) and #586 (release 0.6.2 evidence pack, L3 maintainer
+checklist; dist/ still holds 0.6.1 artifacts). Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
 `3e2aa0d`; website @ `fdaa395` before PR #10.
