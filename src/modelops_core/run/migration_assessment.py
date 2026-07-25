@@ -911,4 +911,51 @@ def generate_migration_assessment(
     manifest_path_placeholder["sha256"] = _file_hash(manifest_path)
     _write_manifest(manifest, out_dir)
 
+    # Client-facing, generated evidence remains outside the canonical model.
+    from modelops_core.pilot.executive_summary import (
+        generate_executive_summary,
+        write_executive_summary,
+    )
+
+    try:
+        executive_summary = generate_executive_summary(manifest_path, generated_at=generated_at)
+        write_executive_summary(executive_summary, out_dir / "executive-summary")
+        _stage("executive_summary", statuses, "success")
+    except Exception as exc:  # pragma: no cover - report generation must not hide assessment facts
+        _stage("executive_summary", statuses, "failed", message=str(exc))
+
+    workspace_path = out_dir / "workbench-workspace.json"
+    workspace_path.write_text(
+        json.dumps(
+            {
+                "workspace_type": "martenweave_assessment",
+                "assessment_manifest": "manifest.json",
+                "findings": "findings.json",
+                "review_pack": "review_pack",
+                "evidence_only": True,
+                "canonical_files_changed": False,
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    evidence_path = out_dir / "evidence-manifest.json"
+    evidence_path.write_text(
+        json.dumps(
+            {
+                "input_checksums": input_checksums,
+                "artifacts": _collect_artifacts(out_dir),
+                "canonical_files_changed": False,
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    manifest.generated_artifacts = [
+        artifact for artifact in _collect_artifacts(out_dir) if artifact["path"] != "manifest.json"
+    ] + [manifest_path_placeholder]
+    _write_manifest(manifest, out_dir)
+
     return manifest

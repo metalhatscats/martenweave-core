@@ -195,6 +195,9 @@ def test_generate_migration_assessment_happy_path(sample_repo: Path, tmp_path: P
     assert (out / "05_business_review.xlsx").exists()
     assert (out / "06_recommendations.md").exists()
     assert (out / "review_pack").exists()
+    assert (out / "executive-summary" / "executive-summary.html").exists()
+    assert (out / "evidence-manifest.json").exists()
+    assert (out / "workbench-workspace.json").exists()
 
     status_names = {s.name: s.status for s in manifest.stage_statuses}
     assert status_names["validation"] == "success"
@@ -205,6 +208,7 @@ def test_generate_migration_assessment_happy_path(sample_repo: Path, tmp_path: P
     assert status_names["dataset_readiness"] == "skipped"
     assert status_names["assessment_package"] == "success"
     assert status_names["review_pack"] == "success"
+    assert status_names["executive_summary"] == "success"
 
     # Manifest inputs
     manifest_data = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
@@ -220,6 +224,11 @@ def test_generate_migration_assessment_happy_path(sample_repo: Path, tmp_path: P
     assert any(
         a["path"] == "workbook_suggestion_review.xlsx" for a in manifest_data["generated_artifacts"]
     )
+    assert any(
+        a["path"] == "executive-summary/executive-summary.html"
+        for a in manifest_data["generated_artifacts"]
+    )
+    assert any(a["path"] == "evidence-manifest.json" for a in manifest_data["generated_artifacts"])
 
 
 def test_generate_migration_assessment_with_dataset(sample_repo: Path, tmp_path: Path) -> None:
