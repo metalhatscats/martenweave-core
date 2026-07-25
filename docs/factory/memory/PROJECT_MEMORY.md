@@ -111,5 +111,7 @@ v0.6.2 is already tagged on origin (→ 3e2aa0d) with dist/ artifacts; the
 pending release is 0.7.0** covering b769b8a..20436c3 (schema-import family,
 domain-pack CLI, workbook suggestions, #583-#585 docs, format fix).
 Clean-clone + fresh-venv `release_smoke.sh` green at `20436c3` (evidence
-comment on #586). Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
+comment on #586). CHANGELOG `[Unreleased]` completed for the whole landing
+(`0373f48`); P7 still bars agent version-bump commits — maintainer steps are
+now decide number → bump → retitle section → tag → publish. Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
 `3e2aa0d`; website @ `fdaa395` before PR #10.
