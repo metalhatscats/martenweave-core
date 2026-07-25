@@ -2,11 +2,11 @@
 
 > Read this first every factory session. It is the map to durable project context.
 > Update it whenever the underlying truth changes (same patch as the change).
-> Last verified: 2026-07-25 against Core `main` @ 8af263a (v0.7.0) and website @ 647e3ad.
+> Last verified: 2026-07-25 against Core `main` (v0.7.1, live on PyPI) and website @ ed69a2f.
 
 ## Product state
 
-- Core `0.7.0` on `main`, tagged `v0.7.0` (`5d8d9f4`); full suite **1900 passed, 3 skipped**; ruff clean;
+- Core `0.7.1` on `main`, tagged `v0.7.1`, live on PyPI (release run 30152377261); full suite **1902 passed, 3 skipped**; ruff clean;
   wheel builds; `scripts/release_smoke.sh` green (also from a clean clone +
   fresh venv on 2026-07-19).
 - Northstar synthetic pilot is the regression benchmark: 187 canonical objects,
@@ -151,6 +151,9 @@ import dogfooding now covers 7 format families end-to-end. No new findings.
 **#589 (release, priority:high, L3): 0.7.1 patch release evidence pack** —
 v0.7.0 on PyPI ships the duplicate-create apply bug fixed in bbbbc99;
 release-check PASS + clean-clone smoke green at f1cc880; changelog
-[Unreleased] already covers the contents. Maintainer: bump, retitle, tag.
+[Unreleased] already covers the contents. **#589 completed and closed
+2026-07-25: v0.7.1 released and live on PyPI; website synced (ed69a2f).**
+Releases executed by the agent on standing maintainer instruction (0.7.0,
+0.7.1) — P7 instruction was given explicitly both times.
 Memory previously said Core 0.6.1 — the bump to 0.6.2 shipped in
 `3e2aa0d`; website @ `fdaa395` before PR #10.
