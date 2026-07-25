@@ -254,6 +254,29 @@ def test_api_lists_and_downloads_generated_reports_without_exposing_paths(
     assert traversal.status_code in {400, 404}
 
 
+def test_api_lists_and_downloads_generated_html_reports(sample_repo: Path) -> None:
+    generated = sample_repo / "generated" / "assessment"
+    generated.mkdir(parents=True, exist_ok=True)
+    report = generated / "executive-summary.html"
+    report.write_text("<h1>Executive Summary</h1>", encoding="utf-8")
+
+    response = client.get("/api/v1/reports", params={"repo": str(sample_repo)})
+
+    assert response.status_code == 200
+    artifact = next(
+        item
+        for item in response.json()["artifacts"]
+        if item["artifact_id"] == "assessment/executive-summary.html"
+    )
+    assert artifact["format"] == "HTML"
+
+    download = client.get(
+        "/api/v1/reports/assessment/executive-summary.html", params={"repo": str(sample_repo)}
+    )
+    assert download.status_code == 200
+    assert "Executive Summary" in download.text
+
+
 def test_api_lists_typed_assessment_findings_with_separate_review_state(sample_repo: Path) -> None:
     from modelops_core.assessment.finding_contract import AssessmentFinding
 

@@ -162,7 +162,7 @@ def _validate_repository_path(repo_root: Path) -> dict[str, Any]:
     }
 
 
-_REPORT_EXTENSIONS = frozenset({".csv", ".json", ".md", ".pdf", ".xlsx"})
+_REPORT_EXTENSIONS = frozenset({".csv", ".html", ".json", ".md", ".pdf", ".xlsx"})
 
 
 def _resolve_repo(repo: str | None) -> Path:
