@@ -120,13 +120,14 @@ EXPECTED_TOP_LEVEL_COMMANDS = {
     "evidence",
     "pilot-outcome",
     "demo-bundle",
+    "package",
 }
 
 EXPECTED_GROUPS = {
     "agent": {"product-owner", "readiness"},
     "domain-pack": {"build", "validate", "diff"},
     "run": {"dataset-readiness", "migration-assessment"},
-    "schema": {"inspect", "import"},
+    "schema": {"inspect", "compare", "import"},
     "issue-draft": {"create"},
     "change-request": {"create", "list", "show", "update-status", "approve", "reject"},
     "notifications": {"preview", "list"},
@@ -147,6 +148,7 @@ EXPECTED_GROUPS = {
     "diagnostics": {"export"},
     "review-pack": {"create"},
     "demo-bundle": {"build"},
+    "package": {"create", "inspect", "verify"},
 }
 
 

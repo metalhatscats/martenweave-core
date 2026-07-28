@@ -14,6 +14,7 @@ _OUTPUT_OPTION = typer.Option(..., "--output", help="Output package archive path
 
 @package_app.command("create")
 def create(repo: str | None = typer.Option(None, "--repo"), output: Path = _OUTPUT_OPTION) -> None:
+    """Create a portable local model package archive."""
     try:
         manifest = create_package(_resolve_repo(repo), output.resolve())
     except (ValueError, OSError) as exc:
@@ -25,6 +26,7 @@ def create(repo: str | None = typer.Option(None, "--repo"), output: Path = _OUTP
 
 @package_app.command("inspect")
 def inspect(package: Path, json_output: bool = typer.Option(False, "--json")) -> None:
+    """Inspect a package archive manifest without extracting it."""
     try:
         manifest = inspect_package(package)
     except (ValueError, OSError, json.JSONDecodeError) as exc:
@@ -40,6 +42,7 @@ def inspect(package: Path, json_output: bool = typer.Option(False, "--json")) ->
 
 @package_app.command("verify")
 def verify(package: Path) -> None:
+    """Verify a package archive against its manifest."""
     try:
         result = verify_package(package)
     except (ValueError, OSError, json.JSONDecodeError) as exc:
