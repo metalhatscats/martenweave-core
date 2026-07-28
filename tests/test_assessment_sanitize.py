@@ -69,6 +69,10 @@ def _build_assessment_input(tmp_path: Path) -> Path:
                 "generated_artifacts": [{"path": "dataset_readiness/sample.csv", "sha256": "abc"}],
                 "stage_statuses": [],
                 "generated_at": "2026-01-01T00:00:00Z",
+                "input_checksums": {
+                    "model/change-requests/CR-EXAMPLE.md": "abc",
+                    "/Users/alice/client/project": "not-a-real-canonical-key",
+                },
             },
             indent=2,
         ),
@@ -207,3 +211,22 @@ def test_sanitize_manifest_lists_excluded_and_redactions(tmp_path: Path) -> None
     assert "excluded_files" in manifest
     assert any("dataset_readiness/sample.csv" in f for f in manifest["excluded_files"])
     assert len(manifest["redactions"]) > 0
+
+
+def test_sanitize_preserves_json_keys_and_redacts_only_values(tmp_path: Path) -> None:
+    src = _build_assessment_input(tmp_path)
+    out = tmp_path / "sanitized"
+
+    result = runner.invoke(app, ["assessment", "sanitize", "--input", str(src), "--out", str(out)])
+
+    assert result.exit_code == 0, result.output
+    sanitized = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
+    checksums = sanitized["input_checksums"]
+    assert "model/change-requests/CR-EXAMPLE.md" in checksums
+    assert "/Users/alice/client/project" not in checksums
+    assert "<redacted-path>" in checksums
+    assert sanitized["repo_path"] == "<redacted-path>"
+    assert sanitized["inputs"]["mapping"] == "<redacted-path>"
+    assert "input_dir" not in json.loads(
+        (out / "sanitization-manifest.json").read_text(encoding="utf-8")
+    )

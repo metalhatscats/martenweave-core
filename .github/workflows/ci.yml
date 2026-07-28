@@ -127,3 +127,28 @@ jobs:
           else
             echo "No lint script configured; skipping"
           fi
+
+  windows-wheel-smoke:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build and install the wheel in a path with spaces
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+          $wheel = Get-ChildItem dist\*.whl | Select-Object -First 1
+          $venv = Join-Path $env:RUNNER_TEMP 'Martenweave Wheel Smoke'
+          python -m venv $venv
+          & "$venv\Scripts\python.exe" -m pip install $wheel.FullName
+          & "$venv\Scripts\martenweave.exe" --version
+          $repo = Join-Path $env:RUNNER_TEMP 'Martenweave Wheel Smoke\starter repo'
+          & "$venv\Scripts\martenweave.exe" init $repo --template business_partner
+          & "$venv\Scripts\martenweave.exe" validate --repo $repo
+          & "$venv\Scripts\martenweave.exe" build-index --repo $repo
+          & "$venv\Scripts\python.exe" -c "from importlib.resources import files; assert (files('modelops_core') / 'workbench_static' / 'index.html').is_file()"

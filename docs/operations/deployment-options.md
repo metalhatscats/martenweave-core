@@ -1,52 +1,37 @@
 # Deployment Options
 
-Martenweave is local-first. These are the supported and planned deployment modes.
+Martenweave is local-first. These are the supported deployment modes today.
 
-## v0.1 — Local CLI
+## Local CLI
 
-- Install via `pip install modelops_core`
-- Run `modelops` commands against local repository
+- Install via `pip install martenweave-core`
+- Run `martenweave` commands against a local repository (`modelops` is a compatibility alias)
 - SQLite index, JSONL exports, Markdown canonical files
 - No server, no database server, no cloud required
 
-## v0.2 — Local API Server
+## Local API Server
 
 - FastAPI/uvicorn server on localhost
 - Same CLI commands exposed as HTTP endpoints
 - Useful for IDE plugins and local integrations
 
-## v0.2 — MCP Server
+## MCP Server
 
 - Model Context Protocol server for AI assistants
 - Exposes read + proposal tools, no direct apply
 - Runs locally alongside the model repository
 
-## v0.3 — One-Screen Workspace
+## Local Workbench
 
-- Local web UI (e.g., Gradio or lightweight frontend)
-- Connects to local API or direct Python calls
-- Same local-first data model
+- Packaged browser UI served by `martenweave workbench --repo <repo>`
+- Connects only to the bound local API and preserves Core approval gates
+- No hosted service, authentication/RBAC, or independent canonical storage
 
 ## CI / GitHub Action
 
-- Docker image with `modelops_core` installed
+- CI environment with `martenweave-core` installed
 - Runs validate, build-index, analyze, scorecard in CI
 - Posts PR comments (see `github-action-design.md`)
-
-## Later — Team Server
-
-- Optional multi-user server with authentication
-- Centralized model repository with git-backed storage
-- Not required for individual or small team usage
-
-## Docker
-
-```dockerfile
-FROM python:3.11-slim
-RUN pip install modelops_core
-WORKDIR /repo
-ENTRYPOINT ["modelops"]
-```
 
 ## Data Storage
 

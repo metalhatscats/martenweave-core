@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from modelops_core import __version__
+from modelops_core.bundled_assets import bundled_asset_path
 from modelops_core.guardrails.secrets import SecretFinding, scan_repo
 from modelops_core.pilot import executive_summary as executive_summary_service
 from modelops_core.pilot import outcome as pilot_outcome_service
@@ -79,18 +80,12 @@ def _file_hash(path: Path) -> str:
 
 def _default_repo_root() -> Path:
     """Return the bundled customer-bp example repository path."""
-    return Path(__file__).resolve().parents[3] / "examples" / "customer_bp_model"
+    return bundled_asset_path("examples", "customer_bp_model")
 
 
 def _default_mapping_path() -> Path:
     """Return the bundled synthetic SAP mapping workbook path."""
-    return (
-        Path(__file__).resolve().parents[3]
-        / "tests"
-        / "fixtures"
-        / "pilot"
-        / "sap_customer_mapping.xlsx"
-    )
+    return bundled_asset_path("tests", "fixtures", "pilot", "sap_customer_mapping.xlsx")
 
 
 def _record_demo_dispositions(assessment_dir: Path, generated_at: str) -> None:

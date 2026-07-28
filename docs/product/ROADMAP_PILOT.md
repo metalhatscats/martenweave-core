@@ -5,6 +5,9 @@
 > around one repeatable SAP migration pilot.
 > Version: 0.8 Pilot Proof release (current published package: 0.8.0)
 
+For the separate criteria to leave Alpha/0.x status, see
+[`PRODUCTION_READINESS.md`](PRODUCTION_READINESS.md). A controlled pilot is not a GA claim.
+
 ---
 
 ## Primary ICP and Workflow

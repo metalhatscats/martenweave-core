@@ -6,6 +6,7 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
+from modelops_core.bundled_assets import bundled_asset_path
 from modelops_core.config import load_repo_config, resolve_generated_path, resolve_model_path
 from modelops_core.diff import DiffResult, diff_repositories
 from modelops_core.repository import parse_file, scan_repository
@@ -41,7 +42,6 @@ class DomainPackValidationResult:
     summary: ValidationSummary
 
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
 _BUILTIN_DOMAIN_PACKS: dict[str, BuiltinDomainPack] = {
     "sap-business-partner": BuiltinDomainPack(
         pack_id="sap-business-partner",
@@ -50,7 +50,7 @@ _BUILTIN_DOMAIN_PACKS: dict[str, BuiltinDomainPack] = {
             "Synthetic SAP Business Partner / Customer / Vendor reference repository "
             "for governed local demos."
         ),
-        source_repo=_REPO_ROOT / "examples" / "sap_bp_customer_vendor_reference",
+        source_repo=bundled_asset_path("examples", "sap_bp_customer_vendor_reference"),
     ),
 }
 

@@ -7,9 +7,10 @@ from pathlib import Path
 
 import yaml
 
+from modelops_core.bundled_assets import bundled_asset_path
 from modelops_core.config import RepoConfig
 
-_TEMPLATES_DIR = Path(__file__).parent.parent.parent.parent / "templates" / "model_spines"
+_TEMPLATES_DIR = bundled_asset_path("templates", "model_spines")
 
 
 def available_templates() -> list[str]:

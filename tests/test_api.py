@@ -230,7 +230,7 @@ def test_api_lists_and_downloads_generated_reports_without_exposing_paths(
     report = generated / "review.md"
     report.write_text("# Review pack\n", encoding="utf-8")
 
-    response = client.get("/api/v1/reports", params={"repo": str(sample_repo)})
+    response = client.get("/api/v1/reports", params={"repo": str(sample_repo), "limit": 500})
 
     assert response.status_code == 200
     artifact = next(
@@ -275,6 +275,32 @@ def test_api_lists_and_downloads_generated_html_reports(sample_repo: Path) -> No
     )
     assert download.status_code == 200
     assert "Executive Summary" in download.text
+
+
+def test_api_reports_excludes_internal_patch_transaction_artifacts(sample_repo: Path) -> None:
+    generated = sample_repo / "generated"
+    transaction = generated / "patch-transactions" / "PP-TEST" / "receipt.json"
+    transaction.parent.mkdir(parents=True)
+    transaction.write_text('{"status": "applied"}', encoding="utf-8")
+    staging = generated / "patch-transactions" / "PP-TEST" / "staging" / "change.md"
+    staging.parent.mkdir(parents=True)
+    staging.write_text("# Internal staging\n", encoding="utf-8")
+    (generated / "source_registry.jsonl").write_text("{}\n", encoding="utf-8")
+    sanitized = generated / "sanitized" / "assessment" / "findings.json"
+    sanitized.parent.mkdir(parents=True)
+    sanitized.write_text('{"findings": []}', encoding="utf-8")
+    (sanitized.parent / "sanitization-manifest.json").write_text("{}", encoding="utf-8")
+
+    response = client.get("/api/v1/reports", params={"repo": str(sample_repo), "limit": 500})
+
+    assert response.status_code == 200
+    payload = response.json()
+    artifact_ids = [item["artifact_id"] for item in payload["artifacts"]]
+    assert "patch-transactions/PP-TEST/receipt.json" not in artifact_ids
+    assert "patch-transactions/PP-TEST/staging/change.md" not in artifact_ids
+    assert "source_registry.jsonl" not in artifact_ids
+    assert "sanitized/assessment/findings.json" in artifact_ids
+    assert payload["total_count"] == len(payload["artifacts"])
 
 
 def test_api_lists_typed_assessment_findings_with_separate_review_state(sample_repo: Path) -> None:

@@ -518,13 +518,26 @@ function ModelsScreen({ navigate, params }) {
   const typeFilters = ["Domain", "Attribute", "Entity", "Mapping", "Proposal"];
   const statusFilters = ["Validated", "In review", "Draft"];
 
-  const { results: sortedResults, loading, error } = useObjectSearch(
+  const { results: sortedResults, facetResults, loading, error } = useObjectSearch(
     query,
     activeTab,
     selectedTypes,
     selectedStatuses,
     sort
   );
+  const availableTypes = [...new Set(facetResults.map((item) => item.label))].sort();
+  const availableStatuses = [...new Set(facetResults.map((item) => item.status))].sort();
+  const displayedTypeFilters = [...new Set([...typeFilters, ...availableTypes])];
+  const displayedStatusFilters = [...new Set([...statusFilters, ...availableStatuses])];
+  const tabCount = (tab) => {
+    if (tab === "All") return facetResults.length;
+    if (tab === "Objects") {
+      return facetResults.filter((item) => ["Domain", "Entity"].includes(item.label)).length;
+    }
+    if (tab === "Fields") return facetResults.filter((item) => item.label === "Attribute").length;
+    if (tab === "Mappings") return facetResults.filter((item) => item.label === "Mapping").length;
+    return facetResults.filter((item) => item.label === "Proposal").length;
+  };
 
   return (
     <div className="page-pad search-page">
@@ -553,15 +566,7 @@ function ModelsScreen({ navigate, params }) {
           >
             {tab}
             <span>
-              {tab === "All"
-                ? modelObjects.length
-                : tab === "Objects"
-                  ? modelObjects.filter((item) => ["Domain", "Entity"].includes(item.label)).length
-                  : tab === "Fields"
-                    ? modelObjects.filter((item) => item.label === "Attribute").length
-                    : tab === "Mappings"
-                      ? modelObjects.filter((item) => item.label === "Mapping").length
-                      : modelObjects.filter((item) => item.label === "Proposal").length}
+              {tabCount(tab)}
             </span>
           </button>
         ))}
@@ -635,7 +640,7 @@ function ModelsScreen({ navigate, params }) {
             </div>
             <fieldset>
               <legend>Object type</legend>
-              {typeFilters.map((type) => (
+              {displayedTypeFilters.map((type) => (
                 <label key={type}>
                   <input
                     type="checkbox"
@@ -649,13 +654,13 @@ function ModelsScreen({ navigate, params }) {
                     }
                   />
                   <span>{type}</span>
-                  <small>{modelObjects.filter((item) => item.label === type).length}</small>
+                  <small>{facetResults.filter((item) => item.label === type).length}</small>
                 </label>
               ))}
             </fieldset>
             <fieldset>
               <legend>Status</legend>
-              {statusFilters.map((statusOption) => (
+              {displayedStatusFilters.map((statusOption) => (
                 <label key={statusOption}>
                   <input
                     type="checkbox"
@@ -669,7 +674,7 @@ function ModelsScreen({ navigate, params }) {
                     }
                   />
                   <span>{statusOption}</span>
-                  <small>{modelObjects.filter((item) => item.status === statusOption).length}</small>
+                  <small>{facetResults.filter((item) => item.status === statusOption).length}</small>
                 </label>
               ))}
             </fieldset>
@@ -978,7 +983,10 @@ function ModelNode({ data, selected }) {
 const nodeTypes = { model: ModelNode };
 
 export function LineageScreen({ navigate, params, onExport }) {
-  const objectId = params.get("id") || "DOMAIN-CUSTOMER-BP";
+  const { demo } = useApi();
+  const requestedObjectId = params.get("id");
+  const objectId = requestedObjectId || (demo ? "DOMAIN-CUSTOMER-BP" : null);
+  const [objectInput, setObjectInput] = useState(requestedObjectId || "");
   const [direction, setDirection] = useState("both");
   const [depth, setDepth] = useState("All levels");
   const [view, setView] = useState("graph");
@@ -1003,6 +1011,10 @@ export function LineageScreen({ navigate, params, onExport }) {
   useEffect(() => {
     setSelected(objectId);
   }, [objectId]);
+
+  useEffect(() => {
+    setObjectInput(requestedObjectId || "");
+  }, [requestedObjectId]);
 
   const rootNode = useMemo(
     () => allNodes.find((node) => node.id === objectId) || allNodes[0],
@@ -1072,6 +1084,25 @@ export function LineageScreen({ navigate, params, onExport }) {
           }
         />
         <div className="lineage-toolbar">
+          {!demo && (
+            <form
+              className="inline-search wide"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const id = objectInput.trim();
+                if (id) navigate("lineage", { id });
+              }}
+            >
+              <MagnifyingGlass size={17} />
+              <input
+                aria-label="Canonical object ID for lineage"
+                value={objectInput}
+                onChange={(event) => setObjectInput(event.target.value)}
+                placeholder="Enter a canonical object ID…"
+              />
+              <button type="submit">Trace</button>
+            </form>
+          )}
           <label className="inline-search wide">
             <MagnifyingGlass size={17} />
             <input
@@ -1107,6 +1138,13 @@ export function LineageScreen({ navigate, params, onExport }) {
           </div>
         )}
       </div>
+      {!objectId && !loading && (
+        <div className="page-pad empty-state">
+          <MagnifyingGlass size={30} />
+          <h3>Select a canonical object to trace</h3>
+          <p>Enter an existing object ID above, or open Lineage from an object or search result.</p>
+        </div>
+      )}
       <div className="lineage-workspace">
         {loading && <div className="empty-state"><CircleNotch className="spin" size={24} /> Loading lineage…</div>}
         {error && <div className="empty-state"><WarningCircle size={24} /> {error}</div>}

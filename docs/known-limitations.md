@@ -4,8 +4,9 @@ Martenweave Core is useful today, but it is still an early backend-first project
 
 ## Product Scope
 
-- No production or hosted UI is included. `docs-build` can generate a local static read-only viewer,
-  but it is disposable output from the SQLite index, not an editable application.
+- No hosted or multi-tenant production UI is included. The packaged local Workbench is a
+  single-user browser UI backed by the local API; `docs-build` separately generates a disposable
+  read-only viewer from the SQLite index.
 - No hosted SaaS tenant, login system, or managed workflow engine is included.
 - No SAP write-back, browser editing, workflow approvals, or AI auto-mutation path exists in the
   generated viewer.

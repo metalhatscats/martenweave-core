@@ -1,3 +1,7 @@
 include README.md LICENSE CITATION.cff
 recursive-include frontend/dist *
 recursive-include src/modelops_core/workbench_static *
+recursive-include templates/model_spines *
+recursive-include examples/customer_bp_model *
+recursive-include examples/sap_bp_customer_vendor_reference *
+recursive-include tests/fixtures/pilot *

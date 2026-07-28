@@ -54,6 +54,34 @@ def test_api_v1_import_profile_csv(tmp_path: Path) -> None:
     assert data["profile"]["column_count"] == 2
 
 
+def test_api_v1_schema_import_inspects_and_proposes_without_apply(tmp_path: Path) -> None:
+    repo = _build_repo(tmp_path)
+    contract = (
+        Path(__file__).parent.parent
+        / "examples"
+        / "sap_bp_customer_vendor_reference"
+        / "data"
+        / "contracts"
+        / "business-partner-service.wsdl"
+    )
+    before = sorted((repo / "model").glob("*.md"))
+    inspected = client.post(
+        "/api/v1/imports/schema/inspect",
+        params={"repo": str(repo)},
+        files={"file": (contract.name, contract.read_bytes(), "application/wsdl+xml")},
+    )
+    assert inspected.status_code == 200, inspected.text
+    assert inspected.json()["inspection"]["source_format"] == "wsdl"
+    proposed = client.post(
+        "/api/v1/imports/schema/propose",
+        params={"repo": str(repo)},
+        files={"file": (contract.name, contract.read_bytes(), "application/wsdl+xml")},
+    )
+    assert proposed.status_code == 200, proposed.text
+    assert proposed.json()["proposal_id"].startswith("PP-")
+    assert sorted((repo / "model").glob("*.md")) == before
+
+
 def test_api_v1_import_profile_xlsx(tmp_path: Path) -> None:
     openpyxl = pytest.importorskip("openpyxl")
     repo = _build_repo(tmp_path)

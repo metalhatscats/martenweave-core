@@ -2,11 +2,11 @@
 
 # Martenweave — Portable Model Package Format
 
-Version: `0.1-draft`  
+Version: `1.0`
 Document type: Architecture / packaging specification  
 Scope: How to create, inspect, and share a self-contained Martenweave model package  
 Depends on: `docs/integration-architecture.md`, `docs/github-publishing-workflow.md`  
-Status: Draft for implementation
+Status: Implemented create/inspect/verify contract
 
 ---
 
@@ -147,32 +147,20 @@ The following are **excluded by default** and cannot be overridden:
 ### 4.1 Create a package
 
 ```bash
-modelops package create --repo ./my-model --output ./my-model-0.1.0.zip
+martenweave package create --repo ./my-model --output ./my-model-1.0.mwpkg
 ```
-
-**Options:**
-
-| Flag | Description |
-|---|---|
-| `--include-generated` | Include `generated/` (default: yes) |
-| `--include-exports` | Include `exports/` (default: no) |
-| `--include-scorecard` | Include `scorecard/` (default: yes) |
-| `--include-docs` | Include `docs/` (default: yes) |
-| `--include-datasets` | Include `data/samples/` (default: no) |
-| `--version <ver>` | Override package version in manifest |
 
 **Behavior:**
 
-1. Run `martenweave validate` and `martenweave build-index --jsonl`.
-2. Collect validation report and object counts.
-3. Build `manifest.json` with checksums.
-4. Create zip archive with selected contents.
-5. Write archive path to stdout.
+1. Validate the canonical repository and reject it on validation errors.
+2. Include canonical model files, non-sensitive repository configuration, and an optional root README.
+3. Build a stable `manifest.json` plus `integrity.json` with SHA-256 checksums.
+4. Write a deterministic, ordered ZIP archive without datasets, credentials, generated artifacts, uploads, provider traces, or patch transactions.
 
 ### 4.2 Inspect a package
 
 ```bash
-modelops package inspect ./my-model-0.1.0.zip
+martenweave package inspect ./my-model-1.0.mwpkg
 ```
 
 **Output:**
@@ -189,23 +177,24 @@ Includes: generated, scorecard, docs
 **With `--json`:**
 
 ```bash
-modelops package inspect ./my-model-0.1.0.zip --json
+martenweave package inspect ./my-model-1.0.mwpkg --json
 ```
 
 Returns the full `manifest.json` content.
 
-### 4.3 Extract a package
+### 4.3 Verify a package
 
 ```bash
-modelops package extract ./my-model-0.1.0.zip --output ./unpacked
+martenweave package verify ./my-model-1.0.mwpkg
 ```
 
-Extracts the archive to a directory. The unpacked directory is a valid Martenweave repository.
+Verification reads archive metadata and checksums without extracting any member. It rejects unsafe
+archive paths and modified manifest or canonical members.
 
 ### 4.4 Import a package as PatchProposal (future)
 
 ```bash
-modelops package import ./my-model-0.1.0.zip --repo ./target-model
+modelops package import ./my-model-1.0.mwpkg --repo ./target-model
 ```
 
 Diffs the package contents against the target repository and generates a PatchProposal.
@@ -216,15 +205,15 @@ Diffs the package contents against the target repository and generates a PatchPr
 
 ### 5.1 Checksums
 
-- Every file in the package is checksummed with SHA-256.
-- The `manifest.json` itself is checksummed and the checksum is stored in the manifest.
-- Recipients can verify integrity by recomputing checksums.
+- Every included file is checksummed with SHA-256 in `manifest.json`.
+- `integrity.json` checksums the manifest itself and repeats the included-file map.
+- Recipients can run `martenweave package verify` without extracting the archive.
 
 ### 5.2 Signature (future)
 
 - Packages may be signed with GPG or Sigstore for provenance.
 - Signature file: `manifest.json.sig`.
-- Verification: `modelops package verify ./my-model-0.1.0.zip`.
+- Verification: `martenweave package verify ./my-model-1.0.mwpkg`.
 
 ### 5.3 Size limits
 

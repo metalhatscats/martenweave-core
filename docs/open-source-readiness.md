@@ -11,6 +11,8 @@ This document records the minimum public-readiness expectations for Martenweave 
 - Support expectations: `SUPPORT.md`.
 - CI: Python 3.11 and 3.12 test/lint matrix with example index builds.
 - Release workflow: tag-triggered build and publish workflow exists, but maintainers must not trigger it accidentally.
+- Version/classifier changes remain blocked until the maintainer records a go/no-go decision against
+  `docs/product/PRODUCTION_READINESS.md`.
 
 ## Public Claim Guardrails
 

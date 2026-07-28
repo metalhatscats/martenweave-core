@@ -79,7 +79,7 @@ modelops = "modelops_core.cli:app"
 
 [build-system]
 requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+build-backend = "setuptools.build_meta:__legacy__"
 
 [tool.setuptools.packages.find]
 where = ["src"]

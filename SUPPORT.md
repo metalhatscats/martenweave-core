@@ -1,6 +1,6 @@
 # Support
 
-Martenweave Core is early source-available infrastructure for model registry workflows.
+Martenweave Core is an Apache-2.0 open-source, early-stage local-first model governance tool.
 
 ## Where to Ask
 
@@ -13,12 +13,14 @@ Martenweave Core is early source-available infrastructure for model registry wor
 
 ## What to Include
 
-- Martenweave version: `.venv/bin/modelops --version`
-- Python version: `.venv/bin/python --version`
+- Martenweave version: `martenweave --version` (`modelops` remains a compatibility alias)
+- Python version: `python --version`
 - Command that failed
 - Exact error output
 - Whether the repo contains custom domain packs, generated artifacts, or private data
 
 ## Current Scope
 
-The core project supports CLI/backend workflows. It does not currently provide a production UI, hosted SaaS service, SAP-certified integration, or managed support contract.
+The core project supports the local CLI, API, MCP server, and packaged local Workbench. The
+Workbench is not a hosted or multi-tenant production service. Martenweave provides no SAP
+certification, managed support contract, or SLA.

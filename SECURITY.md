@@ -5,11 +5,13 @@ Martenweave Core is local-first and does not require cloud services for core val
 ## Supported Versions
 
 Security fixes are expected on the current active minor release while the project is in `0.x`.
+Older `0.x` releases are not maintained after the next minor release is published; upgrade before
+requesting a fix.
 
 | Version | Supported |
 |---|---|
-| 0.4.x | Yes |
-| Older 0.x | Best effort |
+| Current published 0.x minor | Yes |
+| Previous and older 0.x minors | Upgrade required; best-effort guidance only |
 
 ## Reporting a Vulnerability
 

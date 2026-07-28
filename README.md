@@ -145,6 +145,20 @@ pip install -e .
 The examples below use Option A. Replace `.venv/bin/martenweave` with `martenweave` if you chose
 Option B. `.venv/bin/modelops` and `modelops` still work as compatibility aliases.
 
+### Windows (PowerShell)
+
+Python 3.11 on Windows is supported for the local CLI, index, API, and packaged Workbench assets.
+The browser Workbench is still started through the local CLI; no native Windows GUI installer is
+provided.
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install martenweave-core
+.\.venv\Scripts\martenweave.exe init '.\My Model Repository' --template business_partner
+.\.venv\Scripts\martenweave.exe validate --repo '.\My Model Repository'
+.\.venv\Scripts\martenweave.exe build-index --repo '.\My Model Repository'
+```
+
 ```bash
 # Install
 .venv/bin/python -m pip install -e .

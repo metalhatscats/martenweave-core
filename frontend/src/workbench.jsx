@@ -32,7 +32,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { fields, gaps, modelObjects, proposals, recentActivity } from "./data.js";
-import { useApi, groupOperationsByType, hasCapability, mutationBlockReason, useAssessmentFindings, useHomeAssistant, useImportInspect, useImportPreview, useImportProfile, useImportPropose, useImportValidate, useObjectSearch, useProposals, useReportGenerate, useRepositoryDiff, useWorkspaceActivity } from "./api.jsx";
+import { useApi, groupOperationsByType, hasCapability, mutationBlockReason, useAssessmentFindings, useHomeAssistant, useImportInspect, useImportPreview, useImportProfile, useImportPropose, useImportValidate, useObjectSearch, useProposals, useReportGenerate, useRepositoryDiff, useSchemaImportInspect, useSchemaImportPropose, useWorkspaceActivity } from "./api.jsx";
 
 const LEDGER_ROWS = [
   {
@@ -161,6 +161,13 @@ const SOURCE_TYPES = [
     files: "3 datasets",
   },
   {
+    id: "schema",
+    title: "Schema or interface contract",
+    description: "Local OpenAPI, WSDL, EDMX, XSD, or supported SAP contract evidence",
+    icon: BracketsCurly,
+    files: "Local only",
+  },
+  {
     id: "validation",
     title: "Validation reports",
     description: "Deterministic findings and quality evidence",
@@ -236,7 +243,7 @@ function LedgerDetail({ row, tab, onTab, navigate }) {
                 ? { id: 27 }
                 : row.type === "Gap"
                   ? { gap: 1 }
-                  : { id: row.id === "ATTR-BP-TAX-NUMBER" ? "DOMAIN-CUSTOMER-BP" : row.id },
+                    : { id: row.id },
             )
           }
         >
@@ -290,7 +297,7 @@ function LedgerDetail({ row, tab, onTab, navigate }) {
                 <dt>Reports</dt><dd>2</dd>
                 <dt>Processes</dt><dd>2</dd>
               </dl>
-              <button onClick={() => navigate("lineage")}>View impacted items</button>
+              <button onClick={() => navigate("lineage", { id: row.id })}>View impacted items</button>
             </div>
             <div>
               <small>Approval chain</small>
@@ -324,7 +331,7 @@ function LedgerDetail({ row, tab, onTab, navigate }) {
           <div className="ledger-tab-wide compact-path">
             <small>Highest-risk relationship path</small>
             <p><span>SAP S/4HANA</span><ArrowRight size={15} /><span>KNVV.STCD1</span><ArrowRight size={15} /><span>TAX_NUMBER</span><ArrowRight size={15} /><span>Customer analytics</span></p>
-            <button className="primary-button" onClick={() => navigate("lineage")}>Open interactive lineage</button>
+            <button className="primary-button" onClick={() => navigate("lineage", { id: row.id })}>Open interactive lineage</button>
           </div>
         )}
         {tab === "Coverage" && (
@@ -1250,14 +1257,16 @@ function ImportDialog({ onClose, onComplete }) {
   const { run: runProfile, loading: profileLoading } = useImportProfile();
   const { run: runInspect, loading: inspectLoading } = useImportInspect();
   const { run: runPreview, loading: previewLoading } = useImportPreview();
-  const loading = profileLoading || inspectLoading || previewLoading;
+  const { run: runSchemaInspect, loading: schemaInspectLoading } = useSchemaImportInspect();
+  const { run: runSchemaPropose, loading: schemaProposeLoading } = useSchemaImportPropose();
+  const loading = profileLoading || inspectLoading || previewLoading || schemaInspectLoading || schemaProposeLoading;
 
   const parse = async () => {
     setError("");
     if (!demo && client && file) {
       setStep("parsing");
       try {
-        const inspected = await runInspect(file);
+        const inspected = source === "schema" ? await runSchemaInspect(file) : await runInspect(file);
         setInspection(inspected.inspection);
         if (inspected.inspection.status === "blocked") {
           setError(inspected.inspection.reason || "This file cannot be safely interpreted.");
@@ -1279,7 +1288,7 @@ function ImportDialog({ onClose, onComplete }) {
     if (!client || !file) return;
     setError("");
     try {
-      const data = source === "dataset" ? await runProfile(file) : await runPreview(file);
+      const data = source === "dataset" ? await runProfile(file) : source === "schema" ? await runSchemaPropose(file) : await runPreview(file);
       setResult(data);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
@@ -1326,8 +1335,8 @@ function ImportDialog({ onClose, onComplete }) {
             <UploadSimple size={26} />
             <strong>Drop files here or select a file</strong>
             <p>Files remain local. Martenweave profiles and validates before anything can become canonical.</p>
-            {!demo && client && ["dataset", "excel", "canonical"].includes(source) && (
-              <input type="file" accept=".csv,.xlsx,.xls" onChange={handleFileChange} aria-label="Choose file" />
+            {!demo && client && ["dataset", "excel", "canonical", "schema"].includes(source) && (
+              <input type="file" accept={source === "schema" ? ".json,.yaml,.yml,.wsdl,.xsd,.edmx,.xml,.iflw,.zip" : ".csv,.xlsx,.xls"} onChange={handleFileChange} aria-label="Choose file" />
             )}
             {file && <p className="selected-file"><CheckCircle size={14} /> {file.name}</p>}
             {error && <span className="inline-error">{error}</span>}
@@ -1373,7 +1382,13 @@ function ImportDialog({ onClose, onComplete }) {
           </div>
           <section className="parsed-preview">
             {inspection && <>
-              <h3>Workbook interpretation</h3>
+              <h3>{source === "schema" ? "Normalized interface evidence" : "Workbook interpretation"}</h3>
+              {source === "schema" && <>
+                <p><strong>{inspection.source_format || "schema"}</strong><span>{inspection.source_identity || "Local contract"}</span><small>Local only</small></p>
+                <p><strong>Interfaces</strong><span>{inspection.entities?.length || 0}</span><small>Normalized</small></p>
+                <p><strong>Endpoints/messages</strong><span>{inspection.operations?.length || 0}</span><small>Normalized</small></p>
+                <p><strong>Schema nodes</strong><span>{inspection.fields?.length || 0}</span><small>Normalized</small></p>
+              </>}
               {(inspection.sheets || []).map((sheet) => <p key={sheet.name}><strong>{sheet.name}</strong><span>{sheet.columns?.join(", ") || "No columns detected"}</span><small>{sheet.included === false ? "Excluded" : "Included"}</small></p>)}
               {(inspection.warnings || []).map((warning, index) => <p key={`inspection-${index}`}><strong>Warning</strong><span>{warning}</span><small>Review</small></p>)}
               {(inspection.assumptions || []).map((assumption, index) => <p key={`assumption-${index}`}><strong>Assumption</strong><span>{assumption}</span><small>Evidence only</small></p>)}

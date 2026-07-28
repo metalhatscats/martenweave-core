@@ -154,6 +154,8 @@ import { gaps as demoGaps, lineageEdges, lineageNodes, modelObjects, proposals a
  * @property {(file: File) => Promise<PreviewResponse>} importPreview
  * @property {(file: File) => Promise<ImportValidateResponse>} importValidate
  * @property {(file: File) => Promise<ImportProposeResponse>} importPropose
+ * @property {(file: File) => Promise<{inspection: Record<string, any>}>} schemaImportInspect
+ * @property {(file: File) => Promise<{proposal_id: string, proposal: ProposalResponse, warnings: string[]}>} schemaImportPropose
  * @property {(format: string, business_review?: boolean) => Promise<ExportModelResponse>} exportModel
  * @property {(reportType: string, format?: string | null) => Promise<{artifact_id: string, name: string, format: string, created_at: string}>} generateReport
  * @property {(limit?: number) => Promise<{total_count: number, artifacts: any[]}>} reports
@@ -614,6 +616,8 @@ export function createApiClient(baseUrl) {
     importPreview: (file) => postMultipart(`${root}/api/v1/imports/preview`, file),
     importValidate: (file) => postMultipart(`${root}/api/v1/imports/validate`, file),
     importPropose: (file) => postMultipart(`${root}/api/v1/imports/propose`, file),
+    schemaImportInspect: (file) => postMultipart(`${root}/api/v1/imports/schema/inspect`, file),
+    schemaImportPropose: (file) => postMultipart(`${root}/api/v1/imports/schema/propose`, file),
     exportModel: (format, business_review = false) => postJson(
       `${root}/api/v1/exports?format=${encodeURIComponent(format)}&business_review=${encodeURIComponent(business_review)}`,
       {}
@@ -815,7 +819,7 @@ function filterDemoObjects(query, objects, activeTab, selectedTypes, selectedSta
  */
 export function useObjectSearch(query, activeTab, selectedTypes, selectedStatuses, sort) {
   const { state, client, demo } = useApi();
-  const [results, setResults] = useState([]);
+  const [sourceResults, setSourceResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -823,16 +827,14 @@ export function useObjectSearch(query, activeTab, selectedTypes, selectedStatuse
     if (state === API_STATE.UNKNOWN) {
       // Capabilities probe still in flight: stay in a neutral loading state
       // instead of painting demo fixtures or firing a premature request.
-      setResults([]);
+      setSourceResults([]);
       setLoading(true);
       setError(null);
       return;
     }
 
     if (demo || !client) {
-      setResults(
-        filterDemoObjects(query, modelObjects, activeTab, selectedTypes, selectedStatuses)
-      );
+      setSourceResults(filterDemoObjects(query, modelObjects, "All", [], []));
       setLoading(false);
       setError(null);
       return;
@@ -862,14 +864,12 @@ export function useObjectSearch(query, activeTab, selectedTypes, selectedStatuse
             data_steward_name: r.data_steward_name,
           })
         );
-        setResults(
-          filterDemoObjects(query, mapped, activeTab, selectedTypes, selectedStatuses, false)
-        );
+        setSourceResults(mapped);
         setError(null);
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : String(err));
-        setResults([]);
+        setSourceResults([]);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -881,8 +881,13 @@ export function useObjectSearch(query, activeTab, selectedTypes, selectedStatuse
     };
   }, [query, activeTab, selectedTypes.join(","), selectedStatuses.join(","), sort, state, demo, client]);
 
+  const facetResults = useMemo(
+    () => filterDemoObjects("", sourceResults, "All", selectedTypes, selectedStatuses, false),
+    [sourceResults, selectedTypes, selectedStatuses]
+  );
+
   const sortedResults = useMemo(() => {
-    const list = [...results];
+    const list = filterDemoObjects("", facetResults, activeTab, [], [], false);
     const q = query.trim().toLowerCase();
     if (sort === "Relevance") {
       if (!q) {
@@ -901,9 +906,9 @@ export function useObjectSearch(query, activeTab, selectedTypes, selectedStatuse
       list.sort((a, b) => a.name.localeCompare(b.name));
     }
     return list;
-  }, [results, sort, query]);
+  }, [facetResults, activeTab, sort, query]);
 
-  return { results: sortedResults, loading, error };
+  return { results: sortedResults, facetResults, loading, error };
 }
 
 /**
@@ -1976,6 +1981,16 @@ export function useImportValidate() {
  */
 export function useImportPropose() {
   return useImportMutation((client, file) => client.importPropose(file));
+}
+
+/** Inspect local interface-contract evidence without creating canonical changes. */
+export function useSchemaImportInspect() {
+  return useImportMutation((client, file) => client.schemaImportInspect(file));
+}
+
+/** Create a reviewable schema PatchProposal through the local mutation capability. */
+export function useSchemaImportPropose() {
+  return useImportMutation((client, file) => client.schemaImportPropose(file));
 }
 
 /**

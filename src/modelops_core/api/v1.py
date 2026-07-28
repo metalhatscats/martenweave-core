@@ -84,6 +84,12 @@ from modelops_core.imports.model_sheet_import_service import (
     _validate_import,
     import_model_sheet_xlsx,
 )
+from modelops_core.imports.schema_import_service import (
+    inspect_to_proposal,
+    register_schema_import_source,
+    write_schema_proposal,
+)
+from modelops_core.imports.schema_inspection import SchemaInspectionError, inspect_schema_file
 from modelops_core.index import build_index
 from modelops_core.index.query_service import (
     get_object_by_id,
@@ -102,6 +108,7 @@ from modelops_core.reports.model_summary_service import (
     model_summary_to_markdown,
 )
 from modelops_core.reports.scorecard_service import generate_scorecard
+from modelops_core.reports.source_registry_service import SourceRegistryService
 from modelops_core.repository import scan_repository
 from modelops_core.repository.scaffold import available_templates, init_repository
 
@@ -407,6 +414,18 @@ def capabilities(
             description="Turn a validated review workbook into a reviewable PatchProposal.",
         ),
         CapabilityEntry(
+            name="schema_import_inspect",
+            method="POST",
+            href="/api/v1/imports/schema/inspect",
+            description="Inspect local interface evidence without writing canonical files.",
+        ),
+        CapabilityEntry(
+            name="schema_import_propose",
+            method="POST",
+            href="/api/v1/imports/schema/propose",
+            description="Create a reviewable PatchProposal from local interface evidence.",
+        ),
+        CapabilityEntry(
             name="get_workspace",
             method="GET",
             href="/api/v1/workspace",
@@ -517,6 +536,17 @@ def _report_safety_classification(path: Path) -> str:
     return "local_only"
 
 
+_INTERNAL_REPORT_NAMESPACES = frozenset(
+    {"patch-transactions", "staging", "uploads", ".demo-build", "source_registry.jsonl"}
+)
+
+
+def _is_public_report_artifact(path: Path, generated_root: Path) -> bool:
+    """Return whether a generated file is a user-facing output, not internal state."""
+    relative_parts = path.relative_to(generated_root).parts
+    return not any(part in _INTERNAL_REPORT_NAMESPACES for part in relative_parts)
+
+
 @router.get("/reports", response_model=ReportArtifactResponse)
 def reports(
     repo: str | None = Query(None, description="Path to model repository"),
@@ -532,7 +562,11 @@ def reports(
         (
             path
             for path in generated_root.rglob("*")
-            if path.is_file() and path.suffix.lower() in _REPORT_EXTENSIONS
+            if (
+                path.is_file()
+                and path.suffix.lower() in _REPORT_EXTENSIONS
+                and _is_public_report_artifact(path, generated_root)
+            )
         ),
         key=lambda path: path.stat().st_mtime,
         reverse=True,
@@ -1072,6 +1106,55 @@ def import_inspect(
             detail=f"Could not inspect '{safe_name}': {exc}",
         ) from exc
     return {"inspection": inspection}
+
+
+@router.post("/imports/schema/inspect")
+def schema_import_inspect(
+    file: Annotated[UploadFile, File(..., description="Local interface-contract evidence")],
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Inspect a supported local schema without creating a proposal or canonical change."""
+    repo_root = _resolve_repo(repo)
+    uploads_dir = resolve_generated_path(repo_root) / "uploads"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    safe_name = _safe_upload_filename(file.filename)
+    upload_path = uploads_dir / safe_name
+    upload_path.write_bytes(file.file.read())
+    try:
+        document = inspect_schema_file(upload_path)
+    except SchemaInspectionError as exc:
+        raise HTTPException(
+            status_code=400, detail=f"Could not inspect schema '{safe_name}': {exc}"
+        ) from exc
+    return {"inspection": document.to_dict()}
+
+
+@router.post("/imports/schema/propose", dependencies=[Depends(require_mutation_token)])
+def schema_import_propose(
+    file: Annotated[UploadFile, File(..., description="Local interface-contract evidence")],
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Create a PatchProposal from local schema evidence; never apply canonical mutations."""
+    repo_root = _resolve_repo(repo)
+    uploads_dir = resolve_generated_path(repo_root) / "uploads"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    safe_name = _safe_upload_filename(file.filename)
+    upload_path = uploads_dir / safe_name
+    upload_path.write_bytes(file.file.read())
+    try:
+        result = inspect_to_proposal(upload_path)
+        proposal_path = write_schema_proposal(result, repo_model_path=resolve_model_path(repo_root))
+        register_schema_import_source(SourceRegistryService(repo_root), result)
+    except (SchemaInspectionError, ValueError) as exc:
+        raise HTTPException(
+            status_code=400, detail=f"Could not import schema '{safe_name}': {exc}"
+        ) from exc
+    return {
+        "proposal_id": result.proposal["id"],
+        "proposal_path": proposal_path.relative_to(repo_root).as_posix(),
+        "proposal": result.proposal,
+        "warnings": result.validation_warnings,
+    }
 
 
 @router.post(

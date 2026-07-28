@@ -57,6 +57,9 @@ The release smoke script covers:
 
 ## Release Readiness
 
+- [ ] A maintainer has recorded the go/no-go decision required by
+  [`docs/product/PRODUCTION_READINESS.md`](product/PRODUCTION_READINESS.md) before changing the
+  Alpha classifier or making a GA/support claim.
 - [ ] Version matches in `pyproject.toml` and `src/modelops_core/__version__.py`.
 - [ ] `CHANGELOG.md` has a dated entry for the release.
 - [ ] `docs/release-notes-first-public-rc.md` is updated or superseded by final release notes.

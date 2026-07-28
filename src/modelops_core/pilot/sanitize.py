@@ -46,6 +46,40 @@ def _redact_text(text: str) -> tuple[str, list[dict[str, Any]]]:
     return result, redactions
 
 
+def _redact_json_values(value: Any) -> tuple[Any, list[dict[str, Any]]]:
+    """Redact sensitive strings while preserving relative JSON keys.
+
+    Canonical checksum manifests use repository-relative paths as dictionary
+    keys.  Treating JSON as plain text used to redact those keys when they
+    happened to resemble a local path, corrupting the checksum identity.  The
+    structured walk deliberately preserves relative keys byte-for-byte.  An
+    absolute key is itself a local-path leak and is replaced.
+    """
+    if isinstance(value, str):
+        return _redact_text(value)
+    if isinstance(value, list):
+        items: list[Any] = []
+        redactions: list[dict[str, Any]] = []
+        for item in value:
+            sanitized, item_redactions = _redact_json_values(item)
+            items.append(sanitized)
+            redactions.extend(item_redactions)
+        return items, redactions
+    if isinstance(value, dict):
+        sanitized_object: dict[str, Any] = {}
+        redactions = []
+        for key, item in value.items():
+            sanitized_key = key
+            if _UNIX_PATH_RE.fullmatch(key) or _WINDOWS_PATH_RE.fullmatch(key):
+                sanitized_key = "<redacted-path>"
+                redactions.append({"type": "path_key", "count": 1})
+            sanitized, item_redactions = _redact_json_values(item)
+            sanitized_object[sanitized_key] = sanitized
+            redactions.extend(item_redactions)
+        return sanitized_object, redactions
+    return value, []
+
+
 def _is_under_raw_dataset_dir(rel: Path) -> bool:
     """Return True when the relative path sits under a raw dataset folder."""
     return any(part == "dataset_readiness" for part in rel.parts)
@@ -99,7 +133,18 @@ def sanitize_assessment(
         dest_path = output_dir / rel
         dest_path.parent.mkdir(parents=True, exist_ok=True)
 
-        if suffix in _TEXT_SUFFIXES:
+        if suffix == ".json":
+            try:
+                payload = json.loads(src_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"Invalid JSON artifact: {rel_posix}") from exc
+            redacted, file_redactions = _redact_json_values(payload)
+            dest_path.write_text(
+                json.dumps(redacted, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+            )
+            if file_redactions:
+                redactions.append({"file": rel_posix, "redactions": file_redactions})
+        elif suffix in _TEXT_SUFFIXES:
             text = src_path.read_text(encoding="utf-8")
             redacted, file_redactions = _redact_text(text)
             dest_path.write_text(redacted, encoding="utf-8")
@@ -118,8 +163,6 @@ def sanitize_assessment(
         "tool": "martenweave",
         "version": __version__,
         "generated_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "input_dir": str(input_dir),
-        "output_dir": str(output_dir),
         "included_files": sorted(included_files),
         "excluded_files": sorted(excluded_files),
         "blocked_files": blocked_files,

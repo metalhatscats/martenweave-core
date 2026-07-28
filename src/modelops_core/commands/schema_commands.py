@@ -8,6 +8,7 @@ from rich.table import Table
 
 from modelops_core.commands._common import _resolve_repo, console
 from modelops_core.config import resolve_model_path
+from modelops_core.imports.schema_comparison import compare_schema_files
 from modelops_core.imports.schema_import_service import (
     inspect_to_proposal,
     register_schema_import_source,
@@ -90,6 +91,31 @@ def inspect_schema(
 
     for warning in document.warnings[:10]:
         console.print(f"[yellow]Warning:[/yellow] {warning}")
+
+
+@schema_app.command("compare")
+@with_telemetry("schema_compare")
+def compare_schema(
+    base: Path = typer.Argument(..., help="Earlier local schema evidence file."),  # noqa: B008
+    candidate: Path = typer.Argument(..., help="Candidate local schema evidence file."),  # noqa: B008
+    json_output: bool = typer.Option(False, "--json", help="Output stable JSON."),
+) -> None:
+    """Compare two local normalized contracts without fetching or mutating anything."""
+    try:
+        report = compare_schema_files(str(base), str(candidate))
+    except SchemaInspectionError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+    if json_output:
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return
+    console.print("[bold]Schema comparison[/bold]")
+    console.print("Potential-breaking results are deterministic review signals, not a guarantee.")
+    for item in report["differences"]:
+        marker = "potential-breaking" if item["breaking"] else "review"
+        console.print(f"  {item['change']}: {item['kind']} {item['id']} ({marker})")
+    if not report["differences"]:
+        console.print("  No deterministic differences.")
 
 
 @schema_app.command("import")

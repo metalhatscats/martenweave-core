@@ -12,7 +12,7 @@
 | Does it require internet access? | **No** for core operations. AI provider calls (optional) require internet. |
 | Can it run air-gapped? | **Yes.** All core features work without network access. |
 | Where is data stored? | Canonical files in `model/` (Markdown/YAML); generated index in `generated/` (SQLite, JSONL). Both are on your filesystem. |
-| Is there a SaaS component? | **Not in v1.** Future Team Workspace may offer hosted options; this checklist will be updated. |
+| Is there a SaaS component? | **No.** Hosted or multi-tenant SaaS is outside the product boundary. |
 
 ---
 
@@ -48,7 +48,7 @@
 |---|---|
 | Where are API keys stored? | In environment variables or `.env` files. Martenweave does not have a secrets vault. |
 | Are secrets logged? | **No.** API keys are redacted from logs and telemetry by default. |
-| Is there a secret scanner? | Not built in. Use `pre-commit` or GitHub secret scanning on your repository. |
+| Is there a secret scanner? | `martenweave config-guard` deterministically scans repository configuration, `.env` references, `.gitignore`, and repository files for unsafe secret handling. It complements—not replaces—host or Git-platform secret scanning. |
 
 ---
 
@@ -82,9 +82,9 @@
 | **Source code availability** | Apache-2.0 open-source Python; inspect everything in `src/` | Remains inspectable |
 | **Vendor lock-in** | Canonical files are plain Markdown/YAML; migrate by copying files | No proprietary format planned |
 | **Exit cost** | Zero. Your data is in text files on your disk | Stays zero |
-| **Support model** | GitHub issues + optional pilot or commercial support | Team support tier planned |
-| **SLA** | None under the evaluation license | SLA considered for commercial terms |
-| **Pricing transparency** | Evaluation is free; pilots may be no-cost by agreement | Commercial terms are scoped per use case |
+| **Support model** | Community GitHub issues; no managed support commitment | No hosted support tier is planned in Core |
+| **SLA** | No SLA | No SLA is promised |
+| **Pricing transparency** | Apache-2.0 open-source package | No commercial product terms are implied |
 | **Security questionnaire** | This checklist is the current answer set | Will expand as enterprise features are built |
 
 ---
@@ -115,7 +115,7 @@ These are not yet implemented. Do not promise them:
 - SSO / SAML integration
 - Role-based access control (RBAC)
 - Cryptographic log signing
-- Automatic secrets scanning
+- Automatic network or enterprise DLP scanning
 - SOC 2, ISO 27001, or FedRAMP certification
 - Real-time multi-user editing with conflict resolution
 - Data loss prevention (DLP) integration
