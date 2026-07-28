@@ -216,6 +216,7 @@ describe("Martenweave workbench", () => {
   it("supports global navigation and selected-row shortcuts", async () => {
     window.location.hash = "#/home";
     render(<App />);
+    await waitFor(() => expect(screen.getAllByText("Demo workspace").length).toBeGreaterThan(0));
     fireEvent.keyDown(window, { key: "/" });
     expect(screen.getByLabelText("Search model")).toHaveFocus();
     fireEvent.keyDown(screen.getByLabelText("Search model"), { key: "Escape" });
