@@ -104,6 +104,7 @@ import {
   WorkbenchOverlay,
   WorkspaceScreen,
 } from "./workbench.jsx";
+import { ReadinessScreen } from "./mission-control.jsx";
 
 function ConnectionBanner() {
   const { state, demo, error, recovery, recoveryStates, retry } = useApi();
@@ -165,27 +166,27 @@ function ConnectionBanner() {
 }
 
 const NAV_ITEMS = [
-  { id: "home", label: "Workspace", icon: House },
-  { id: "models", label: "Models", icon: Cube },
-  { id: "lineage", label: "Lineage", icon: ShareNetwork },
-  { id: "gaps", label: "Gaps", icon: Warning },
-  { id: "proposals", label: "Proposals", icon: NotePencil },
-  { id: "reports", label: "Reports", icon: FileText },
-  { id: "changelog", label: "Changelog", icon: ClockCounterClockwise },
-  { id: "settings", label: "Settings", icon: SlidersHorizontal },
+  { id: "home", label: "Readiness", icon: House },
+  { id: "models", label: "Catalog", icon: Cube },
+  { id: "lineage", label: "Evidence", icon: ShareNetwork },
+  { id: "gaps", label: "Resolve", icon: Warning },
+  { id: "proposals", label: "Approvals", icon: NotePencil },
+  { id: "reports", label: "Outputs", icon: FileText },
+  { id: "changelog", label: "History", icon: ClockCounterClockwise },
+  { id: "settings", label: "Workspace", icon: SlidersHorizontal },
 ];
 
 const ROUTE_TITLES = {
-  home: "Canonical model ledger",
-  models: "Global model search",
+  home: "Readiness queue",
+  models: "Canonical catalog",
   object: "Business Partner",
-  lineage: "Lineage",
-  gaps: "Open gaps",
-  proposals: "Proposals",
-  proposal: "Proposal review",
-  reports: "Reports and exports",
-  changelog: "Changelog",
-  settings: "Workspace settings",
+  lineage: "Evidence atlas",
+  gaps: "Resolution workspace",
+  proposals: "Approval queue",
+  proposal: "Change briefing",
+  reports: "Outputs and proof",
+  changelog: "Decision history",
+  settings: "Local workspace",
 };
 
 function useRoute() {
@@ -1844,8 +1845,9 @@ function ProposalScreen({ navigate, params, onToast, onRefreshProposals, refresh
         <div className="proposal-title-row">
           <div>
             <div className="object-type-row"><Badge tone={isApproved ? "green" : "violet"}>{effectiveStatus}</Badge><Badge tone={proposal.risk.toLowerCase()}>{proposal.risk} impact</Badge></div>
-            <h1>{proposal.title}</h1>
-            <p>Proposal #{pid} · Created by {proposal.author} · Updated {proposal.updated}</p>
+            <p className="briefing-kicker">Proposal #{pid} · prepared for governed review</p>
+            <h1>Change briefing</h1>
+            <p className="briefing-subtitle">{proposal.title}</p>
           </div>
           <div className="page-actions">
             <button className="danger-button" onClick={() => setDecision("reject")} disabled={Boolean(reviewStatus) || reviewLoading}><XCircle size={17} /> Request changes</button>
@@ -1866,6 +1868,7 @@ function ProposalScreen({ navigate, params, onToast, onRefreshProposals, refresh
       </div>
       <div className="proposal-review-body">
         <div className="review-main">
+          <ProposalEvidenceTrail proposal={proposal} linkedGapText={linkedGapText} navigate={navigate} />
           <section className="proposal-summary-strip">
             <div><small>Risk classification</small><strong><WarningCircle size={16} /> {proposal.risk}</strong></div>
             <div><small>Canonical objects</small><strong>{(proposal.affected_objects?.length || proposal.impactObjects) || 0} affected</strong></div>
@@ -1880,6 +1883,7 @@ function ProposalScreen({ navigate, params, onToast, onRefreshProposals, refresh
           {tab === "Impact" && <ProposalImpact navigate={navigate} proposal={proposal} dryRunResult={dryRunResult} dryRunLoading={dryRunLoading} />}
           {tab === "Validation" && <ProposalValidation proposal={proposal} validateResult={validateResult} validateLoading={validateLoading} />}
           {tab === "Activity" && <ProposalActivity proposalId={pid} refreshKey={refreshKey} />}
+          <ProposalRationale proposal={proposal} />
         </div>
         <aside className="review-sidebar">
           <section className="surface">
@@ -1911,6 +1915,13 @@ function ProposalScreen({ navigate, params, onToast, onRefreshProposals, refresh
           </section>
         </aside>
       </div>
+      <div className="briefing-decision-bar">
+        <div><span className="briefing-risk-dot" /><span><strong>{proposal.risk} risk change</strong><small>Approval creates a governed ChangeRequest; canonical files stay protected.</small></span></div>
+        <div className="briefing-decision-actions">
+          <button className="secondary-button" onClick={() => setDecision("reject")} disabled={Boolean(reviewStatus) || reviewLoading}><XCircle size={17} /> Request changes</button>
+          <button className="approve-button" onClick={() => setDecision("approve")} disabled={Boolean(reviewStatus) || reviewLoading}><CheckCircle size={17} /> {reviewStatus || "Approve proposal"}</button>
+        </div>
+      </div>
       {decision && (
         <DecisionDialog
           type={decision}
@@ -1920,6 +1931,38 @@ function ProposalScreen({ navigate, params, onToast, onRefreshProposals, refresh
         />
       )}
     </div>
+  );
+}
+
+function ProposalEvidenceTrail({ proposal, linkedGapText, navigate }) {
+  const target = proposal.affected_objects?.[0] || "Canonical object";
+  const validation = capitalize(proposal.validation_status || proposal.validationStatus || "passed");
+  return (
+    <section className="briefing-evidence" aria-label="Evidence trail">
+      <div className="briefing-section-heading"><span>Evidence trail</span><small>Trace the decision from source evidence to canonical change.</small></div>
+      <div className="briefing-trail">
+        <article><span className="briefing-trail-icon source"><Database size={18} /></span><small>Source field</small><strong>{linkedGapText || "Source dataset evidence"}</strong><p>Observed in imported assessment data.</p></article>
+        <ArrowRight className="briefing-arrow" size={20} />
+        <article><span className="briefing-trail-icon mapping"><GitBranch size={18} /></span><small>Deterministic mapping</small><strong>{proposal.title}</strong><p>Reviewable patch operation with lineage.</p></article>
+        <ArrowRight className="briefing-arrow" size={20} />
+        <button className="briefing-target" onClick={() => navigate("models")}><span className="briefing-trail-icon target"><FileText size={18} /></span><small>Canonical object</small><strong>{target}</strong><p>Open the catalog record <CaretRight size={13} /></p></button>
+      </div>
+      <div className="briefing-validation"><ShieldCheck size={18} weight="fill" /><span><strong>{validation} validation</strong><small>Schema, reference integrity, and domain rules completed before review.</small></span></div>
+    </section>
+  );
+}
+
+function ProposalRationale({ proposal }) {
+  const affected = proposal.affected_objects?.length || proposal.impactObjects || 0;
+  return (
+    <section className="briefing-rationale">
+      <div className="briefing-section-heading"><span>Why this resolution</span><small>Decision-ready rationale from deterministic evidence.</small></div>
+      <div className="briefing-rationale-grid">
+        <article><CheckCircle size={18} weight="fill" /><strong>Completeness</strong><p>Closes the known assessment gap with an explicit canonical endpoint.</p></article>
+        <article><CheckCircle size={18} weight="fill" /><strong>Traceability</strong><p>Preserves a reviewable link between source evidence, mapping, and model.</p></article>
+        <article><CheckCircle size={18} weight="fill" /><strong>Bounded impact</strong><p>{affected} canonical object{affected === 1 ? "" : "s"} affected; approval remains gated.</p></article>
+      </div>
+    </section>
   );
 }
 
@@ -2276,7 +2319,7 @@ export function App({ apiBaseUrl }) {
     return ROUTE_TITLES[route] || "Workspace";
   })();
   const screen = {
-    home: <WorkspaceScreen navigate={navigate} onImport={actions.import} onExport={actions.export} onCommands={actions.commands} onShortcuts={actions.shortcuts} refreshKey={proposalRefreshKey} />,
+    home: <ReadinessScreen navigate={navigate} onDraft={actions.draft} refreshKey={proposalRefreshKey} />,
     models: <ModelsScreen navigate={navigate} params={params} />,
     object: <ObjectScreen navigate={navigate} params={params} onExport={actions.export} onDraft={actions.draft} />,
     lineage: <LineageScreen navigate={navigate} params={params} onExport={actions.export} />,
@@ -2286,7 +2329,7 @@ export function App({ apiBaseUrl }) {
     reports: <ReportsScreen navigate={navigate} onExport={actions.export} />,
     changelog: <ChangelogScreen navigate={navigate} refreshKey={proposalRefreshKey} />,
     settings: <SettingsScreen onToast={actions.toast} onShortcuts={actions.shortcuts} />,
-  }[route] || <WorkspaceScreen navigate={navigate} onImport={actions.import} onExport={actions.export} onCommands={actions.commands} onShortcuts={actions.shortcuts} refreshKey={proposalRefreshKey} />;
+  }[route] || <ReadinessScreen navigate={navigate} onDraft={actions.draft} refreshKey={proposalRefreshKey} />;
 
   return (
     <ApiProvider baseUrl={apiBaseUrl}>

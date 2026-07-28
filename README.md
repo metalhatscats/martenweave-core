@@ -22,9 +22,11 @@ attributes, relationships, datasets, mappings, rules, evidence, decisions, and c
 It is designed to be embedded in pipelines, IDEs, local API processes, MCP servers, and agent workflows.
 
 **Martenweave Workbench** is the official local browser UI for assessment, investigation, review,
-reports, and controlled changes. It reads from the local API and never stores canonical model truth
-independently of the `model/` files. It is **not a hosted production app** and does not replace the
-CLI-first core workflow.
+reports, and controlled changes. Its decision-first journey moves from **Readiness** through
+**Evidence** and **Resolve** to **Approvals**, so a migration team can see what needs attention,
+understand the supporting facts, and make a governed change. It reads from the local API and never
+stores canonical model truth independently of the `model/` files. It is **not a hosted production
+app** and does not replace the CLI-first core workflow.
 
 For Workbench setup and development notes, see [`frontend/README.md`](frontend/README.md).
 
@@ -303,14 +305,31 @@ application on their own.
 ## Martenweave Workbench
 
 The Workbench is the official local UI surface. It is packaged as a static React + Vite build and
-served from the installed Python package. It connects to the local API started by `martenweave serve`.
+served from the installed Python package. It makes the evidence-to-decision workflow legible without
+moving authority out of Core:
 
-```bash
-martenweave serve --repo ./my-model
-# Open the workbench URL shown in the terminal
+```text
+Readiness → Catalog / Evidence → Resolve → Approvals → Outputs / History
 ```
 
-See [`frontend/README.md`](frontend/README.md) for development build instructions.
+| Workspace | Customer question it answers |
+|---|---|
+| **Readiness** | What requires attention now, and where does the team start? |
+| **Catalog / Evidence** | What is canonical, and what source-to-target facts support it? |
+| **Resolve** | Which gaps, findings, or conflicts need a disposition? |
+| **Approvals** | What change is proposed, what evidence supports it, and what approval is required? |
+| **Outputs / History** | What can be shared, and what has happened in this local workspace? |
+
+Start the bound local API and UI together:
+
+```bash
+martenweave workbench --repo ./my-model
+```
+
+Use `--no-open` to prevent opening a browser tab, and `--host`/`--port` to change the bind address.
+The screen remains local-first: a decision only becomes a `ChangeRequest` through Core's explicit
+review and approval gates. See [`frontend/README.md`](frontend/README.md) for development build
+instructions and the detailed route map.
 
 ### Local API contract
 
@@ -351,23 +370,6 @@ Use `--help` on any command for full options:
 ```bash
 .venv/bin/martenweave <command> --help
 ```
-
-## Martenweave Workbench
-
-The Workbench is the official local UI surface. It is packaged as a static React + Vite build and
-served from the installed Python package. One command starts the bound local API and the UI:
-
-```bash
-martenweave workbench --repo ./my-model
-```
-
-Add `--no-open` to prevent opening a browser tab, and `--host`/`--port` to change the bind address.
-
-```bash
-martenweave workbench --repo ./my-model --port 8080 --no-open
-```
-
-See [`frontend/README.md`](frontend/README.md) for development build instructions.
 
 ### Assessment Example
 

@@ -1,67 +1,42 @@
-# Martenweave Model Ledger Design QA
+**Findings**
 
-- Source visual truth:
-  - `/Users/dzmitryikharlanau/Developments/martenweave/outputs/product-design-concepts-2026-07-02/03-model-ledger.png`
-- Implementation screenshots:
-  - `qa/model-ledger-2026-07-03/07-ledger-final.png`
-  - `qa/model-ledger-2026-07-03/04-import-flow.png`
-  - `qa/model-ledger-2026-07-03/05-command-palette.png`
-  - `qa/model-ledger-2026-07-03/09-object-detail.png`
-  - `qa/model-ledger-2026-07-03/10-lineage.png`
-  - `qa/model-ledger-2026-07-03/11-gaps.png`
-  - `qa/model-ledger-2026-07-03/12-proposal-review.png`
-- Viewports:
-  - visual fidelity: default in-app laptop viewport, 1280 × 720
-  - responsive overflow checks: 1280 × 900 and 650 × 900
-- State: light theme, Customer migration workspace, TAX_NUMBER selected, populated local evidence
-- Full-view comparison evidence:
-  - `qa/model-ledger-2026-07-03/08-final-comparison.png`
-- Focused region comparison evidence:
-  - `qa/model-ledger-2026-07-03/04-import-flow.png`
-  - `qa/model-ledger-2026-07-03/05-command-palette.png`
-  - `qa/model-ledger-2026-07-03/13-route-review.png`
+No actionable P0, P1, or P2 differences remain for the selected change-briefing direction.
 
-## Findings
+- [P3] The source shows a dedicated ownership/confidence rail while the implementation retains the product's existing reviewer and governed note panels.
+  Location: proposal review right rail.
+  Evidence: the side-by-side comparison preserves the narrow right-rail hierarchy, ownership context, reviewer identities, and decision framing; the implementation keeps live review controls rather than decorative confidence-only content.
+  Impact: acceptable product-specific deviation that preserves governed workflow capability.
+  Fix: optional future enhancement—add a computed validation-confidence summary when the local API supplies it.
 
-No actionable P0, P1, or P2 findings remain.
+**Open Questions**
 
-- **Fonts and typography:** Inter Variable matches the selected concept's neutral technical
-  typography. The implementation preserves the compact ledger hierarchy, small metadata scale,
-  readable object IDs, and stronger object names without wrapping critical controls.
-- **Spacing and layout rhythm:** the implementation matches the selected fixed navigation, command
-  header, dense ledger, right status rail, and attached investigation drawer. Borders and radii are
-  restrained; the ledger reads as one work surface rather than nested cards.
-- **Colors and visual tokens:** navy text, blue selection, white surfaces, pale page tint, and
-  green/amber/red/violet semantic states map directly to the selected concept. Primary text and
-  controls retain sufficient contrast.
-- **Image quality and asset fidelity:** the existing Martenweave raster logo is preserved. All UI
-  icons use the existing Phosphor library; no CSS art, emoji, placeholder image, or custom SVG was
-  introduced.
-- **Copy and content:** object IDs, SAP endpoints, evidence, validation, coverage, impact, gaps, and
-  proposals use realistic Martenweave project language. The home screen no longer frames the
-  product as a chatbot.
-- **Interactions:** import parsing, export generation, command filtering and arrow-key execution,
-  ledger selection, grid/list views, object tabs, lineage controls, gap filters, proposal review,
-  reports, settings, global shortcuts, and modal dismissal are implemented.
-- **Responsiveness:** all main routes report no horizontal document overflow at 1280 px. The 650 px
-  layout collapses navigation and the right rail without horizontal document overflow.
-- **Accessibility:** controls use semantic buttons, labels, dialogs, focus styles, reduced-motion
-  rules, and keyboard shortcuts. Disabled controls are limited to valid form preconditions and
-  completed proposal decisions.
+- The selected image uses static SAP sample labels. The implementation deliberately binds its evidence trail to each proposal's actual source evidence and affected objects.
 
-## Patches made during QA
+**Implementation Checklist**
 
-- Added the required Settings route with local repository and deterministic validation controls.
-- Replaced inert field and evidence buttons with non-interactive rows.
-- Added arrow-key and Enter execution to the command palette.
-- Added realistic import parse/review states and export ready/download states.
-- Added explicit evidence and impact panels to object detail.
-- Added gap status/source/object filters and active proposal-draft actions.
-- Verified every main route at laptop width and confirmed zero browser console warnings/errors.
+- [x] Applied the deep-navy navigation, white decision canvas, evidence trail, reviewer rail, and fixed approval bar from the selected source.
+- [x] Preserved review, request-changes, approval, return-to-draft, apply, validation, diff, impact, and activity behavior.
+- [x] Added the Readiness command centre and retained the evidence-backed model assistant in the new home journey.
+- [x] Browser-tested the Readiness-to-proposal navigation and loaded proposal approval state; browser console had no errors.
 
-## Follow-up polish
+**Follow-up Polish**
 
-- P3: lazy-load the XYFlow lineage dependency if initial bundle size becomes material in production.
-- P3: replace prototype initials with production identity imagery when a real identity source exists.
+- Add API-backed validation confidence to the right rail when that score is exposed by Core.
+
+## Comparison record
+
+- Source visual truth: `/Users/dzmitryikharlanau/.codex/generated_images/019fa99b-ab31-7322-8595-376537f296e8/exec-1dd12fa1-b7d1-49ac-8ac4-2bf4a2ced48b.png`
+- Implementation screenshot: `qa/audit-2026-07-28/18-change-briefing-loaded.png`
+- Combined full-view comparison: `qa/audit-2026-07-28/20-change-briefing-comparison.png`
+- Source pixels: 1487 x 1058. Implementation pixels: 1265 x 712. Comparison normalized to 1200px-wide panels at 1x visual density; browser's fixed screenshot surface returned 1265 x 712 despite the requested 1440 x 1024 viewport override.
+- State: desktop proposal #27 in demo mode, loaded review screen, before approval.
+- Focused regions: evidence trail, reviewer rail, and fixed decision bar were readable in the combined comparison; no additional crop was needed.
+- Primary interactions tested: Readiness queue → Review proposal; proposal route loaded with evidence, review controls, and approval dialog trigger. Browser console errors: none.
+
+## Iteration history
+
+1. Initial build: readiness queue and re-labeled IA were implemented, but the proposal route did not yet recreate the selected change-briefing information hierarchy.
+2. Fix: added the evidence trail, contextual validation strip, decision-ready rationale, reviewed right rail styling, and fixed governed decision bar in `src/App.jsx` and `src/styles.css`.
+3. Post-fix evidence: `qa/audit-2026-07-28/18-change-briefing-loaded.png` and the combined visual comparison above.
 
 final result: passed

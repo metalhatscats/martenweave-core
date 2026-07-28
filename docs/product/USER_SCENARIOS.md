@@ -1,6 +1,6 @@
 # Martenweave User Scenario Catalog
 
-Version: 0.6.1  
+Version: 0.8.0
 Status: Living document  
 Owner: Product / Engineering  
 
@@ -30,7 +30,7 @@ This catalog defines the end-to-end user scenarios Martenweave supports across t
 | **Persona** | SAP migration data analyst |
 | **Trigger** | Opening the project workspace or onboarding a new team member. |
 | **Required inputs** | Path to a Martenweave repository with `model/` and `modelops.config.yaml`. |
-| **UI entry point** | `home` (Workspace) or `settings` (Workspace settings). |
+| **UI entry point** | `home` (Readiness queue) or `settings` (Local workspace). |
 | **Core / API operations** | `modelops doctor --repo <path>`, `modelops health --repo <path>`, `modelops validate --repo <path>`, `GET /health`, `GET /validate`. |
 | **Generated artifacts** | Repository health report, deterministic validation summary, index freshness status. |
 | **Safety boundary** | Read-only. No canonical files are changed. |
@@ -58,7 +58,7 @@ This catalog defines the end-to-end user scenarios Martenweave supports across t
 | **Persona** | Data analyst |
 | **Trigger** | A new CSV/XLSX dataset extract arrives and must be checked against the model. |
 | **Required inputs** | Dataset file path; existing canonical model and index. |
-| **UI entry point** | `import` overlay → "Dataset extracts" source; results surface in `gaps`. |
+| **UI entry point** | `import` overlay → "Dataset extracts" source; results surface in `gaps` (Resolution workspace). |
 | **Core / API operations** | `modelops profile-dataset <file> --repo <path>`, `modelops gaps --repo <path>`, `modelops run dataset-readiness --repo <path>`, `POST /gaps`, `POST /dataset-readiness`. |
 | **Generated artifacts** | Dataset profile JSON, gap report, readiness report with missing/extra columns and model-side gaps. |
 | **Safety boundary** | Dataset files are inputs/evidence only; they never become canonical truth. |
@@ -72,7 +72,7 @@ This catalog defines the end-to-end user scenarios Martenweave supports across t
 | **Persona** | Migration data analyst |
 | **Trigger** | Need to locate a business attribute, SAP field, or mapping by name or stable ID. |
 | **Required inputs** | Search term (e.g., `Customer Group`, `KNVV`, `KDGRP`, `ATTR-CUST-SALES-CUSTOMER-GROUP`). |
-| **UI entry point** | `models` (global search) → `object` (object detail). |
+| **UI entry point** | `models` (Canonical catalog) → `object` (object detail). |
 | **Core / API operations** | `modelops search <term> --repo <path>`, `modelops query --repo <path>`, `modelops object-card <id> --repo <path>`, `GET /objects`, `GET /objects/{id}`. |
 | **Generated artifacts** | Search result list, object detail card with identity, relationships, validation, ownership, and evidence. |
 | **Safety boundary** | Read-only. |
@@ -86,7 +86,7 @@ This catalog defines the end-to-end user scenarios Martenweave supports across t
 | **Persona** | Data steward / SAP functional consultant |
 | **Trigger** | A model object, mapping, or rule is about to change and the team needs to know what is affected. |
 | **Required inputs** | Stable object ID; optional traversal direction and depth. |
-| **UI entry point** | `lineage` or `object` → "Impact" tab. |
+| **UI entry point** | `lineage` (Evidence atlas) or `object` → "Impact" tab. |
 | **Core / API operations** | `modelops trace <id> --repo <path>`, `modelops impact <id> --repo <path>`, `GET /trace/{id}`, `GET /impact/{id}`. |
 | **Generated artifacts** | Trace report (upstream/downstream nodes and edges), impact report (affected objects by category). |
 | **Safety boundary** | Read-only deterministic traversal from the generated index. |
@@ -100,7 +100,7 @@ This catalog defines the end-to-end user scenarios Martenweave supports across t
 | **Persona** | Data steward / reviewer |
 | **Trigger** | Assessment findings need human triage before they become issues or proposals. |
 | **Required inputs** | Finding ID; reviewer disposition (`confirmed`, `false_positive`, `accepted_risk`, `deferred`, `resolved`). |
-| **UI entry point** | `gaps` → expanded finding card → disposition controls. |
+| **UI entry point** | `gaps` (Resolution workspace) → expanded finding card → disposition controls. |
 | **Core / API operations** | `martenweave assessment review` records a human disposition against a stable finding ID; `martenweave pilot-outcome` summarizes reviewed findings without inventing unavailable baselines. |
 | **Generated artifacts** | Updated finding record with disposition, reviewer note, and timestamp; disposition history. |
 | **Safety boundary** | Review metadata only; no canonical model mutation. |
@@ -114,7 +114,7 @@ This catalog defines the end-to-end user scenarios Martenweave supports across t
 | **Persona** | Data steward / migration analyst |
 | **Trigger** | A confirmed gap or piece of project evidence needs to become actionable. |
 | **Required inputs** | Gap/finding ID or evidence file; chosen target (`issue` or `proposal`). |
-| **UI entry point** | `gaps` detail panel → "Create proposal" / "Create issue"; `import` overlay for evidence ingestion. |
+| **UI entry point** | `gaps` (Resolution workspace) detail panel → "Create proposal" / "Create issue"; `import` overlay for evidence ingestion. |
 | **Core / API operations** | `modelops issue-draft --repo <path>`, `modelops infer-model --from-profile <path> --repo <path>`, `modelops propose-patch --from <note> --repo <path>`, `POST /dataset-readiness?promote_to_proposal=true`. |
 | **Generated artifacts** | `Issue` or `PatchProposal` canonical file with evidence source metadata. |
 | **Safety boundary** | Promotion creates reviewable artifacts; it never applies changes to canonical model files directly. |
@@ -128,7 +128,7 @@ This catalog defines the end-to-end user scenarios Martenweave supports across t
 | **Persona** | Data owner / data steward |
 | **Trigger** | A PatchProposal has been created and is ready for governance review. |
 | **Required inputs** | Proposal ID; reviewer decision; approved ChangeRequest for high-risk proposals. |
-| **UI entry point** | `proposals` → `proposal` review screen. |
+| **UI entry point** | `proposals` (Approval queue) → `proposal` (Change briefing). |
 | **Core / API operations** | `modelops proposal show <id>`, `modelops proposal validate <id>`, `modelops proposal impact <id>`, `modelops proposal diff <id>`, `modelops proposal accept <id>`, `modelops change-request create --proposal <id>`, `modelops proposal apply <id>`, `GET /proposals/{id}`, `POST /proposals/{id}/validate`, `POST /proposals/{id}/dry-run`, `POST /proposals/{id}/apply`. |
 | **Generated artifacts** | Reviewed proposal status, ChangeRequest, applied file changes, audit event. |
 | **Safety boundary** | Apply is a separate explicit step; high-risk proposals require an approved ChangeRequest; rejected proposals never modify files. |
@@ -142,7 +142,7 @@ This catalog defines the end-to-end user scenarios Martenweave supports across t
 | **Persona** | Project manager / migration lead |
 | **Trigger** | Stakeholders need a reviewable artifact that separates facts from narrative. |
 | **Required inputs** | Repository path; optional scope (domain/entity/object). |
-| **UI entry point** | `reports` → "Review pack" or "Evidence summary" export. |
+| **UI entry point** | `reports` (Outputs and proof) → "Review pack" or "Evidence summary" export. |
 | **Core / API operations** | `modelops review-pack create --repo <path>`, `modelops export-model --repo <path> --format xlsx`, `modelops assessment run --repo <path> --out <dir>`, `POST /export`. |
 | **Generated artifacts** | Business review pack (XLSX/Markdown), model index export, executive summary. |
 | **Safety boundary** | Read-only export; canonical files remain unchanged. |
@@ -170,7 +170,7 @@ This catalog defines the end-to-end user scenarios Martenweave supports across t
 | **Persona** | Data governance specialist / release manager |
 | **Trigger** | Need to understand what changed, when, and who approved it. |
 | **Required inputs** | Two repository paths or a repository with audit events. |
-| **UI entry point** | `changelog` screen. |
+| **UI entry point** | `changelog` (Decision history) screen. |
 | **Core / API operations** | `modelops diff --from <repo> --to <repo>`, `modelops audit-log --repo <path>`, `modelops migrate --repo <path>`. |
 | **Generated artifacts** | Diff report, audit log query results, changelog. |
 | **Safety boundary** | Read-only; `migrate` creates proposals when schema changes are needed. |
@@ -253,15 +253,15 @@ These five cover repository load → search → trace → governance → dataset
 
 | UI route | Scenario(s) | Notes |
 |---|---|---|
-| `home` | S01 | Static demo; should load real workspace health and recent activity. |
-| `models` | S04 | Static demo; should query `GET /objects`. |
+| `home` (Readiness) | S01 | Static demo; should load real workspace health and recent activity. |
+| `models` (Catalog) | S04 | Static demo; should query `GET /objects`. |
 | `object` | S04, S05 | Static demo; should load `GET /objects/{id}` and impact context. |
-| `lineage` | S05 | Static React Flow graph; should load `GET /trace/{id}`. |
-| `gaps` | S03, S06, S07 | Static demo; should load live findings and support disposition. |
-| `proposals` / `proposal` | S07, S08 | Static demo; proposal approval is local state only. |
-| `reports` | S09, S12 | Static demo; exports generate client-side placeholders. |
-| `changelog` | S11 | Product release notes plus append-only local repository activity when connected to the local API. |
-| `settings` | S01 | Local-only toggles; repository paths are hard-coded demo values. |
+| `lineage` (Evidence) | S05 | Static React Flow graph; should load `GET /trace/{id}`. |
+| `gaps` (Resolve) | S03, S06, S07 | Static demo; should load live findings and support disposition. |
+| `proposals` / `proposal` (Approvals) | S07, S08 | Static demo; proposal approval is local state only. |
+| `reports` (Outputs) | S09, S12 | Static demo; exports generate client-side placeholders. |
+| `changelog` (History) | S11 | Product release notes plus append-only local repository activity when connected to the local API. |
+| `settings` (Workspace) | S01 | Local-only toggles; repository paths are hard-coded demo values. |
 
 ---
 

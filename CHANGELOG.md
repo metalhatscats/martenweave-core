@@ -4,6 +4,22 @@ All notable changes to Martenweave Core.
 
 ## [Unreleased]
 
+### Added
+
+- **Decision-first Workbench journey:** the local UI now starts with a Readiness workspace and
+  guides operators through Catalog / Evidence, Resolve, Approvals, Outputs, and History rather than
+  presenting a flat set of model-governance tools.
+- **Change briefing:** proposal review now brings the evidence trail, deterministic validation,
+  reviewer context, rationale, and governed approval action into one decision surface.
+
+### Changed
+
+- **Workbench language and navigation:** customer-facing labels now describe the work being done —
+  for example, Evidence, Resolve, Approvals, and Decision history — while retaining the existing
+  route and Core service boundaries.
+- **Workbench documentation:** the root guide, frontend guide, and architecture boundary now
+  describe the Readiness → Evidence → Resolve → Approve journey and its local-first safeguards.
+
 ## [0.8.0] — 2026-07-25
 
 ### Added

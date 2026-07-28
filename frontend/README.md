@@ -10,8 +10,10 @@ the CLI-first, canonical-file-driven core workflow.
 ## What the Workbench is
 
 - The official local browser UI for Martenweave Core.
-- A browser-based **interactive workspace** that demonstrates seven model-governance screens: Home, Models (global search), Object detail, Lineage, Gaps, Proposals, and Proposal review.
-- A way to review responsive navigation, model search, lineage canvas, gap workflows, and proposal approval flows connected to the local API.
+- A browser-based, **decision-first workspace**: start from Readiness, inspect canonical facts and
+  evidence, resolve gaps, then review governed approvals.
+- A way to review responsive navigation, model search, lineage, gap-resolution workflows, and
+  proposal approval flows connected to the local API.
 - A local-first React + Vite application packaged as static assets.
 
 ## What the Workbench is not
@@ -65,17 +67,32 @@ Then open <http://127.0.0.1:4173> (or the URL shown in the terminal).
 
 All data lives in [`src/data.js`](src/data.js). It is hand-crafted demo data that represents a small slice of a Business Partner / Customer migration model. It is not connected to a live backend or SAP system.
 
+## How work moves
+
+```text
+Readiness → Catalog / Evidence → Resolve → Approvals → Outputs / History
+```
+
+The path is intentionally not a generic dashboard funnel. **Readiness** gives the team a bounded
+queue; **Catalog** and **Evidence** make the model and its provenance inspectable; **Resolve** keeps
+gaps and findings in a decision-ready workspace; and **Approvals** exposes the proposal evidence,
+validation, reviewer context, and resulting controlled action. The Model Assistant remains an
+evidence-oriented guide, never an autonomous actor.
+
 ## Main screens
 
 | Screen | Route | Source |
 |---|---|---|
-| Home | `#/home` | `App.jsx` |
-| Models (global search) | `#/models` | `App.jsx` |
+| Readiness queue | `#/home` | `mission-control.jsx` |
+| Canonical catalog | `#/models` | `App.jsx` |
 | Object detail | `#/object` | `App.jsx` |
-| Lineage | `#/lineage` | `App.jsx` |
-| Gaps | `#/gaps` | `App.jsx` |
-| Proposals | `#/proposals` | `App.jsx` |
-| Proposal review | `#/proposal` | `App.jsx` |
+| Evidence atlas | `#/lineage` | `App.jsx` |
+| Resolution workspace | `#/gaps` | `App.jsx` |
+| Approval queue | `#/proposals` | `App.jsx` |
+| Change briefing | `#/proposal` | `App.jsx` |
+| Outputs and proof | `#/reports` | `workbench.jsx` |
+| Decision history | `#/changelog` | `workbench.jsx` |
+| Local workspace | `#/settings` | `workbench.jsx` |
 
 Navigation is route-based via URL hash so the Workbench also works from a simple static file server.
 
@@ -118,6 +135,8 @@ Design QA screenshots are in [`qa/`](qa/):
 - `qa/comparison-home.png`
 - `qa/comparison-search-gaps.png`
 - `qa/source-implementation-comparison.png`
+- `qa/audit-2026-07-28/18-change-briefing-loaded.png`
+- `qa/audit-2026-07-28/20-change-briefing-comparison.png`
 
 See [`design-qa.md`](design-qa.md) for the full QA report.
 

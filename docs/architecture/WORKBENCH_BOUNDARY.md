@@ -1,6 +1,6 @@
 # Martenweave Workbench Boundary
 
-Version: 0.6.1
+Version: 0.8.0
 Document type: Architecture boundary
 Status: Draft for product development
 
@@ -20,7 +20,7 @@ Martenweave Core remains the authoritative backend and canonical model layer. Th
 |---|---|---|---|
 | **Martenweave Core** | Canonical model parsing, validation, indexing, gap/lineage/impact analysis, patch proposals, change requests, audit. | Python library / Typer CLI | Local Python package |
 | **Local API** | Bound integration surface for the Workbench and agents. Serves core services over HTTP on localhost. | FastAPI | Started via `martenweave serve` |
-| **Martenweave Workbench** | Local browser UI for interactive assessment, object inspection, lineage, gaps, proposals, and reports. | React + Vite static build | Served by core or a static file server on localhost |
+| **Martenweave Workbench** | Local browser UI that moves a team from readiness through evidence, resolution, approval, outputs, and history. | React + Vite static build | Served by core or a static file server on localhost |
 
 ---
 
@@ -45,13 +45,13 @@ Martenweave Core remains the authoritative backend and canonical model layer. Th
 
 ### Workbench (local UI)
 
-- Visualize repository status, validation results, index freshness, and scorecard.
+- Start with a bounded readiness queue that exposes repository status, validation results, index freshness, and scorecard.
 - Browse and search the object catalog.
-- Show object detail, lineage, impact, gaps, and ownership.
-- Run assessment workflows and display executive summaries.
-- Review patch proposals and change requests.
-- Surface reports and read-only viewers.
-- Guide the user through the proposal → approval → apply flow.
+- Show object detail, lineage, impact, gaps, ownership, and the evidence supporting a decision.
+- Resolve findings through a dedicated workspace before they become review artifacts.
+- Review patch proposals and change requests in a change briefing that keeps validation, rationale, reviewer context, and the governed action together.
+- Surface outputs, read-only viewers, release history, and append-only local repository activity.
+- Guide the user through the proposal → approval → apply flow without bypassing Core.
 
 The Workbench **does not**:
 
@@ -61,6 +61,17 @@ The Workbench **does not**:
 - Provide hosted multi-tenant access.
 - Perform direct SAP write-back.
 - Run autonomous AI mutations.
+
+### Experience journey
+
+The Workbench organizes its local UI around one customer journey:
+
+```text
+Readiness → Catalog / Evidence → Resolve → Approvals → Outputs / History
+```
+
+This is presentation and navigation only. Every underlying read, validation result, proposal,
+ChangeRequest, and applied change retains the Core/API responsibilities defined below.
 
 ---
 

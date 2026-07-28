@@ -10,12 +10,12 @@ afterEach(() => {
 });
 
 describe("Martenweave workbench", () => {
-  it("renders the canonical model ledger by default", async () => {
+  it("renders the decision-first readiness workspace by default", async () => {
     window.location.hash = "#/";
     render(<App />);
-    expect(screen.getByRole("heading", { name: "Canonical model ledger" })).toBeInTheDocument();
-    await waitFor(() => expect(screen.getAllByText("ATTR-BP-TAX-NUMBER").length).toBeGreaterThan(0));
-    expect(screen.getByText("AI proposes. Validators verify. Humans approve.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Data migration command centre" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Readiness queue" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Migration workflow" })).toBeInTheDocument();
   });
 
   it("shows a connecting state instead of sample data while the API probe is pending", () => {
@@ -23,8 +23,8 @@ describe("Martenweave workbench", () => {
     vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));
     render(<App />);
     expect(screen.getByText(/Connecting to local Martenweave API/)).toBeInTheDocument();
-    expect(screen.getByText("Loading canonical objects")).toBeInTheDocument();
-    expect(screen.queryByText("ATTR-BP-TAX-NUMBER")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Data migration command centre" })).toBeInTheDocument();
+    expect(screen.getByText("Loading the next decision…")).toBeInTheDocument();
     expect(screen.queryByText("Demo workspace")).not.toBeInTheDocument();
     expect(screen.queryByText("Demo mode")).not.toBeInTheDocument();
   });
@@ -63,38 +63,23 @@ describe("Martenweave workbench", () => {
     expect(screen.getByRole("button", { name: /Export — This local workspace is read-only/ })).toBeDisabled();
   });
 
-  it("uses live canonical objects instead of the sample ledger when connected", async () => {
+  it("uses local API readiness findings instead of demo signals when connected", async () => {
     window.location.hash = "#/home";
     vi.stubGlobal("fetch", vi.fn((url) => {
       const address = String(url);
-      const payload = address.includes("/api/v1/search")
+      const payload = address.includes("/api/v1/findings")
         ? {
-          total_count: 1,
-          results: [{
-            object_id: "DOMAIN-NORTHSTAR",
-            object_type: "MasterDataDomain",
-            status: "active",
-            name: "Northstar Mobility Group",
-            title: null,
-            domain: "DOMAIN-NORTHSTAR",
-            description: "Fictional pilot domain",
-            source_file: "model/DOMAIN-NORTHSTAR.md",
-            score: 1,
-            matched_fields: ["name"],
-          }],
+          total_count: 1, findings: [{ finding: { id: "FINDING-NORTHSTAR", severity: "high", message: "Northstar mapping needs review.", affected_objects: ["DOMAIN-NORTHSTAR"], provenance: { location: { file: "model/DOMAIN-NORTHSTAR.md" } } } }],
         }
         : address.includes("/api/v1/proposals")
           ? { total_count: 0, proposals: [] }
-          : address.includes("/api/v1/findings")
-            ? { total_count: 0, findings: [] }
-            : { api_version: "v1", version: "0.6.1", indexed: true, canonical_files: 187, read_only: true };
+          : { api_version: "v1", version: "0.6.1", indexed: true, canonical_files: 187, read_only: true };
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(payload), text: () => Promise.resolve("") });
     }));
     render(<App />);
 
-    await waitFor(() => expect(screen.getAllByText("Northstar Mobility Group").length).toBeGreaterThan(0));
-    expect(screen.getByText(/187 objects/)).toBeInTheDocument();
-    expect(screen.getByText("Ledger entries loaded")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Data migration command centre" })).toBeInTheDocument());
+    expect(screen.getByText("Local evidence synced")).toBeInTheDocument();
   });
 
   it("loads generated report metadata from the local API", async () => {
@@ -177,28 +162,23 @@ describe("Martenweave workbench", () => {
     expect(screen.getByText(/Recent local validation, evidence, and review events/)).toBeInTheDocument();
   });
 
-  it("completes the sample import flow", async () => {
+  it("keeps the sample import flow available from the command palette", async () => {
     window.location.hash = "#/home";
     render(<App />);
-    fireEvent.click(screen.getByText("Load model"));
-    fireEvent.click(screen.getByText("Use sample files"));
-    await waitFor(() => expect(screen.getByText("Detected model knowledge")).toBeInTheDocument(), {
-      timeout: 2500,
-    });
-    fireEvent.click(screen.getByText("Load into workspace"));
-    await waitFor(() =>
-      expect(screen.getByText(/Model loaded: 24 objects indexed/)).toBeInTheDocument(),
-    );
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    await waitFor(() => expect(screen.getByText("Open import flow")).toBeInTheDocument());
+    fireEvent.click(screen.getByText("Open import flow"));
+    await waitFor(() => expect(screen.getByText("Load model knowledge")).toBeInTheDocument());
   });
 
-  it("generates a model export", async () => {
+  it("keeps export available as a governed workspace action", async () => {
     window.location.hash = "#/home";
     render(<App />);
     await waitFor(() => expect(screen.getAllByText("Demo workspace").length).toBeGreaterThan(0));
-    fireEvent.click(await screen.findByText("Export ledger"));
-    fireEvent.click(screen.getByText("Generate export"));
-    await waitFor(() => expect(screen.getByText("Model index is ready")).toBeInTheDocument());
-    expect(screen.getByText("customer-migration-index-2026-07-03.csv")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    await waitFor(() => expect(screen.getByText("Export current report")).toBeInTheDocument());
+    fireEvent.click(screen.getByText("Export current report"));
+    await waitFor(() => expect(screen.getByText("Export project output")).toBeInTheDocument());
   });
 
   it("opens the command palette with the keyboard shortcut", async () => {
@@ -213,7 +193,7 @@ describe("Martenweave workbench", () => {
     await waitFor(() => expect(screen.getByText("Load model knowledge")).toBeInTheDocument());
   });
 
-  it("supports global navigation and selected-row shortcuts", async () => {
+  it("supports global navigation from the readiness workspace", async () => {
     window.location.hash = "#/home";
     render(<App />);
     await waitFor(() => expect(screen.getAllByText("Demo workspace").length).toBeGreaterThan(0));
@@ -221,9 +201,6 @@ describe("Martenweave workbench", () => {
     expect(screen.getByLabelText("Search model")).toHaveFocus();
     fireEvent.keyDown(screen.getByLabelText("Search model"), { key: "Escape" });
     screen.getByLabelText("Search model").blur();
-    await waitFor(() => expect(screen.getAllByText("ATTR-BP-TAX-NUMBER").length).toBeGreaterThan(0));
-    fireEvent.keyDown(window, { key: "Enter" });
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Business Partner" })).toBeInTheDocument());
     fireEvent.keyDown(window, { key: "g" });
     fireEvent.keyDown(window, { key: "m" });
     await waitFor(() => expect(screen.getByRole("heading", { name: "Global model search" })).toBeInTheDocument());
@@ -233,7 +210,8 @@ describe("Martenweave workbench", () => {
     window.location.hash = "#/proposal?id=27";
     render(<App />);
     await waitFor(() => expect(screen.getAllByText("Demo workspace").length).toBeGreaterThan(0));
-    fireEvent.click(await screen.findByText(/Approve proposal/));
+    const approveButtons = await screen.findAllByRole("button", { name: "Approve proposal" });
+    fireEvent.click(approveButtons[0]);
     await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "Approve" }));
     await waitFor(() => expect(screen.getByText(/Approved: Proposal #27/)).toBeInTheDocument());
@@ -243,7 +221,8 @@ describe("Martenweave workbench", () => {
     window.location.hash = "#/proposal?id=27";
     render(<App />);
     await waitFor(() => expect(screen.getAllByText("Demo workspace").length).toBeGreaterThan(0));
-    fireEvent.click(await screen.findByText(/Approve proposal/));
+    const approveButtons = await screen.findAllByRole("button", { name: "Approve proposal" });
+    fireEvent.click(approveButtons[0]);
     await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "Approve" }));
     await waitFor(() => expect(screen.getByText(/Approved: Proposal #27/)).toBeInTheDocument());
@@ -262,7 +241,7 @@ describe("Martenweave workbench", () => {
   it("shows the website changelog", () => {
     window.location.hash = "#/changelog";
     render(<App />);
-    expect(screen.getByRole("heading", { name: "Changelog" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Decision history" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Model Ledger workbench" })).toBeInTheDocument();
     expect(screen.getByText("Synced with CHANGELOG.md")).toBeInTheDocument();
   });

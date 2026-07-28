@@ -1101,6 +1101,23 @@ export function ChangelogScreen({ navigate, refreshKey = 0 }) {
   };
   const releases = [
     {
+      date: "July 28, 2026",
+      label: "Unreleased",
+      title: "Decision-first Workbench",
+      summary:
+        "The local workspace now leads a migration team from readiness and evidence to a governed approval decision.",
+      groups: [
+        ["Added", [
+          "A Readiness queue that turns repository health, open risks, and active work into a clear starting point.",
+          "A change briefing that keeps source evidence, deterministic validation, reviewer context, and the approval action together.",
+        ]],
+        ["Changed", [
+          "Navigation now follows the customer journey: Readiness, Catalog, Evidence, Resolve, Approvals, Outputs, and History.",
+          "Approval language makes the controlled outcome explicit: a reviewed change becomes a ChangeRequest through Core, never a direct canonical edit.",
+        ]],
+      ],
+    },
+    {
       date: "July 14, 2026",
       label: "0.6.0",
       title: "Model Ledger workbench",
@@ -1141,7 +1158,7 @@ export function ChangelogScreen({ navigate, refreshKey = 0 }) {
   return (
     <div className="page-pad changelog-page">
       <div className="page-header">
-        <div><span className="eyebrow">Product updates</span><h1>Changelog</h1><p>Notable changes to the local Model Ledger workbench and Martenweave Core.</p></div>
+        <div><span className="eyebrow">Product updates</span><h1>Decision history</h1><p>Notable changes to the local Martenweave Workbench and Core.</p></div>
         <span className="changelog-source"><ClockCounterClockwise size={17} /> Synced with CHANGELOG.md</span>
       </div>
       <div className="changelog-list">
