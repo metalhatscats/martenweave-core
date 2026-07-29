@@ -4,7 +4,21 @@ All notable changes to Martenweave Core.
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-07-29
+
 ### Added
+
+- **One-command local first value:** `martenweave start <CSV|XLSX|XML|JSON>` creates a bounded
+  local workspace, profiles the input, runs deterministic readiness analysis, writes a readable
+  report and manifest, and records only a draft PatchProposal for later human review.
+- **Installed Workbench path:** the packaged local UI now connects file selection, preflight,
+  profile, readiness findings, evidence, report access, and optional governed proposals through
+  live local API data.
+- **Provider-neutral AI capability contract:** optional no-provider, OpenAI-compatible, and
+  local-provider extension modes expose redacted health, capability, discovery, and diagnostics
+  without enabling silent mutation or upload.
+- **Packaged model templates:** every advertised model spine is available from the installed wheel,
+  without a source checkout.
 
 - **Decision-first Workbench journey:** the local UI now starts with a Readiness workspace and
   guides operators through Catalog / Evidence, Resolve, Approvals, Outputs, and History rather than

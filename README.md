@@ -32,9 +32,9 @@ For Workbench setup and development notes, see [`frontend/README.md`](frontend/R
 
 ## Status
 
-- Current source version: `0.8.0`
+- Current source version: `0.9.0`
 - Package / PyPI name: `martenweave-core`
-- Latest published release: `0.8.0`.
+- Latest published release: `0.9.0`.
 - Source install remains available for contributors and local development.
 - Public site and docs: <https://martenweave.github.io/>
 
@@ -106,7 +106,7 @@ Martenweave Core requires Python 3.11+.
 
 ### Install from PyPI
 
-The latest published release is `0.8.0`. Install it with:
+The latest published release is `0.9.0`. Install it with:
 
 ```bash
 python -m pip install martenweave-core

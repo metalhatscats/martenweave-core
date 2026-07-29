@@ -1,6 +1,6 @@
 # Martenweave User Scenario Catalog
 
-Version: 0.8.0
+Version: 0.9.0
 Status: Living document  
 Owner: Product / Engineering  
 

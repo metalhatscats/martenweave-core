@@ -1,6 +1,6 @@
 # Martenweave Workbench Boundary
 
-Version: 0.8.0
+Version: 0.9.0
 Document type: Architecture boundary
 Status: Draft for product development
 
