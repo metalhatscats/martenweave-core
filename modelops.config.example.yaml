@@ -25,3 +25,11 @@ data_path: "data"
 # Optional domain packs for additional validation rules.
 # enabled_domain_packs:
 #   - sap
+
+# Optional, provider-neutral local AI assistance. Omit this block to use the
+# deterministic no-provider scaffold; credentials always remain in local environment variables.
+# ai:
+#   providers:
+#     - no_provider
+#   mcp_servers: []
+#   external_agents: []

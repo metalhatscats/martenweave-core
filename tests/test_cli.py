@@ -501,6 +501,16 @@ def test_ai_provider_list_json() -> None:
     assert by_provider["no_provider"]["required_env_vars"] == []
 
 
+def test_ai_provider_root_command_outputs_capability_contract(sample_repo: Path) -> None:
+    result = runner.invoke(app, ["ai-provider", "--repo", str(sample_repo), "--json"])
+
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["active_providers"] == ["no_provider"]
+    assert data["providers"][0]["supported_operations"] == ["draft_patch_proposal"]
+    assert data["safety"]["automatic_provider_selection"] is False
+
+
 def test_ai_provider_health_no_provider() -> None:
     result = runner.invoke(app, ["ai-provider", "health", "--provider", "no_provider", "--json"])
     assert result.exit_code == 0

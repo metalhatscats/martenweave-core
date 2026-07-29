@@ -32,7 +32,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { fields, gaps, modelObjects, proposals, recentActivity } from "./data.js";
-import { useApi, groupOperationsByType, hasCapability, mutationBlockReason, useAssessmentFindings, useHomeAssistant, useImportInspect, useImportPreview, useImportProfile, useImportPropose, useImportValidate, useObjectSearch, useProposals, useReportGenerate, useRepositoryDiff, useSchemaImportInspect, useSchemaImportPropose, useWorkspaceActivity } from "./api.jsx";
+import { useApi, groupOperationsByType, hasCapability, mutationBlockReason, useAssessmentFindings, useHomeAssistant, useImportInspect, useImportPreview, useImportPropose, useImportReadiness, useImportValidate, useObjectSearch, useProposals, useReportGenerate, useRepositoryDiff, useSchemaImportInspect, useSchemaImportPropose, useWorkspaceActivity } from "./api.jsx";
 
 const LEDGER_ROWS = [
   {
@@ -156,7 +156,7 @@ const SOURCE_TYPES = [
   {
     id: "dataset",
     title: "Dataset extracts",
-    description: "CSV or delimited source-system samples",
+    description: "CSV, XLSX, XML, or JSON source-system samples",
     icon: Database,
     files: "3 datasets",
   },
@@ -1202,6 +1202,7 @@ export function ChangelogScreen({ navigate, refreshKey = 0 }) {
 
 export function SettingsScreen({ onToast, onShortcuts }) {
   const { capabilities, demo } = useApi();
+  const activeAi = capabilities?.ai?.providers?.[0];
   const [strictValidation, setStrictValidation] = useState(true);
   const [blockInvalid, setBlockInvalid] = useState(true);
   const [includeAudit, setIncludeAudit] = useState(true);
@@ -1238,6 +1239,13 @@ export function SettingsScreen({ onToast, onShortcuts }) {
             ["CLI", "modelops validate · build-index · impact", "Available"],
             ["Local API", "127.0.0.1 only", demo ? "Demo mode" : "Connected"],
             ["MCP server", "Tool surface for agent workflows", "Local only"],
+            [
+              "Optional AI",
+              activeAi
+                ? `${activeAi.label} · ${activeAi.endpoint_class}`
+                : "No provider configured; Core remains fully local",
+              activeAi?.configured ? "Configured" : "No provider",
+            ],
           ].map(([name, description, status]) => <div className="integration-row" key={name}><span><strong>{name}</strong><small>{description}</small></span><span><i className="status-dot" />{status}</span></div>)}
         </section>
         <section className="surface shortcut-settings">
@@ -1271,12 +1279,12 @@ function ImportDialog({ onClose, onComplete }) {
   const [file, setFile] = useState(null);
   const [result, setResult] = useState(null);
   const [inspection, setInspection] = useState(null);
-  const { run: runProfile, loading: profileLoading } = useImportProfile();
+  const { run: runReadiness, loading: readinessLoading } = useImportReadiness();
   const { run: runInspect, loading: inspectLoading } = useImportInspect();
   const { run: runPreview, loading: previewLoading } = useImportPreview();
   const { run: runSchemaInspect, loading: schemaInspectLoading } = useSchemaImportInspect();
   const { run: runSchemaPropose, loading: schemaProposeLoading } = useSchemaImportPropose();
-  const loading = profileLoading || inspectLoading || previewLoading || schemaInspectLoading || schemaProposeLoading;
+  const loading = readinessLoading || inspectLoading || previewLoading || schemaInspectLoading || schemaProposeLoading;
 
   const parse = async () => {
     setError("");
@@ -1305,7 +1313,7 @@ function ImportDialog({ onClose, onComplete }) {
     if (!client || !file) return;
     setError("");
     try {
-      const data = source === "dataset" ? await runProfile(file) : source === "schema" ? await runSchemaPropose(file) : await runPreview(file);
+      const data = source === "dataset" ? await runReadiness(file) : source === "schema" ? await runSchemaPropose(file) : await runPreview(file);
       setResult(data);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : String(reason));
@@ -1321,8 +1329,8 @@ function ImportDialog({ onClose, onComplete }) {
 
   const handleLoad = () => {
     if (!demo && client && result) {
-      const summary = source === "dataset" && result.row_count !== undefined
-        ? `Profiled ${result.row_count} rows and ${result.column_count} columns.`
+      const summary = source === "dataset" && datasetProfile
+        ? `Profiled ${datasetProfile.row_count} rows and ${datasetProfile.column_count} columns; readiness is ${result.readiness?.verdict || "available"}.`
         : result.proposal
           ? `Previewed ${result.proposal.operations?.length || 0} proposed changes.`
           : "Import preview complete.";
@@ -1334,6 +1342,8 @@ function ImportDialog({ onClose, onComplete }) {
 
   const profile = result && (result.row_count !== undefined ? result : result.profile);
   const profileResult = profile && profile.row_count !== undefined ? profile : null;
+  const datasetProfile = source === "dataset" ? profileResult : null;
+  const readiness = source === "dataset" ? result?.readiness : null;
   const previewResult = result && result.proposal ? result : null;
 
   return (
@@ -1353,7 +1363,7 @@ function ImportDialog({ onClose, onComplete }) {
             <strong>Drop files here or select a file</strong>
             <p>Files remain local. Martenweave profiles and validates before anything can become canonical.</p>
             {!demo && client && ["dataset", "excel", "canonical", "schema"].includes(source) && (
-              <input type="file" accept={source === "schema" ? ".json,.yaml,.yml,.wsdl,.xsd,.edmx,.xml,.iflw,.zip" : ".csv,.xlsx,.xls"} onChange={handleFileChange} aria-label="Choose file" />
+              <input type="file" accept={source === "schema" ? ".json,.yaml,.yml,.wsdl,.xsd,.edmx,.xml,.iflw,.zip" : source === "dataset" ? ".csv,.xlsx,.xls,.xml,.json" : ".csv,.xlsx,.xls"} onChange={handleFileChange} aria-label="Choose file" />
             )}
             {file && <p className="selected-file"><CheckCircle size={14} /> {file.name}</p>}
             {error && <span className="inline-error">{error}</span>}
@@ -1429,10 +1439,18 @@ function ImportDialog({ onClose, onComplete }) {
                 ["Gap candidates", "5", "Human review required"],
               ].map(([name, count, status]) => <p key={name}><strong>{name}</strong><span>{count}</span><small>{status}</small></p>)
             )}
+            {readiness && <>
+              <h3>Deterministic readiness</h3>
+              <p><strong>Verdict</strong><span>{readiness.verdict}</span><small>{readiness.validation?.error_count || 0} validation errors</small></p>
+              <p><strong>Coverage</strong><span>{readiness.coverage?.matched_columns || 0} matched / {readiness.coverage?.total_columns || 0} fields</span><small>{readiness.coverage?.unmatched_columns || 0} unmapped</small></p>
+              <p><strong>Findings</strong><span>{(readiness.dataset_gaps?.length || 0) + (readiness.model_gaps?.length || 0)} gaps</span><small>Review before proposal</small></p>
+              {[...(readiness.dataset_gaps || []), ...(readiness.model_gaps || [])].slice(0, 5).map((gap) => <p key={`${gap.gap_code}-${gap.column_name}`}><strong>{gap.gap_code}</strong><span>{gap.message}</span><small>{gap.severity}</small></p>)}
+              {(result.report_artifacts || []).map((artifact) => <p key={artifact}><strong>Evidence</strong><span>{artifact}</span><small><a href={client?.reportDownloadUrl(artifact)}>Open local report</a></small></p>)}
+            </>}
           </section>
           <div className="import-warning"><ShieldCheck size={18} /><p><strong>No canonical files will be changed.</strong> This import updates the disposable investigation index and creates reviewable gap candidates.</p></div>
           {error && <span className="inline-error">{error}</span>}
-          <footer><button className="secondary-button" onClick={() => setStep("choose")}>Back</button><button className="primary-button" onClick={result || demo ? handleLoad : executePreview} disabled={loading}>{loading ? "Running…" : result || demo ? "Load into workspace" : source === "dataset" ? "Run dataset profile" : "Run proposal preview"}</button></footer>
+          <footer><button className="secondary-button" onClick={() => setStep("choose")}>Back</button><button className="primary-button" onClick={result || demo ? handleLoad : executePreview} disabled={loading}>{loading ? "Running…" : result || demo ? "Load into workspace" : source === "dataset" ? "Run readiness" : "Run proposal preview"}</button></footer>
         </>
       )}
     </ModalFrame>

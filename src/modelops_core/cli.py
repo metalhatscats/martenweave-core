@@ -16,6 +16,7 @@ from modelops_core.commands import (  # noqa: F401
     schema_commands,
     serve_mcp,
     standalone,
+    start,
     validate_index,
 )
 from modelops_core.commands._common import app

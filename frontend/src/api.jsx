@@ -612,6 +612,7 @@ export function createApiClient(baseUrl) {
     reviewFinding: (body) => postJson(`${root}/api/v1/findings/review`, body),
     promoteFinding: (body) => postJson(`${root}/api/v1/findings/promote`, body),
     importProfile: (file, dataset_id) => postMultipart(`${root}/api/v1/imports/profile`, file, { dataset_id }),
+    importReadiness: (file, dataset_id) => postMultipart(`${root}/api/v1/imports/readiness`, file, { dataset_id }),
     importInspect: (file) => postMultipart(`${root}/api/v1/imports/inspect`, file),
     importPreview: (file) => postMultipart(`${root}/api/v1/imports/preview`, file),
     importValidate: (file) => postMultipart(`${root}/api/v1/imports/validate`, file),
@@ -1949,6 +1950,11 @@ function useImportMutation(runFn) {
  */
 export function useImportProfile() {
   return useImportMutation((client, file, dataset_id) => client.importProfile(file, dataset_id));
+}
+
+/** Run local profile, deterministic readiness, and report generation for a dataset upload. */
+export function useImportReadiness() {
+  return useImportMutation((client, file, dataset_id) => client.importReadiness(file, dataset_id));
 }
 
 /** Metadata-only inspection before profiling or proposal preview. */

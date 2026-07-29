@@ -14,7 +14,13 @@ from pathlib import Path
 from typing import Any
 
 from modelops_core.guardrails.secrets import scan_file, scan_text
-from modelops_core.imports.dataset_profiler import profile_csv, profile_xlsx
+from modelops_core.imports.dataset_profiler import (
+    DatasetProfile,
+    profile_csv,
+    profile_json,
+    profile_xlsx,
+    profile_xml,
+)
 from modelops_core.pilot.structural_scan import scan_workbook_structure
 from modelops_core.pilot.workbook_suggestion_review import write_workbook_suggestion_review_xlsx
 from modelops_core.pilot.workbook_suggestions import (
@@ -71,8 +77,8 @@ def _inspect_text(path: Path) -> dict[str, Any]:
     }
 
 
-def _inspect_csv(path: Path) -> dict[str, Any]:
-    profile = profile_csv(path, dataset_id=path.name)
+def _inspect_dataset(path: Path, profile: DatasetProfile, file_type: str) -> dict[str, Any]:
+    """Return metadata-only dataset preflight findings for a parsed local file."""
     size = profile.status.file_size_bytes or path.stat().st_size
     columns = [c.name for c in profile.columns]
     warnings = _sensitive_column_warnings(columns)
@@ -86,7 +92,7 @@ def _inspect_csv(path: Path) -> dict[str, Any]:
 
     result: dict[str, Any] = {
         "path": str(path),
-        "file_type": "csv",
+        "file_type": file_type,
         "size_bytes": size,
         "status": status,
         "warnings": warnings,
@@ -98,6 +104,18 @@ def _inspect_csv(path: Path) -> dict[str, Any]:
     if not profile.status.success:
         result["reason"] = profile.status.reason
     return result
+
+
+def _inspect_csv(path: Path) -> dict[str, Any]:
+    return _inspect_dataset(path, profile_csv(path, dataset_id=path.name), "csv")
+
+
+def _inspect_json(path: Path) -> dict[str, Any]:
+    return _inspect_dataset(path, profile_json(path, dataset_id=path.name), "json")
+
+
+def _inspect_xml(path: Path) -> dict[str, Any]:
+    return _inspect_dataset(path, profile_xml(path, dataset_id=path.name), "xml")
 
 
 def _inspect_xlsx(path: Path) -> dict[str, Any]:
@@ -341,6 +359,10 @@ def inspect_file(path: Path) -> dict[str, Any]:
         return _inspect_xlsx(path)
     if suffix == ".csv":
         return _inspect_csv(path)
+    if suffix == ".json":
+        return _inspect_json(path)
+    if suffix == ".xml":
+        return _inspect_xml(path)
     if suffix in {".md", ".txt"}:
         return _inspect_text(path)
     return {

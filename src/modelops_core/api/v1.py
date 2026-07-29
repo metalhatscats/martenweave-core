@@ -12,9 +12,11 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 
 from modelops_core import __version__
+from modelops_core.ai.provider_capabilities import ai_capabilities
 from modelops_core.api.models import (
     ActivityEventItem,
     ActivityResponse,
+    AIProvidersResponse,
     ApiCapabilities,
     AssessmentManifestItem,
     AssessmentManifestResponse,
@@ -33,6 +35,7 @@ from modelops_core.api.models import (
     ImportPreviewResponse,
     ImportProfileResponse,
     ImportProposeResponse,
+    ImportReadinessResponse,
     ImportValidateResponse,
     ObjectDetailResponse,
     PaginatedSearchResponse,
@@ -75,7 +78,9 @@ from modelops_core.exports.export_service import export_model_csv, export_model_
 from modelops_core.imports.dataset_profiler import (
     dataset_profile_to_dict,
     profile_csv,
+    profile_json,
     profile_xlsx,
+    profile_xml,
 )
 from modelops_core.imports.model_sheet_import_service import (
     _detect_formulas,
@@ -111,6 +116,7 @@ from modelops_core.reports.scorecard_service import generate_scorecard
 from modelops_core.reports.source_registry_service import SourceRegistryService
 from modelops_core.repository import scan_repository
 from modelops_core.repository.scaffold import available_templates, init_repository
+from modelops_core.run import generate_dataset_readiness_report, write_readiness_report
 
 router = APIRouter(prefix="/api/v1")
 
@@ -202,7 +208,6 @@ def capabilities(
     config = load_repo_config(repo_root)
     if config is None or config.ai is None:
         recovery.append(AI_UNAVAILABLE_ACTION)
-
     read = [
         CapabilityEntry(
             name="capabilities",
@@ -227,6 +232,12 @@ def capabilities(
             method="GET",
             href="/health",
             description="Workspace health summary.",
+        ),
+        CapabilityEntry(
+            name="ai_providers",
+            method="GET",
+            href="/api/v1/ai/providers",
+            description="Inspect optional provider-neutral AI capabilities and redacted health.",
         ),
         CapabilityEntry(
             name="activity",
@@ -393,7 +404,16 @@ def capabilities(
             name="import_profile",
             method="POST",
             href="/api/v1/imports/profile",
-            description="Profile an uploaded CSV or XLSX dataset.",
+            description="Profile an uploaded CSV, XLSX, XML, or JSON dataset.",
+        ),
+        CapabilityEntry(
+            name="import_readiness",
+            method="POST",
+            href="/api/v1/imports/readiness",
+            description=(
+                "Profile an uploaded local dataset, run deterministic readiness, and write "
+                "disposable evidence and report artifacts."
+            ),
         ),
         CapabilityEntry(
             name="import_preview",
@@ -467,7 +487,17 @@ def capabilities(
         read=read,
         mutations=mutations,
         recovery=[action.as_dict() for action in recovery],
+        ai=ai_capabilities(repo_root),
     )
+
+
+@router.get("/ai/providers", response_model=AIProvidersResponse)
+def ai_providers(
+    health: bool = Query(False, description="Run explicit local provider health checks."),
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Expose the same redacted optional-AI contract consumed by the Workbench."""
+    return {"capabilities": ai_capabilities(_resolve_repo(repo), include_health=health)}
 
 
 @router.get("/recovery", response_model=RecoveryResponse)
@@ -1162,11 +1192,11 @@ def schema_import_propose(
     response_model=ImportProfileResponse,
 )
 def import_profile(
-    file: Annotated[UploadFile, File(..., description="CSV or XLSX dataset file")],
+    file: Annotated[UploadFile, File(..., description="CSV, XLSX, XML, or JSON dataset file")],
     dataset_id: str | None = Query(None, description="Optional stable dataset identifier"),
     repo: str | None = Query(None, description="Path to model repository"),
 ) -> dict[str, Any]:
-    """Profile an uploaded CSV or XLSX dataset."""
+    """Profile an uploaded local dataset and persist only disposable profile evidence."""
     repo_root = _resolve_repo(repo)
     generated_root = resolve_generated_path(repo_root)
     uploads_dir = generated_root / "uploads"
@@ -1174,10 +1204,12 @@ def import_profile(
 
     safe_name = _safe_upload_filename(file.filename)
     suffix = Path(safe_name).suffix.lower()
-    if suffix not in {".csv", ".xlsx", ".xls"}:
+    if suffix not in {".csv", ".xlsx", ".xls", ".xml", ".json"}:
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported file format '{suffix}'. Expected .csv, .xlsx, or .xls.",
+            detail=(
+                f"Unsupported file format '{suffix}'. Expected .csv, .xlsx, .xls, .xml, or .json."
+            ),
         )
 
     if dataset_id is None:
@@ -1190,14 +1222,93 @@ def import_profile(
     if suffix == ".csv":
         profile = profile_csv(upload_path, dataset_id)
         format_name = "csv"
-    else:
+    elif suffix in {".xlsx", ".xls"}:
         profile = profile_xlsx(upload_path, dataset_id)
         format_name = "xlsx"
+    elif suffix == ".xml":
+        profile = profile_xml(upload_path, dataset_id)
+        format_name = "xml"
+    else:
+        profile = profile_json(upload_path, dataset_id)
+        format_name = "json"
+
+    profile_path = generated_root / "dataset_profiles" / f"{dataset_id}.json"
+    profile_path.parent.mkdir(parents=True, exist_ok=True)
+    profile_path.write_text(
+        json.dumps(dataset_profile_to_dict(profile), indent=2, sort_keys=True), encoding="utf-8"
+    )
 
     return {
         "dataset_id": dataset_id,
         "format": format_name,
         "profile": dataset_profile_to_dict(profile),
+    }
+
+
+@router.post(
+    "/imports/readiness",
+    response_model=ImportReadinessResponse,
+)
+def import_readiness(
+    file: Annotated[
+        UploadFile, File(..., description="Local dataset file for deterministic readiness")
+    ],
+    dataset_id: str | None = Query(None, description="Optional stable dataset identifier"),
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> dict[str, Any]:
+    """Run the connected local file → profile → findings → evidence → report path.
+
+    The endpoint writes only generated files and never applies inferred model changes.
+    """
+    repo_root = _resolve_repo(repo)
+    generated_root = resolve_generated_path(repo_root)
+    uploads_dir = generated_root / "uploads"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    safe_name = _safe_upload_filename(file.filename)
+    suffix = Path(safe_name).suffix.lower()
+    formats = {".csv": "csv", ".xlsx": "xlsx", ".xls": "xlsx", ".xml": "xml", ".json": "json"}
+    format_name = formats.get(suffix)
+    if format_name is None:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unsupported file format '{suffix}'. Expected .csv, .xlsx, .xls, .xml, or .json."
+            ),
+        )
+
+    safe_dataset_id = dataset_id or Path(safe_name).stem
+    safe_dataset_id = "".join(
+        character if character.isalnum() or character in "_-" else "_"
+        for character in safe_dataset_id
+    )
+    upload_path = uploads_dir / f"{safe_dataset_id}{suffix}"
+    upload_path.write_bytes(file.file.read())
+    try:
+        report = generate_dataset_readiness_report(
+            repo_root=repo_root,
+            dataset_path=upload_path,
+            check_model=True,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    report_dir = generated_root / "readiness" / "imports" / safe_dataset_id
+    report_json, report_markdown = write_readiness_report(report, report_dir)
+    profile_path = generated_root / "dataset_profiles" / f"{safe_dataset_id}.json"
+    profile_path.parent.mkdir(parents=True, exist_ok=True)
+    profile_path.write_text(
+        json.dumps(report.dataset_profile, indent=2, sort_keys=True), encoding="utf-8"
+    )
+    return {
+        "dataset_id": safe_dataset_id,
+        "format": format_name,
+        "profile": report.dataset_profile,
+        "readiness": report.__dict__,
+        "report_artifacts": [
+            profile_path.relative_to(generated_root).as_posix(),
+            report_json.relative_to(generated_root).as_posix(),
+            report_markdown.relative_to(generated_root).as_posix(),
+        ],
     }
 
 

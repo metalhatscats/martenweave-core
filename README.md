@@ -113,6 +113,26 @@ python -m pip install martenweave-core
 martenweave --help
 ```
 
+### First local result from one file
+
+For a local CSV, XLSX, XML, or JSON extract, create a safe readiness workspace in one command:
+
+```bash
+python -m pip install martenweave-core
+martenweave start ./customers.xlsx --no-open
+```
+
+The command classifies the file, profiles it locally, validates a new workspace, writes generated
+readiness evidence and a readable report, and prints the local Workbench command. It creates a
+draft proposal only for human review; it never applies inferred model changes or uploads data.
+
+PowerShell uses the same flow:
+
+```powershell
+py -3.11 -m pip install martenweave-core
+martenweave start .\customers.xlsx --no-open
+```
+
 ### Install from Source
 
 Use a source install when contributing to the core repository or testing local changes:

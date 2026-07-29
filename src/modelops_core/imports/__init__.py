@@ -4,7 +4,9 @@ from modelops_core.imports.dataset_profiler import (
     WorkbookProfile,
     dataset_profile_to_dict,
     profile_csv,
+    profile_json,
     profile_xlsx,
+    profile_xml,
 )
 from modelops_core.imports.import_session import ImportSession, create_import_session
 from modelops_core.imports.model_inference_service import infer_model_from_profile
@@ -18,6 +20,8 @@ __all__ = [
     "ImportSession",
     "infer_model_from_profile",
     "profile_csv",
+    "profile_json",
+    "profile_xml",
     "profile_xlsx",
     "WorkbookProfile",
 ]

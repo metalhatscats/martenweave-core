@@ -9,7 +9,9 @@ from modelops_core.imports.dataset_profiler import (
     WorkbookProfile,
     dataset_profile_to_dict,
     profile_csv,
+    profile_json,
     profile_xlsx,
+    profile_xml,
 )
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -104,6 +106,56 @@ class TestProfileXlsx:
         profile2 = profile_xlsx(xlsx_path, dataset_id="customer_sample")
 
         assert dataset_profile_to_dict(profile1) == dataset_profile_to_dict(profile2)
+
+
+class TestProfileStructuredFormats:
+    def test_profile_json_records(self, tmp_path: Path) -> None:
+        json_path = tmp_path / "customers.json"
+        json_path.write_text(
+            json.dumps(
+                [
+                    {"customer_id": "C-100", "address": {"country": "DE"}},
+                    {"customer_id": "C-200", "address": {"country": "US"}},
+                ]
+            ),
+            encoding="utf-8",
+        )
+
+        profile = profile_json(json_path, dataset_id="customers")
+
+        assert profile.status.success is True
+        assert profile.row_count == 2
+        assert [column.name for column in profile.columns] == [
+            "customer_id",
+            "address.country",
+        ]
+
+    def test_profile_xml_records(self, tmp_path: Path) -> None:
+        xml_path = tmp_path / "customers.xml"
+        xml_path.write_text(
+            "<customers><customer><id>C-100</id><country>DE</country></customer>"
+            "<customer><id>C-200</id><country>US</country></customer></customers>",
+            encoding="utf-8",
+        )
+
+        profile = profile_xml(xml_path, dataset_id="customers")
+
+        assert profile.status.success is True
+        assert profile.row_count == 2
+        assert [column.name for column in profile.columns] == ["id", "country"]
+
+    def test_profile_xml_rejects_document_entities(self, tmp_path: Path) -> None:
+        xml_path = tmp_path / "unsafe.xml"
+        xml_path.write_text(
+            "<!DOCTYPE customers [<!ENTITY value 'unsafe'>]>"
+            "<customers><customer><id>&value;</id></customer></customers>",
+            encoding="utf-8",
+        )
+
+        profile = profile_xml(xml_path, dataset_id="unsafe")
+
+        assert profile.status.success is False
+        assert "entities" in (profile.status.reason or "")
 
 
 class TestDatasetProfileToDict:

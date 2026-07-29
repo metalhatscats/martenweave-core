@@ -25,7 +25,9 @@ from modelops_core.imports import (
     dataset_profile_to_dict,
     infer_model_from_profile,
     profile_csv,
+    profile_json,
     profile_xlsx,
+    profile_xml,
 )
 from modelops_core.imports.dataset_profiler import WorkbookProfile
 from modelops_core.imports.google_sheets_import_service import (
@@ -48,7 +50,7 @@ from modelops_core.telemetry import with_telemetry
 
 @app.command()
 def profile_dataset(
-    file: Path = typer.Argument(..., help="Path to CSV or XLSX file."),  # noqa: B008
+    file: Path = typer.Argument(..., help="Path to CSV, XLSX, XML, or JSON file."),  # noqa: B008
     repo: str | None = typer.Option(None, "--repo", help="Path to model repository."),
     dataset_id: str | None = typer.Option(
         None,
@@ -96,6 +98,22 @@ def profile_dataset(
             max_rows=limits.max_profile_rows,
             max_columns=limits.max_profile_columns,
             sample_interval=limits.profile_sample_interval,
+        )
+    elif suffix == ".json":
+        raw_profile = profile_json(
+            file,
+            dataset_id=effective_dataset_id,
+            max_file_size=limits.max_file_size_bytes,
+            max_rows=limits.max_profile_rows,
+            max_columns=limits.max_profile_columns,
+        )
+    elif suffix == ".xml":
+        raw_profile = profile_xml(
+            file,
+            dataset_id=effective_dataset_id,
+            max_file_size=limits.max_file_size_bytes,
+            max_rows=limits.max_profile_rows,
+            max_columns=limits.max_profile_columns,
         )
     else:
         console.print(f"[red]Unsupported file format: {suffix}[/red]")

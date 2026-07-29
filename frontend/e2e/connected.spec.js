@@ -183,7 +183,7 @@ test.describe("connected workbench", () => {
     expect(status).toBe(200);
   });
 
-  test("import preflight and cancel without writes", async ({ page }) => {
+  test("import CSV readiness findings and generated report without canonical writes", async ({ page }) => {
     const csvPath = path.join(repoPath, "e2e-sample.csv");
     writeFileSync(
       csvPath,
@@ -204,8 +204,19 @@ test.describe("connected workbench", () => {
     await page.waitForSelector(".import-summary", { timeout: 20000 });
     await expect(page.locator(".import-summary")).toContainText("Sheets");
     await expect(page.locator(".parsed-preview")).toContainText("Workbook interpretation");
-    await page.click('button:has-text("Run dataset profile")');
+    const [readinessResponse] = await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().includes("/api/v1/imports/readiness") &&
+          response.request().method() === "POST"
+      ),
+      page.click('button:has-text("Run readiness")'),
+    ]);
+    expect(readinessResponse.status()).toBe(200);
     await expect(page.locator(".import-summary")).toContainText("Rows");
+    await expect(page.locator(".parsed-preview")).toContainText("Deterministic readiness");
+    await expect(page.locator(".parsed-preview")).toContainText("Open local report");
+    await expect(page.locator(".parsed-preview")).not.toContainText("Canonical objects");
 
     // The review step has "Back" and "Load into workspace"; return to the
     // source step to find the Cancel button.
@@ -213,6 +224,36 @@ test.describe("connected workbench", () => {
     await page.click('.import-modal footer button:has-text("Cancel")');
     await page.waitForSelector(".import-modal", { state: "hidden", timeout: 10000 });
 
+    const modelAfter = listModelEntries();
+    expect(modelAfter.sort()).toEqual(modelBefore.sort());
+  });
+
+  test("import XLSX readiness without static demo data or canonical writes", async ({ page }) => {
+    const xlsxPath = path.resolve(process.cwd(), "../tests/fixtures/customer_sample.xlsx");
+    const modelBefore = listModelEntries();
+
+    await gotoHash(page, "#/home");
+    await page.click('button:has-text("Import")');
+    await page.waitForSelector(".import-modal", { timeout: 10000 });
+    await page.click('button:has-text("Dataset extracts")');
+    await page.locator('.import-modal input[type="file"]').setInputFiles(xlsxPath);
+    await page.click('button:has-text("Profile / Preview")');
+    await page.waitForSelector(".import-summary", { timeout: 20000 });
+
+    const [readinessResponse] = await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().includes("/api/v1/imports/readiness") &&
+          response.request().method() === "POST"
+      ),
+      page.click('button:has-text("Run readiness")'),
+    ]);
+    expect(readinessResponse.status()).toBe(200);
+    await expect(page.locator(".parsed-preview")).toContainText("Deterministic readiness");
+    await expect(page.locator(".parsed-preview")).not.toContainText("Model loaded: 24");
+
+    await page.click('.import-modal footer button:has-text("Back")');
+    await page.click('.import-modal footer button:has-text("Cancel")');
     const modelAfter = listModelEntries();
     expect(modelAfter.sort()).toEqual(modelBefore.sort());
   });

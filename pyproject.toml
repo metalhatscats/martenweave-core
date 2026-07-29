@@ -85,7 +85,12 @@ build-backend = "setuptools.build_meta:__legacy__"
 where = ["src"]
 
 [tool.setuptools.package-data]
-modelops_core = ["workbench_static/*", "workbench_static/**/*"]
+modelops_core = [
+  "workbench_static/*",
+  "workbench_static/**/*",
+  "assets/templates/*",
+  "assets/templates/**/*",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

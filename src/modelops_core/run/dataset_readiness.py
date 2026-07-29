@@ -34,7 +34,9 @@ from modelops_core.imports.dataset_profiler import (
     DatasetProfile,
     WorkbookProfile,
     profile_csv,
+    profile_json,
     profile_xlsx,
+    profile_xml,
 )
 from modelops_core.imports.privacy import (
     DatasetPrivacyPolicy,
@@ -79,7 +81,7 @@ class DatasetReadinessReport:
 def _profile_dataset(
     dataset_path: Path, repo_root: Path
 ) -> tuple[DatasetProfile | WorkbookProfile, list[str]]:
-    """Profile a CSV/XLSX dataset and apply privacy controls."""
+    """Profile a supported local dataset and apply privacy controls."""
     limits = load_resource_limits(repo_root)
     dataset_id = dataset_path.stem
     suffix = dataset_path.suffix.lower()
@@ -101,6 +103,22 @@ def _profile_dataset(
             max_rows=limits.max_profile_rows,
             max_columns=limits.max_profile_columns,
             sample_interval=limits.profile_sample_interval,
+        )
+    elif suffix == ".json":
+        raw_profile = profile_json(
+            dataset_path,
+            dataset_id=dataset_id,
+            max_file_size=limits.max_file_size_bytes,
+            max_rows=limits.max_profile_rows,
+            max_columns=limits.max_profile_columns,
+        )
+    elif suffix == ".xml":
+        raw_profile = profile_xml(
+            dataset_path,
+            dataset_id=dataset_id,
+            max_file_size=limits.max_file_size_bytes,
+            max_rows=limits.max_profile_rows,
+            max_columns=limits.max_profile_columns,
         )
     else:
         raise ValueError(f"Unsupported dataset format: {suffix}")

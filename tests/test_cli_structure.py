@@ -55,6 +55,7 @@ def _parse_commands(help_text: str) -> set[str]:
 
 EXPECTED_TOP_LEVEL_COMMANDS = {
     "init",
+    "start",
     "profile-dataset",
     "gaps",
     "import-drive",

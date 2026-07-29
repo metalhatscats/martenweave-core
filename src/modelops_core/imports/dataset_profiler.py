@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import json
 import re
 import unicodedata
+import xml.etree.ElementTree as ET
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -119,6 +121,184 @@ def _infer_type(values: list[str]) -> str:
     if {"integer", "decimal"} <= types_seen:
         return "decimal"
     return "mixed"
+
+
+def _flatten_record(value: object, prefix: str = "") -> dict[str, str]:
+    """Flatten a JSON/XML record into stable dotted field paths."""
+    if isinstance(value, dict):
+        flattened: dict[str, str] = {}
+        for key, child in value.items():
+            name = f"{prefix}.{key}" if prefix else str(key)
+            flattened.update(_flatten_record(child, name))
+        return flattened
+    if isinstance(value, list):
+        return {prefix: ", ".join(str(item) for item in value)} if prefix else {}
+    return {prefix: "" if value is None else str(value)} if prefix else {}
+
+
+def _profile_records(
+    records: list[dict[str, object]],
+    path: Path,
+    dataset_id: str,
+    max_columns: int,
+    max_rows: int,
+) -> DatasetProfile:
+    """Build a bounded profile from locally parsed record dictionaries."""
+    file_size = path.stat().st_size
+    file_hash = _compute_file_hash(path)
+    flattened = [_flatten_record(record) for record in records[:max_rows]]
+    headers = list(dict.fromkeys(key for record in flattened for key in record))
+    if not headers:
+        return DatasetProfile(
+            dataset_id=dataset_id,
+            file_path=str(path),
+            file_hash=file_hash,
+            status=ProfilingStatus(
+                success=False,
+                truncated=True,
+                reason="No record fields found in input.",
+                file_size_bytes=file_size,
+            ),
+        )
+    if len(headers) > max_columns:
+        return DatasetProfile(
+            dataset_id=dataset_id,
+            file_path=str(path),
+            file_hash=file_hash,
+            status=ProfilingStatus(
+                success=False,
+                truncated=True,
+                reason=f"Column count {len(headers)} exceeds limit {max_columns}.",
+                file_size_bytes=file_size,
+            ),
+        )
+
+    columns = [
+        ColumnProfile(name=header, position=index + 1) for index, header in enumerate(headers)
+    ]
+    distinct_sets: list[set[str]] = [set() for _ in headers]
+    for record in flattened:
+        for index, header in enumerate(headers):
+            value = record.get(header, "").strip()
+            column = columns[index]
+            if not value:
+                column.blank_count += 1
+                continue
+            column.non_blank_count += 1
+            distinct_sets[index].add(value)
+            if len(column.sample_values) < SAMPLE_SIZE:
+                column.sample_values.append(value)
+    for index, column in enumerate(columns):
+        column.distinct_count = len(distinct_sets[index])
+        column.inferred_type = _infer_type(list(distinct_sets[index])[: SAMPLE_SIZE * 2])
+    return DatasetProfile(
+        dataset_id=dataset_id,
+        file_path=str(path),
+        file_hash=file_hash,
+        row_count=len(flattened),
+        column_count=len(columns),
+        columns=columns,
+        status=ProfilingStatus(
+            success=True,
+            truncated=len(records) > max_rows,
+            reason=(f"Profile limited to {max_rows} records." if len(records) > max_rows else None),
+            rows_processed=len(flattened),
+            file_size_bytes=file_size,
+        ),
+    )
+
+
+def _failed_profile(path: Path, dataset_id: str, reason: str) -> DatasetProfile:
+    return DatasetProfile(
+        dataset_id=dataset_id,
+        file_path=str(path),
+        file_hash=_compute_file_hash(path),
+        status=ProfilingStatus(
+            success=False,
+            truncated=True,
+            reason=reason,
+            file_size_bytes=path.stat().st_size,
+        ),
+    )
+
+
+def profile_json(
+    json_path: Path,
+    dataset_id: str,
+    max_file_size: int = MAX_FILE_SIZE_BYTES,
+    max_rows: int = MAX_ROWS,
+    max_columns: int = MAX_COLUMNS,
+) -> DatasetProfile:
+    """Profile a local JSON array or object as tabular record evidence."""
+    if json_path.stat().st_size > max_file_size:
+        return _failed_profile(json_path, dataset_id, f"File size exceeds limit {max_file_size}.")
+    try:
+        payload = json.loads(json_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        return _failed_profile(json_path, dataset_id, f"Failed to parse JSON: {exc}")
+    if isinstance(payload, list):
+        records = [item for item in payload if isinstance(item, dict)]
+    elif isinstance(payload, dict):
+        nested = next(
+            (
+                value
+                for value in payload.values()
+                if isinstance(value, list) and all(isinstance(item, dict) for item in value)
+            ),
+            None,
+        )
+        records = nested if nested is not None else [payload]
+    else:
+        records = []
+    if not records:
+        return _failed_profile(
+            json_path, dataset_id, "JSON must contain an object or an array of objects."
+        )
+    return _profile_records(records, json_path, dataset_id, max_columns, max_rows)
+
+
+def _xml_record(element: ET.Element) -> dict[str, object]:
+    value: dict[str, object] = {}
+    for child in list(element):
+        key = child.tag.rsplit("}", 1)[-1]
+        if list(child):
+            value[key] = _xml_record(child)
+        else:
+            value[key] = (child.text or "").strip()
+    return value
+
+
+def profile_xml(
+    xml_path: Path,
+    dataset_id: str,
+    max_file_size: int = MAX_FILE_SIZE_BYTES,
+    max_rows: int = MAX_ROWS,
+    max_columns: int = MAX_COLUMNS,
+) -> DatasetProfile:
+    """Profile repeated local XML records without processing external entities."""
+    if xml_path.stat().st_size > max_file_size:
+        return _failed_profile(xml_path, dataset_id, f"File size exceeds limit {max_file_size}.")
+    try:
+        raw_text = xml_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        return _failed_profile(xml_path, dataset_id, f"Failed to read XML: {exc}")
+    if "<!DOCTYPE" in raw_text.upper() or "<!ENTITY" in raw_text.upper():
+        return _failed_profile(
+            xml_path, dataset_id, "XML document declarations and entities are not supported."
+        )
+    try:
+        root = ET.fromstring(raw_text)
+    except ET.ParseError as exc:
+        return _failed_profile(xml_path, dataset_id, f"Failed to parse XML: {exc}")
+    children = list(root)
+    records = [_xml_record(child) for child in children if list(child)]
+    if not records and children:
+        records = [_xml_record(root)]
+    if not records:
+        return _failed_profile(
+            xml_path, dataset_id, "XML must contain one or more record elements."
+        )
+    return _profile_records(records, xml_path, dataset_id, max_columns, max_rows)
 
 
 def _header_candidate_score(values: tuple[object, ...]) -> int:

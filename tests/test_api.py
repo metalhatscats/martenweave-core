@@ -26,6 +26,31 @@ def test_api_health(sample_repo: Path) -> None:
     assert data["repository"] == str(sample_repo)
 
 
+def test_api_ai_capabilities_describe_no_provider_without_network(sample_repo: Path) -> None:
+    response = client.get("/api/v1/capabilities", params={"repo": str(sample_repo)})
+
+    assert response.status_code == 200
+    ai = response.json()["ai"]
+    assert ai["mode"] == "optional_local_assistance"
+    assert ai["active_providers"] == ["no_provider"]
+    assert ai["providers"][0]["endpoint_class"] == "none"
+    assert ai["mcp_agent_discovery"]["local_command"] == "martenweave mcp"
+
+
+def test_api_ai_provider_diagnostics_are_redacted_for_invalid_provider(sample_repo: Path) -> None:
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setenv("MARTENWEAVE_AI_PROVIDER", "not-a-provider")
+        response = client.get(
+            "/api/v1/ai/providers",
+            params={"repo": str(sample_repo), "health": "true"},
+        )
+
+    assert response.status_code == 200
+    provider = response.json()["capabilities"]["providers"][0]
+    assert provider["configured"] is False
+    assert provider["health"]["state"] == "invalid"
+
+
 def test_bound_api_rejects_workspace_switch_and_hides_path(
     sample_repo: Path, tmp_path: Path
 ) -> None:
@@ -984,6 +1009,57 @@ def test_api_dataset_readiness_unsupported_format(tmp_path: Path) -> None:
     )
     assert response.status_code == 400
     assert "Unsupported" in response.json()["detail"]
+
+
+def test_api_import_readiness_writes_profile_and_report_artifacts(tmp_path: Path) -> None:
+    repo = _build_repo_with_endpoint(tmp_path)
+    canonical_before = sorted(path.relative_to(repo) for path in (repo / "model").rglob("*"))
+    response = client.post(
+        "/api/v1/imports/readiness",
+        params={"repo": str(repo), "dataset_id": "customer-upload"},
+        files={
+            "file": (
+                "customers.json",
+                b'[{"CUSTOMER_GROUP": "A", "UNKNOWN": "1"}]',
+                "application/json",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["dataset_id"] == "customer-upload"
+    assert data["format"] == "json"
+    assert data["readiness"]["coverage"]["matched_columns"] == 1
+    assert any(
+        gap["gap_code"] == "UNMODELED_DATASET_COLUMN" for gap in data["readiness"]["dataset_gaps"]
+    )
+    for artifact in data["report_artifacts"]:
+        assert (repo / "generated" / artifact).is_file()
+    assert (
+        sorted(path.relative_to(repo) for path in (repo / "model").rglob("*")) == canonical_before
+    )
+
+
+def test_api_import_profile_accepts_xml(tmp_path: Path) -> None:
+    repo = _build_repo_with_endpoint(tmp_path)
+    response = client.post(
+        "/api/v1/imports/profile",
+        params={"repo": str(repo)},
+        files={
+            "file": (
+                "customers.xml",
+                b"<customers><customer><CUSTOMER_GROUP>A</CUSTOMER_GROUP></customer></customers>",
+                "application/xml",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["format"] == "xml"
+    assert data["profile"]["row_count"] == 1
+    assert (repo / "generated" / "dataset_profiles" / "customers.json").is_file()
 
 
 # ---------------------------------------------------------------------------

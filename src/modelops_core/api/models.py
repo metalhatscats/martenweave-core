@@ -102,6 +102,16 @@ class ImportProfileResponse(BaseModel):
     profile: dict[str, Any]
 
 
+class ImportReadinessResponse(BaseModel):
+    """Profile, deterministic findings, and local report artifacts for an uploaded dataset."""
+
+    dataset_id: str
+    format: str
+    profile: dict[str, Any]
+    readiness: dict[str, Any]
+    report_artifacts: list[str] = Field(default_factory=list)
+
+
 class ImportInspectResponse(BaseModel):
     """Metadata-only interpretation of an uploaded evidence file."""
 
@@ -224,6 +234,16 @@ class ApiCapabilities(BaseModel):
         default_factory=list,
         description="Safe recovery actions for the current workspace state.",
     )
+    ai: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Provider-neutral optional AI capability contract with redacted diagnostics.",
+    )
+
+
+class AIProvidersResponse(BaseModel):
+    """Explicit local AI provider discovery and health response."""
+
+    capabilities: dict[str, Any]
 
 
 class ActivityEventItem(BaseModel):

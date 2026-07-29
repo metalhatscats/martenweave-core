@@ -14,12 +14,13 @@ from modelops_core.ai.provider_adapter import (
     NoProviderAdapter,
     ProviderOutputValidator,
 )
+from modelops_core.ai.provider_capabilities import PROVIDER_SLOTS, configured_provider_names
 from modelops_core.ai.provider_router import ProviderRouter
 
 _DEFAULT_VALIDATOR = ProviderOutputValidator()
 
 
-_KNOWN_PROVIDERS = ["no_provider", "kimi", "openai", "ollama"]
+_KNOWN_PROVIDERS = list(PROVIDER_SLOTS)
 
 
 def _build_provider_adapter(name: str) -> AIProviderAdapter:
@@ -45,23 +46,7 @@ def _build_provider_adapter(name: str) -> AIProviderAdapter:
 
 def _get_default_adapter(repo_root: Path | None = None) -> AIProviderAdapter:
     """Resolve the default AI provider adapter from environment or repo config."""
-    provider = os.getenv("MARTENWEAVE_AI_PROVIDER")
-
-    if provider is None and repo_root is not None:
-        from modelops_core.config import load_repo_config
-
-        config = load_repo_config(repo_root)
-        if config is not None and config.ai is not None:
-            providers = config.ai.get("providers")
-            if isinstance(providers, list):
-                provider = ",".join(str(p) for p in providers if p)
-
-    if not provider:
-        provider = "no_provider"
-
-    names = [p.strip() for p in provider.split(",") if p.strip()]
-    if not names:
-        names = ["no_provider"]
+    names = configured_provider_names(repo_root)
     if len(names) > 1:
         adapters = [_build_provider_adapter(name) for name in names]
         return ProviderRouter(
