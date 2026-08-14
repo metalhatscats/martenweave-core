@@ -41,6 +41,73 @@ def test_start_creates_readiness_workspace_without_applying_inferred_model(tmp_p
     assert not list((workspace / "model").glob("ATTR-*.md"))
 
 
+def _run_start(tmp_path: Path, fixture: str = "customer_sample.csv") -> tuple[dict, Path]:
+    workspace = tmp_path / "workspace"
+    result = runner.invoke(
+        app,
+        ["start", str(FIXTURES_DIR / fixture), "--out", str(workspace), "--no-open", "--json"],
+    )
+    assert result.exit_code == 0, result.output
+    return json.loads(result.output), workspace
+
+
+def test_start_manifest_json_and_markdown_share_one_finding_count(tmp_path: Path) -> None:
+    """Manifest, readiness.json, and readiness.md must report the same finding count."""
+    manifest, workspace = _run_start(tmp_path)
+    readiness_json = json.loads(
+        (workspace / "generated" / "readiness" / "readiness.json").read_text(encoding="utf-8")
+    )
+    markdown = (workspace / "generated" / "readiness" / "readiness.md").read_text(
+        encoding="utf-8"
+    )
+
+    dataset_gaps = readiness_json["dataset_gaps"]
+    model_gaps = readiness_json["model_gaps"]
+    total = len(dataset_gaps) + len(model_gaps)
+
+    assert manifest["readiness"]["dataset_gaps"] == len(dataset_gaps)
+    assert manifest["readiness"]["model_gaps"] == len(model_gaps)
+    assert manifest["readiness"]["total_findings"] == total
+    assert readiness_json["gap_summary"]["total_gap_count"] == total
+    assert f"- Total gap count: {total}" in markdown
+    # Issue #623 assertion: the report summary equals the manifest dataset_gaps count
+    # for the no-AI CSV fixture (no model-side gaps on a seed workspace).
+    assert model_gaps == []
+    assert f"- Total gap count: {manifest['readiness']['dataset_gaps']}" in markdown
+
+
+def test_start_blocked_report_names_next_action_and_finding_ids(tmp_path: Path) -> None:
+    """A blocked report links every displayed finding to a stable ID and names one action."""
+    manifest, workspace = _run_start(tmp_path)
+    assert manifest["readiness"]["verdict"] == "blocked"
+    readiness_json = json.loads(
+        (workspace / "generated" / "readiness" / "readiness.json").read_text(encoding="utf-8")
+    )
+    markdown = (workspace / "generated" / "readiness" / "readiness.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "## Verdict: blocked" in markdown
+    assert "**Recommended next action:**" in markdown
+    for gap in readiness_json["dataset_gaps"]:
+        assert gap["finding"]["id"] in markdown
+    assert "readiness.json" in markdown  # evidence link
+
+
+def test_start_report_separates_facts_assumptions_ai_and_human_review(tmp_path: Path) -> None:
+    """Facts, assumptions, AI suggestions, and human dispositions are distinct sections."""
+    _, workspace = _run_start(tmp_path)
+    markdown = (workspace / "generated" / "readiness" / "readiness.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "## Facts (deterministic)" in markdown
+    assert "## Assumptions and privacy boundaries" in markdown
+    assert "## AI suggestions" in markdown
+    assert "## Human review and dispositions" in markdown
+    assert "No AI provider" in markdown
+
+
 def test_start_rejects_unsupported_input_without_creating_workspace(tmp_path: Path) -> None:
     input_file = tmp_path / "customers.txt"
     input_file.write_text("not a supported data format", encoding="utf-8")

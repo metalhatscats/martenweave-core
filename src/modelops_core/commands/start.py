@@ -120,6 +120,7 @@ def start(
         "workspace": str(workspace),
         "readiness": {
             "verdict": report.verdict,
+            "total_findings": len(report.dataset_gaps) + len(report.model_gaps),
             "dataset_gaps": len(report.dataset_gaps),
             "model_gaps": len(report.model_gaps),
             "validation_errors": report.validation["error_count"],

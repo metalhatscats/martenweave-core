@@ -400,7 +400,7 @@ def create_draft_from_readiness(report: dict[str, Any]) -> DraftResult:
     lines.append("### Gap Summary")
     lines.append(f"- Total gap count: {gap_summary.get('total_gap_count', 0)}")
     lines.append(f"- Gap score: {gap_summary.get('gap_score', '—')}")
-    lines.append(f"- Total objects: {gap_summary.get('total_objects', '—')}")
+    lines.append(f"- Dataset columns assessed: {gap_summary.get('total_columns', '—')}")
     lines.append("")
 
     promoted = report.get("promoted_proposal_path")

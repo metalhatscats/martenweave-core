@@ -51,7 +51,6 @@ from modelops_core.issue_draft.draft_service import (
 from modelops_core.issue_draft.draft_service import (
     write_draft as _write_issue_draft,
 )
-from modelops_core.reports.gap_summary import generate_gap_summary_report
 from modelops_core.repository import parse_file, scan_repository
 from modelops_core.validation import validate_objects
 from modelops_core.validation.result import ValidationSummary
@@ -299,6 +298,88 @@ def _match_to_dict(match: ColumnMatch) -> dict[str, Any]:
     }
 
 
+def _build_finding_summary(
+    dataset_gaps: list[dict[str, Any]],
+    model_gaps: list[dict[str, Any]],
+    coverage: DatasetCoverageMetrics | None,
+    check_model: bool,
+) -> dict[str, Any]:
+    """Summarize this run's own findings.
+
+    The readiness report is a decision artifact for one dataset assessment run,
+    so its gap summary is scoped to the findings persisted in the same report —
+    not to repo-wide gap sources. This keeps the manifest, JSON, Markdown, API,
+    and Workbench views counting the same findings.
+    """
+    findings = dataset_gaps + model_gaps
+    gaps_by_type: dict[str, dict[str, Any]] = {}
+    for gap in findings:
+        entry = gaps_by_type.setdefault(gap["gap_code"], {"count": 0, "sample_finding_ids": []})
+        entry["count"] += 1
+        finding_id = gap["finding"]["id"]
+        if finding_id not in entry["sample_finding_ids"]:
+            entry["sample_finding_ids"].append(finding_id)
+    for entry in gaps_by_type.values():
+        entry["sample_finding_ids"] = sorted(entry["sample_finding_ids"])[:5]
+    gaps_by_type = dict(sorted(gaps_by_type.items(), key=lambda item: (-item[1]["count"], item[0])))
+
+    total_columns = coverage.total_columns if coverage else 0
+    total = len(findings)
+    # Gap score = findings per assessed dataset column, capped at 1.0.
+    if total_columns > 0:
+        gap_score = round(min(total / total_columns, 1.0), 3)
+    else:
+        gap_score = 1.0 if total else 0.0
+
+    sources_checked = ["dataset_gaps"] + (["model_gaps"] if check_model else [])
+    return {
+        "total_gap_count": total,
+        "dataset_gap_count": len(dataset_gaps),
+        "model_gap_count": len(model_gaps),
+        "gap_score": gap_score,
+        "total_columns": total_columns,
+        "sources_checked": sources_checked,
+        "gaps_by_type": gaps_by_type,
+    }
+
+
+def _recommended_next_action(report: DatasetReadinessReport) -> str:
+    """Return the single next safe review action for the report verdict."""
+    error_count = report.validation["error_count"]
+    if error_count:
+        return (
+            f"Resolve the {error_count} validation error(s) in the canonical model, then re-run "
+            "`martenweave run dataset-readiness`. No changes are applied automatically."
+        )
+    findings = report.dataset_gaps + report.model_gaps
+    if report.verdict == "blocked":
+        if findings:
+            top = next(
+                (g for g in findings if g["finding"]["readiness_impact"] == "blocking"),
+                findings[0],
+            )
+            return (
+                f"Review finding `{top['finding']['id']}` ({top['column_name']}): "
+                f"{top['finding']['recommended_action']} "
+                "Then re-run readiness; draft proposals require human approval before "
+                "anything is applied."
+            )
+        return (
+            "Provide a dataset whose columns match canonical FieldEndpoints, or model the "
+            "dataset columns through a reviewed PatchProposal."
+        )
+    if report.verdict == "ready_with_warnings":
+        return (
+            f"Review the {len(findings)} open finding(s) above and record a decision or draft "
+            "PatchProposal for each before relying on this dataset."
+        )
+    total_columns = report.coverage.get("total_columns", 0)
+    return (
+        f"No action required: all {total_columns} dataset column(s) matched canonical "
+        "FieldEndpoints and validation reported no errors or warnings."
+    )
+
+
 def _build_dataset_profile_dict(
     profile: DatasetProfile | WorkbookProfile,
     dataset_path: Path,
@@ -357,7 +438,7 @@ def generate_dataset_readiness_report(
       3. Profile the dataset.
       4. Detect dataset-to-model gaps.
       5. Detect optional model-side gaps.
-      6. Generate a consolidated gap summary.
+      6. Summarize this run's findings (scoped to the report itself).
       7. Compute a readiness verdict.
       8. Optionally promote dataset gaps to a draft PatchProposal.
       9. Optionally generate a GitHub-ready issue draft.
@@ -450,7 +531,6 @@ def _build_report(
     matches, dataset_gaps, model_gaps, coverage, promotion_report = _detect_gaps(
         profile, db_path, check_model
     )
-    gap_summary_report = generate_gap_summary_report(db_path, repo_root)
     verdict = _compute_verdict(summary, coverage, dataset_gaps, model_gaps)
 
     promoted_proposal_path: str | None = None
@@ -469,6 +549,8 @@ def _build_report(
         }
 
     readiness_run_id = f"READINESS-{dataset_path.stem.upper()}"
+    dataset_gap_dicts = [_gap_to_dict(g, readiness_run_id) for g in dataset_gaps]
+    model_gap_dicts = [_gap_to_dict(g, readiness_run_id) for g in model_gaps]
     report = DatasetReadinessReport(
         martenweave_version=__version__,
         repo=str(repo_root),
@@ -484,21 +566,11 @@ def _build_report(
         dataset_profile=_build_dataset_profile_dict(profile, dataset_path, privacy_warnings),
         coverage=coverage_dict,
         matches=[_match_to_dict(m) for m in matches],
-        dataset_gaps=[_gap_to_dict(g, readiness_run_id) for g in dataset_gaps],
-        model_gaps=[_gap_to_dict(g, readiness_run_id) for g in model_gaps],
-        gap_summary={
-            "total_gap_count": gap_summary_report.total_gap_count,
-            "gap_score": gap_summary_report.gap_score,
-            "total_objects": gap_summary_report.total_objects,
-            "sources_checked": gap_summary_report.sources_checked,
-            "gaps_by_type": {
-                key: {
-                    "count": type_summary.count,
-                    "sample_object_ids": type_summary.sample_object_ids,
-                }
-                for key, type_summary in gap_summary_report.gaps_by_type.items()
-            },
-        },
+        dataset_gaps=dataset_gap_dicts,
+        model_gaps=model_gap_dicts,
+        gap_summary=_build_finding_summary(
+            dataset_gap_dicts, model_gap_dicts, coverage, check_model
+        ),
         verdict=verdict,
         dry_run=dry_run,
         promoted_proposal_path=promoted_proposal_path,
@@ -532,8 +604,24 @@ def write_readiness_report(
     return json_path, md_path
 
 
+def _render_finding_lines(lines: list[str], gaps: list[dict[str, Any]]) -> None:
+    """Render findings with stable IDs, evidence links, and recommended actions."""
+    for gap in gaps:
+        finding = gap["finding"]
+        lines.append(
+            f"- **{gap['column_name'] or '(dataset)'}** — "
+            f"`{gap['gap_code']}` ({gap['severity']}): {gap['message']}"
+        )
+        lines.append(f"  - Finding ID: `{finding['id']}`")
+        evidence = ", ".join(f"`{ref}`" for ref in finding["evidence_refs"]) or "—"
+        lines.append(f"  - Evidence: {evidence}")
+        lines.append(f"  - Recommended action: {finding['recommended_action']}")
+
+
 def _render_markdown(report: DatasetReadinessReport) -> str:
-    """Render a human-readable Markdown readiness report."""
+    """Render a human-readable, decision-ready Markdown readiness report."""
+    summary = report.gap_summary
+    dataset_name = Path(report.dataset).name
     lines: list[str] = [
         "# Dataset Readiness Report",
         "",
@@ -544,26 +632,27 @@ def _render_markdown(report: DatasetReadinessReport) -> str:
         "",
         f"## Verdict: {report.verdict}",
         "",
+        f"**Scope:** dataset `{dataset_name}` assessed against the canonical model in "
+        f"`{report.repo}`.",
+        f"**Findings:** {summary['total_gap_count']} total — "
+        f"{summary['dataset_gap_count']} dataset-to-model, "
+        f"{summary['model_gap_count']} model-side.",
+        f"**Recommended next action:** {_recommended_next_action(report)}",
+        "",
     ]
-
-    if report.promoted_proposal_path:
-        lines.append(f"**Promoted to proposal:** `{report.promoted_proposal_path}`")
-        lines.append("")
-
-    if report.issue_draft_path:
-        lines.append(f"**Issue draft:** `{report.issue_draft_path}`")
-        lines.append("")
 
     lines.extend(
         [
-            "## Validation Summary",
+            "## Facts (deterministic)",
+            "",
+            "### Validation Summary",
             "",
             f"- Errors: {report.validation['error_count']}",
             f"- Warnings: {report.validation['warning_count']}",
             f"- Info: {report.validation['info_count']}",
             f"- Valid: {report.validation['is_valid']}",
             "",
-            "## Dataset Profile",
+            "### Dataset Profile",
             "",
         ]
     )
@@ -583,12 +672,15 @@ def _render_markdown(report: DatasetReadinessReport) -> str:
 
     if profile.get("privacy_warnings"):
         lines.append("")
-        lines.append("**Privacy warnings:** " + ", ".join(profile["privacy_warnings"]))
+        lines.append(
+            "**Privacy warnings (high-risk columns, samples redacted):** "
+            + ", ".join(f"`{name}`" for name in profile["privacy_warnings"])
+        )
 
     lines.extend(
         [
             "",
-            "## Coverage",
+            "### Coverage",
             "",
             f"- Total columns: {report.coverage.get('total_columns', '—')}",
             f"- Matched columns: {report.coverage.get('matched_columns', '—')}",
@@ -596,29 +688,21 @@ def _render_markdown(report: DatasetReadinessReport) -> str:
             f"- Duplicate columns: {report.coverage.get('duplicate_columns', '—')}",
             f"- Match rate: {report.coverage.get('match_rate', '—')}",
             "",
-            "## Gaps",
+            "### Findings",
             "",
         ]
     )
 
     if report.dataset_gaps:
-        lines.append("### Dataset-to-model gaps")
+        lines.append("#### Dataset-to-model gaps")
         lines.append("")
-        for gap in report.dataset_gaps:
-            lines.append(
-                f"- **{gap['column_name']}** — "
-                f"`{gap['gap_code']}` ({gap['severity']}): {gap['message']}"
-            )
+        _render_finding_lines(lines, report.dataset_gaps)
         lines.append("")
 
     if report.model_gaps:
-        lines.append("### Model-side gaps")
+        lines.append("#### Model-side gaps")
         lines.append("")
-        for gap in report.model_gaps:
-            lines.append(
-                f"- **{gap['column_name']}** — "
-                f"`{gap['gap_code']}` ({gap['severity']}): {gap['message']}"
-            )
+        _render_finding_lines(lines, report.model_gaps)
         lines.append("")
 
     if not report.dataset_gaps and not report.model_gaps:
@@ -627,22 +711,57 @@ def _render_markdown(report: DatasetReadinessReport) -> str:
 
     lines.extend(
         [
-            "## Gap Summary",
+            "### Gap Summary",
             "",
-            f"- Total gap count: {report.gap_summary['total_gap_count']}",
-            f"- Gap score: {report.gap_summary['gap_score']}",
-            f"- Total objects: {report.gap_summary['total_objects']}",
-            f"- Sources checked: {', '.join(report.gap_summary['sources_checked']) or '—'}",
+            "Counts below summarize exactly the findings persisted in this report.",
+            "",
+            f"- Total gap count: {summary['total_gap_count']}",
+            f"- Dataset-to-model gaps: {summary['dataset_gap_count']}",
+            f"- Model-side gaps: {summary['model_gap_count']}",
+            f"- Gap score: {summary['gap_score']}",
+            f"- Dataset columns assessed: {summary['total_columns']}",
+            f"- Sources checked: {', '.join(summary['sources_checked']) or '—'}",
             "",
         ]
     )
 
-    if report.gap_summary["gaps_by_type"]:
-        lines.append("### Gaps by type")
+    if summary["gaps_by_type"]:
+        lines.append("#### Gaps by type")
         lines.append("")
-        for gap_type, summary in report.gap_summary["gaps_by_type"].items():
-            samples = ", ".join(summary["sample_object_ids"][:5]) or "—"
-            lines.append(f"- **{gap_type}**: {summary['count']} (samples: {samples})")
+        for gap_type, type_summary in summary["gaps_by_type"].items():
+            samples = ", ".join(f"`{fid}`" for fid in type_summary["sample_finding_ids"]) or "—"
+            lines.append(f"- **{gap_type}**: {type_summary['count']} (findings: {samples})")
         lines.append("")
+
+    lines.extend(
+        [
+            "## Assumptions and privacy boundaries",
+            "",
+            "- Raw dataset sample values are excluded from this report; high-risk column "
+            "samples are redacted.",
+            "- Invalid values are not assessed without governed value lists.",
+            "- This report never modifies canonical model files.",
+            "",
+            "## AI suggestions",
+            "",
+            "None. No AI provider is configured or required; every finding in this report "
+            "is produced deterministically.",
+            "",
+            "## Human review and dispositions",
+            "",
+        ]
+    )
+
+    if report.promoted_proposal_path:
+        lines.append(
+            f"- Draft PatchProposal: `{report.promoted_proposal_path}` — pending human "
+            "review; nothing is applied automatically."
+        )
+    if report.issue_draft_path:
+        lines.append(f"- Issue draft: `{report.issue_draft_path}`")
+    if not report.promoted_proposal_path and not report.issue_draft_path:
+        lines.append("- No draft proposals or issue drafts were created for this run.")
+    lines.append("- No human dispositions are recorded in this report; all findings are open.")
+    lines.append("")
 
     return "\n".join(lines)
