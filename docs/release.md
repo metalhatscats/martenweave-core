@@ -26,6 +26,7 @@ Both must match before a release commit.
 - [ ] Format check passes: `.venv/bin/python -m ruff format --check .`
 - [ ] JSON smoke passes: `bash scripts/smoke_test.sh`
 - [ ] Release smoke passes: `bash scripts/release_smoke.sh`
+- [ ] Installed-wheel first-value smoke passes: `bash scripts/release_smoke_wheel_first_value.sh`
 - [ ] Example models validate and build indexes
 - [ ] Version is updated in `pyproject.toml` and `src/modelops_core/__version__.py`
 - [ ] `CHANGELOG.md` is updated for this release

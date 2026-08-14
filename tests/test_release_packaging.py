@@ -5,6 +5,7 @@ from __future__ import annotations
 import subprocess
 import sys
 import tomllib
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -55,3 +56,26 @@ class TestBuild:
         artifacts = list(outdir.iterdir())
         assert any(a.suffix == ".gz" for a in artifacts), "sdist missing"
         assert any(a.suffix == ".whl" for a in artifacts), "wheel missing"
+
+    @pytest.mark.slow
+    def test_wheel_carries_first_value_assets(self, tmp_path: Path) -> None:
+        """The wheel ships what the installed first-value smoke (issue #625) relies on."""
+        repo_root = Path(__file__).resolve().parent.parent
+        outdir = tmp_path / "dist"
+        result = subprocess.run(
+            [sys.executable, "-m", "build", str(repo_root), "--wheel", "--outdir", str(outdir)],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        wheel = next(outdir.glob("*.whl"))
+        with zipfile.ZipFile(wheel) as archive:
+            names = set(archive.namelist())
+            entry_points = next(name for name in names if name.endswith("entry_points.txt"))
+            scripts = archive.read(entry_points).decode("utf-8")
+
+        assert "modelops_core/workbench_static/index.html" in names, "packaged Workbench missing"
+        assert any(
+            name.startswith("modelops_core/assets/templates/model_spines/") for name in names
+        ), "model-spine templates missing"
+        assert "martenweave = modelops_core.cli:app" in scripts

@@ -84,6 +84,9 @@ jobs:
       - name: Release smoke checks
         run: bash scripts/release_smoke.sh
 
+      - name: Installed-wheel first-value smoke
+        run: bash scripts/release_smoke_wheel_first_value.sh
+
       - name: Build packaged Workbench assets
         run: |
           npm --prefix frontend ci

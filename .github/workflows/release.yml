@@ -54,6 +54,9 @@ jobs:
       - name: Release smoke checks
         run: bash scripts/release_smoke.sh
 
+      - name: Installed-wheel first-value smoke
+        run: bash scripts/release_smoke_wheel_first_value.sh
+
   build-and-publish:
     needs: test-and-lint
     runs-on: ubuntu-latest
