@@ -48,6 +48,8 @@ from modelops_core.api.models import (
     ReportGenerateRequest,
     ReportGenerateResponse,
     SearchResultItem,
+    StartResultEvidence,
+    StartResultResponse,
     WorkspaceCreateRequest,
     WorkspaceSummary,
     WorkspaceValidateRequest,
@@ -116,7 +118,11 @@ from modelops_core.reports.scorecard_service import generate_scorecard
 from modelops_core.reports.source_registry_service import SourceRegistryService
 from modelops_core.repository import scan_repository
 from modelops_core.repository.scaffold import available_templates, init_repository
-from modelops_core.run import generate_dataset_readiness_report, write_readiness_report
+from modelops_core.run import (
+    generate_dataset_readiness_report,
+    load_start_result,
+    write_readiness_report,
+)
 
 router = APIRouter(prefix="/api/v1")
 
@@ -274,6 +280,15 @@ def capabilities(
             method="GET",
             href="/api/v1/findings?assessment={generated-relative-path}",
             description="Read typed assessment findings and separate human review state.",
+        ),
+        CapabilityEntry(
+            name="start_result",
+            method="GET",
+            href="/api/v1/start-result",
+            description=(
+                "Read the persisted first-value result of a `martenweave start` workspace, "
+                "including verdict, findings, evidence, and the recommended next action."
+            ),
         ),
         CapabilityEntry(
             name="list_objects",
@@ -850,6 +865,33 @@ def findings(
             )
         )
     return FindingResponse(assessment_id=assessment_id, total_count=len(items), findings=items)
+
+
+@router.get("/start-result", response_model=StartResultResponse)
+def start_result(
+    repo: str | None = Query(None, description="Path to model repository"),
+) -> StartResultResponse:
+    """Return the persisted first-value result of a `martenweave start` workspace.
+
+    Only reads artifacts written by the start run; workspaces without them get
+    ``available=False`` instead of a fabricated zero state.
+    """
+    result = load_start_result(_resolve_repo(repo))
+    if result is None:
+        return StartResultResponse(available=False)
+    return StartResultResponse(
+        available=True,
+        verdict=result["verdict"],
+        total_findings=result["total_findings"],
+        dataset_gaps=result["dataset_gaps"],
+        model_gaps=result["model_gaps"],
+        validation_errors=result["validation_errors"],
+        validation_warnings=result["validation_warnings"],
+        recommended_next_action=result["recommended_next_action"],
+        findings=result["findings"],
+        evidence=StartResultEvidence(**result["evidence"]),
+        provenance=result["provenance"],
+    )
 
 
 @router.get("/assessment-comparisons")

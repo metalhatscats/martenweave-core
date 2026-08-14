@@ -382,6 +382,37 @@ class AssessmentManifestResponse(BaseModel):
     manifests: list[AssessmentManifestItem]
 
 
+class StartResultEvidence(BaseModel):
+    """Generated-relative artifact ids for the persisted start-run evidence."""
+
+    readiness_json: str | None = None
+    readiness_markdown: str | None = None
+    profile: str | None = None
+    draft_proposal: str | None = Field(
+        default=None,
+        description="Workspace-relative reference to the draft PatchProposal, if any.",
+    )
+
+
+class StartResultResponse(BaseModel):
+    """Persisted first-value result of a `martenweave start` workspace.
+
+    Only surfaces artifacts written by the start run; ``available`` is False for
+    workspaces without a persisted start result, never a fabricated zero state.
+    """
+
+    available: bool
+    verdict: str | None = None
+    total_findings: int = 0
+    dataset_gaps: int = 0
+    model_gaps: int = 0
+    validation_errors: int = 0
+    validation_warnings: int = 0
+    recommended_next_action: str | None = None
+    findings: list[dict[str, Any]] = Field(default_factory=list)
+    evidence: StartResultEvidence = Field(default_factory=StartResultEvidence)
+    provenance: dict[str, Any] = Field(default_factory=dict)
+
 class SearchResultItem(BaseModel):
     """A single search result returned by /api/v1/search."""
 

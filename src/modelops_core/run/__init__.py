@@ -13,6 +13,7 @@ from modelops_core.run.migration_assessment import (
     StageStatus,
     generate_migration_assessment,
 )
+from modelops_core.run.start_result import load_start_result
 
 __all__ = [
     "DatasetReadinessReport",
@@ -21,5 +22,6 @@ __all__ = [
     "StageStatus",
     "generate_dataset_readiness_report",
     "generate_migration_assessment",
+    "load_start_result",
     "write_readiness_report",
 ]

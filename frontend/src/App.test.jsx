@@ -82,6 +82,104 @@ describe("Martenweave workbench", () => {
     expect(screen.getByText("Local evidence synced")).toBeInTheDocument();
   });
 
+  const START_BLOCKED_RESULT = {
+    available: true,
+    verdict: "blocked",
+    total_findings: 2,
+    dataset_gaps: 2,
+    model_gaps: 0,
+    validation_errors: 0,
+    validation_warnings: 0,
+    recommended_next_action: "Review finding `GAP-CUSTOMER-ID` (customer_id): create a FieldEndpoint. Then re-run readiness.",
+    findings: [
+      { id: "GAP-CUSTOMER-ID", severity: "high", message: "Dataset column 'customer_id' has no matching FieldEndpoint.", affected_objects: ["customer_id"], evidence_refs: ["readiness.json"], recommended_action: "Create a FieldEndpoint for customer_id.", provenance: { assessment_run_id: "READINESS-CUSTOMER_SAMPLE", location: { column_name: "customer_id" } } },
+      { id: "GAP-CUSTOMER-GROUP", severity: "medium", message: "Dataset column 'customer_group' has no matching FieldEndpoint.", affected_objects: ["customer_group"], evidence_refs: ["readiness.json"], recommended_action: "Create a FieldEndpoint for customer_group.", provenance: { assessment_run_id: "READINESS-CUSTOMER_SAMPLE", location: { column_name: "customer_group" } } },
+    ],
+    evidence: {
+      readiness_json: "readiness/readiness.json",
+      readiness_markdown: "readiness/readiness.md",
+      profile: "dataset_profiles/customer_sample.json",
+      draft_proposal: "model/patch-proposals/PP-INFER-CUSTOMER-SAMPLE.md",
+    },
+    provenance: { created_at: "2026-08-02T10:00:00Z", input_name: "customer_sample.csv", input_format: "csv", input_sha256: "abc123def456", tool_version: "0.9.0" },
+  };
+
+  function stubStartWorkspaceFetch(startResult, { readOnly = true } = {}) {
+    vi.stubGlobal("fetch", vi.fn((url) => {
+      const address = String(url);
+      const payload = address.includes("/api/v1/start-result")
+        ? startResult
+        : address.includes("/api/v1/findings")
+          ? { total_count: 0, findings: [] }
+          : address.includes("/api/v1/proposals")
+            ? { total_count: 1, proposals: [{ id: "PP-INFER-CUSTOMER-SAMPLE", status: "pending_review", title: "Inferred model", operations_count: 10, affected_objects_count: 10, risk_level: "high", validation_status: "valid" }] }
+            : address.includes("/api/v1/recovery")
+              ? { states: [] }
+              : {
+                api_version: "v1", version: "0.9.0", indexed: true, canonical_files: 2,
+                read_only: readOnly, read: [], mutations: [], recovery: [],
+                ai: { active_providers: ["no_provider"] },
+              };
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(payload), text: () => Promise.resolve("") });
+    }));
+  }
+
+  it("renders the persisted start verdict, finding count, and one primary action", async () => {
+    window.location.hash = "#/home";
+    stubStartWorkspaceFetch(START_BLOCKED_RESULT);
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByText("Readiness verdict: blocked")).toBeInTheDocument());
+    expect(screen.getByText("2 findings from the start run · verdict: blocked")).toBeInTheDocument();
+    expect(screen.getByText("Verdict: blocked")).toBeInTheDocument();
+    expect(screen.getAllByText("Dataset column 'customer_id' has no matching FieldEndpoint.").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/items? need your attention/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Working in local sample mode")).not.toBeInTheDocument();
+    // One primary action with its expected output and mutation boundary.
+    expect(screen.getByRole("button", { name: /Review draft proposal/ })).toBeInTheDocument();
+    expect(screen.getByText(/Mutation boundary: nothing is applied without explicit approval/)).toBeInTheDocument();
+    // Real evidence links and provenance are discoverable.
+    expect(screen.getByRole("link", { name: /Readiness report \(Markdown\)/ })).toHaveAttribute("href", expect.stringContaining("/api/v1/reports/readiness/readiness.md"));
+    expect(screen.getByText(/Provenance: customer_sample.csv/)).toBeInTheDocument();
+    // Read-only and AI-unconfigured boundaries are stated, never hidden or fabricated.
+    expect(screen.getByText(/Read-only session: findings, evidence, catalog, and reports still work/)).toBeInTheDocument();
+    expect(screen.getByText(/No AI provider configured: every result shown here is deterministic/)).toBeInTheDocument();
+  });
+
+  it("shows the healthy start verdict with a no-mutation primary action", async () => {
+    window.location.hash = "#/home";
+    stubStartWorkspaceFetch({
+      ...START_BLOCKED_RESULT,
+      verdict: "ready",
+      total_findings: 0,
+      dataset_gaps: 0,
+      findings: [],
+      recommended_next_action: "No action required: all 1 dataset column(s) matched canonical FieldEndpoints.",
+      evidence: { readiness_json: "readiness/readiness.json", readiness_markdown: "readiness/readiness.md", profile: "dataset_profiles/input.json", draft_proposal: null },
+    });
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByText("Readiness verdict: ready")).toBeInTheDocument());
+    expect(screen.getByText("No open findings · verdict: ready")).toBeInTheDocument();
+    expect(screen.getByText("No open findings")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Browse the catalog/ })).toBeInTheDocument();
+    expect(screen.getByText(/No action required: all 1 dataset column/)).toBeInTheDocument();
+  });
+
+  it("states the no-input state instead of a fabricated zero result", async () => {
+    window.location.hash = "#/home";
+    stubStartWorkspaceFetch({ available: false });
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByText("No first-value result yet")).toBeInTheDocument());
+    expect(screen.getByText("No readiness result persisted")).toBeInTheDocument();
+    expect(screen.getByText("No persisted readiness result")).toBeInTheDocument();
+    expect(screen.getAllByText(/martenweave start <dataset-file>/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/items? need your attention/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Sample evidence ready")).not.toBeInTheDocument();
+  });
+
+
   it("loads generated report metadata from the local API", async () => {
     window.location.hash = "#/reports";
     vi.stubGlobal("fetch", vi.fn((url) => {

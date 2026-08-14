@@ -165,6 +165,7 @@ import { gaps as demoGaps, lineageEdges, lineageNodes, modelObjects, proposals a
  * @property {(path: string) => Promise<WorkspaceValidateResponse>} openWorkspace
  * @property {(data: {path: string, name: string, template?: string | null}) => Promise<WorkspaceValidateResponse>} createWorkspace
  * @property {() => Promise<any>} findings
+ * @property {() => Promise<any>} startResult
  */
 
 /**
@@ -579,6 +580,7 @@ export function createApiClient(baseUrl) {
     reports: (limit = 100) => fetchJson(`${root}/api/v1/reports?limit=${encodeURIComponent(limit)}`),
     reportDownloadUrl: (artifactId) => `${root}/api/v1/reports/${artifactId.split("/").map(encodeURIComponent).join("/")}`,
     findings: () => fetchJson(`${root}/api/v1/findings`),
+    startResult: () => fetchJson(`${root}/api/v1/start-result`),
     assessmentManifests: () => fetchJson(`${root}/api/v1/assessment-manifests`),
     compareAssessments: (base, head) => fetchJson(`${root}/api/v1/assessment-comparisons?${new URLSearchParams({ base_manifest: base, head_manifest: head })}`),
     diffRepositories: (basePath, headPath) => fetchJson(`${root}/api/v1/diff?${new URLSearchParams({ base_path: basePath, head_path: headPath })}`),
@@ -1066,6 +1068,54 @@ export function useAssessmentFindings() {
   }, [client, demo, state]);
 
   return { findings, assessmentId, loading, error, demo };
+}
+
+/**
+ * Read the persisted first-value result of a `martenweave start` workspace.
+ *
+ * Returns `result.available === false` for workspaces without a persisted
+ * start run — never a fabricated zero state.
+ *
+ * @returns {{ result: object|null, loading: boolean, error: string|null, demo: boolean }}
+ */
+export function useStartResult() {
+  const { client, demo, state } = useApi();
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (state === API_STATE.UNKNOWN) {
+      // Capabilities probe still in flight: stay in a neutral loading state
+      // instead of painting demo fixtures or firing a premature request.
+      setResult(null);
+      setLoading(true);
+      setError(null);
+      return undefined;
+    }
+    if (demo || !client) {
+      setResult(null);
+      setLoading(false);
+      setError(null);
+      return undefined;
+    }
+    let cancelled = false;
+    setLoading(true);
+    client.startResult()
+      .then((response) => {
+        if (!cancelled) {
+          setResult(response);
+          setError(null);
+        }
+      })
+      .catch((reason) => {
+        if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason));
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [client, demo, state]);
+
+  return { result, loading, error, demo };
 }
 
 /**
