@@ -394,6 +394,19 @@ class StartResultEvidence(BaseModel):
     )
 
 
+class StartDecisionGate(BaseModel):
+    """Human-review progress for a persisted first-value evidence case."""
+
+    total: int = 0
+    reviewed: int = 0
+    remaining: int = 0
+    deferred: int = 0
+    proposal_review_ready: bool = False
+    gate_reason: str | None = None
+    assessment_id: str | None = None
+    proposal_id: str | None = None
+
+
 class StartResultResponse(BaseModel):
     """Persisted first-value result of a `martenweave start` workspace.
 
@@ -412,6 +425,8 @@ class StartResultResponse(BaseModel):
     findings: list[dict[str, Any]] = Field(default_factory=list)
     evidence: StartResultEvidence = Field(default_factory=StartResultEvidence)
     provenance: dict[str, Any] = Field(default_factory=dict)
+    decision_gate: StartDecisionGate = Field(default_factory=StartDecisionGate)
+
 
 class SearchResultItem(BaseModel):
     """A single search result returned by /api/v1/search."""

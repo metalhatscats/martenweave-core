@@ -85,6 +85,7 @@ import {
   useProposalValidate,
   useProposals,
   useHomeAssistant,
+  useStartResult,
   useWorkspaceActivity,
 } from "./api.jsx";
 import {
@@ -108,7 +109,7 @@ import { ReadinessScreen } from "./mission-control.jsx";
 
 function ConnectionBanner() {
   const { state, demo, error, recovery, recoveryStates, retry } = useApi();
-  const showBanner = state !== API_STATE.CONNECTED || recoveryStates.length > 0;
+  const showBanner = state !== API_STATE.CONNECTED;
   if (!showBanner) return null;
 
   const messages = {
@@ -264,6 +265,8 @@ function Sidebar({ route, navigate, open, onClose, onWorkspace }) {
                 type="button"
                 className={`nav-item ${activeRoute === id ? "is-active" : ""}`}
                 key={id}
+                aria-label={label}
+                title={label}
                 onClick={() => {
                   navigate(id);
                   onClose();
@@ -494,6 +497,28 @@ function updatedMinutes(value) {
 function capitalize(value) {
   if (!value) return "";
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function validationPassed(proposal) {
+  return ["passed", "valid"].includes(
+    String(proposal?.validation_status || proposal?.validationStatus || "").toLowerCase()
+  );
+}
+
+function OperationValue({ value }) {
+  if (value === undefined) return null;
+  if (value === null || typeof value !== "object") return <code>{String(value)}</code>;
+  if (Array.isArray(value)) return <span className="operation-value-list">{value.map(String).join(", ")}</span>;
+  return (
+    <dl className="operation-value-list">
+      {Object.entries(value).map(([key, item]) => (
+        <div key={key}>
+          <dt>{key.replaceAll("_", " ")}</dt>
+          <dd>{item && typeof item === "object" ? JSON.stringify(item) : String(item ?? "—")}</dd>
+        </div>
+      ))}
+    </dl>
+  );
 }
 
 function getHashSearchParam() {
@@ -1699,7 +1724,7 @@ function ProposalScreen({ navigate, params, onToast, onRefreshProposals, refresh
   const [reviewStatus, setReviewStatus] = useState("");
   const [applied, setApplied] = useState(false);
   const proposalId = params.get("id");
-  const { demo } = useApi();
+  const { capabilities, demo, state } = useApi();
   const {
     proposal: liveProposal,
     loading,
@@ -1711,11 +1736,25 @@ function ProposalScreen({ navigate, params, onToast, onRefreshProposals, refresh
   const { run: runDryRun, loading: dryRunLoading, result: dryRunResult } = useProposalDryRun();
   const { run: runApply, loading: applyLoading, error: applyError, result: applyResult } = useProposalApply();
   const { run: runDiff, loading: diffLoading, error: diffError, result: diffResult } = useProposalDiff();
+  const { result: startResult } = useStartResult();
 
   const pid = proposal?.proposalId || proposal?.id;
   const effectiveStatus = reviewStatus || proposal?.status || "";
   const isApproved = effectiveStatus === "Approved";
   const isApplied = applied || Boolean(proposal?.appliedAt);
+  const checksPassed = validationPassed(proposal);
+  const mutationBlocked = demo ? null : mutationBlockReason({ demo, state, capabilities });
+  const evidenceGate = startResult?.decision_gate && pid && startResult.decision_gate.proposal_id === pid
+    ? startResult.decision_gate
+    : null;
+  const evidenceBlocked = Boolean(evidenceGate && !evidenceGate.proposal_review_ready);
+  const reviewBlocked =
+    !checksPassed || evidenceBlocked || Boolean(reviewStatus) || reviewLoading || Boolean(mutationBlocked);
+  const reviewBlockTitle = !checksPassed
+    ? "Resolve validation errors before approval"
+    : evidenceBlocked
+      ? evidenceGate.gate_reason
+      : mutationBlocked || undefined;
 
   useEffect(() => {
     setReviewStatus("");
@@ -1723,10 +1762,10 @@ function ProposalScreen({ navigate, params, onToast, onRefreshProposals, refresh
   }, [proposalId]);
 
   useEffect(() => {
-    const openApproval = () => setDecision("approve");
+    const openApproval = () => { if (!reviewBlocked) setDecision("approve"); };
     window.addEventListener("martenweave:approve", openApproval);
     return () => window.removeEventListener("martenweave:approve", openApproval);
-  }, []);
+  }, [reviewBlocked]);
 
   useEffect(() => {
     if (tab === "Validation" && proposal && pid && !demo) {
@@ -1835,7 +1874,9 @@ function ProposalScreen({ navigate, params, onToast, onRefreshProposals, refresh
     );
   }
 
-  const linkedGapText = proposal.source_evidence?.[0] || proposal.linkedGap;
+  const linkedGapText = Array.isArray(proposal.source_evidence)
+    ? proposal.source_evidence[0]
+    : proposal.source_evidence || proposal.linkedGap;
   const linkedGapId = proposal.linkedGapId;
 
   return (
@@ -1850,10 +1891,10 @@ function ProposalScreen({ navigate, params, onToast, onRefreshProposals, refresh
             <p className="briefing-subtitle">{proposal.title}</p>
           </div>
           <div className="page-actions">
-            <button className="danger-button" onClick={() => setDecision("reject")} disabled={Boolean(reviewStatus) || reviewLoading}><XCircle size={17} /> Request changes</button>
-            <button className="approve-button" onClick={() => setDecision("approve")} disabled={Boolean(reviewStatus) || reviewLoading}><CheckCircle size={17} /> {reviewStatus || "Approve proposal"}</button>
+            <button className="danger-button" onClick={() => setDecision("reject")} disabled={Boolean(reviewStatus) || reviewLoading || Boolean(mutationBlocked)}><XCircle size={17} /> Request changes</button>
+            <button className="approve-button" onClick={() => setDecision("approve")} disabled={reviewBlocked} title={reviewBlockTitle}><CheckCircle size={17} /> {reviewStatus || "Approve proposal"}</button>
             {isApproved && !isApplied && (
-              <button className="primary-button" onClick={handleApply} disabled={applyLoading}>
+              <button className="primary-button" onClick={handleApply} disabled={applyLoading || !checksPassed || Boolean(mutationBlocked)} title={mutationBlocked || undefined}>
                 <CheckCircle size={17} /> {applyLoading ? "Applying…" : "Apply to canonical"}
               </button>
             )}
@@ -1873,7 +1914,7 @@ function ProposalScreen({ navigate, params, onToast, onRefreshProposals, refresh
             <div><small>Risk classification</small><strong><WarningCircle size={16} /> {proposal.risk}</strong></div>
             <div><small>Canonical objects</small><strong>{(proposal.affected_objects?.length || proposal.impactObjects) || 0} affected</strong></div>
             <div><small>Proposed changes</small><strong>{(proposal.operations?.length || proposal.changes) || 0} changes</strong></div>
-            <div><small>Validation</small><strong><CheckCircle size={16} /> {capitalize(proposal.validation_status || proposal.validationStatus)}</strong></div>
+            <div className={checksPassed ? "" : "is-invalid"}><small>Validation</small><strong>{checksPassed ? <CheckCircle size={16} /> : <WarningCircle size={16} />} {capitalize(proposal.validation_status || proposal.validationStatus)}</strong></div>
           </section>
           <div className="review-tabs">
             {["Changes", "Diff", "Impact", "Validation", "Activity"].map((item) => <button className={tab === item ? "is-active" : ""} key={item} onClick={() => setTab(item)}>{item}</button>)}
@@ -1900,10 +1941,20 @@ function ProposalScreen({ navigate, params, onToast, onRefreshProposals, refresh
               </button>
             )}
           </section>
-          <section className="surface">
-            <div className="section-title"><div><h2>Reviewers</h2><p>{proposal.riskAssessment?.requires_approval ? "Requires approved ChangeRequest" : "No approval required"}</p></div></div>
-            <div className="reviewer-row"><span className="avatar avatar-soft">PN</span><span><strong>Priya Nair</strong><small>Data steward</small></span><CheckCircle size={18} weight="fill" /></div>
-            <div className="reviewer-row"><span className="avatar avatar-soft">AC</span><span><strong>Alex Chen</strong><small>Your review</small></span><Badge>{reviewStatus || "Pending"}</Badge></div>
+          <section className={`surface review-gate ${checksPassed && !evidenceBlocked ? "is-ready" : "is-blocked"}`}>
+            <div className="section-title"><div><h2>Review gate</h2><p>{checksPassed && !evidenceBlocked ? "Deterministic checks and human classification passed" : "Approval is blocked"}</p></div></div>
+            <div className="review-gate-state">
+              {checksPassed && !evidenceBlocked ? <ShieldCheck size={18} /> : <WarningCircle size={18} />}
+              <span>
+                <strong>{!checksPassed ? "Resolve validation errors first" : evidenceBlocked ? evidenceGate.gate_reason : mutationBlocked ? "Open a mutation-enabled local session to review" : "Ready for a named human reviewer"}</strong>
+                <small>{evidenceGate ? `${evidenceGate.reviewed} of ${evidenceGate.total} evidence findings classified. ` : ""}{mutationBlocked || (proposal.riskAssessment?.requires_approval ? "An approved ChangeRequest is required before apply." : "Canonical files remain unchanged until an explicit apply.")}</small>
+              </span>
+            </div>
+            <dl className="review-gate-details">
+              <div><dt>Reviewer</dt><dd>{proposal.reviewer || "Not recorded"}</dd></div>
+              <div><dt>Decision</dt><dd>{reviewStatus || "Pending"}</dd></div>
+              {evidenceGate && <div><dt>Evidence</dt><dd>{evidenceGate.reviewed}/{evidenceGate.total} classified</dd></div>}
+            </dl>
           </section>
           <section className="surface comment-box">
             <div className="section-title"><div><h2>Review note</h2><p>Visible to proposal reviewers</p></div></div>
@@ -1918,8 +1969,8 @@ function ProposalScreen({ navigate, params, onToast, onRefreshProposals, refresh
       <div className="briefing-decision-bar">
         <div><span className="briefing-risk-dot" /><span><strong>{proposal.risk} risk change</strong><small>Approval creates a governed ChangeRequest; canonical files stay protected.</small></span></div>
         <div className="briefing-decision-actions">
-          <button className="secondary-button" onClick={() => setDecision("reject")} disabled={Boolean(reviewStatus) || reviewLoading}><XCircle size={17} /> Request changes</button>
-          <button className="approve-button" onClick={() => setDecision("approve")} disabled={Boolean(reviewStatus) || reviewLoading}><CheckCircle size={17} /> {reviewStatus || "Approve proposal"}</button>
+          <button className="secondary-button" onClick={() => setDecision("reject")} disabled={Boolean(reviewStatus) || reviewLoading || Boolean(mutationBlocked)}><XCircle size={17} /> Request changes</button>
+          <button className="approve-button" onClick={() => setDecision("approve")} disabled={reviewBlocked} title={reviewBlockTitle}><CheckCircle size={17} /> {reviewStatus || "Approve proposal"}</button>
         </div>
       </div>
       {decision && (
@@ -1937,6 +1988,7 @@ function ProposalScreen({ navigate, params, onToast, onRefreshProposals, refresh
 function ProposalEvidenceTrail({ proposal, linkedGapText, navigate }) {
   const target = proposal.affected_objects?.[0] || "Canonical object";
   const validation = capitalize(proposal.validation_status || proposal.validationStatus || "passed");
+  const passed = validationPassed(proposal);
   return (
     <section className="briefing-evidence" aria-label="Evidence trail">
       <div className="briefing-section-heading"><span>Evidence trail</span><small>Trace the decision from source evidence to canonical change.</small></div>
@@ -1947,7 +1999,13 @@ function ProposalEvidenceTrail({ proposal, linkedGapText, navigate }) {
         <ArrowRight className="briefing-arrow" size={20} />
         <button className="briefing-target" onClick={() => navigate("models")}><span className="briefing-trail-icon target"><FileText size={18} /></span><small>Canonical object</small><strong>{target}</strong><p>Open the catalog record <CaretRight size={13} /></p></button>
       </div>
-      <div className="briefing-validation"><ShieldCheck size={18} weight="fill" /><span><strong>{validation} validation</strong><small>Schema, reference integrity, and domain rules completed before review.</small></span></div>
+      <div className={`briefing-validation ${passed ? "is-passed" : "is-invalid"}`}>
+        {passed ? <ShieldCheck size={18} weight="fill" /> : <WarningCircle size={18} weight="fill" />}
+        <span>
+          <strong>{validation} validation</strong>
+          <small>{passed ? "Schema, reference integrity, and domain rules completed before review." : "Approval is blocked until deterministic validation errors are resolved."}</small>
+        </span>
+      </div>
     </section>
   );
 }
@@ -1994,10 +2052,10 @@ function ProposalChanges({ proposal }) {
                 {(operation.before !== undefined || operation.after !== undefined) && (
                   <div className="field-diff">
                     {operation.before !== undefined && (
-                      <div className="removed-value"><small>Current</small><code>{JSON.stringify(operation.before)}</code></div>
+                      <div className="removed-value"><small>Current</small><OperationValue value={operation.before} /></div>
                     )}
                     {operation.after !== undefined && (
-                      <div className="added-value"><small>Proposed</small><code>{JSON.stringify(operation.after)}</code></div>
+                      <div className="added-value"><small>Proposed</small><OperationValue value={operation.after} /></div>
                     )}
                   </div>
                 )}
@@ -2021,10 +2079,10 @@ function ProposalChanges({ proposal }) {
             {(operation.before !== undefined || operation.after !== undefined) && (
               <div className="field-diff">
                 {operation.before !== undefined && (
-                  <div className="removed-value"><small>Current</small><code>{JSON.stringify(operation.before)}</code></div>
+                  <div className="removed-value"><small>Current</small><OperationValue value={operation.before} /></div>
                 )}
                 {operation.after !== undefined && (
-                  <div className="added-value"><small>Proposed</small><code>{JSON.stringify(operation.after)}</code></div>
+                  <div className="added-value"><small>Proposed</small><OperationValue value={operation.after} /></div>
                 )}
               </div>
             )}
@@ -2091,10 +2149,10 @@ function ProposalDiff({ diffs, loading, error, demo }) {
           {(diff.before !== undefined || diff.after !== undefined) && (
             <div className="field-diff">
               {diff.before !== undefined && (
-                <div className="removed-value"><small>Before</small><code>{typeof diff.before === "object" ? JSON.stringify(diff.before) : String(diff.before)}</code></div>
+                <div className="removed-value"><small>Before</small><OperationValue value={diff.before} /></div>
               )}
               {diff.after !== undefined && (
-                <div className="added-value"><small>After</small><code>{typeof diff.after === "object" ? JSON.stringify(diff.after) : String(diff.after)}</code></div>
+                <div className="added-value"><small>After</small><OperationValue value={diff.after} /></div>
               )}
             </div>
           )}
@@ -2144,23 +2202,29 @@ function ProposalImpact({ navigate, proposal, dryRunResult, dryRunLoading }) {
 
 function ProposalValidation({ proposal, validateResult, validateLoading }) {
   const validationStatus = capitalize(proposal.validation_status || proposal.validationStatus);
-  const passed = validationStatus.toLowerCase() === "passed";
-  const results = validateResult?.validation_results || proposal.validation_results || [];
+  const passed = validateResult ? Boolean(validateResult.valid) : validationPassed(proposal);
+  const results = validateResult?.results || proposal.validation_results || [];
   return (
     <section className="change-section">
       <div className="change-section-heading"><div><h2>Validation evidence</h2><p>Deterministic checks executed before review.</p></div><Badge tone={passed ? "green" : "high"}><CheckCircle size={14} /> {passed ? "All checks passed" : "Checks failed"}</Badge></div>
       {validateLoading && <div className="empty-state"><CircleNotch className="spin" size={24} /> Running validation…</div>}
       <div className="validation-list">
-        {results.length > 0 ? results.map((result, index) => (
-          <div className="surface validation-row" key={index}><span className="validation-check"><Check size={16} weight="bold" /></span><span><strong>{result.check || result.rule || `Check ${index + 1}`}</strong><small>{result.message || result.description || ""}</small></span><Badge tone={result.status === "passed" || result.status === "Passed" ? "green" : "high"}>{capitalize(result.status)}</Badge></div>
-        )) : (
+        {results.length > 0 ? results.map((result, index) => {
+          const resultLabel = result.status || result.severity || (passed ? "valid" : "error");
+          const resultPassed = !["error", "failed", "invalid"].includes(
+            String(resultLabel).toLowerCase()
+          );
+          return (
+            <div className="surface validation-row" key={index}><span className="validation-check"><Check size={16} weight="bold" /></span><span><strong>{result.check || result.rule || result.code || `Check ${index + 1}`}</strong><small>{result.message || result.description || ""}</small></span><Badge tone={resultPassed ? "green" : "high"}>{capitalize(String(resultLabel))}</Badge></div>
+          );
+        }) : (
           [
             ["Schema validation", "Object structure matches the registered Attribute and Mapping schemas."],
             ["Reference integrity", "All proposed object references resolve to valid canonical IDs."],
             ["SAP context", "Source endpoint context matches the registered domain pack rules."],
             ["ID uniqueness", "No duplicate stable IDs were found in the repository."],
           ].map(([title, description]) => (
-            <div className="surface validation-row" key={title}><span className="validation-check"><Check size={16} weight="bold" /></span><span><strong>{title}</strong><small>{description}</small></span><Badge tone={passed ? "green" : "high"}>{validationStatus || "Passed"}</Badge></div>
+            <div className="surface validation-row" key={title}><span className="validation-check"><Check size={16} weight="bold" /></span><span><strong>{title}</strong><small>{description}</small></span><Badge tone={passed ? "green" : "high"}>{validationStatus || (passed ? "Valid" : "Invalid")}</Badge></div>
           ))
         )}
       </div>

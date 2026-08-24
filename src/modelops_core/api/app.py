@@ -43,7 +43,7 @@ from modelops_core.patching.apply_service import apply_patch_proposal, dry_run_p
 from modelops_core.patching.patch_proposal_service import transition_patch_proposal_status
 from modelops_core.patching.patch_validator import validate_patch_proposal
 from modelops_core.repository import parse_file, scan_repository
-from modelops_core.run import generate_dataset_readiness_report
+from modelops_core.run import generate_dataset_readiness_report, load_start_decision_gate
 from modelops_core.schemas.common import PatchProposalStatus, SourceState
 from modelops_core.source_state import classify_dataset_gap, classify_object_type
 from modelops_core.trace import trace_object
@@ -458,6 +458,11 @@ def review_proposal(
             status_code=400, detail=f"Invalid status '{request.status}'. Allowed: {allowed}"
         ) from exc
 
+    if request.status == PatchProposalStatus.ACCEPTED.value:
+        gate = load_start_decision_gate(repo_root, proposal_id)
+        if gate is not None and not gate["proposal_review_ready"]:
+            raise HTTPException(status_code=409, detail=gate["gate_reason"])
+
     try:
         warning = transition_patch_proposal_status(
             proposal_path,
@@ -487,13 +492,14 @@ def validate_proposal(
 ) -> dict[str, Any]:
     """Validate a PatchProposal."""
     repo_root = _resolve_repo(repo)
-    proposal_path = resolve_model_path(repo_root) / "patch-proposals" / f"{proposal_id}.md"
+    model_path = resolve_model_path(repo_root)
+    proposal_path = model_path / "patch-proposals" / f"{proposal_id}.md"
     if not proposal_path.exists():
         raise HTTPException(status_code=404, detail=f"Proposal {proposal_id} not found")
 
     parsed = parse_file(proposal_path)
     fm = parsed.frontmatter or {}
-    results = validate_patch_proposal(fm)
+    results = validate_patch_proposal(fm, repo_model_path=model_path)
     return {
         "proposal_id": proposal_id,
         "valid": all(r.severity != "ERROR" for r in results),

@@ -13,9 +13,8 @@ describe("Martenweave workbench", () => {
   it("renders the decision-first readiness workspace by default", async () => {
     window.location.hash = "#/";
     render(<App />);
-    expect(screen.getByRole("heading", { name: "Data migration command centre" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Readiness queue" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Migration workflow" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Opening local evidence…" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Readiness" })).toBeInTheDocument();
   });
 
   it("shows a connecting state instead of sample data while the API probe is pending", () => {
@@ -23,8 +22,7 @@ describe("Martenweave workbench", () => {
     vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => {})));
     render(<App />);
     expect(screen.getByText(/Connecting to local Martenweave API/)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Data migration command centre" })).toBeInTheDocument();
-    expect(screen.getByText("Loading the next decision…")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Opening local evidence…" })).toBeInTheDocument();
     expect(screen.queryByText("Demo workspace")).not.toBeInTheDocument();
     expect(screen.queryByText("Demo mode")).not.toBeInTheDocument();
   });
@@ -78,8 +76,8 @@ describe("Martenweave workbench", () => {
     }));
     render(<App />);
 
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Data migration command centre" })).toBeInTheDocument());
-    expect(screen.getByText("Local evidence synced")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText("Northstar mapping needs review.").length).toBeGreaterThan(0));
+    expect(screen.getByRole("heading", { name: /evidence decision remains before change review/ })).toBeInTheDocument();
   });
 
   const START_BLOCKED_RESULT = {
@@ -102,6 +100,16 @@ describe("Martenweave workbench", () => {
       draft_proposal: "model/patch-proposals/PP-INFER-CUSTOMER-SAMPLE.md",
     },
     provenance: { created_at: "2026-08-02T10:00:00Z", input_name: "customer_sample.csv", input_format: "csv", input_sha256: "abc123def456", tool_version: "0.9.0" },
+    decision_gate: {
+      total: 2,
+      reviewed: 0,
+      remaining: 2,
+      deferred: 0,
+      proposal_review_ready: false,
+      gate_reason: "Classify 2 remaining evidence finding(s).",
+      assessment_id: "readiness",
+      proposal_id: "PP-INFER-CUSTOMER-SAMPLE",
+    },
   };
 
   function stubStartWorkspaceFetch(startResult, { readOnly = true } = {}) {
@@ -129,21 +137,44 @@ describe("Martenweave workbench", () => {
     stubStartWorkspaceFetch(START_BLOCKED_RESULT);
     render(<App />);
 
-    await waitFor(() => expect(screen.getByText("Readiness verdict: blocked")).toBeInTheDocument());
-    expect(screen.getByText("2 findings from the start run · verdict: blocked")).toBeInTheDocument();
-    expect(screen.getByText("Verdict: blocked")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("heading", { name: "2 evidence decisions remain before change review." })).toBeInTheDocument());
     expect(screen.getAllByText("Dataset column 'customer_id' has no matching FieldEndpoint.").length).toBeGreaterThan(0);
     expect(screen.queryByText(/items? need your attention/)).not.toBeInTheDocument();
     expect(screen.queryByText("Working in local sample mode")).not.toBeInTheDocument();
-    // One primary action with its expected output and mutation boundary.
-    expect(screen.getByRole("button", { name: /Review draft proposal/ })).toBeInTheDocument();
-    expect(screen.getByText(/Mutation boundary: nothing is applied without explicit approval/)).toBeInTheDocument();
-    // Real evidence links and provenance are discoverable.
-    expect(screen.getByRole("link", { name: /Readiness report \(Markdown\)/ })).toHaveAttribute("href", expect.stringContaining("/api/v1/reports/readiness/readiness.md"));
-    expect(screen.getByText(/Provenance: customer_sample.csv/)).toBeInTheDocument();
-    // Read-only and AI-unconfigured boundaries are stated, never hidden or fabricated.
-    expect(screen.getByText(/Read-only session: findings, evidence, catalog, and reports still work/)).toBeInTheDocument();
-    expect(screen.getByText(/No AI provider configured: every result shown here is deterministic/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Classify next finding/ })).toBeInTheDocument();
+    expect(screen.getByText(/Accepted risk and deferral require a recorded rationale/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Open persisted report/ })).toHaveAttribute("href", expect.stringContaining("/api/v1/reports/readiness/readiness.md"));
+    expect(screen.getByText(/Persisted start run · sha256 abc123def456/)).toBeInTheDocument();
+    expect(screen.getByText(/Read-only workspace: evidence remains inspectable/)).toBeInTheDocument();
+    expect(screen.getByText(/No AI provider is active. The findings shown here are deterministic/)).toBeInTheDocument();
+  });
+
+  it("records a human disposition before opening the candidate change", async () => {
+    window.location.hash = "#/home";
+    vi.stubGlobal("fetch", vi.fn((url, options = {}) => {
+      const address = String(url);
+      let payload;
+      if (address.includes("/api/v1/findings/review") && options.method === "POST") {
+        const body = JSON.parse(options.body);
+        payload = { ...body, reviewed_at: "2026-08-24T10:00:00Z", note: body.note || "" };
+      } else if (address.includes("/api/v1/start-result")) payload = START_BLOCKED_RESULT;
+      else if (address.includes("/api/v1/findings")) payload = { total_count: 0, findings: [] };
+      else if (address.includes("/api/v1/proposals")) payload = { total_count: 1, proposals: [] };
+      else if (address.includes("/api/v1/recovery")) payload = { states: [] };
+      else payload = {
+        api_version: "v1", version: "0.9.0", indexed: true, canonical_files: 2,
+        read_only: false, read: [], mutations: [{ name: "review_finding" }], recovery: [],
+        ai: { active_providers: ["no_provider"] },
+      };
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(payload), text: () => Promise.resolve("") });
+    }));
+    render(<App />);
+
+    await screen.findByRole("heading", { name: "2 evidence decisions remain before change review." });
+    fireEvent.click(screen.getByRole("button", { name: /Confirm gap/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Record decision/ }));
+    await waitFor(() => expect(screen.getByRole("heading", { name: "1 evidence decision remains before change review." })).toBeInTheDocument());
+    expect(screen.getByText(/1\/2 findings classified/)).toBeInTheDocument();
   });
 
   it("shows the healthy start verdict with a no-mutation primary action", async () => {
@@ -159,11 +190,9 @@ describe("Martenweave workbench", () => {
     });
     render(<App />);
 
-    await waitFor(() => expect(screen.getByText("Readiness verdict: ready")).toBeInTheDocument());
-    expect(screen.getByText("No open findings · verdict: ready")).toBeInTheDocument();
-    expect(screen.getByText("No open findings")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Browse the catalog/ })).toBeInTheDocument();
-    expect(screen.getByText(/No action required: all 1 dataset column/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("heading", { name: "This file is ready for governed inspection." })).toBeInTheDocument());
+    expect(screen.getByText("No open findings in this case")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Inspect governed model/ })).toBeInTheDocument();
   });
 
   it("states the no-input state instead of a fabricated zero result", async () => {
@@ -171,10 +200,8 @@ describe("Martenweave workbench", () => {
     stubStartWorkspaceFetch({ available: false });
     render(<App />);
 
-    await waitFor(() => expect(screen.getByText("No first-value result yet")).toBeInTheDocument());
-    expect(screen.getByText("No readiness result persisted")).toBeInTheDocument();
-    expect(screen.getByText("No persisted readiness result")).toBeInTheDocument();
-    expect(screen.getAllByText(/martenweave start <dataset-file>/).length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Start with one migration artifact" })).toBeInTheDocument());
+    expect(screen.getByText(/martenweave start <dataset-file>/)).toBeInTheDocument();
     expect(screen.queryByText(/items? need your attention/)).not.toBeInTheDocument();
     expect(screen.queryByText("Sample evidence ready")).not.toBeInTheDocument();
   });
@@ -344,43 +371,40 @@ describe("Martenweave workbench", () => {
     expect(screen.getByText("Synced with CHANGELOG.md")).toBeInTheDocument();
   });
 
-  it("renders the evidence-backed model assistant on the home screen", () => {
+  it("renders a contextual command bar without a generic chatbot", async () => {
     window.location.hash = "#/home";
     render(<App />);
-    expect(screen.getByRole("heading", { name: "Ask about your model" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Ask a model question")).toBeInTheDocument();
-    expect(screen.getByText("Deterministic · works offline")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/Explain DEMO_FINDING/)).toBeInTheDocument());
+    expect(screen.queryByRole("heading", { name: "Ask about your model" })).not.toBeInTheDocument();
   });
 
-  it("runs a suggested question and renders evidence-backed result cards", async () => {
+  it("opens context for a selected evidence finding", async () => {
     window.location.hash = "#/home";
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Find Business Partner" }));
-    await waitFor(() => expect(screen.getByText("Search results")).toBeInTheDocument());
-    expect(screen.getByText(/results? · Demo data/)).toBeInTheDocument();
-    expect(screen.getAllByText("Business Partner").length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.getByRole("listbox", { name: "Readiness queue" })).toBeInTheDocument());
+    const findings = screen.getAllByRole("option");
+    fireEvent.click(findings[1]);
+    expect(findings[1]).toHaveAttribute("aria-selected", "true");
+    expect(screen.getAllByText("Human decision").length).toBeGreaterThan(0);
   });
 
-  it("labels unsupported prompts and offers relevant actions instead of invented answers", async () => {
+  it("filters the current evidence case locally", async () => {
     window.location.hash = "#/home";
     render(<App />);
-    const input = screen.getByLabelText("Ask a model question");
-    fireEvent.change(input, { target: { value: "what is the weather today" } });
-    fireEvent.click(screen.getByRole("button", { name: "Run query" }));
-    await waitFor(() => expect(screen.getByText("Not supported yet")).toBeInTheDocument());
-    expect(screen.getByRole("button", { name: /Search objects/ })).toBeInTheDocument();
+    const input = await screen.findByLabelText("Find in this evidence case");
+    fireEvent.change(input, { target: { value: "definitely missing" } });
+    expect(screen.getByText(/No evidence matches/)).toBeInTheDocument();
   });
 
-  it("navigates from an assistant result card to the object screen", async () => {
+  it("navigates from the context panel to related evidence", async () => {
     window.location.hash = "#/home";
+    vi.stubGlobal("ResizeObserver", class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    });
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Find Business Partner" }));
-    await waitFor(() => expect(screen.getByText("Search results")).toBeInTheDocument());
-    const resultCards = screen.getAllByText("Business Partner").filter((element) =>
-      element.closest(".result-card")
-    );
-    expect(resultCards.length).toBeGreaterThan(0);
-    fireEvent.click(resultCards[0]);
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Business Partner" })).toBeInTheDocument());
+    fireEvent.click(await screen.findByRole("button", { name: "Open related evidence" }));
+    await waitFor(() => expect(screen.getByRole("heading", { name: /lineage/i })).toBeInTheDocument());
   });
 });

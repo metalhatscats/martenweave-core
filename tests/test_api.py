@@ -686,6 +686,40 @@ def test_api_validate_proposal_success(temp_model_dir: Path) -> None:
     assert isinstance(data["results"], list)
 
 
+def test_api_validate_proposal_resolves_references_against_repository(
+    temp_model_dir: Path,
+) -> None:
+    repo = str(temp_model_dir.parent)
+    proposals_dir = temp_model_dir / "patch-proposals"
+    proposals_dir.mkdir(parents=True, exist_ok=True)
+    (proposals_dir / "PP-CONTEXT-001.md").write_text(
+        "---\n"
+        "id: PP-CONTEXT-001\n"
+        "type: PatchProposal\n"
+        "status: pending_review\n"
+        "name: Context-aware proposal\n"
+        "operations:\n"
+        "  - op: create_object\n"
+        "    object_id: ATTR-NEW\n"
+        "    object_type: Attribute\n"
+        "    after:\n"
+        "      id: ATTR-NEW\n"
+        "      type: Attribute\n"
+        "      status: draft\n"
+        "      name: New attribute\n"
+        "      domain: DOMAIN-TEST\n"
+        "---\n",
+        encoding="utf-8",
+    )
+
+    response = client.post("/proposals/PP-CONTEXT-001/validate", params={"repo": repo})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["valid"] is True
+    assert data["errors"] == 0
+
+
 def test_api_validate_proposal_not_found(temp_model_dir: Path) -> None:
     repo = str(temp_model_dir.parent)
     response = client.post("/proposals/PP-MISSING/validate", params={"repo": repo})

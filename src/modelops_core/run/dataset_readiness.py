@@ -588,7 +588,7 @@ def write_readiness_report(
     report: DatasetReadinessReport,
     out_dir: Path,
 ) -> tuple[Path, Path]:
-    """Write the readiness report as JSON and Markdown files.
+    """Write the readiness report, reviewable findings, and Markdown summary.
 
     Returns the paths to the written JSON and Markdown files.
     """
@@ -598,6 +598,33 @@ def write_readiness_report(
 
     json_path.write_text(
         json.dumps(report.__dict__, indent=2, default=str, sort_keys=True),
+        encoding="utf-8",
+    )
+    findings_by_id = {
+        str(gap["finding"].get("id")): gap["finding"]
+        for gap in report.dataset_gaps + report.model_gaps
+        if isinstance(gap.get("finding"), dict) and gap["finding"].get("id")
+    }
+    findings = list(findings_by_id.values())
+    run_id = next(
+        (
+            finding.get("provenance", {}).get("assessment_run_id")
+            for finding in findings
+            if finding.get("provenance", {}).get("assessment_run_id")
+        ),
+        f"READINESS-{Path(report.dataset).stem.upper()}",
+    )
+    (out_dir / "findings.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "1.0",
+                "run_id": run_id,
+                "created_at": report.timestamp,
+                "findings": findings,
+            },
+            indent=2,
+            sort_keys=True,
+        ),
         encoding="utf-8",
     )
     md_path.write_text(_render_markdown(report), encoding="utf-8")

@@ -87,6 +87,24 @@ def test_api_v1_review_finding_invalid_disposition(sample_repo: Path) -> None:
     assert "Invalid disposition" in response.json()["detail"]
 
 
+def test_api_v1_review_finding_requires_rationale_for_accepted_risk(sample_repo: Path) -> None:
+    _build_assessment(sample_repo)
+
+    response = client.post(
+        "/api/v1/findings/review",
+        params={"repo": str(sample_repo)},
+        json={
+            "assessment": "assessment-run",
+            "finding_id": "FINDING-TEST",
+            "disposition": "accepted_risk",
+            "reviewer": "alice",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "requires a review note" in response.json()["detail"]
+
+
 def test_api_v1_review_finding_missing_assessment(sample_repo: Path) -> None:
     response = client.post(
         "/api/v1/findings/review",

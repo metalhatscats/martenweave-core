@@ -48,6 +48,7 @@ from modelops_core.api.models import (
     ReportGenerateRequest,
     ReportGenerateResponse,
     SearchResultItem,
+    StartDecisionGate,
     StartResultEvidence,
     StartResultResponse,
     WorkspaceCreateRequest,
@@ -891,6 +892,7 @@ def start_result(
         findings=result["findings"],
         evidence=StartResultEvidence(**result["evidence"]),
         provenance=result["provenance"],
+        decision_gate=StartDecisionGate(**result["decision_gate"]),
     )
 
 

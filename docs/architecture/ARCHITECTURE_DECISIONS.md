@@ -11,6 +11,7 @@
 | Core is domain-neutral | accepted | SAP and other domains live in optional domain packs/examples. |
 | Local-first backend core before UI/platform | accepted | CLI and Python services lead; UI/cloud remain optional later layers. |
 | Integrations are input/output channels | accepted | External systems never become source of truth for the model. |
+| Start-run evidence gates proposal acceptance | accepted | Core rejects acceptance of the generated candidate proposal until every deterministic finding has a human disposition and no item is deferred. |
 
 ## Decision Process
 

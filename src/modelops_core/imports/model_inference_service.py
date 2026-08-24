@@ -58,10 +58,11 @@ def _infer_objects_from_sheet(
     stem = _sanitize_id(dataset_id)
     sheet_stem = _sanitize_id(sheet_name)
 
-    # Domain object
+    # Domain object.  A caller-supplied domain is existing governed context,
+    # not another object for the proposal to create.
     domain_obj_id = domain_override if domain_override else f"DOMAIN-{stem}"
-    if sheet_index == 0:
-        domain_name = domain_override if domain_override else f"{sheet_name} Domain"
+    if sheet_index == 0 and domain_override is None:
+        domain_name = f"{sheet_name} Domain"
         operations.append(
             {
                 "op": "create_object",
@@ -248,6 +249,30 @@ def infer_model_from_profile(
         all_assumptions.extend(assump)
         all_human_checks.extend(checks)
 
+    # Duplicate source headers legitimately appear in messy migration files,
+    # but they must not become duplicate create_object operations.  The
+    # readiness report keeps the duplicate-column finding; the proposal keeps
+    # one reviewable canonical candidate for that header.
+    deduplicated_operations: list[dict[str, Any]] = []
+    seen_create_ids: set[str] = set()
+    duplicate_create_ids: list[str] = []
+    for op in all_operations:
+        object_id = op.get("object_id")
+        if op.get("op") == "create_object" and isinstance(object_id, str):
+            if object_id in seen_create_ids:
+                if object_id not in duplicate_create_ids:
+                    duplicate_create_ids.append(object_id)
+                continue
+            seen_create_ids.add(object_id)
+        deduplicated_operations.append(op)
+    all_operations = deduplicated_operations
+
+    if duplicate_create_ids:
+        all_assumptions.append(
+            "Duplicate source headers were represented once in the draft model; "
+            "review the readiness finding and resolve the source ambiguity before approval."
+        )
+
     for op in all_operations:
         oid = op.get("object_id")
         if oid and oid not in affected_objects:
@@ -269,5 +294,5 @@ def infer_model_from_profile(
         "validation_status": "pending",
         "validation_results": [],
         "assumptions": all_assumptions,
-        "human_checks": list(set(all_human_checks)),
+        "human_checks": list(dict.fromkeys(all_human_checks)),
     }

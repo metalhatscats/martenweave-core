@@ -26,6 +26,13 @@ _SUPPORTED_SUFFIXES = {
     ".json": "json",
 }
 
+_TEMPLATE_DOMAINS = {
+    "business_partner": "DOMAIN-BP",
+    "generic_large_object": "DOMAIN-GENERIC",
+    "sap_bp_customer_migration": "DOMAIN-CUSTOMER-MIGRATION",
+    "ams_field_dictionary": "DOMAIN-AMS-FIELD-DICTIONARY",
+}
+
 
 def _sha256(path: Path) -> str:
     hasher = hashlib.sha256()
@@ -36,14 +43,14 @@ def _sha256(path: Path) -> str:
 
 
 def _proposal_from_profile(
-    profile: dict[str, Any], model_path: Path, dataset_id: str
+    profile: dict[str, Any], model_path: Path, dataset_id: str, domain: str | None = None
 ) -> Path | None:
     """Write a draft-only inference proposal without touching canonical model objects."""
-    proposal = infer_model_from_profile(profile, dataset_id=dataset_id)
+    proposal = infer_model_from_profile(profile, dataset_id=dataset_id, domain=domain)
     operations = proposal.get("operations", [])
     if not operations:
         return None
-    validation = validate_patch_proposal(proposal)
+    validation = validate_patch_proposal(proposal, repo_model_path=model_path)
     proposal["validation_status"] = (
         "invalid" if any(result.severity == "ERROR" for result in validation) else "valid"
     )
@@ -62,6 +69,14 @@ def start(
         None, "--out", help="New local workspace directory (default: next to the input)."
     ),
     name: str | None = typer.Option(None, "--name", help="Optional workspace name."),
+    template: str | None = typer.Option(
+        None,
+        "--template",
+        help=(
+            "Optional governed model context, for example sap_bp_customer_migration. "
+            "The input is still assessed locally and never overwrites the template."
+        ),
+    ),
     open_browser: bool = typer.Option(
         False,
         "--open/--no-open",
@@ -91,7 +106,15 @@ def start(
         console.print(f"[red]Workspace is not empty: {workspace}[/red]")
         raise typer.Exit(code=1)
 
-    init_repository(workspace, name=name or f"{input_file.stem} readiness workspace")
+    try:
+        init_repository(
+            workspace,
+            name=name or f"{input_file.stem} readiness workspace",
+            template=template,
+        )
+    except ValueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
     generated_root = resolve_generated_path(workspace)
     reports_dir = generated_root / "readiness"
     report = generate_dataset_readiness_report(
@@ -106,8 +129,16 @@ def start(
         json.dumps(report.dataset_profile, indent=2, sort_keys=True), encoding="utf-8"
     )
     proposal_path = _proposal_from_profile(
-        report.dataset_profile, resolve_model_path(workspace), input_file.stem
+        report.dataset_profile,
+        resolve_model_path(workspace),
+        input_file.stem,
+        domain=_TEMPLATE_DOMAINS.get(template or ""),
     )
+    reviewable_finding_ids = {
+        gap["finding"]["id"]
+        for gap in report.dataset_gaps + report.model_gaps
+        if isinstance(gap.get("finding"), dict) and gap["finding"].get("id")
+    }
 
     manifest = {
         "schema_version": "1.0",
@@ -120,7 +151,7 @@ def start(
         "workspace": str(workspace),
         "readiness": {
             "verdict": report.verdict,
-            "total_findings": len(report.dataset_gaps) + len(report.model_gaps),
+            "total_findings": len(reviewable_finding_ids),
             "dataset_gaps": len(report.dataset_gaps),
             "model_gaps": len(report.model_gaps),
             "validation_errors": report.validation["error_count"],
@@ -128,9 +159,9 @@ def start(
         },
         "checks": {
             "unmapped_columns": "evaluated",
-            "ownership_gaps": "evaluated through canonical validation",
+            "ownership_gaps": "not_assessed_without_governed_ownership",
             "invalid_values": "not_assessed_without_governed_value_lists",
-            "transformation_risks": "represented by deterministic dataset/model gaps",
+            "transformation_risks": "limited_to_structural_dataset_model_gaps",
         },
         "generated_outputs": {
             "profile": str(profile_path.relative_to(workspace)),
@@ -139,7 +170,9 @@ def start(
             "draft_proposal": str(proposal_path.relative_to(workspace)) if proposal_path else None,
         },
         "canonical_model": {
-            "created_workspace_seed_only": True,
+            "created_workspace_seed_only": template is None,
+            "template": template,
+            "context_domain": _TEMPLATE_DOMAINS.get(template or ""),
             "input_never_overwrote_canonical_files": True,
             "draft_proposal_requires_validation_and_human_review": True,
         },

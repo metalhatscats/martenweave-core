@@ -82,12 +82,19 @@ def workbench(
 
     from modelops_core.api.workbench_app import create_workbench_app
 
-    workbench_app = create_workbench_app(repo_root, static_dir)
+    loopback_host = host in {"127.0.0.1", "localhost", "::1"}
+    workbench_app = create_workbench_app(
+        repo_root,
+        static_dir,
+        enable_mutations=loopback_host,
+    )
     url = f"http://{host}:{port}"
 
     console.print(f"[green]Starting Martenweave Workbench at {url}[/green]")
     console.print(f"  Repository: {repo_root}")
     console.print(f"  Static files: {static_dir}")
+    if not loopback_host:
+        console.print("  Mutations: disabled (Workbench is not bound to a loopback host)")
 
     if not no_open:
         Timer(1.0, lambda: webbrowser.open(url)).start()

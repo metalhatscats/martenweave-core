@@ -10,8 +10,8 @@ the CLI-first, canonical-file-driven core workflow.
 ## What the Workbench is
 
 - The official local browser UI for Martenweave Core.
-- A browser-based, **decision-first workspace**: start from Readiness, inspect canonical facts and
-  evidence, resolve gaps, then review governed approvals.
+- A browser-based, **decision-first Work Canvas**: start from one local evidence case, inspect the
+  decisions blocking readiness, then trace a governed proposal back to its source and rules.
 - A way to review responsive navigation, model search, lineage, gap-resolution workflows, and
   proposal approval flows connected to the local API.
 - A local-first React + Vite application packaged as static assets.
@@ -70,14 +70,14 @@ All data lives in [`src/data.js`](src/data.js). It is hand-crafted demo data tha
 ## How work moves
 
 ```text
-Readiness → Catalog / Evidence → Resolve → Approvals → Outputs / History
+Evidence case → Catalog / Evidence → Resolve → Approvals → Outputs / History
 ```
 
-The path is intentionally not a generic dashboard funnel. **Readiness** gives the team a bounded
-queue; **Catalog** and **Evidence** make the model and its provenance inspectable; **Resolve** keeps
-gaps and findings in a decision-ready workspace; and **Approvals** exposes the proposal evidence,
-validation, reviewer context, and resulting controlled action. The Model Assistant remains an
-evidence-oriented guide, never an autonomous actor.
+The path is intentionally not a generic dashboard funnel. The first canvas groups live findings
+into the few decisions that block readiness and moves selected evidence into a contextual drawer.
+**Catalog** and **Evidence** make the model and provenance inspectable; **Resolve** keeps detailed
+findings reviewable; and **Approvals** exposes proposal evidence, validation, reviewer context, and
+the resulting controlled action. There is no generic chat-first surface.
 
 ## Main screens
 
@@ -107,9 +107,10 @@ and interacts with Core services:
 - Gaps are modeled after `martenweave gaps` and `martenweave gap-report`.
 - Proposals mirror `martenweave propose-patch` and `martenweave proposal`.
 
-The current build uses static demo data in `src/data.js` for standalone development. In a packaged
-integration, the Workbench reads from the local API (`martenweave serve`) and never stores canonical
-truth independently of the `model/` files.
+Standalone development can use the small static sample in `src/data.js`. In a packaged integration,
+the Workbench reads from the bound local API and never stores canonical truth independently of the
+`model/` files. `martenweave workbench` uses an ephemeral same-origin `HttpOnly` session cookie for
+governed actions; canonical apply still requires a valid, human-approved proposal.
 
 ## Known limitations
 
@@ -117,7 +118,8 @@ truth independently of the `model/` files.
 - No client-side persistence: refreshes reset the UI state.
 - No authentication or multi-tenant support.
 - No direct SAP connectivity or write-back.
-- AI suggestions are mocked; real proposals must be generated and reviewed through Core.
+- No-provider mode is fully supported; any AI-assisted proposal still comes from Core and requires
+  the same deterministic validation and human review.
 - Mobile layout is supported but not all complex lineage interactions are optimized for small viewports.
 
 ## Screenshots

@@ -1868,13 +1868,29 @@ function useProposalMutation(runFn) {
   return { run, loading, error, result };
 }
 
+function validateProposalMutation(client, id) {
+  return client.validateProposal(id);
+}
+
+function dryRunProposalMutation(client, id) {
+  return client.dryRunProposal(id);
+}
+
+function applyProposalMutation(client, id) {
+  return client.applyProposal(id);
+}
+
+function proposalDiffMutation(client, id) {
+  return client.proposalDiff(id);
+}
+
 /**
  * Mutation hook for validating a proposal.
  *
  * @returns {{ run: (id: string) => Promise<any>, loading: boolean, error: string|null, result: any }}
  */
 export function useProposalValidate() {
-  return useProposalMutation((client, id) => client.validateProposal(id));
+  return useProposalMutation(validateProposalMutation);
 }
 
 /**
@@ -1883,7 +1899,7 @@ export function useProposalValidate() {
  * @returns {{ run: (id: string) => Promise<any>, loading: boolean, error: string|null, result: any }}
  */
 export function useProposalDryRun() {
-  return useProposalMutation((client, id) => client.dryRunProposal(id));
+  return useProposalMutation(dryRunProposalMutation);
 }
 
 /**
@@ -1892,7 +1908,7 @@ export function useProposalDryRun() {
  * @returns {{ run: (id: string) => Promise<any>, loading: boolean, error: string|null, result: any }}
  */
 export function useProposalApply() {
-  return useProposalMutation((client, id) => client.applyProposal(id));
+  return useProposalMutation(applyProposalMutation);
 }
 
 /**
@@ -1901,7 +1917,7 @@ export function useProposalApply() {
  * @returns {{ run: (id: string) => Promise<ProposalDiffResponse>, loading: boolean, error: string|null, result: ProposalDiffResponse|null }}
  */
 export function useProposalDiff() {
-  return useProposalMutation((client, id) => client.proposalDiff(id));
+  return useProposalMutation(proposalDiffMutation);
 }
 
 /**

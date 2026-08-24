@@ -12,6 +12,49 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 
 class TestInferModelFromProfile:
+    def test_duplicate_headers_create_one_candidate_per_stable_id(self) -> None:
+        profile = {
+            "file_path": "customer_messy.csv",
+            "columns": [
+                {"name": "CUST_GRP", "inferred_type": "string"},
+                {"name": "CUST_GRP", "inferred_type": "string"},
+            ],
+        }
+
+        proposal = infer_model_from_profile(profile, dataset_id="customer_messy")
+
+        create_ids = [
+            operation["object_id"]
+            for operation in proposal["operations"]
+            if operation["op"] == "create_object"
+        ]
+        assert len(create_ids) == len(set(create_ids))
+        assert any("Duplicate source headers" in item for item in proposal["assumptions"])
+        results = validate_patch_proposal(proposal)
+        assert not any(result.severity == "ERROR" for result in results)
+
+    def test_existing_domain_context_is_reused_not_recreated(self) -> None:
+        profile = {
+            "file_path": "customer.csv",
+            "columns": [{"name": "CUST_GRP", "inferred_type": "string"}],
+        }
+
+        proposal = infer_model_from_profile(
+            profile,
+            dataset_id="customer",
+            domain="DOMAIN-CUSTOMER-MIGRATION",
+        )
+
+        assert not any(
+            operation["object_id"] == "DOMAIN-CUSTOMER-MIGRATION"
+            for operation in proposal["operations"]
+        )
+        assert all(
+            operation.get("after", {}).get("domain") == "DOMAIN-CUSTOMER-MIGRATION"
+            for operation in proposal["operations"]
+            if operation.get("after", {}).get("domain")
+        )
+
     def test_infer_from_csv_profile(self) -> None:
         csv_path = FIXTURES_DIR / "customer_sample.csv"
         profile = profile_csv(csv_path, dataset_id="customer_sample")

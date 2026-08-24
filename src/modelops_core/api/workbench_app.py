@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import secrets
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -28,7 +29,12 @@ class _SPAStaticFiles(StaticFiles):
             raise
 
 
-def create_workbench_app(repo_root: Path, static_dir: Path) -> FastAPI:
+def create_workbench_app(
+    repo_root: Path,
+    static_dir: Path,
+    mutation_token: str | None = None,
+    enable_mutations: bool = True,
+) -> FastAPI:
     """Return a FastAPI app that serves the API and the workbench SPA.
 
     API routes are mounted first so they take precedence over static files.
@@ -38,12 +44,27 @@ def create_workbench_app(repo_root: Path, static_dir: Path) -> FastAPI:
     if not static_dir.is_dir():
         raise ValueError(f"Workbench static files not found: {static_dir}")
 
-    configure_workspace(repo_root)
+    session_token = (mutation_token or secrets.token_urlsafe(32)) if enable_mutations else None
+    configure_workspace(repo_root, mutation_token=session_token)
     workbench_app = FastAPI(
         title="Martenweave Workbench",
         description="Local workbench for the agentic data model registry.",
         version=api_app.version,
     )
+
+    @workbench_app.middleware("http")
+    async def _bind_local_session(request, call_next):  # noqa: ANN001, ANN202
+        response = await call_next(request)
+        if session_token is not None:
+            response.set_cookie(
+                "martenweave_session",
+                session_token,
+                httponly=True,
+                samesite="strict",
+                secure=False,
+                path="/",
+            )
+        return response
 
     # Include the existing API routes at the root so the workbench and
     # external clients can keep using the same endpoints.

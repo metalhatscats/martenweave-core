@@ -49,6 +49,87 @@ def test_start_result_matches_manifest_verdict_and_count(tmp_path: Path) -> None
     assert data["total_findings"] == manifest["readiness"]["total_findings"]
     assert data["total_findings"] > 0
     assert len(data["findings"]) == data["total_findings"]
+    assert data["decision_gate"] == {
+        "total": data["total_findings"],
+        "reviewed": 0,
+        "remaining": data["total_findings"],
+        "deferred": 0,
+        "proposal_review_ready": False,
+        "gate_reason": (
+            f"Classify {data['total_findings']} remaining evidence finding(s)."
+        ),
+        "assessment_id": "readiness",
+        "proposal_id": Path(data["evidence"]["draft_proposal"]).stem,
+    }
+
+
+def test_start_result_decisions_gate_candidate_proposal_review(tmp_path: Path) -> None:
+    """A start-run candidate cannot be accepted until every finding is classified."""
+    _, workspace = _start_workspace(tmp_path)
+    start_data = client.get("/api/v1/start-result", params={"repo": str(workspace)}).json()
+    proposal_id = start_data["decision_gate"]["proposal_id"]
+
+    blocked = client.post(
+        f"/proposals/{proposal_id}/review",
+        params={"repo": str(workspace)},
+        json={"status": "accepted", "reviewer": "alice"},
+    )
+    assert blocked.status_code == 409
+    assert "Classify" in blocked.json()["detail"]
+
+    for finding in start_data["findings"]:
+        response = client.post(
+            "/api/v1/findings/review",
+            params={"repo": str(workspace)},
+            json={
+                "assessment": "readiness",
+                "finding_id": finding["id"],
+                "disposition": "confirmed",
+                "reviewer": "alice",
+            },
+        )
+        assert response.status_code == 200
+
+    ready = client.get("/api/v1/start-result", params={"repo": str(workspace)}).json()
+    assert ready["decision_gate"]["reviewed"] == ready["decision_gate"]["total"]
+    assert ready["decision_gate"]["remaining"] == 0
+    assert ready["decision_gate"]["proposal_review_ready"] is True
+
+    accepted = client.post(
+        f"/proposals/{proposal_id}/review",
+        params={"repo": str(workspace)},
+        json={"status": "accepted", "reviewer": "alice"},
+    )
+    assert accepted.status_code == 200
+
+
+def test_start_result_deferred_decision_keeps_approval_gate_closed(tmp_path: Path) -> None:
+    _, workspace = _start_workspace(tmp_path)
+    start_data = client.get("/api/v1/start-result", params={"repo": str(workspace)}).json()
+
+    for index, finding in enumerate(start_data["findings"]):
+        disposition = "deferred" if index == 0 else "confirmed"
+        response = client.post(
+            "/api/v1/findings/review",
+            params={"repo": str(workspace)},
+            json={
+                "assessment": "readiness",
+                "finding_id": finding["id"],
+                "disposition": disposition,
+                "reviewer": "alice",
+                "note": (
+                    "Needs a named owner before approval"
+                    if disposition == "deferred"
+                    else None
+                ),
+            },
+        )
+        assert response.status_code == 200
+
+    gated = client.get("/api/v1/start-result", params={"repo": str(workspace)}).json()
+    assert gated["decision_gate"]["remaining"] == 0
+    assert gated["decision_gate"]["deferred"] == 1
+    assert gated["decision_gate"]["proposal_review_ready"] is False
 
 
 def test_start_result_findings_have_stable_ids_evidence_and_actions(tmp_path: Path) -> None:
@@ -77,9 +158,7 @@ def test_start_result_evidence_artifacts_are_generated_relative_and_safe(tmp_pat
     assert evidence["draft_proposal"] == manifest["generated_outputs"]["draft_proposal"]
 
     for key in ("readiness_json", "readiness_markdown", "profile"):
-        download = client.get(
-            f"/api/v1/reports/{evidence[key]}", params={"repo": str(workspace)}
-        )
+        download = client.get(f"/api/v1/reports/{evidence[key]}", params={"repo": str(workspace)})
         assert download.status_code == 200, key
 
     serialized = json.dumps(data)

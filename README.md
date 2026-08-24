@@ -6,8 +6,12 @@ Martenweave Core is maintained by [Dzmitryi Kharlanau](https://github.com/dkharl
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-An open-source, backend-first model governance and evidence layer for SAP migration, MDM, data
-governance, and AMS.
+An open-source, local-first evidence workspace for SAP migration model decisions.
+
+The sharpest first workflow starts with the artefact a migration team already has: one local CSV,
+XLSX, XML, or JSON file. Martenweave turns it into a traceable evidence case, deterministic
+findings, a readable readiness report, and one governed next step. The source stays local and no
+inferred change becomes canonical truth without human review.
 
 Martenweave turns spreadsheets, datasets, tickets, validation reports, decisions, and SAP context
 into canonical model files, deterministic validation, dataset gap reports, lineage, impact
@@ -22,11 +26,12 @@ attributes, relationships, datasets, mappings, rules, evidence, decisions, and c
 It is designed to be embedded in pipelines, IDEs, local API processes, MCP servers, and agent workflows.
 
 **Martenweave Workbench** is the official local browser UI for assessment, investigation, review,
-reports, and controlled changes. Its decision-first journey moves from **Readiness** through
-**Evidence** and **Resolve** to **Approvals**, so a migration team can see what needs attention,
-understand the supporting facts, and make a governed change. It reads from the local API and never
-stores canonical model truth independently of the `model/` files. It is **not a hosted production
-app** and does not replace the CLI-first core workflow.
+reports, and controlled changes. Its minimal Work Canvas opens on the current evidence case: the
+real source artefact, the decisions blocking readiness, the selected evidence context, and one next
+move. Deeper catalog, lineage, proposal, output, and history surfaces remain available from the
+icon rail. It reads from the local API and never stores canonical model truth independently of the
+`model/` files. It is **not a hosted production app** and does not replace the CLI-first core
+workflow.
 
 For Workbench setup and development notes, see [`frontend/README.md`](frontend/README.md).
 
@@ -64,7 +69,7 @@ supported for backward compatibility with scripts, CI jobs, and early adopters.
 
 | Is | Is not |
 |---|---|
-| A backend-first model governance pipeline | A generic workflow platform |
+| A local migration evidence case backed by a model governance core | A generic workflow platform |
 | A canonical file registry with disposable generated indexes | A hosted MDM platform |
 | A validator-gated, proposal-first model change workflow | A workflow engine or n8n/Zapier/Dify competitor |
 | A local-first CLI and embeddable open-source core | Generic B2B SaaS or a chatbot |
@@ -119,12 +124,16 @@ For a local CSV, XLSX, XML, or JSON extract, create a safe readiness workspace i
 
 ```bash
 python -m pip install martenweave-core
-martenweave start ./customers.xlsx --no-open
+martenweave start ./customers.xlsx \
+  --template sap_bp_customer_migration \
+  --no-open
 ```
 
-The command classifies the file, profiles it locally, validates a new workspace, writes generated
-readiness evidence and a readable report, and prints the local Workbench command. It creates a
-draft proposal only for human review; it never applies inferred model changes or uploads data.
+The command classifies the file, profiles it locally, seeds the packaged SAP BP Customer context,
+validates a new workspace, writes generated readiness evidence and a readable report, and prints
+the local Workbench command. It creates a deduplicated draft proposal only for human review; it
+never applies inferred model changes or uploads data. Omit `--template` when you deliberately want
+a domain-neutral seed workspace.
 
 PowerShell uses the same flow:
 

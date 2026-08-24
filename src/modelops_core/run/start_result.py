@@ -18,6 +18,94 @@ from modelops_core.run.dataset_readiness import (
 )
 
 
+def _decision_gate(
+    generated_root: Path,
+    manifest: dict[str, Any],
+    report_payload: dict[str, Any],
+) -> dict[str, Any]:
+    """Summarize whether a start-run proposal has enough human evidence review.
+
+    The gate is intentionally narrower than migration readiness: it only proves
+    that every deterministic finding has been classified by a human and that no
+    item was explicitly deferred. It does not claim that confirmed gaps are fixed.
+    """
+    findings_path = generated_root / "readiness" / "findings.json"
+    reviews_path = generated_root / "readiness" / "finding-reviews.json"
+    findings: list[dict[str, Any]] = []
+    if findings_path.is_file():
+        try:
+            findings = list(
+                json.loads(findings_path.read_text(encoding="utf-8")).get("findings") or []
+            )
+        except (OSError, json.JSONDecodeError):
+            findings = []
+    if not findings:
+        gaps = list(report_payload.get("dataset_gaps") or []) + list(
+            report_payload.get("model_gaps") or []
+        )
+        findings = [gap["finding"] for gap in gaps if isinstance(gap.get("finding"), dict)]
+
+    reviews: dict[str, Any] = {}
+    if reviews_path.is_file():
+        try:
+            reviews = (
+                json.loads(reviews_path.read_text(encoding="utf-8")).get("reviews") or {}
+            )
+        except (OSError, json.JSONDecodeError):
+            reviews = {}
+
+    finding_ids = list(
+        dict.fromkeys(str(finding.get("id")) for finding in findings if finding.get("id"))
+    )
+    reviewed_ids = [finding_id for finding_id in finding_ids if finding_id in reviews]
+    deferred_ids = [
+        finding_id
+        for finding_id in reviewed_ids
+        if reviews[finding_id].get("disposition") == "deferred"
+    ]
+    unreviewed_ids = [finding_id for finding_id in finding_ids if finding_id not in reviews]
+    ready = not unreviewed_ids and not deferred_ids
+    if unreviewed_ids:
+        gate_reason = f"Classify {len(unreviewed_ids)} remaining evidence finding(s)."
+    elif deferred_ids:
+        gate_reason = f"Resolve {len(deferred_ids)} deferred finding(s) before approval."
+    else:
+        gate_reason = "Every deterministic finding has a recorded human disposition."
+
+    proposal_ref = (manifest.get("generated_outputs") or {}).get("draft_proposal")
+    proposal_id = Path(proposal_ref).stem if proposal_ref else None
+    return {
+        "total": len(finding_ids),
+        "reviewed": len(reviewed_ids),
+        "remaining": len(unreviewed_ids),
+        "deferred": len(deferred_ids),
+        "proposal_review_ready": ready,
+        "gate_reason": gate_reason,
+        "assessment_id": "readiness",
+        "proposal_id": proposal_id,
+    }
+
+
+def load_start_decision_gate(
+    repo_root: Path, proposal_id: str | None = None
+) -> dict[str, Any] | None:
+    """Return the human-evidence gate for the persisted start-run proposal."""
+    generated_root = resolve_generated_path(repo_root)
+    manifest_path = generated_root / "start_manifest.json"
+    report_path = generated_root / "readiness" / "readiness.json"
+    if not manifest_path.is_file() or not report_path.is_file():
+        return None
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        report_payload = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    gate = _decision_gate(generated_root, manifest, report_payload)
+    if proposal_id is not None and gate["proposal_id"] != proposal_id:
+        return None
+    return gate
+
+
 def load_start_result(repo_root: Path) -> dict[str, Any] | None:
     """Return the persisted start-run result, or ``None`` when none exists.
 
@@ -41,7 +129,12 @@ def load_start_result(repo_root: Path) -> dict[str, Any] | None:
     gap_dicts = list(report_payload.get("dataset_gaps") or []) + list(
         report_payload.get("model_gaps") or []
     )
-    findings = [gap["finding"] for gap in gap_dicts if isinstance(gap.get("finding"), dict)]
+    findings_by_id = {
+        str(gap["finding"].get("id")): gap["finding"]
+        for gap in gap_dicts
+        if isinstance(gap.get("finding"), dict) and gap["finding"].get("id")
+    }
+    findings = list(findings_by_id.values())
 
     next_action: str | None = None
     try:
@@ -64,10 +157,16 @@ def load_start_result(repo_root: Path) -> dict[str, Any] | None:
         return Path(workspace_relative).as_posix()
 
     input_info = manifest.get("input") or {}
+    canonical_model = manifest.get("canonical_model") or {}
     input_path = input_info.get("path")
+    decision_gate = _decision_gate(generated_root, manifest, report_payload)
+    if decision_gate["remaining"]:
+        next_action = decision_gate["gate_reason"]
+    elif decision_gate["proposal_review_ready"] and decision_gate["proposal_id"]:
+        next_action = "Review the candidate proposal against the recorded human dispositions."
     return {
         "verdict": readiness.get("verdict") or report_payload.get("verdict"),
-        "total_findings": readiness.get("total_findings", len(findings)),
+        "total_findings": len(findings),
         "dataset_gaps": readiness.get("dataset_gaps", 0),
         "model_gaps": readiness.get("model_gaps", 0),
         "validation_errors": readiness.get("validation_errors", 0),
@@ -88,5 +187,8 @@ def load_start_result(repo_root: Path) -> dict[str, Any] | None:
             "input_format": input_info.get("format"),
             "input_sha256": input_info.get("sha256"),
             "tool_version": report_payload.get("martenweave_version"),
+            "model_context": canonical_model.get("template") or "new workspace seed",
+            "context_domain": canonical_model.get("context_domain"),
         },
+        "decision_gate": decision_gate,
     }

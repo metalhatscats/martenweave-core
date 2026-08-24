@@ -45,7 +45,8 @@ Martenweave Core remains the authoritative backend and canonical model layer. Th
 
 ### Workbench (local UI)
 
-- Start with a bounded readiness queue that exposes repository status, validation results, index freshness, and scorecard.
+- Start with one bounded evidence case: source provenance, decision groups, deterministic findings,
+  selected context, and one governed next move.
 - Browse and search the object catalog.
 - Show object detail, lineage, impact, gaps, ownership, and the evidence supporting a decision.
 - Resolve findings through a dedicated workspace before they become review artifacts.
@@ -67,7 +68,7 @@ The Workbench **does not**:
 The Workbench organizes its local UI around one customer journey:
 
 ```text
-Readiness → Catalog / Evidence → Resolve → Approvals → Outputs / History
+Evidence case → Catalog / Evidence → Resolve → Approvals → Outputs / History
 ```
 
 This is presentation and navigation only. Every underlying read, validation result, proposal,
@@ -102,6 +103,12 @@ The Workbench must respect the API capability contract:
 - **read-only mode**: All mutation endpoints are disabled. The Workbench shows inspection, reports, and viewers only.
 - **review mode**: Proposals and ChangeRequests can be reviewed but not applied without explicit approval.
 - **full mode**: The full proposal → approval → apply flow is available, with confirmation prompts and audit logging.
+
+`martenweave workbench` creates an ephemeral local session token and delivers it as an `HttpOnly`,
+`SameSite=Strict` cookie on the same localhost origin. Browser JavaScript cannot read the token.
+Mutation sessions are enabled only for loopback binds; a non-loopback Workbench bind is read-only.
+The standalone `martenweave serve --mutation-token ...` surface keeps the explicit
+`X-Martenweave-Token` contract for API clients. Neither path weakens validation or approval gates.
 
 The Workbench must degrade gracefully when the API is unavailable, the index is stale, validation fails, or AI capabilities are disabled.
 

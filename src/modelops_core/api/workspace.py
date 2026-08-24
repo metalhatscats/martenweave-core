@@ -5,7 +5,7 @@ from __future__ import annotations
 import secrets
 from pathlib import Path
 
-from fastapi import Header, HTTPException
+from fastapi import Cookie, Header, HTTPException
 
 _workspace_root: Path | None = None
 _mutation_token: str | None = None
@@ -67,7 +67,10 @@ def mutation_enabled() -> bool:
     return _workspace_root is None or _mutation_token is not None
 
 
-def require_mutation_token(x_martenweave_token: str | None = Header(None)) -> None:
+def require_mutation_token(
+    x_martenweave_token: str | None = Header(None),
+    martenweave_session: str | None = Cookie(None),
+) -> None:
     """Protect writes; an unconfigured server is intentionally read-only."""
     if _workspace_root is None:
         return
@@ -75,9 +78,8 @@ def require_mutation_token(x_martenweave_token: str | None = Header(None)) -> No
         raise HTTPException(
             status_code=403, detail="API mutations are disabled for this workspace."
         )
-    if x_martenweave_token is None or not secrets.compare_digest(
-        x_martenweave_token, _mutation_token
-    ):
+    provided_token = x_martenweave_token or martenweave_session
+    if provided_token is None or not secrets.compare_digest(provided_token, _mutation_token):
         raise HTTPException(
             status_code=401, detail="Valid X-Martenweave-Token required for mutations."
         )

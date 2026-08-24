@@ -101,6 +101,8 @@ def set_review(
     if disposition not in _ALLOWED_DISPOSITIONS:
         allowed = ", ".join(sorted(_ALLOWED_DISPOSITIONS))
         raise ValueError(f"Invalid disposition '{disposition}'. Allowed: {allowed}")
+    if disposition in {"accepted_risk", "deferred"} and not (note or "").strip():
+        raise ValueError(f"Disposition '{disposition}' requires a review note.")
 
     findings = load_findings(assessment_dir)
     finding = _finding_by_id(findings, finding_id)

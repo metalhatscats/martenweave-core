@@ -428,6 +428,18 @@ def _validate_references(
         source_id = frontmatter.get("id")
         source_id_str = str(source_id) if isinstance(source_id, str) else None
 
+        proposed_create_ids: set[str] = set()
+        if frontmatter.get("type") == "PatchProposal":
+            operations = frontmatter.get("operations")
+            if isinstance(operations, list):
+                proposed_create_ids = {
+                    str(operation["object_id"])
+                    for operation in operations
+                    if isinstance(operation, dict)
+                    and operation.get("op") in {"create_object", "add_object", "create_issue"}
+                    and operation.get("object_id")
+                }
+
         for field, ref in reference_fields.items():
             value = frontmatter.get(field)
             if value is None:
@@ -440,6 +452,11 @@ def _validate_references(
             expected_type = ref.expected_target_type
 
             for ref_id in refs:
+                # PatchProposal.affected_objects may include objects created by
+                # the same proposal.  Those are deliberate future references,
+                # not broken canonical references.
+                if field == "affected_objects" and ref_id in proposed_create_ids:
+                    continue
                 if ref_id not in registry:
                     results.append(
                         ValidationResult(

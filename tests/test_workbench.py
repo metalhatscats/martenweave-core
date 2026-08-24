@@ -11,9 +11,17 @@ from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
 from modelops_core.api.workbench_app import create_workbench_app
+from modelops_core.api.workspace import clear_workspace
 from modelops_core.cli import app as cli_app
 
 runner = CliRunner()
+
+
+@pytest.fixture(autouse=True)
+def _isolate_bound_workspace() -> None:
+    clear_workspace()
+    yield
+    clear_workspace()
 
 
 def test_packaged_workbench_static_exists() -> None:
@@ -40,11 +48,17 @@ def test_workbench_serves_index_html_and_api_routes(sample_repo: Path) -> None:
     assert root.status_code == 200
     assert "text/html" in root.headers["content-type"]
     assert b'<div id="root"></div>' in root.content
+    assert "martenweave_session=" in root.headers["set-cookie"]
+    assert "HttpOnly" in root.headers["set-cookie"]
 
     health = client.get("/health", params={"repo": str(sample_repo)})
     assert health.status_code == 200
     data = health.json()
     assert data["status"] in ("healthy", "no_index")
+
+    capabilities = client.get("/api/v1/capabilities")
+    assert capabilities.status_code == 200
+    assert capabilities.json()["read_only"] is False
 
 
 def test_workbench_spa_fallback(sample_repo: Path) -> None:
@@ -56,6 +70,17 @@ def test_workbench_spa_fallback(sample_repo: Path) -> None:
     response = client.get("/models")
     assert response.status_code == 200
     assert b'<div id="root"></div>' in response.content
+
+
+def test_workbench_non_loopback_mode_can_disable_mutations(sample_repo: Path) -> None:
+    static_dir = Path(str(importlib.resources.files("modelops_core") / "workbench_static"))
+    app = create_workbench_app(sample_repo, static_dir, enable_mutations=False)
+    client = TestClient(app)
+
+    root = client.get("/")
+    assert root.status_code == 200
+    assert "martenweave_session=" not in root.headers.get("set-cookie", "")
+    assert client.get("/api/v1/capabilities").json()["read_only"] is True
 
 
 def test_workbench_cli_help() -> None:
