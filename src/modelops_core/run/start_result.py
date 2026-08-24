@@ -48,9 +48,7 @@ def _decision_gate(
     reviews: dict[str, Any] = {}
     if reviews_path.is_file():
         try:
-            reviews = (
-                json.loads(reviews_path.read_text(encoding="utf-8")).get("reviews") or {}
-            )
+            reviews = json.loads(reviews_path.read_text(encoding="utf-8")).get("reviews") or {}
         except (OSError, json.JSONDecodeError):
             reviews = {}
 

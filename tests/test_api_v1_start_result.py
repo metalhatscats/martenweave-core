@@ -55,9 +55,7 @@ def test_start_result_matches_manifest_verdict_and_count(tmp_path: Path) -> None
         "remaining": data["total_findings"],
         "deferred": 0,
         "proposal_review_ready": False,
-        "gate_reason": (
-            f"Classify {data['total_findings']} remaining evidence finding(s)."
-        ),
+        "gate_reason": (f"Classify {data['total_findings']} remaining evidence finding(s)."),
         "assessment_id": "readiness",
         "proposal_id": Path(data["evidence"]["draft_proposal"]).stem,
     }
@@ -118,9 +116,7 @@ def test_start_result_deferred_decision_keeps_approval_gate_closed(tmp_path: Pat
                 "disposition": disposition,
                 "reviewer": "alice",
                 "note": (
-                    "Needs a named owner before approval"
-                    if disposition == "deferred"
-                    else None
+                    "Needs a named owner before approval" if disposition == "deferred" else None
                 ),
             },
         )
