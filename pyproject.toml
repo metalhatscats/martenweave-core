@@ -1,10 +1,10 @@
 [project]
 name = "martenweave-core"
 version = "0.9.0"
-description = "Open-source model governance and evidence layer for SAP migration, MDM, data governance, and AMS."
+description = "Source-available model governance and evidence layer for SAP migration, MDM, data governance, and AMS."
 readme = "README.md"
 requires-python = ">=3.11"
-license = "Apache-2.0"
+license = "PolyForm-Strict-1.0.0"
 license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Dzmitryi Kharlanau" }]
 maintainers = [{ name = "Dzmitryi Kharlanau" }]
@@ -18,7 +18,7 @@ keywords = [
   "model-governance-pipeline",
   "model-registry",
   "data-model-registry",
-  "open-source-model-registry",
+  "source-available-model-registry",
   "lineage",
   "impact-analysis",
   "dataset-validation",
